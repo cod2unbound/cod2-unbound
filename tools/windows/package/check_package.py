@@ -55,7 +55,7 @@ def run_server(exe, cfg, edition, env, run):
         "SYSDIFF_MAXFRAMES": "200",
     }
     port = 29676
-    args = [WINDOWS / "wine-binary.sh", "+set", "fs_basepath", "/data",
+    args = [WINDOWS / "wine-binary.sh", "+set", "fs_basepath", windows_path("/data"),
             "+set", "fs_homepath", str(instance), "+set", "dedicated", "1",
             "+set", "net_ip", "127.0.0.1", "+set", "net_port", str(port),
             "+exec", "server.cfg", "+map", helpers["MAP"]]
