@@ -39,6 +39,9 @@ import Foundation
         var profiles = try ProfilesParity.build(scratch: scratch)
         profiles["swiftRevision"] = revision
         try fixture("profiles", payload: profiles, mode: mode, output: output)
+        var share = try await ShareParity.build(catalogURL: root.appendingPathComponent("launcher/Resources/ConfigCatalog.json"), scratch: scratch)
+        share["swiftRevision"] = revision
+        try fixture("share", payload: share, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

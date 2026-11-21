@@ -74,6 +74,8 @@ work. Windows adapters should supply the following services.
 | `IConfigProfileFiles` | Scope paths to the private engine home. Hold `LockFileEx` on `main/players/.studio.lock`. Apply the same reparse-point and private-ACL rules as the directory cache. Use buffered writes followed by `FlushFileBuffers` and atomic publication. Move a completed staging directory within the same volume with `MoveFileExW`, without replacement. Test interrupted publishes of the journal, history, cfg, metadata and companion across real process restarts. Verify case-insensitive collisions, reserved filenames, read-only installs and concurrent game ownership. |
 | `IConfigProfileTrash` | Use Shell `IFileOperation` with `FOFX_RECYCLEONDELETE` and capture the recycled item's identity from `PostDeleteItem`. Test Recycle Bin availability, aborted moves, exclusive restoration and restoring a profile's companion. Retain the profile if recovery cannot be guaranteed. |
 | `IConfigImportStore` | Hold the launcher session's draft and engine ownership interlocks and the profile store lease during version comparison and transactional commit. Preserve `active.txt` and return the receipt of an already-published import. Test two launcher processes, a game save racing an import, an unsaved draft, and a failed write followed by retry. |
+| `IConfigShareStorage` | Use the user-only settings folder and an exclusive `LockFileEx` lease for `shared-setups.json`. Keep the file across settings reset or profile Trash. Preserve withdrawal tokens across restart and upgrades, refuse unsafe paths, and omit tokens from logs and diagnostics. |
+| `IConfigShareTransport` | Use the tested portable `HttpConfigShareTransport` with `SocketsHttpHandler`. On Windows, prove POST, validation, cancellation, whole-response deadlines and redirect refusal against a local service. |
 | `ISecretStore` | Use user-scoped Credential Manager entries for the CD key and remembered server passwords. Route a key to the engine through its Windows key contract and keep credentials out of logs and process arguments. |
 | `IGameFiles` | Resolve validated relative paths under the selected engine home and verify regular files without traversing junctions or symlinks. |
 | `IGameDiscovery` | Read the installer inventory for client and dedicated executables by edition. Discover licensed retail data and Steam libraries using Windows registry views and Steam's library records, then validate the archive set. |
@@ -92,24 +94,31 @@ file on a failed start and after use, with recovery for interrupted launcher
 sessions. Join config contents may include a password. Engine output and crash
 capture need redaction. [CreateProcessW](https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw)
 
-The catalogue accepts only the trusted index and signature responses and
-verifies the original index bytes. Its profile fetch passes the signed bytes through the import loader and retains
-provenance. Dependencies referenced by a signed profile remain unresolved.
-Construct a `ConfigImportSession` with the setup's source platform and the launcher's
-destination platform. Windows uses `ConfigImportPlatform.Windows` for its destination.
-The session re-reviews the composed config, prevents overlapping applies, and
-hands one compare-and-commit request to its store. `ConfigProfileStore` implements
-that seam using the engine's `main/players` layout. Check game ownership during
-journal replay and every write. Host blocking profile operations off the WinUI
-thread. The core records an import operation ID in history so a retry after a
-recovered write returns the existing receipt.
-[MoveFileExW](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-movefileexw)
-[PostDeleteItem](https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperationprogresssink-postdeleteitem) The stored trust fields identify the cache and the
-configured public key provides authority. A network outage can use a reverified
-copy. A valid response may repeat a revision only if the original bytes match.
+The catalogue verifies the original index bytes with its configured public key.
+A network outage can use a reverified cache. A valid response may repeat a
+revision only if its index bytes match. The selected profile becomes an import
+bundle with signed bytes and provenance. Its script dependencies remain unresolved.
 [Reparse points](https://learn.microsoft.com/windows/win32/fileio/reparse-points-and-file-operations)
 [LockFileEx](https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-lockfileex)
 [ReplaceFileW](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-replacefilew)
+
+Construct a `ConfigImportSession` with the setup's source platform and the
+launcher's destination platform. Windows uses `ConfigImportPlatform.Windows` as
+its destination. The session re-reviews the composed config and hands one
+compare-and-commit request to `ConfigProfileStore`. Coordinate engine ownership
+with the store's lock during replay and writes. Run blocking profile operations
+off the WinUI thread. A retry after a recovered import returns the existing
+receipt from history.
+[MoveFileExW](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-movefileexw)
+[PostDeleteItem](https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperationprogresssink-postdeleteitem)
+
+`ConfigShareService` sends only prepared, validated setup text and records the
+withdrawal token from a successful reply. If saving fails, it returns the
+receipt so the caller can retry the private write. A confirmed withdrawal clears
+the matching receipt. The portable HTTP adapter uses a whole-request deadline
+and refuses redirects.
+[HttpClient completion and deadlines](https://learn.microsoft.com/dotnet/api/system.net.http.httpcompletionoption?view=net-10.0)
+[Redirect behavior](https://learn.microsoft.com/dotnet/api/system.net.http.socketshttphandler.allowautoredirect?view=net-10.0)
 
 The release offer takes an expected archive name from its caller. Windows
 packaging defines that name and verifies the installer publisher or server ZIP

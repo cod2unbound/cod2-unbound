@@ -34,7 +34,7 @@ target=arm64-apple-macos26
     "$root/launcher/ConfigDirectory.swift" "$root/launcher/ConfigImport.swift" "$root/launcher/ConfigImportSafety.swift" \
     "$root/launcher/ConfigImportCatalogAdapter.swift" "$root/launcher/ConfigClean.swift" "$root/launcher/WindowsProfiles.swift" \
     "$root/launcher/ConfigImportSession.swift" "$root/launcher/ConfigProfiles.swift" "$root/launcher/ConfigHistory.swift" \
-    "$root/launcher/ConfigStudioSession.swift" \
+    "$root/launcher/ConfigStudioSession.swift" "$root/launcher/ConfigShare.swift" \
     "$root/launcher/Core.swift" "$root/launcher/Presentation.swift" "$root/launcher/Hosting.swift" \
     "$root/tests/launcher/CoreParity.swift" "$root/tests/launcher/CoreParityConfig.swift" "$root/tests/launcher/CoreParityWire.swift" \
     "$root/tests/launcher/CoreParityLaunch.swift" "$root/tests/launcher/CoreParitySettings.swift" \
@@ -42,5 +42,6 @@ target=arm64-apple-macos26
     "$root/tests/launcher/CoreParityImport.swift" "$root/tests/launcher/ConfigImportTests.swift" "$root/tests/launcher/ConfigImportSafetyTests.swift" \
     "$root/tests/launcher/CoreParitySession.swift" "$root/tests/launcher/ConfigImportSessionTests.swift" \
     "$root/tests/launcher/CoreParityProfiles.swift" \
+    "$root/tests/launcher/CoreParityShare.swift" "$root/tests/launcher/ConfigShareTests.swift" \
     "$scratch/setup.o" "$scratch/shaders.o" "$scratch/url.o" -framework AppKit -lz -o "$scratch/parity"
 "$scratch/parity" "$mode" "$output" "$revision" "$root" "$scratch"

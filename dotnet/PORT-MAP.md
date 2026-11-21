@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 115 rows, with 21 ported, 30 planned, 48 UI and 16 Apple-only.
+Coverage is 115 rows, with 22 ported, 29 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Coverage is 115 rows, with 21 ported, 30 planned, 48 UI and 16 Apple-only.
 | ConfigReadyCheck.swift | Planned | Pre-join preset comparison and temporary override eligibility |
 | ConfigRules.swift | Planned | Ruleset and optimizer resources and known-server inference |
 | ConfigSettingsView.swift | UI | Guided and expert editors using catalogue controls |
-| ConfigShare.swift | Planned | Service payload, Share and withdrawal, private shared records |
+| ConfigShare.swift | Ported | `ConfigShare`, `ConfigShareClient`, `ConfigShareRecords` and `ConfigShareService` implement the service contract and private receipt lifecycle |
 | ConfigShareModel.swift | UI | Share flow, progress and feedback over the service client |
 | ConfigShareView.swift | UI | Share sheets and preview |
 | ConfigSheets.swift · naming | Ported | `LoadoutName` validates blank, duplicate and read-only names |
