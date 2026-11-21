@@ -1,5 +1,8 @@
 #include "common_types.h"
 #include "imports.h"
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+#include "PC/universal/windows_number.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,7 +73,11 @@ void Sys_WaitUntilMilliseconds(unsigned int target)
 #endif
 void Sys_SnapVector(float *v)
 {
-#if defined(COD2_X64)
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+    /* Retail at 0x467f80 uses FISTP and then FILD, so zero has a positive sign. */
+    for (int axis = 0; axis < 3; ++axis)
+        v[axis] = (float)Q_WindowsScaleDoubleToInt(v[axis], 1);
+#elif defined(COD2_X64)
     /* Windows 0x467f80 (fistp) and Linux (rint) round to nearest; Mac 0xaed28 truncates.
      * Follow Windows so movement and prediction match what most players run. */
     v[0] = (float)rint(v[0]);
