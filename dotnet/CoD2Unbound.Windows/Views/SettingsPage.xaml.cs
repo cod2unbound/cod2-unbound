@@ -21,14 +21,14 @@ public sealed partial class SettingsPage : Page
     private string? advancedDraft;
     private string? advancedProblem;
 
-    internal SettingsPage(MainWindow shell, WindowsLauncherSession session)
+    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false)
     {
         this.shell = shell;
         this.session = session;
         model = new(session);
         InitializeComponent();
         model.RefreshData();
-        Panes.SelectedItem = Panes.Items[0];
+        Panes.SelectedItem = Panes.Items[openGameData ? 2 : 0];
     }
 
     private GameSettings Current => model.Settings.Working;

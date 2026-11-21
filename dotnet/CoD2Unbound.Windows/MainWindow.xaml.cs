@@ -247,7 +247,7 @@ public sealed partial class MainWindow : Window
         else
         {
             Nav.SelectedItem = Nav.SettingsItem;
-            ContentFrame.Content = new SettingsPage(this, session);
+            ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings);
         }
     }
 
@@ -379,7 +379,7 @@ public sealed partial class MainWindow : Window
 
     internal async Task RunAsync(Func<Task> action, bool clearProblem = true)
     {
-        if (busy)
+        if (busy || closing)
             return;
         busy = true;
         if (clearProblem)
@@ -402,4 +402,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, Servers, Hosting, Library, Configs }
+internal enum LauncherPlace { Setup, Home, Settings, GameDataSettings, Servers, Hosting, Library, Configs }

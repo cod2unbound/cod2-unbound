@@ -255,7 +255,7 @@ public sealed partial class HomePage : Page
     private async void OnFindServer(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);
     private async void OnRecent(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.Recent);
     private async void OnOpenGameData(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Settings));
+        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.GameDataSettings));
 
     private async void OnLoadoutChanged(object sender, SelectionChangedEventArgs args)
     {
