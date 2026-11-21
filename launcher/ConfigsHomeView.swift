@@ -45,6 +45,7 @@ struct ConfigsHomePage: View {
             let query = discover.query.trimmingCharacters(in: .whitespaces)
             return shown == 0 ? "None of \(setups)" : "\(shown) of \(setups) \(shown == 1 ? "matches" : "match") “\(query)”"
         }
+        if let ordered = discover.orderStatus(filtered: chosen != .all) { return ordered }
         return chosen == .all ? "All \(setups)" : "\(shown) of \(setups)"
     }
     private var back: some View {
@@ -80,7 +81,14 @@ struct ConfigsHomePage: View {
                     .frame(maxWidth: .infinity)
                 promos(wide: wide)
             } else if grid {
-                if !discover.searching, discover.filters.count > 1 { filters }
+                if !discover.searching {
+                    HStack(spacing: 12) {
+                        if discover.filters.count > 1 { filters }
+                        Spacer(minLength: 0)
+                        SetupOrderButton(discover: discover)
+                    }
+                    .padding(.top, -8)
+                }
                 if discover.setups.isEmpty {
                     EmptyState("No setup matches “\(discover.query.trimmingCharacters(in: .whitespaces))”",
                                message: "Try a team, an era or where it was published. Search looks through \(snapshot.index.entries.count) setups.",
@@ -115,7 +123,6 @@ struct ConfigsHomePage: View {
             .padding(.vertical, 2)
         }
         .scrollIndicators(.never)
-        .padding(.top, -8)
         .accessibilityElement(children: .contain).accessibilityLabel("Narrow the setups")
     }
 
@@ -382,6 +389,8 @@ struct SetupCard: View {
     var image: NSImage?
     /// A grid names where each setup was published; a shelf leaves that to the setup's own page.
     var source = false
+    /// In a grid ordered by use, the setup's figure replaces its source (DiscoverSorted board).
+    var figure: String? = nil
     var open: () -> Void
     @Environment(\.palette) private var palette
     @State private var hovering = false
@@ -415,7 +424,9 @@ struct SetupCard: View {
                         fact(entry.facts?.sensitivity, "sensitivity")
                         fact(size, "resolution")
                     }
-                    if source {
+                    if let figure {
+                        Text(figure).font(StudioTypography.help).monospacedDigit().foregroundStyle(palette.tertiary).lineLimit(1)
+                    } else if source {
                         Text("As published by \(entry.provenance.publishedBy)").font(StudioTypography.help).foregroundStyle(palette.tertiary).lineLimit(1)
                     }
                 }
@@ -447,7 +458,7 @@ struct SetupCard: View {
     private var spoken: String {
         var parts = [[entry.player, entry.team, entry.era].compactMap { $0 }.joined(separator: ", ") + ".", entry.feel + "."]
         if let sensitivity = entry.facts?.sensitivity { parts.append("Sensitivity \(sensitivity).") }
-        if source { parts.append("As published by \(entry.provenance.publishedBy).") }
+        if let figure { parts.append(figure + ".") } else if source { parts.append("As published by \(entry.provenance.publishedBy).") }
         if saved { parts.append("Saved.") }
         return parts.joined(separator: " ")
     }

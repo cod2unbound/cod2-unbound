@@ -325,6 +325,11 @@ def main():
             "CFBundleURLName": "CoD2x server link",
             "CFBundleTypeRole": "Viewer",
             "CFBundleURLSchemes": ["cod2x", "cod2"],
+        }, {
+            # The website's "Open in CoD2 Unbound": cod2unbound://setup/<id> opens that player setup.
+            "CFBundleURLName": "CoD2 Unbound setup link",
+            "CFBundleTypeRole": "Viewer",
+            "CFBundleURLSchemes": ["cod2unbound"],
         }],
         # Opening a recording plays it; opening a config shows the import review (only as an
         # alternate handler, so .cfg files keep opening in the player's text editor by default).

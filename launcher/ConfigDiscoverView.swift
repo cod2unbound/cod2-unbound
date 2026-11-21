@@ -135,6 +135,38 @@ struct AddConfigButton: View {
     }
 }
 
+/// Player Setups' Order pop-up (DiscoverSorted board): Featured First, Most Imported, Most Viewed,
+/// with a note on where the figures come from. A real AppKit menu, as Add a Config's.
+struct SetupOrderButton: View {
+    @ObservedObject var discover: ConfigDiscoverModel
+    @Environment(\.palette) private var palette
+    @State private var anchor = MenuAnchorBox()
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("Order").font(.system(size: 13)).foregroundStyle(palette.secondary).fixedSize().accessibilityHidden(true)
+            Button { show() } label: {
+                HStack(spacing: 8) {
+                    Text(discover.setupOrder.title)
+                    Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).accessibilityHidden(true)
+                }
+            }
+            .glassAction().controlSize(.large).fixedSize()
+            .background(MenuAnchor(box: anchor))
+            .accessibilityLabel("Order")
+            .accessibilityValue(discover.setupOrder.title)
+            .accessibilityHint("Shows the ways to order the setups")
+            .help("Order the setups")
+        }
+    }
+    private func show() {
+        guard let view = anchor.view else { return }
+        let discover = discover
+        NativeMenu.popUp(ConfigSetupOrder.allCases.map { order in
+            NativeMenu.Item(title: order.title, checked: discover.setupOrder == order) { discover.setupOrder = order }
+        }, below: view, footnote: discover.orderNote, footnoteWidth: 260)
+    }
+}
+
 final class MenuAnchorBox { weak var view: NSView? }
 struct MenuAnchor: NSViewRepresentable {
     let box: MenuAnchorBox
@@ -153,13 +185,15 @@ enum NativeMenu {
         var separatorBefore = false
         /// Dimmed, never hidden, when it can't run now; the footnote says why.
         var enabled = true
+        /// A pop-up's chosen item shows a check mark.
+        var checked = false
         var action: @MainActor () -> Void
     }
     @MainActor private final class Target: NSObject {
         var actions: [@MainActor () -> Void] = []
         @objc func run(_ sender: NSMenuItem) { actions[sender.tag]() }
     }
-    @MainActor static func popUp(_ items: [Item], below view: NSView, header: String? = nil, footnote: String? = nil) {
+    @MainActor static func popUp(_ items: [Item], below view: NSView, header: String? = nil, footnote: String? = nil, footnoteWidth: CGFloat? = nil) {
         let menu = NSMenu(), target = Target()
         menu.autoenablesItems = false
         target.actions = items.map(\.action)
@@ -172,6 +206,7 @@ enum NativeMenu {
             let row = NSMenuItem(title: item.title, action: #selector(Target.run(_:)), keyEquivalent: item.key)
             row.keyEquivalentModifierMask = item.modifiers
             row.target = target; row.tag = index; row.isEnabled = item.enabled
+            row.state = item.checked ? .on : .off
             if !item.symbol.isEmpty { row.image = NSImage(systemSymbolName: item.symbol, accessibilityDescription: nil) }
             menu.addItem(row)
         }
@@ -180,6 +215,19 @@ enum NativeMenu {
             let note = NSMenuItem(title: footnote, action: nil, keyEquivalent: "")
             note.isEnabled = false
             note.attributedTitle = NSAttributedString(string: footnote, attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor])
+            if let footnoteWidth {
+                // A longer note wraps at the menu's width instead of widening it.
+                menu.addItem(.separator())
+                let label = NSTextField(wrappingLabelWithString: footnote)
+                label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor
+                label.preferredMaxLayoutWidth = footnoteWidth
+                let size = label.fittingSize
+                let holder = NSView(frame: NSRect(x: 0, y: 0, width: footnoteWidth + 28, height: size.height + 8))
+                label.frame = NSRect(x: 14, y: 4, width: footnoteWidth, height: size.height)
+                holder.addSubview(label)
+                holder.setAccessibilityElement(true); holder.setAccessibilityRole(.staticText); holder.setAccessibilityLabel(footnote)
+                note.view = holder
+            }
             menu.addItem(note)
         }
         // Tracking is synchronous, so the target outlives the menu.
@@ -195,7 +243,8 @@ struct PlayerGrid: View {
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 236), spacing: 14, alignment: .top)], alignment: .leading, spacing: 14) {
             ForEach(entries) { entry in
-                SetupCard(entry: entry, saved: discover.isSaved(entry.id), image: artwork.image(for: entry.artMap), source: true) {
+                SetupCard(entry: entry, saved: discover.isSaved(entry.id), image: artwork.image(for: entry.artMap), source: true,
+                          figure: discover.figureLine(for: entry.id)) {
                     discover.open(.player(entry.id))
                 }
             }

@@ -147,7 +147,7 @@ verifies the pinned SHA-256 of every file. Bundles register them through
 `ATSApplicationFontsPath`, and development builds load them from beside the
 executable. The app icon is `tools/cod2x/icon-source/CoD2 Unbound.icon`.
 
-The outer app registers `cod2x` and `cod2` links and the demo and config document types.
+The outer app registers `cod2x` and `cod2` links, `cod2unbound` setup links and the demo and config document types.
 A nested `CoD2 Game.app` owns the engine and its fullscreen/Game Mode eligibility. The
 launcher keeps its Dock tile (and Dock menu) during play. When Hide CoD2 Unbound while
 the game is running is on, it hides its windows and brings them back when the tracked
@@ -367,3 +367,34 @@ reset or re-enable cannot count the same UTC day twice.
 
 `ConfigDirectory.swift` verifies optional public popularity figures alongside the catalogue.
 See [the publisher format](../tools/config-directory/README.md#optional-popularity-figures).
+
+### What the player sees
+
+Nothing is sent until the player says yes, and a no sends nothing, not even itself. The question
+is asked once: as setup's Usage data step (after Crash reports, so setup has eight steps while the
+question is due) or, for someone set up before 0.4.2, as a sheet after the update. Don’t Send is
+remembered; a sheet closed without an answer (the app quit with it open) asks again at the next
+start. Neither answer is the default, so Return presses nothing. See What’s Sent… (from the step,
+the sheet and Settings) lists what is recorded in five groups and shows one event, a server joined
+from the list, through the sender's own encoder with this Mac's facts and its install number (all
+zeros before a yes). Settings › Privacy has the switch “Send usage data to CoD2 Unbound”, and after
+a yes the Install number row (its first eight characters) with Reset Number; neither needs an
+alert. What CoD2 Unbound contacts gains “PostHog, in the EU”. A build without the token shows none
+of this. The words are in `UsageDataQuestion` (`ModelUsage.swift`), the sheets in
+`UsageDataView.swift`.
+
+Player Setups' grid has an Order pop-up: Featured First (the default), Most Imported and Most
+Viewed, over the publication's period (30 days). Ordered by use, the status line says so and each
+card with a figure shows “Imported 64 times in the last 30 days” instead of its source; a setup
+under 5 shows no figure and keeps the catalogue's order. Without a published figures file the
+setups keep the catalogue's order and the status line says no figures have been published yet.
+
+### Setup links from the website
+
+The website's “Open in CoD2 Unbound” opens `cod2unbound://setup/<id>`. `LauncherModel.open(_:)`
+routes the `cod2unbound` scheme before the server-link handler: only the host `setup` and exactly
+one path part matching `[a-z0-9][a-z0-9-]{0,63}` (an optional trailing slash), never a user,
+password, port, query or fragment (`setupLinkID`). On a cold or warm start it waits for the
+verified catalogue and opens Configs › Player Setups at that setup; an unknown ID shows a plain
+message and the list. A link never imports anything: Try This Setup and its review do. During
+setup the link waits and opens when setup finishes with Open CoD2 Unbound.

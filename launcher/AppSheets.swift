@@ -27,6 +27,12 @@ enum AppSheet: Identifiable {
     /// Once, for people set up before Setup asked: Send crash reports?
     case crashReportsQuestion
 
+    // MARK: usage data (UsageDataView.swift)
+    /// Once, after the update that brings it: Send usage data?
+    case usageQuestion
+    /// See What’s Sent… from Setup and Settings › Privacy.
+    case usagePreview
+
     // MARK: ship-configs (ConfigSheets.swift)
     /// Loadout › New Loadout… (⌘N) and Configs' New Loadout row.
     case newLoadout
@@ -52,6 +58,8 @@ enum AppSheet: Identifiable {
         case .keyboardShortcuts: "keyboard-shortcuts"
         case .gameCouldNotStart: "game-could-not-start"
         case .crashReportsQuestion: "crash-reports-question"
+        case .usageQuestion: "usage-question"
+        case .usagePreview: "usage-preview"
         case .newLoadout: "new-loadout"
         case .renameLoadout: "rename-loadout"
         case .shareSetup(let start): "share-setup-" + start.loadout
@@ -77,6 +85,8 @@ struct AppSheetView: View {
         case .keyboardShortcuts: KeyboardShortcutsSheet(model: model)
         case .gameCouldNotStart(let reason): GameCouldNotStartSheet(model: model, reason: reason)
         case .crashReportsQuestion: CrashReportsQuestionSheet(model: model)
+        case .usageQuestion: UsageQuestionSheet(model: model)
+        case .usagePreview: UsagePreviewSheet(model: model) { model.dismissSheet() }
         case .newLoadout: NewLoadoutSheet(model: model)
         case .renameLoadout: RenameLoadoutSheet(model: model)
         case .shareSetup(let start): ShareSetupSheet(model: model, start: start)

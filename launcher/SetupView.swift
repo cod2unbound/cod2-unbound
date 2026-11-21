@@ -12,7 +12,7 @@ import Carbon.HIToolbox
     }
 }
 
-/// Setup (the Setup boards): seven steps over the dusk scene, each a heading and one card,
+/// Setup (the Setup boards): seven steps (eight while usage data is asked) over the dusk scene, each a heading and one card,
 /// with Back, the progress dots and the step's actions in the glass bar at the bottom.
 struct SetupView: View {
     @ObservedObject var model: LauncherModel
@@ -61,7 +61,7 @@ struct SetupView: View {
     private func focusStep() {
         switch model.setupStep {
         case .data where model.steamActive: focus = model.steam.phase == .offer || model.steam.phase == .done ? .primary : nil
-        case .crash: focus = nil  // neither answer is the default
+        case .crash, .usage: focus = nil  // neither answer is the default
         case .data where model.dataPath.isEmpty || !model.dataError.isEmpty: focus = .folder
         case .key where !model.keyVerified || model.replacingKey: focus = .key
         case .yours: break  // the name field takes the focus itself (LauncherTextField's autofocus)
@@ -90,6 +90,8 @@ struct SetupView: View {
                 yoursPanel
             case .crash: head("Send crash reports?", "If the game crashes or stops responding, CoD2 Unbound can send this project a report of what went wrong. It is how problems on Macs like yours get found and fixed. The choice is yours.")
                 crashPanel
+            case .usage: head(UsageDataQuestion.setupTitle, UsageDataQuestion.setupDetail)
+                usagePanel
             case .ready: head("You’re ready to play", "Everything the game needs is in place.")
                 readyPanel
             }
@@ -486,7 +488,7 @@ private struct SetupBar: View {
                 Button(alternate, action: model.alternateSetup).glassAction().actionControlSize()
             }
             Button(model.setupPrimaryTitle, action: model.nextSetup)
-                .prominentAction().actionControlSize().keyboardShortcut(step == .crash ? nil : .defaultAction)
+                .prominentAction().actionControlSize().keyboardShortcut(step == .crash || step == .usage ? nil : .defaultAction)
                 .disabled(!model.setupCanContinue).focused(focus, equals: .primary)
         }
         // 36-point buttons sit 10 in from every edge of the 56-point capsule.
