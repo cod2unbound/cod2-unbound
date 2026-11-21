@@ -19,6 +19,9 @@ int MacDisplay_SetMultisample(void *context, int samples);
 void MacDisplay_SetPresentationInterval(void *context, uint32_t interval);
 #endif
 void MacDisplay_ReleaseDisplay(void);
+#if COD2_WINDOWS_NATIVE
+int MacDisplay_IsFullscreen(void);
+#endif
 void SDL_GL_SwapWindowDirect(void);
 int MacPlatform_GetRenderSize(int *width, int *height);
 void MacPlatform_GetDrawableSize(int *width, int *height);

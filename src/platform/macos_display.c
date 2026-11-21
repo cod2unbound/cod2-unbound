@@ -313,7 +313,7 @@ static int cod2xInternalMode;
 #endif
 void MacPlatform_ConfigureWindow(int width, int height, int mode, int refresh)
 {
-#if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
+#if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX && !COD2_WIN32_D3D9
     if (!cod2xInternalMode) {
         /* CoD2x: a window as large as the display becomes a borderless window
            covering it; there is no dvar for this. The lines are printed when the
@@ -592,6 +592,10 @@ static void ResolveFrameBuffer(MacContext *ctx)
  * the exclusive mode chosen by SetWindowMode. */
 void MacDisplay_FocusChanged(int focused)
 {
+    /* The native D3D9 device owns exclusive mode and its reset path. */
+#if COD2_WIN32_D3D9
+    (void)focused;
+#else
     if (!sdl_gl_window || windowMode != MAC_FULLSCREEN)
         return;
     if (!focused)
@@ -606,6 +610,7 @@ void MacDisplay_FocusChanged(int focused)
             exclusiveResumeArmed = 0;
         }
     }
+#endif
 }
 
 int MacDisplay_WindowVisible(void)
@@ -625,6 +630,7 @@ int MacDisplay_WindowState(void)
 
 void MacDisplay_PumpVisibility(void)
 {
+#if !COD2_WIN32_D3D9
     /* Mission Control briefly exposes thumbnails while animating. Latch the
      * safe desktop mode until a real focus-loss/gain pair, rather than treating
      * those exposures as a request to capture the display again. */
@@ -633,6 +639,7 @@ void MacDisplay_PumpVisibility(void)
         if (SDL_SetWindowFullscreen(sdl_gl_window, SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
             exclusiveSuspended = 1;
     }
+#endif
 }
 #endif
 
@@ -1398,7 +1405,14 @@ uint16_t MacDisplay_SetMode(int w, int h, int d, int r)
     return 0;
 }
 int MacDisplay_SetupDisplay(int w, int h) { sdl_gl_width = w; sdl_gl_height = h; return MacDisplay_Initialize(); }
-int MacDisplay_IsFullscreen(void) { return screenContext && windowMode != MAC_WINDOWED; }
+int MacDisplay_IsFullscreen(void)
+{
+#if COD2_WIN32_D3D9
+    return sdl_gl_window && windowMode == MAC_FULLSCREEN;
+#else
+    return screenContext && windowMode != MAC_WINDOWED;
+#endif
+}
 #if defined(COD2_X64) && COD2_X64
 void MacDisplay_WindowMoved(int x, int y)
 {

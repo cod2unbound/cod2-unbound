@@ -350,10 +350,15 @@ static HRESULT R_CreateDevice_impl(HWND hwnd, DWORD behavior, void *d3dpp)
             WinSleep(100);
         }
 
+#if COD2_WIN32_D3D9
+        /* A different adapter also needs a new mode and window placement. */
+        return hr;
+#else
         if (dx.adapterIndex == 0)
             return hr;
 
         dx.adapterIndex = 0;
+#endif
     }
 }
 
@@ -909,7 +914,9 @@ extern void RB_InitSceneViewport(void);
 #endif
 #if COD2_WIN32_D3D9
 extern void *Win_D3D9_Direct3DCreate9(void);
-extern void *Win_D3D9_PrepareWindow(int width, int height, int fullscreen, int refresh);
+extern int Dvar_GetInt(const char *name);
+extern unsigned Win_D3D9_SelectAdapter(void *d3d, int monitorNumber);
+extern void *Win_D3D9_PrepareWindow(void *d3d, unsigned adapter, int width, int height, int fullscreen, int refresh);
 extern void Win_D3D9_PresentParameters(const int *words, void *window, void *out);
 #endif
 #if defined(COD2_X64) && COD2_APPLE_SDK
@@ -931,7 +938,7 @@ static void R_InitNativeDeviceCaps(void)
      * provider here, before material/system initialization consumes its caps. */
     for (attempt = 0; attempt < 20; ++attempt) {
         hr = ((HRESULT(D3DVTCC *)(void *, UINT, int, void *))methods[14])(
-            d3d, 0, 1, &caps);
+            d3d, dx.adapterIndex, 1, &caps);
         if (hr >= 0)
             break;
         WinSleep(100);
@@ -982,7 +989,7 @@ static void R_InitNativeDeviceCaps(void)
     dx.hasSeparateAlphaBlend = (caps.PrimitiveMiscCaps >> 17) & 1;
     dx.hasTransparencyMsaa = r_aaSamples->current.integer != 1 &&
         ((HRESULT(D3DVTCC *)(void *, UINT, int, int, DWORD, int, int))methods[10])(
-            d3d, 0, 1, 0x15, 0, 1, 0x41415353) == 0;
+            d3d, dx.adapterIndex, 1, 0x15, 0, 1, 0x41415353) == 0;
 }
 
 #if COD2_MAC_D3D9
@@ -1222,9 +1229,22 @@ static Bool R_InitNativeHardware(void)
             return 0;
         }
     }
+#if COD2_WIN32_D3D9
+    dx.adapterIndex = Win_D3D9_SelectAdapter(dx.d3d9, Dvar_GetInt("r_monitor"));
+#else
     dx.adapterIndex = 0;
-    if (!R_InitNativeDisplayModes())
+#endif
+    if (!R_InitNativeDisplayModes()) {
+#if COD2_WIN32_D3D9
+        if (!dx.adapterIndex)
+            return 0;
+        dx.adapterIndex = 0;
+        if (!R_InitNativeDisplayModes())
+            return 0;
+#else
         return 0;
+#endif
+    }
     d3d = dx.d3d9;
     methods = *(void ***)d3d;
     for (;;) {
@@ -1246,7 +1266,7 @@ static Bool R_InitNativeHardware(void)
             DWORD qualityLevels;
             dx.multiSampleType = (D3DMULTISAMPLE_TYPE)samples;
             hr = ((HRESULT(D3DVTCC *)(void *, UINT, int, int, int, int, DWORD *))methods[11])(
-                d3d, 0, 1, 0x15, !fullscreen, samples, &qualityLevels);
+                d3d, dx.adapterIndex, 1, 0x15, !fullscreen, samples, &qualityLevels);
             if (hr >= 0) {
                 dx.multiSampleQuality = qualityLevels - 1;
                 break;
@@ -1272,7 +1292,7 @@ static Bool R_InitNativeHardware(void)
         parameters[12] = fullscreen ? refresh : 0;
 #if COD2_WIN32_D3D9
         /* Windows 1.3 creates its window, then the device on it. */
-        HWND window = (HWND)Win_D3D9_PrepareWindow(width, height, fullscreen, refresh);
+        HWND window = (HWND)Win_D3D9_PrepareWindow(d3d, dx.adapterIndex, width, height, fullscreen, refresh);
         void *presentation[16]; /* D3DPRESENT_PARAMETERS, 64 bytes on x86_64 */
         Win_D3D9_PresentParameters(parameters, window, presentation);
         hr = window ? R_CreateDevice_impl(window, 0x40, presentation) : (HRESULT)0x8876086c;
@@ -1315,6 +1335,12 @@ static Bool R_InitNativeHardware(void)
             ri.Dvar_SetInt(r_displayRefresh, r_displayRefresh->current.integer - 1);
         } else if (r_mode->current.integer > 0 && (vidConfig.width > 640 || vidConfig.height > 480)) {
             ri.Dvar_SetInt(r_mode, r_mode->current.integer - 1);
+#if COD2_WIN32_D3D9
+        } else if (dx.adapterIndex) {
+            dx.adapterIndex = 0;
+            if (!R_InitNativeDisplayModes())
+                return 0;
+#endif
         } else {
             R_FatalInitError("Couldn't initialize renderer");
             return 0;
@@ -1613,7 +1639,13 @@ Bool R_RecoverLostDevice(void)
         int testSamples = aaSamples;
         while (testSamples > 1) {
             dx.multiSampleType = (D3DMULTISAMPLE_TYPE)(testSamples);
-            hr = ((CheckMultiSample_fn)d3dVtable[11])(d3d, 0, 1, 0x15, !isFullscreen, testSamples, &qualityLevels);
+            hr = ((CheckMultiSample_fn)d3dVtable[11])(d3d,
+#if COD2_WIN32_D3D9
+                dx.adapterIndex,
+#else
+                0,
+#endif
+                1, 0x15, !isFullscreen, testSamples, &qualityLevels);
             if (hr >= 0) {
                 dx.multiSampleQuality = qualityLevels - 1;
                 goto aa_done;
@@ -1694,6 +1726,9 @@ aa_done:;
 #endif
     }
 
+#if COD2_WIN32_D3D9
+    R_SetColorMappings();
+#endif
     if (rgp.world)
         R_ReloadWorld();
 
