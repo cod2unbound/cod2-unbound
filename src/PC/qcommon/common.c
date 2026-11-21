@@ -2221,7 +2221,9 @@ BM_NOINLINE void Com_Frame_Try_Block_Function(void)
             com_lastFrameTime = com_frameTime;
         rawMsec = com_frameTime - com_lastFrameTime;
         if (rawMsec < minMsec)
-#if COD2_APPLE_SDK && defined(DEDICATED)
+#if COD2_WINDOWS_NATIVE
+            NET_Sleep(0);
+#elif COD2_APPLE_SDK && defined(DEDICATED)
             NET_Sleep(minMsec - rawMsec);
 #elif COD2_APPLE_SDK
         {

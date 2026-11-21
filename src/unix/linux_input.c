@@ -612,6 +612,16 @@ void MacInput_WaitIfMinimized(void)
 }
 #endif
 
+#if COD2_WINDOWS_NATIVE
+void WinInput_WaitIfMinimized(void)
+{
+    extern SDL_Window *sdl_gl_window;
+    extern void Win_SleepMs(unsigned int);
+    if (sdl_gl_window && (SDL_GetWindowFlags(sdl_gl_window) & SDL_WINDOW_MINIMIZED))
+        Win_SleepMs(5);
+}
+#endif
+
 void IN_Frame(void)
 {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)

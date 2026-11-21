@@ -8,6 +8,11 @@
 #include <windows.h>
 #include <shellapi.h>
 
+void Win_SleepMs(unsigned int milliseconds)
+{
+    Sleep(milliseconds);
+}
+
 uint64_t MacSystem_Nanoseconds(void)
 {
     static LARGE_INTEGER frequency;
