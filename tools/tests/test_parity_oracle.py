@@ -142,7 +142,7 @@ class OracleTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn('harness', result.stdout + result.stderr)
 
-    def record(self, extra=(), body='', helper=True, duplicate_helper=False):
+    def record(self, extra=(), body='', helper=True, duplicate_helper=False, gametype='dm'):
         binary = self.path / 'engine'
         binary.write_text('#!' + sys.executable + '\n' + '''import os
 from pathlib import Path
@@ -159,7 +159,7 @@ if 'SYSDIFF_PLAYERS' in os.environ:
             if helper:
                 # An independent minimal input for the helper-call syntax, not an extracted script.
                 line = '// thread maps\\mp\\gametypes\\_teams::addTestClients();\n'
-                archive.writestr('maps/mp/gametypes/dm.gsc', 'synthetic() {\n' +
+                archive.writestr(f'maps/mp/gametypes/{gametype}.gsc', 'synthetic() {\n' +
                                  line * (2 if duplicate_helper else 1) + '}\n')
                 archive.writestr('maps/mp/gametypes/_teams.gsc',
                                  'setup() { ent[0] thread TestClient(team); }\nTestClient(team) {\n'
@@ -189,6 +189,16 @@ Path(os.environ['SYSDIFF_USERCMDS']).write_text('cod2-replay 1\\nprivate-command
         self.assertEqual(metadata['commands_record'], 'usercmds.txt')
         self.assertIn('testclients_bootstrap', metadata)
         self.assertNotIn('private-command-data', json.dumps(metadata))
+
+    def test_record_uses_selected_stock_gametype(self):
+        result = self.record(('--players', '--clients', '2', '--gametype', 'ctf'), """
+import sys
+assert sys.argv[sys.argv.index('g_gametype') + 1] == 'ctf'
+home = Path(sys.argv[sys.argv.index('fs_homepath') + 1].strip('"'))
+assert (home / 'main/maps/mp/gametypes/ctf.gsc').is_file()
+assert not (home / 'main/maps/mp/gametypes/dm.gsc').exists()
+""", gametype='ctf')
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_replay_input_is_absolute_and_not_copied_into_metadata(self):
         replay = self.path / 'input.txt'

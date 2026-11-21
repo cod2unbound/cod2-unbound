@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static HANDLE recorder_log;
@@ -70,7 +71,8 @@ _Static_assert(sizeof(Command) == 28, "retail command layout");
 
 static FILE *commands;
 static FILE *capture;
-enum { REPLAY_TICKS = 600, REPLAY_COMMANDS = 1004 };
+static int replay_ticks, replay_commands, replay_clients;
+static int replay_seed __attribute__((used));
 static int next_frame, next_client, end_frame, injected, captured;
 static Command next_cmd;
 
@@ -184,11 +186,14 @@ static void __attribute__((used)) snapshot_tick(void)
             write_capture(ps, PLAYER_BYTES);
         }
     }
-    if (++captured == REPLAY_TICKS) {
-        if (next_frame || end_frame != LEVEL_FRAME || injected != REPLAY_COMMANDS || header[3] != 2 ||
+    if (++captured == replay_ticks) {
+        char message[128];
+        if (next_frame || end_frame != LEVEL_FRAME || injected != replay_commands || header[3] != replay_clients ||
             fclose(capture))
-            fail("Replay did not finish with all 1,004 commands and two active clients\n");
-        log_message("Retail recorder wrote 600 ticks and injected 1,004 commands\n");
+            fail("Replay did not finish with the expected end tick, commands and active clients\n");
+        snprintf(message, sizeof message, "Retail recorder wrote %d ticks and injected %d commands for %d clients\n",
+                 captured, injected, header[3]);
+        log_message(message);
         ExitProcess(0);
     }
 }
@@ -217,13 +222,26 @@ static void __attribute__((naked)) capture_game_tick(void)
 
 static void __attribute__((naked)) fixed_game_seed(void)
 {
-    __asm__("movl $12345, %esi\n\t"
+    __asm__("movl _replay_seed, %esi\n\t"
             "movl %esi, 4(%esp)\n\t"
             "pushl $0x57baa0\n\t"
             "ret");
 }
 
 static void suppress_bot_move(void) {}
+
+static int replay_setting(const char *name, int minimum, int maximum)
+{
+    char value[32], *end;
+    DWORD length = GetEnvironmentVariableA(name, value, sizeof value);
+    long long parsed;
+    if (!length || length >= sizeof value || value[0] < '0' || value[0] > '9')
+        fail("Missing or invalid retail replay setting\n");
+    parsed = strtoll(value, &end, 10);
+    if (*end || parsed < minimum || parsed > maximum)
+        fail("Retail replay setting is out of range\n");
+    return (int)parsed;
+}
 
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 {
@@ -240,6 +258,10 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
         return FALSE;
     if ((uintptr_t)GetModuleHandleA(NULL) != 0x00400000)
         fail("Retail recorder: unexpected image base\n");
+    replay_ticks = replay_setting("COD2_RETAIL_TICKS", 1, INT32_MAX);
+    replay_commands = replay_setting("COD2_RETAIL_COMMANDS", 1, INT32_MAX);
+    replay_clients = replay_setting("COD2_RETAIL_CLIENTS", 1, 64);
+    replay_seed = replay_setting("COD2_RETAIL_SEED", 0, INT32_MAX);
     redirect_call(0x45c1ff, 0x4fd1b0, capture_game_tick);
     redirect_call(0x4fc305, 0x57baa0, fixed_game_seed);
     redirect_call(0x45c525, 0x45c210, suppress_bot_move);

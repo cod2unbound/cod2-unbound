@@ -14,6 +14,8 @@ import zipfile
 
 from compare import read_players, read_trace, validate_players
 
+STOCK_GAMETYPES = ('dm', 'tdm', 'sd', 'ctf', 'hq')
+
 # A CoD2x engine asks CoD2x's own services at every start; a test points it at a local stand-in.
 os.environ.setdefault('COD2X_TEST_SERVICE_URL', 'http://127.0.0.1:9')
 os.environ.setdefault('COD2X_TEST_UPDATER_ADDRESS', '127.0.0.1:9')
@@ -28,8 +30,10 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def testclients_bootstrap(iwds):
-    """Enable the installed DM script's dormant helper without storing game script text here."""
+def testclients_bootstrap(iwds, gametype='dm', fixture_script=None):
+    """Enable the stock gametype's dormant helper using the installed archives."""
+    if gametype not in STOCK_GAMETYPES:
+        raise ValueError(f'Unsupported stock gametype: {gametype}')
     def installed(member):
         for path in reversed(iwds):
             with zipfile.ZipFile(path) as archive:
@@ -37,13 +41,18 @@ def testclients_bootstrap(iwds):
                     return archive.read(member)
         raise ValueError(f'Missing {member} for test-client helper bootstrap')
 
-    member = 'maps/mp/gametypes/dm.gsc'
+    member = f'maps/mp/gametypes/{gametype}.gsc'
     script = installed(member)
     helper = re.compile(rb'(?m)^([ \t]*)//[ \t]*(thread[ \t]+maps\\mp\\gametypes\\_teams::'
                         rb'addTestClients\(\);[ \t]*\r?)$')
-    script, count = helper.subn(rb'\1\2', script)
+    activation = rb'\1\2'
+    if fixture_script is not None:
+        activation += rb'\n\1thread oracleFixture();'
+    script, count = helper.subn(activation, script)
     if count != 1:
         raise ValueError(f'Expected exactly one commented test-client helper call; found {count}')
+    if fixture_script is not None:
+        script += b'\n' + fixture_script + b'\n'
     teams_member = 'maps/mp/gametypes/_teams.gsc'
     teams = installed(teams_member)
     # Use the gametype's normal selection callbacks directly. The dormant
@@ -79,12 +88,14 @@ def main():
     parser.add_argument('--frames', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=12345)
     parser.add_argument('--map', default='mp_toujane')
+    parser.add_argument('--gametype', choices=STOCK_GAMETYPES, default='dm')
     parser.add_argument('--timeout', type=float, default=180)
     parser.add_argument('--port', type=int, default=28960)
     parser.add_argument('--dedicated', action='store_true', help='use with a headless dedicated server binary')
     parser.add_argument('--windowed', action='store_true', help='bounded 640x480 desktop QA using timeout -k')
     parser.add_argument('--players', action='store_true', help='record raw player fields in players.txt')
     parser.add_argument('--clients', type=int, metavar='N', help='request N test clients; requires --players')
+    parser.add_argument('--fixture-script', type=Path, help='local GSC defining oracleFixture for the test clients')
     commands = parser.add_mutually_exclusive_group()
     commands.add_argument('--commands-record', action='store_true', help='record commands in usercmds.txt')
     commands.add_argument('--replay', type=Path, help='replay commands from this file')
@@ -97,6 +108,8 @@ def main():
         parser.error('expected an mp_ map name')
     if args.clients is not None and (not args.players or not 1 <= args.clients <= 64):
         parser.error('--clients requires --players and a count from 1 to 64')
+    if args.fixture_script is not None and args.clients is None:
+        parser.error('--fixture-script requires --clients')
     replay = args.replay.resolve() if args.replay else None
     if replay is not None and (not replay.is_file() or not replay.stat().st_size):
         parser.error('--replay needs a nonempty command stream')
@@ -106,7 +119,8 @@ def main():
         parser.error('need an executable binary and data/main/*.iwd')
     if any(c in str(data) + str(out) for c in '";+\n\r'):
         parser.error('paths cannot contain quotes, semicolons, + or newlines')
-    bootstrap = testclients_bootstrap(iwds) if args.clients is not None else None
+    fixture_script = args.fixture_script.read_bytes() if args.fixture_script is not None else None
+    bootstrap = testclients_bootstrap(iwds, args.gametype, fixture_script) if args.clients is not None else None
     out.mkdir(parents=True, exist_ok=False)
     home = out / 'home'
     home.mkdir()
@@ -125,9 +139,11 @@ def main():
                '+set', 'net_ip', '127.0.0.1',
                '+set', 'net_port', str(args.port),
                '+set', 'sv_fps', '20', '+set', 'fixedtime', '50',
-               '+set', 'g_gametype', 'dm']
+               '+set', 'g_gametype', args.gametype]
     if args.clients is not None:
         command += ['+set', 'scr_testclients', str(args.clients), '+set', 'sv_pure', '0']
+    if fixture_script is not None:
+        command += ['+set', 'g_logSync', '1']
     command += ['+map', args.map]
     if args.windowed:
         command[1:1] = ['+set', 'r_fullscreen', '0', '+set', 'r_mode', '640x480',
@@ -153,6 +169,8 @@ def main():
     if args.clients is not None:
         metadata['clients'] = args.clients
         metadata['testclients_bootstrap'] = [str(Path('home/main') / member) for member, _ in bootstrap]
+    if args.fixture_script is not None:
+        metadata['fixture_script_sha256'] = sha256(args.fixture_script)
     if args.commands_record:
         metadata['commands_record'] = 'usercmds.txt'
     if replay is not None:

@@ -16,9 +16,9 @@ def read_exact(stream, size):
     return data
 
 
-def records(directory):
+def records(directory, ticks=600):
     with (directory / "capture.bin").open("rb") as stream:
-        for tick in range(4, 604):
+        for tick in range(4, 4 + ticks):
             frame, time, entities, players = HEADER.unpack(read_exact(stream, HEADER.size))
             if frame != tick or not 0 < entities <= 1024 or not 0 <= players <= 64:
                 raise ValueError(f"incomplete or malformed capture at tick {tick}")
@@ -70,9 +70,13 @@ def player_line(frame, client, state):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
-    path = parser.parse_args().directory
+    parser.add_argument("--ticks", type=int, default=600)
+    args = parser.parse_args()
+    if args.ticks < 1:
+        parser.error("--ticks must be positive")
+    path = args.directory
     with (path / "statehash.txt").open("w") as states, (path / "players.txt").open("w") as players:
-        for frame, time, entity_data, player_data in records(path):
+        for frame, time, entity_data, player_data in records(path, args.ticks):
             raw = normalized = 0
             for _, state in entity_data:
                 raw = crc32(state, raw)
