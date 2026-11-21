@@ -68,5 +68,252 @@
       ]
     }
   ],
-  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+  "keys" : [
+    {
+      "display" : "",
+      "input" : "",
+      "left" : 0,
+      "normalized" : "",
+      "state" : "Blank",
+      "valid" : false
+    },
+    {
+      "display" : "0000 0000 0000 0000 86D3",
+      "input" : "0000-0000 0000-0000 86d3",
+      "left" : 0,
+      "normalized" : "000000000000000086D3",
+      "state" : "Verified",
+      "valid" : true
+    },
+    {
+      "display" : "0000 0000 0000 0000 86D0",
+      "input" : "000000000000000086D0",
+      "left" : 0,
+      "normalized" : "000000000000000086D0",
+      "state" : "Mismatch",
+      "valid" : false
+    },
+    {
+      "display" : "0000 0000 0000 0000 86D3",
+      "input" : "000000000000000086D3\n",
+      "left" : 0,
+      "normalized" : "000000000000000086D3\n",
+      "state" : "Mismatch",
+      "valid" : false
+    },
+    {
+      "display" : "0000 0000 0000 0000 86D3",
+      "input" : "000000000000000086D30",
+      "left" : 0,
+      "normalized" : "000000000000000086D30",
+      "state" : "Mismatch",
+      "valid" : false
+    },
+    {
+      "display" : "0000 0000 0000 0000 86G3",
+      "input" : "000000000000000086G3",
+      "left" : 0,
+      "normalized" : "000000000000000086G3",
+      "state" : "Mismatch",
+      "valid" : false
+    },
+    {
+      "display" : "1234 ABCZ",
+      "input" : "é😀 1234-ABcz",
+      "left" : 12,
+      "normalized" : "É😀1234ABCZ",
+      "state" : "Typing",
+      "valid" : false
+    },
+    {
+      "display" : "0000 0000 0000 0000 86D3",
+      "input" : "000000000000000086D3\u0000",
+      "left" : 0,
+      "normalized" : "000000000000000086D3\u0000",
+      "state" : "Mismatch",
+      "valid" : false
+    },
+    {
+      "display" : "SS",
+      "input" : "ß",
+      "left" : 18,
+      "normalized" : "SS",
+      "state" : "Typing",
+      "valid" : false
+    }
+  ],
+  "preferences" : [
+    {
+      "complete" : false,
+      "expected" : "",
+      "found" : null,
+      "remembered" : null
+    },
+    {
+      "complete" : true,
+      "expected" : "/old/root",
+      "found" : null,
+      "remembered" : " /old/root \n"
+    },
+    {
+      "complete" : false,
+      "expected" : "",
+      "found" : null,
+      "remembered" : " /old/root \n"
+    },
+    {
+      "complete" : true,
+      "expected" : "/valid",
+      "found" : "/valid",
+      "remembered" : "/old"
+    },
+    {
+      "complete" : true,
+      "expected" : "",
+      "found" : "",
+      "remembered" : "/old"
+    }
+  ],
+  "steam" : [
+    {
+      "amounts" : [
+        0,
+        6000000,
+        21000000,
+        21000000,
+        148000000,
+        2172000000,
+        3694596000,
+        3694596000,
+        3702000000
+      ],
+      "ids" : [
+        2631,
+        2632,
+        2633,
+        2634
+      ],
+      "language" : "english",
+      "room" : 4002000000,
+      "total" : 3702000000
+    },
+    {
+      "amounts" : [
+        0,
+        6000000,
+        21000000,
+        21000000,
+        148000000,
+        2172000000,
+        3694596000,
+        3694596000,
+        3702000000
+      ],
+      "ids" : [
+        2631,
+        2632,
+        2633,
+        2637
+      ],
+      "language" : "french",
+      "room" : 4002000000,
+      "total" : 3702000000
+    },
+    {
+      "amounts" : [
+        0,
+        6000000,
+        21000000,
+        21000000,
+        148000000,
+        2172000000,
+        3694596000,
+        3694596000,
+        3702000000
+      ],
+      "ids" : [
+        2631,
+        2632,
+        2633,
+        2636
+      ],
+      "language" : "german",
+      "room" : 4002000000,
+      "total" : 3702000000
+    },
+    {
+      "amounts" : [
+        0,
+        6000000,
+        21000000,
+        21000000,
+        148000000,
+        2172000000,
+        3694596000,
+        3694596000,
+        3702000000
+      ],
+      "ids" : [
+        2631,
+        2632,
+        2633,
+        2639
+      ],
+      "language" : "italian",
+      "room" : 4002000000,
+      "total" : 3702000000
+    },
+    {
+      "amounts" : [
+        0,
+        6000000,
+        21000000,
+        21000000,
+        148000000,
+        2172000000,
+        3694596000,
+        3694596000,
+        3702000000
+      ],
+      "ids" : [
+        2631,
+        2632,
+        2633,
+        2638
+      ],
+      "language" : "spanish",
+      "room" : 4002000000,
+      "total" : 3702000000
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c",
+  "windows" : {
+    "profiles" : [
+      {
+        "active" : true,
+        "backup" : false,
+        "name" : "Tessa",
+        "path" : "Tessa/config_mp.cfg"
+      },
+      {
+        "active" : true,
+        "backup" : true,
+        "name" : "Tessa",
+        "path" : "Tessa/Raptr/config_mp-old.cfg.bak"
+      },
+      {
+        "active" : false,
+        "backup" : false,
+        "name" : "taylor",
+        "path" : "taylor/config_mp.cfg"
+      },
+      {
+        "active" : false,
+        "backup" : true,
+        "name" : "taylor",
+        "path" : "taylor/backup/config_mp.cfg"
+      }
+    ],
+    "truncated" : true
+  }
 }

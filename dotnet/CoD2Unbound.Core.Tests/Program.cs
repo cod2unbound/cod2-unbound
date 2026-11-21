@@ -22,6 +22,8 @@ internal static partial class Program
         HostingCases();
         HostingPackageCases();
         SetupCases();
+        SetupWorkflowCases();
+        SteamCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }

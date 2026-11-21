@@ -16,7 +16,7 @@ if ! git -C "$root" diff --quiet "$revision" -- launcher \
     exit 1
 fi
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/cod2-core-parity.XXXXXX")
-trap 'rm -f "$scratch"/parity "$scratch"/setup.o "$scratch"/shaders.o "$scratch"/url.o; rmdir "$scratch"' EXIT
+trap 'rm -f "$scratch"/parity "$scratch"/SteamParityReference.swift "$scratch"/setup.o "$scratch"/shaders.o "$scratch"/url.o; rmdir "$scratch"' EXIT
 export HOME="$scratch"
 export CFFIXED_USER_HOME="$scratch"
 export LANG=en_US.UTF-8
@@ -28,6 +28,13 @@ target=arm64-apple-macos26
     -c "$root/src/platform/cod2x_native_shaders.m" -o "$scratch/shaders.o"
 /usr/bin/xcrun clang -target "$target" -isysroot "$sdk" -DCOD2_X64=1 -DCOD2_CODX=1 \
     -c "$root/src/PC/qcommon/cod2x_url.c" -o "$scratch/url.o"
+# The progress rules have no UI dependencies, but share a file with the Mac process adapter.
+awk '
+    BEGIN { print "import Foundation" }
+    /^enum SteamLanguage: / || /^struct SteamProgress: / { copy = 1 }
+    /^struct DepotToolError: / || /^\/\/\/ One run of the download tool/ { copy = 0 }
+    copy { print }
+' "$root/launcher/SteamDownload.swift" > "$scratch/SteamParityReference.swift"
 /usr/bin/xcrun swiftc -j 2 -D CORE_PARITY_TESTS -swift-version 6 -strict-concurrency=complete -warnings-as-errors -O \
     -target "$target" -sdk "$sdk" -import-objc-header "$root/tests/launcher/CoreParityBridge.h" \
     "$root/launcher/ConfigDocument.swift" "$root/launcher/ConfigCatalog.swift" \
@@ -43,6 +50,6 @@ target=arm64-apple-macos26
     "$root/tests/launcher/CoreParitySession.swift" "$root/tests/launcher/ConfigImportSessionTests.swift" \
     "$root/tests/launcher/CoreParityProfiles.swift" \
     "$root/tests/launcher/CoreParityShare.swift" "$root/tests/launcher/ConfigShareTests.swift" \
-    "$root/tests/launcher/CoreParityHosting.swift" "$root/tests/launcher/CoreParitySetup.swift" \
+    "$root/tests/launcher/CoreParityHosting.swift" "$root/tests/launcher/CoreParitySetup.swift" "$scratch/SteamParityReference.swift" \
     "$scratch/setup.o" "$scratch/shaders.o" "$scratch/url.o" -framework AppKit -lz -o "$scratch/parity"
 "$scratch/parity" "$mode" "$output" "$revision" "$root" "$scratch"

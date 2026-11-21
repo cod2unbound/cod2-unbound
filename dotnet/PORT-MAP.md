@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 117 rows, with 25 ported, 28 planned, 48 UI and 16 Apple-only.
+Coverage is 117 rows, with 29 ported, 23 planned, 1 partly ported, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -62,8 +62,8 @@ Coverage is 117 rows, with 25 ported, 28 planned, 48 UI and 16 Apple-only.
 | Core.swift · edition, discovery and renderer | Ported | `GameEdition`, `GameCapabilities`, `IGameDiscovery`, `GameBinary`, `WindowsRenderMode` |
 | Core.swift · Mac bundles and Metal | Apple-only | Installer inventory supplies Windows edition/role paths. Native Windows Direct3D 9 or DirectX 7 selection |
 | Core.swift · file and key persistence | Apple-only | Private settings writes via `ISettingsFolder`. Credential Manager and the engine's CD-key ingress via `ISecretStore` |
-| Core.swift · key normalization and checksum | Planned | Reuse engine format and checksum rules with synthetic inputs |
-| Core.swift · data-folder preference and crash selection | Planned | Remembered data path, exit outcome and crash-report selection policy |
+| Core.swift · key normalization and checksum | Ported | `CdKey` implements normalization, CRC-16 and key-field status |
+| Core.swift · data-folder preference and crash selection | Ported in part | `SetupSession.InitialDataPath` preserves an unavailable remembered folder after setup. Exit outcome and crash selection are tracked below with game lifecycle. |
 | Core.swift · release offer and checksum | Ported | `ReleasePackage`, `ReleaseOffer`, `UpdateBlock` |
 | Core.swift · bundle update | Apple-only | Signed Windows installer, publisher verification and staged update |
 | Core.swift · crash reports and CoD2x files | Planned | Consent policy, redaction, report transport, archive checksum and placement |
@@ -94,11 +94,11 @@ Coverage is 117 rows, with 25 ported, 28 planned, 48 UI and 16 Apple-only.
 | ModelSettings.swift · settings lifecycle | Planned | Reset orchestration, eligible update checks and retained state |
 | ModelSettings.swift · Mac integration | Apple-only | Installer activation, monitor modes, application folders and system information |
 | ModelSetup.swift · game-data preflight | Ported | `GameArchives` checks all 16 required archives and recovers a valid remembered or discovered root |
-| ModelSetup.swift · setup coordination and rollback | Planned | Confirmation, preferences and key handoff, setup completion and recovery ownership |
+| ModelSetup.swift · setup coordination and rollback | Ported | `SetupSession` validates confirmed data, stages key replacement, saves consent and completion, and discards unconfirmed edits on cancel |
 | ModelSetup.swift · Mac setup effects | Apple-only | Retail/Steam discovery and path validation. Windows uses the system shader compiler |
 | ModelShell.swift | UI | Status, windows, menu actions and notifications |
-| ModelSteam.swift · recovery and progress | Planned | Portable progress and restore rules if a download route is retained |
-| ModelSteam.swift · helper and UI | Apple-only | Discover Steam libraries and hand off to Steam on Windows |
+| ModelSteam.swift · recovery and progress | Ported | `SteamDownload`, `SteamAttempt` and `SteamDownloadProgress` run validation, stall, stop and resume policy over a typed downloader process and folder seam |
+| ModelSteam.swift · helper and UI | Apple-only | Windows supplies the approved Steam downloader and emits typed progress, sign-in and file events. |
 | Network.swift · query orchestration | Ported | `ServerQueryClient`, `IUdpTransport`, `UdpExchange`, `UdpReplies` |
 | Network.swift · Network.framework connection | Apple-only | Connected Windows UDP sockets and cancellation behind `IUdpTransport` |
 | PlayerCard.swift | UI | Native player card and CD-key status |
@@ -121,10 +121,18 @@ Coverage is 117 rows, with 25 ported, 28 planned, 48 UI and 16 Apple-only.
 | SetupSteamView.swift | UI | Approved Steam setup screens |
 | SetupView.swift | UI | Setup wizard, native file picker and secure entry |
 | ShellSheets.swift | UI | Shortcut, privacy and error dialogs |
-| SteamDownload.swift | Apple-only | Windows Steam installation handoff. Preserve verification only if a downloader is needed |
+| SteamDownload.swift | Apple-only | Windows selects a trusted downloader adapter. Portable depot and progress rules are in the ModelSteam row. |
 | Theme.swift | UI | Approved tokens, WinUI Fluent resources, contrast and typography |
-| WindowsProfiles.swift | Planned | Windows profile layout and import rules, with platform-specific file access |
+| WindowsProfiles.swift | Ported | `WindowsProfiles` searches only bounded named layouts and explicitly selected folders through `IWindowsProfileFiles` |
 | NativeSetup.h / NativeSetup.m · import bridge | Apple-only | Steam/retail discovery, settings root, and credentials via core seams. `LaunchLink` implements the portable URL rules |
+
+## View model contracts
+
+| Swift file | Inputs | Outputs | Events |
+| --- | --- | --- | --- |
+| ModelSetup.swift | Discovered or selected normalized game root, stored key presence, secure key entry, privacy service availability, personalization commit | Current step, archive survey and data problem, key state and stored suffix, cancel eligibility | Choose root, continue, replace/keep/skip key, save or skip personalization, answer consent, go back, cancel, finish |
+| ModelSteam.swift | Selected directory, locale, optional free space, process events, folder verification and scheduler | Offer, sign-in, code, progress, current file, estimated time, stopped/resume, missing entitlement, completed data root | Start or resume, request stop, leave setup, accept validated data |
+| WindowsProfiles.swift | Explicit volume and folder roots supplied by the adapter | Ordered profile candidates with active and backup flags, truncation, unreadable-directory count | Rescan and select a config to review through the existing import workflow |
 
 ## Copy and resources
 
