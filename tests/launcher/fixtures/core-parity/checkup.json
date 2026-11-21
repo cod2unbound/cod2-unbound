@@ -1,0 +1,2028 @@
+{
+  "cases" : [
+    {
+      "applied" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIyNTAiDQpzZXRhIG1fZmlsdGVyICIwIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMiINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCnNldGEgcl9waWNtaXBfbWFudWFsICIxIg0K",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "competitive",
+      "ids" : [
+        "zpam-4.08"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+        "CL_MOUSEACCEL"
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cg_errordecay",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hintfadetime",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudcompassmaxrange",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudcompassminradius",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudcompassminrange",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudcompasssoundpingfadetime",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudcompassspringypointers",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_huddamageiconheight",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_huddamageiconinscope",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_huddamageiconoffset",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_huddamageicontime",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_huddamageiconwidth",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadeiconheight",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadeiconinscope",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadeiconoffset",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadeiconwidth",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadepointerheight",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadepointerpivot",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudgrenadepointerwidth",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudobjectivemaxrange",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudobjectiveminalpha",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_hudobjectiveminheight",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_tracerchance",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_tracerlength",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_tracerspeed",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_tracerwidth",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_viewsize",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cg_weaponcycledelay",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_allowdownload",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_avidemo",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_bypassmouseinput",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_demoautorecordname",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_demoautorecorduploadurl",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_forceavidemo",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_freelook",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "CoD2x requires Updates you send to 125 during competitive play.",
+          "status" : "violation"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_pitchspeed",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_wwwdownload",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_yawspeed",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "status" : "violation"
+        },
+        {
+          "name" : "fixedtime",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "friction",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "fx_sort",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "g_competitive",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_enable",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "mss_q3fs",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_drawsun",
+          "reason" : "zPAM 4.08 sets Draw the sun = 0 when you join. The server controls this setting.",
+          "status" : "violation"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+          "status" : "violation"
+        },
+        {
+          "name" : "sc_enable",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "CoD2x requires Updates you receive to 40 during competitive play.",
+          "status" : "violation"
+        },
+        {
+          "name" : "wait",
+          "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+          "status" : "violation"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "movement",
+          "changes" : [
+            {
+              "name" : "com_maxfps",
+              "new" : "250",
+              "old" : "333"
+            }
+          ],
+          "id" : "competitive-frame-cap",
+          "notice" : "Your frame cap becomes 250 fps. Your Mac’s actual frame rate may be lower.",
+          "title" : "Use a frame cap allowed by these rules",
+          "why" : "These rules allow 125–250 frames per second. A cap of 250 is within that range."
+        },
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "m_filter",
+              "new" : "0",
+              "old" : "1"
+            }
+          ],
+          "id" : "unfiltered-aim",
+          "notice" : "A more direct response to each mouse movement, with the same sensitivity.",
+          "title" : "Turn off mouse smoothing",
+          "why" : "Smoothing averages two mouse movements. Turning it off uses each movement as it arrives."
+        },
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "2",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "conservative-texture-detail",
+          "notice" : "Textures become more detailed after reloading. Manual texture quality is enabled.",
+          "title" : "Use more detailed textures",
+          "why" : "zPAM’s authors warn that the lowest texture detail can give an unfair advantage. This chooses a more detailed level and keeps your other texture choices."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "unresolved" : false
+    },
+    {
+      "applied" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIwIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICIyNTAwMCINCnNldGEgc25hcHMgIjQwIg0Kc2V0YSBjbF9tYXhwYWNrZXRzICIxMjUiDQpzZXRhIHJfcGljbWlwICIyIg0Kc2V0YSByX2RyYXdTdW4gIjEiDQpzZXRhIGNnX2ZvdiAiOTAiDQpiaW5kIEYxICJ3YWl0OyArYXR0YWNrIg0Kc2V0YSByX3BpY21pcF9tYW51YWwgIjEiDQo=",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "public",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+        "CL_MOUSEACCEL"
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Matches the cited setting rules. Updates you send: use a value in the supported CoD2x range (10–125).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Matches the cited setting rules. Connection speed: use a value in the supported CoD2x range (1000–25000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Matches the cited setting rules. Updates you receive: use a value in the supported CoD2x range (1–40).",
+          "status" : "ok"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "m_filter",
+              "new" : "0",
+              "old" : "1"
+            }
+          ],
+          "id" : "unfiltered-aim",
+          "notice" : "A more direct response to each mouse movement, with the same sensitivity.",
+          "title" : "Turn off mouse smoothing",
+          "why" : "Smoothing averages two mouse movements. Turning it off uses each movement as it arrives."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "rate",
+              "new" : "25000",
+              "old" : "5000"
+            }
+          ],
+          "id" : "connection-rate",
+          "notice" : "Your download allowance for game updates becomes 25,000 bytes per second.",
+          "title" : "Allow more game updates",
+          "why" : "A connection limit of 25,000 bytes per second lets the game request its supported maximum. The server may send less."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "snaps",
+              "new" : "40",
+              "old" : "20"
+            }
+          ],
+          "id" : "connection-snapshots",
+          "notice" : "You request more frequent updates. The server determines how many arrive.",
+          "title" : "Request more server updates",
+          "why" : "Original 1.3 supports up to 30 server updates per second; CoD2x supports up to 40. This uses the value allowed by your selected rules."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "cl_maxpackets",
+              "new" : "125",
+              "old" : "30"
+            }
+          ],
+          "id" : "connection-packets",
+          "notice" : "The game can send your actions more frequently, up to the selected limit.",
+          "title" : "Send more frequent updates",
+          "why" : "Original 1.3 supports up to 100 outgoing updates per second; CoD2x supports up to 125. Your frame rate also affects how often they are sent."
+        },
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "2",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "conservative-texture-detail",
+          "notice" : "Textures become more detailed after reloading. Manual texture quality is enabled.",
+          "title" : "Use more detailed textures",
+          "why" : "zPAM’s authors warn that the lowest texture detail can give an unfair advantage. This chooses a more detailed level and keeps your other texture choices."
+        }
+      ],
+      "tune" : "balanced",
+      "undone" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "unresolved" : false
+    },
+    {
+      "applied" : null,
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "stock rules",
+      "ids" : [
+        "stock-1.3"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Matches the cited setting rules. Updates you send: use a value Original 1.3 supports (10–100).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value Original 1.3 supports (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Matches the cited setting rules. Frame rate cap: use a value Original 1.3 supports (0–1000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value Original 1.3 supports (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Matches the cited setting rules. Connection speed: use a value Original 1.3 supports (1000–25000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Matches the cited setting rules. Updates you receive: use a value Original 1.3 supports (1–30).",
+          "status" : "ok"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "m_filter",
+              "new" : "0",
+              "old" : "1"
+            }
+          ],
+          "id" : "unfiltered-aim",
+          "notice" : "A more direct response to each mouse movement, with the same sensitivity.",
+          "title" : "Turn off mouse smoothing",
+          "why" : "Smoothing averages two mouse movements. Turning it off uses each movement as it arrives."
+        },
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "cl_mouseAccel",
+              "new" : "0",
+              "old" : "2"
+            }
+          ],
+          "id" : "constant-aim-scale",
+          "notice" : "The same mouse distance produces the same turn, with the usual adjustments when aiming.",
+          "title" : "Keep mouse speed consistent",
+          "why" : "With acceleration off, moving the mouse faster does not add extra sensitivity."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "rate",
+              "new" : "25000",
+              "old" : "5000"
+            }
+          ],
+          "id" : "connection-rate",
+          "notice" : "Your download allowance for game updates becomes 25,000 bytes per second.",
+          "title" : "Allow more game updates",
+          "why" : "A connection limit of 25,000 bytes per second lets the game request its supported maximum. The server may send less."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "snaps",
+              "new" : "30",
+              "old" : "20"
+            }
+          ],
+          "id" : "connection-snapshots",
+          "notice" : "You request more frequent updates. The server determines how many arrive.",
+          "title" : "Request more server updates",
+          "why" : "Original 1.3 supports up to 30 server updates per second; CoD2x supports up to 40. This uses the value allowed by your selected rules."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "cl_maxpackets",
+              "new" : "100",
+              "old" : "30"
+            }
+          ],
+          "id" : "connection-packets",
+          "notice" : "The game can send your actions more frequently, up to the selected limit.",
+          "title" : "Send more frequent updates",
+          "why" : "Original 1.3 supports up to 100 outgoing updates per second; CoD2x supports up to 125. Your frame rate also affects how often they are sent."
+        },
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "2",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "conservative-texture-detail",
+          "notice" : "Textures become more detailed after reloading. Manual texture quality is enabled.",
+          "title" : "Use more detailed textures",
+          "why" : "zPAM’s authors warn that the lowest texture detail can give an unfair advantage. This chooses a more detailed level and keeps your other texture choices."
+        }
+      ],
+      "tune" : "balanced",
+      "undone" : null,
+      "unresolved" : false
+    },
+    {
+      "applied" : null,
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "unknown",
+      "ids" : [
+        "pam"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Unknown rules or a client-mode mismatch: compatibility is not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+
+      ],
+      "suggestions" : [
+
+      ],
+      "tune" : "competitive",
+      "undone" : null,
+      "unresolved" : false
+    },
+    {
+      "applied" : null,
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "unresolved",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCmV4ZWMgbWlzc2luZy5jZmcK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Scripts, external configs or parser diagnostics prevent a complete static review. Resolve them before applying advice.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Only direct assignments are visible; unresolved scripts or parser diagnostics prevent a policy judgment.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+
+      ],
+      "tune" : "balanced",
+      "undone" : null,
+      "unresolved" : true
+    },
+    {
+      "applied" : null,
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "texture locked",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCnNldGEgcl9waWNtaXBfbWFudWFsICIwIgo=",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+        "R_PICMIP_MANUAL"
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Matches the cited setting rules. Updates you send: use a value in the supported CoD2x range (10–125).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "status" : "ok"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Matches the cited setting rules. Connection speed: use a value in the supported CoD2x range (1000–25000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Matches the cited setting rules. Updates you receive: use a value in the supported CoD2x range (1–40).",
+          "status" : "ok"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "m_filter",
+              "new" : "0",
+              "old" : "1"
+            }
+          ],
+          "id" : "unfiltered-aim",
+          "notice" : "A more direct response to each mouse movement, with the same sensitivity.",
+          "title" : "Turn off mouse smoothing",
+          "why" : "Smoothing averages two mouse movements. Turning it off uses each movement as it arrives."
+        },
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "cl_mouseAccel",
+              "new" : "0",
+              "old" : "2"
+            }
+          ],
+          "id" : "constant-aim-scale",
+          "notice" : "The same mouse distance produces the same turn, with the usual adjustments when aiming.",
+          "title" : "Keep mouse speed consistent",
+          "why" : "With acceleration off, moving the mouse faster does not add extra sensitivity."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "rate",
+              "new" : "25000",
+              "old" : "5000"
+            }
+          ],
+          "id" : "connection-rate",
+          "notice" : "Your download allowance for game updates becomes 25,000 bytes per second.",
+          "title" : "Allow more game updates",
+          "why" : "A connection limit of 25,000 bytes per second lets the game request its supported maximum. The server may send less."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "snaps",
+              "new" : "40",
+              "old" : "20"
+            }
+          ],
+          "id" : "connection-snapshots",
+          "notice" : "You request more frequent updates. The server determines how many arrive.",
+          "title" : "Request more server updates",
+          "why" : "Original 1.3 supports up to 30 server updates per second; CoD2x supports up to 40. This uses the value allowed by your selected rules."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "cl_maxpackets",
+              "new" : "125",
+              "old" : "30"
+            }
+          ],
+          "id" : "connection-packets",
+          "notice" : "The game can send your actions more frequently, up to the selected limit.",
+          "title" : "Send more frequent updates",
+          "why" : "Original 1.3 supports up to 100 outgoing updates per second; CoD2x supports up to 125. Your frame rate also affects how often they are sent."
+        }
+      ],
+      "tune" : "bestLooking",
+      "undone" : null,
+      "unresolved" : false
+    },
+    {
+      "applied" : null,
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+        "unfiltered-aim"
+      ],
+      "id" : "dismissed",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "Ly8ga2VlcCBieXRlcw0Kc2V0YSBjb21fbWF4ZnBzICIzMzMiDQpzZXRhIG1fZmlsdGVyICIxIg0Kc2V0YSBjbF9tb3VzZUFjY2VsICIyIg0Kc2V0YSByYXRlICI1MDAwIg0Kc2V0YSBzbmFwcyAiMjAiDQpzZXRhIGNsX21heHBhY2tldHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgcl9kcmF3U3VuICIxIg0Kc2V0YSBjZ19mb3YgIjkwIg0KYmluZCBGMSAid2FpdDsgK2F0dGFjayINCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Matches the cited setting rules. Updates you send: use a value in the supported CoD2x range (10–125).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Matches the cited setting rules. Connection speed: use a value in the supported CoD2x range (1000–25000).",
+          "status" : "ok"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Matches the cited setting rules. Updates you receive: use a value in the supported CoD2x range (1–40).",
+          "status" : "ok"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "cl_mouseAccel",
+              "new" : "0",
+              "old" : "2"
+            }
+          ],
+          "id" : "constant-aim-scale",
+          "notice" : "The same mouse distance produces the same turn, with the usual adjustments when aiming.",
+          "title" : "Keep mouse speed consistent",
+          "why" : "With acceleration off, moving the mouse faster does not add extra sensitivity."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "rate",
+              "new" : "25000",
+              "old" : "5000"
+            }
+          ],
+          "id" : "connection-rate",
+          "notice" : "Your download allowance for game updates becomes 25,000 bytes per second.",
+          "title" : "Allow more game updates",
+          "why" : "A connection limit of 25,000 bytes per second lets the game request its supported maximum. The server may send less."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "snaps",
+              "new" : "40",
+              "old" : "20"
+            }
+          ],
+          "id" : "connection-snapshots",
+          "notice" : "You request more frequent updates. The server determines how many arrive.",
+          "title" : "Request more server updates",
+          "why" : "Original 1.3 supports up to 30 server updates per second; CoD2x supports up to 40. This uses the value allowed by your selected rules."
+        },
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "cl_maxpackets",
+              "new" : "125",
+              "old" : "30"
+            }
+          ],
+          "id" : "connection-packets",
+          "notice" : "The game can send your actions more frequently, up to the selected limit.",
+          "title" : "Send more frequent updates",
+          "why" : "Original 1.3 supports up to 100 outgoing updates per second; CoD2x supports up to 125. Your frame rate also affects how often they are sent."
+        },
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "2",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "conservative-texture-detail",
+          "notice" : "Textures become more detailed after reloading. Manual texture quality is enabled.",
+          "title" : "Use more detailed textures",
+          "why" : "zPAM’s authors warn that the lowest texture detail can give an unfair advantage. This chooses a more detailed level and keeps your other texture choices."
+        }
+      ],
+      "tune" : "balanced",
+      "undone" : null,
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSBjb21fbWF4ZnBzICIyNTAiCg==",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "competitive-frame-cap",
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "status" : "violation"
+        },
+        {
+          "name" : "fx_sort",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "g_competitive",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "mss_q3fs",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "sc_enable",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "wait",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "movement",
+          "changes" : [
+            {
+              "name" : "com_maxfps",
+              "new" : "250",
+              "old" : "333"
+            }
+          ],
+          "id" : "competitive-frame-cap",
+          "notice" : "Your frame cap becomes 250 fps. Your Mac’s actual frame rate may be lower.",
+          "title" : "Use a frame cap allowed by these rules",
+          "why" : "These rules allow 125–250 frames per second. A cap of 250 is within that range."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCg==",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSBtX2ZpbHRlciAiMCIK",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "unfiltered-aim",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSBtX2ZpbHRlciAiMSIK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "m_filter",
+              "new" : "0",
+              "old" : "1"
+            }
+          ],
+          "id" : "unfiltered-aim",
+          "notice" : "A more direct response to each mouse movement, with the same sensitivity.",
+          "title" : "Turn off mouse smoothing",
+          "why" : "Smoothing averages two mouse movements. Turning it off uses each movement as it arrives."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSBtX2ZpbHRlciAiMSIK",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSBjbF9tb3VzZUFjY2VsICIwIgo=",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "constant-aim-scale",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSBjbF9tb3VzZUFjY2VsICIyIgo=",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "status" : "ok"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "aim",
+          "changes" : [
+            {
+              "name" : "cl_mouseAccel",
+              "new" : "0",
+              "old" : "2"
+            }
+          ],
+          "id" : "constant-aim-scale",
+          "notice" : "The same mouse distance produces the same turn, with the usual adjustments when aiming.",
+          "title" : "Keep mouse speed consistent",
+          "why" : "With acceleration off, moving the mouse faster does not add extra sensitivity."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSBjbF9tb3VzZUFjY2VsICIyIgo=",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSByYXRlICIyNTAwMCIK",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "connection-rate",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSByYXRlICIxMCIK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "Connection speed: use a value in the supported CoD2x range (1000–25000).",
+          "status" : "violation"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "rate",
+              "new" : "25000",
+              "old" : "10"
+            }
+          ],
+          "id" : "connection-rate",
+          "notice" : "Your download allowance for game updates becomes 25,000 bytes per second.",
+          "title" : "Allow more game updates",
+          "why" : "A connection limit of 25,000 bytes per second lets the game request its supported maximum. The server may send less."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSByYXRlICIxMCIK",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSBzbmFwcyAiNDAiCg==",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "connection-snapshots",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSBzbmFwcyAiMTAiCg==",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "Matches the cited setting rules. Updates you receive: use a value in the supported CoD2x range (1–40).",
+          "status" : "ok"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "snaps",
+              "new" : "40",
+              "old" : "10"
+            }
+          ],
+          "id" : "connection-snapshots",
+          "notice" : "You request more frequent updates. The server determines how many arrive.",
+          "title" : "Request more server updates",
+          "why" : "Original 1.3 supports up to 30 server updates per second; CoD2x supports up to 40. This uses the value allowed by your selected rules."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSBzbmFwcyAiMTAiCg==",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSBjbF9tYXhwYWNrZXRzICIxMjUiCg==",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "connection-packets",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSBjbF9tYXhwYWNrZXRzICIxMCIK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "Matches the cited setting rules. Updates you send: use a value in the supported CoD2x range (10–125).",
+          "status" : "ok"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "connection",
+          "changes" : [
+            {
+              "name" : "cl_maxpackets",
+              "new" : "125",
+              "old" : "10"
+            }
+          ],
+          "id" : "connection-packets",
+          "notice" : "The game can send your actions more frequently, up to the selected limit.",
+          "title" : "Send more frequent updates",
+          "why" : "Original 1.3 supports up to 100 outgoing updates per second; CoD2x supports up to 125. Your frame rate also affects how often they are sent."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSBjbF9tYXhwYWNrZXRzICIxMCIK",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSByX3BpY21pcCAiMiIKc2V0YSByX3BpY21pcF9tYW51YWwgIjEiCg==",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "conservative-texture-detail",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSByX3BpY21pcCAiMyIK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "2",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "conservative-texture-detail",
+          "notice" : "Textures become more detailed after reloading. Manual texture quality is enabled.",
+          "title" : "Use more detailed textures",
+          "why" : "zPAM’s authors warn that the lowest texture detail can give an unfair advantage. This chooses a more detailed level and keeps your other texture choices."
+        }
+      ],
+      "tune" : "competitive",
+      "undone" : "c2V0YSByX3BpY21pcCAiMyIK",
+      "unresolved" : false
+    },
+    {
+      "applied" : "c2V0YSByX3BpY21pcCAiMCIKc2V0YSByX3BpY21pcF9tYW51YWwgIjEiCg==",
+      "dials" : [
+        {
+          "area" : "movement",
+          "unit" : "ms (p99)",
+          "value" : 8
+        },
+        {
+          "area" : "aim",
+          "unit" : "Hz",
+          "value" : null
+        },
+        {
+          "area" : "connection",
+          "unit" : "ms (ping)",
+          "value" : 42
+        },
+        {
+          "area" : "visibility",
+          "unit" : null,
+          "value" : null
+        }
+      ],
+      "dismissed" : [
+
+      ],
+      "id" : "full-texture-detail",
+      "ids" : [
+        "public-cod2x"
+      ],
+      "input" : "c2V0YSByX3BpY21pcCAiMyIK",
+      "limitations" : [
+        "Advice uses direct config values and cited code. Performance and compatibility beyond the listed rules are not assessed.",
+        "Packet loss: Not measured."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "policy" : [
+        {
+          "name" : "cl_maxpackets",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "cl_mouseaccel",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "com_maxfps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "m_filter",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "r_picmip",
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "status" : "ok"
+        },
+        {
+          "name" : "r_picmip_manual",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "rate",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        },
+        {
+          "name" : "snaps",
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "status" : "unknown"
+        }
+      ],
+      "suggestions" : [
+        {
+          "area" : "visibility",
+          "changes" : [
+            {
+              "name" : "r_picmip",
+              "new" : "0",
+              "old" : "3"
+            },
+            {
+              "name" : "r_picmip_manual",
+              "new" : "1",
+              "old" : null
+            }
+          ],
+          "id" : "full-texture-detail",
+          "notice" : "Sharper textures after reloading, potentially using more graphics memory.",
+          "title" : "Use full texture detail",
+          "why" : "Keep the highest-resolution textures available in your game data. This also enables manual texture quality and keeps your other texture choices."
+        }
+      ],
+      "tune" : "bestLooking",
+      "undone" : "c2V0YSByX3BpY21pcCAiMyIK",
+      "unresolved" : false
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

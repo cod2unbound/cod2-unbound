@@ -1,0 +1,2206 @@
+{
+  "cases" : [
+    {
+      "age" : 10,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+        "com_maxfps" : "250"
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "competitive",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIyNTAiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "compatible",
+      "requireFresh" : true,
+      "status" : "matchesKnownRules",
+      "summary" : "The directly saved values match the listed, cited rules."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+        "COM_MAXFPS"
+      ],
+      "mode" : "cod2x",
+      "name" : "locked",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : 61,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "No fresh status observation is available. Refresh before reviewing a connection fix."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "stale",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : -61,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "No fresh status observation is available. Refresh before reviewing a connection fix."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "future",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 300,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+        "com_maxfps" : "250"
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "confirmed",
+      "requireFresh" : false,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : null,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "No fresh status observation is available. Refresh before reviewing a connection fix."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "never observed",
+      "requireFresh" : false,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed.",
+          "setting" : "cl_mouseaccel",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "333 fps is unavailable here. No verified rule for this setting and target. Compatibility is not assessed.",
+          "setting" : "com_maxfps",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed.",
+          "setting" : "m_filter",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed.",
+          "setting" : "r_picmip",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed.",
+          "setting" : "r_picmip_manual",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No verified rule for this setting and target. Compatibility is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "unknown"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "The advertised rules do not match this client mode."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "name" : "wrong client",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+        "g_competitive"
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "Status and info replies advertise conflicting rule facts."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "different replies",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 2,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        },
+        {
+          "reason" : "This server disables wait. Binds that pause with wait will not work here; review the bind before joining.",
+          "setting" : "wait",
+          "status" : "violation"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+        "com_maxfps" : "250"
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIKYmluZCBNT1VTRTUgIithdHRhY2s7IHdhaXQ7IC1hdHRhY2siCg==",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "wait bind",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : 2,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIKYmluZCBNT1VTRTUgInZzdHIgc2NyaXB0Igo=",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "External configs, dynamic commands or parser diagnostics prevent a complete static review."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "dynamic bind",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 2,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "setting" : "cl_mouseaccel",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "setting" : "m_filter",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "setting" : "r_picmip",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed.",
+          "setting" : "r_picmip_manual",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "unknown"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "25000"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "25000"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzIDI1MAo=",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "missing value",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+
+      },
+      "fields" : {
+
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "No supported protocol was advertised."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "no protocol",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "protocol" : "120"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "protocol" : "120"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "CoD2x status does not advertise whether competitive rules apply."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "no competitive flag",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+        "fs_game" : "pam",
+        "protocol" : "118"
+      },
+      "fields" : {
+        "fs_game" : "pam",
+        "protocol" : "118"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "This mod has no verified policy mapping."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "name" : "unknown mod",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+        "_zpam" : "4.09",
+        "fs_game" : "zpam",
+        "g_competitive" : "1",
+        "protocol" : "120"
+      },
+      "fields" : {
+        "_zpam" : "4.09",
+        "fs_game" : "zpam",
+        "g_competitive" : "1",
+        "protocol" : "120"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "This zPAM version has no cited policy."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "unknown zpam",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+        "_zpam" : "3.36",
+        "fs_game" : "zpam408",
+        "protocol" : "120"
+      },
+      "fields" : {
+        "_zpam" : "3.36",
+        "fs_game" : "zpam408",
+        "protocol" : "120"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "The zPAM identities contradict each other."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "contradictory mod",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "protocol" : "118",
+        "sv_ruleset" : "invented"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "protocol" : "118",
+        "sv_ruleset" : "invented"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "The advertised extra ruleset has no compatible cited policy."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "name" : "extra league",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sound file system to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxrate" : "NaN"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "g_competitive" : "1",
+        "protocol" : "120",
+        "sv_fps" : "20",
+        "sv_maxRate" : "NaN"
+      },
+      "fixes" : {
+
+      },
+      "ids" : [
+        "cod2x-competitive"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip.",
+        "The advertised sv_maxrate value is not a valid nonnegative integer."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "invalid rate",
+      "requireFresh" : true,
+      "status" : "unknown",
+      "summary" : "We cannot verify this server's rules against this loadout."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "Updates you send: use a value Original 1.3 supports (10–100).",
+          "setting" : "cl_maxpackets",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value Original 1.3 supports (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Frame rate cap: use a value Original 1.3 supports (0–1000).",
+          "setting" : "com_maxfps",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value Original 1.3 supports (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Connection speed: use a value Original 1.3 supports (1000–25000).",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Updates you receive: use a value Original 1.3 supports (1–30).",
+          "setting" : "snaps",
+          "status" : "violation"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "",
+        "protocol" : "118"
+      },
+      "fields" : {
+        "fs_game" : "",
+        "protocol" : "118"
+      },
+      "fixes" : {
+        "cl_maxpackets" : "100.0",
+        "snaps" : "30.0"
+      },
+      "ids" : [
+        "stock-1.3"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "name" : "stock",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_errordecay",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hintfadetime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassmaxrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassminradius",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassminrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompasssoundpingfadetime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassspringypointers",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconinscope",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconoffset",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageicontime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconinscope",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconoffset",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerpivot",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectivemaxrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectiveminalpha",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectiveminheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerchance",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerlength",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_viewsize",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_avidemo",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_forceavidemo",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_freelook",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "zPAM 3.36 sets Updates you send = 100 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "violation"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value Original 1.3 supports (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_pitchspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_yawspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "333 fps is unavailable here. zPAM 3.36 shows a blocking HUD warning outside 125–250 fps.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "fixedtime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "friction",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. zPAM 3.36 sets Sort visual effects = 1 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. zPAM 3.36 sets Sound file system = 1 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "r_drawsun",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value Original 1.3 supports (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. zPAM 3.36 sets Connection speed = 25000 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. zPAM 3.36 sets Shadows = 0 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "zPAM 3.36 sets Updates you receive = 30 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "violation"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "zpam336",
+        "protocol" : "118"
+      },
+      "fields" : {
+        "fs_game" : "zpam336",
+        "protocol" : "118"
+      },
+      "fixes" : {
+        "com_maxfps" : "250.0"
+      },
+      "ids" : [
+        "zpam-3.36"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "stock",
+      "name" : "zpam3",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    },
+    {
+      "age" : 1,
+      "conflicts" : [
+
+      ],
+      "details" : [
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_errordecay",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hintfadetime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassmaxrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassminradius",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassminrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompasssoundpingfadetime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudcompassspringypointers",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconinscope",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconoffset",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageicontime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_huddamageiconwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconinscope",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconoffset",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadeiconwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerpivot",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudgrenadepointerwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectivemaxrange",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectiveminalpha",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_hudobjectiveminheight",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerchance",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerlength",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_tracerwidth",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_viewsize",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cg_weaponcycledelay",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_allowdownload",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_avidemo",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_bypassmouseinput",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_demoautorecordname",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_demoautorecorduploadurl",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_forceavidemo",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_freelook",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you send to 125 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_maxpackets",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Mouse acceleration: use a value in the supported CoD2x range (0.0–100.0).",
+          "setting" : "cl_mouseaccel",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_pitchspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_wwwdownload",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "cl_yawspeed",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "333 fps is unavailable here. Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+          "setting" : "com_maxfps",
+          "status" : "violation"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "fixedtime",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "friction",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Sort visual effects to 1 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "fx_sort",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "g_competitive",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "m_enable",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Choose whether to smooth mouse movement: On or Off.",
+          "setting" : "m_filter",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. zPAM 4.08 sets Sound file system = 1 when you join. The server controls this setting. The server controls this value; no temporary override is offered.",
+          "setting" : "mss_q3fs",
+          "status" : "ok"
+        },
+        {
+          "reason" : "No direct value is available. Runtime or script state is not assessed. The server controls this value; no temporary override is offered.",
+          "setting" : "r_drawsun",
+          "status" : "unknown"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Texture detail: use a value in the supported CoD2x range (0–3).",
+          "setting" : "r_picmip",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. Manual texture mode is a registered player choice; frame-time and memory effects are not measured.",
+          "setting" : "r_picmip_manual",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Connection speed to 25000 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "rate",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Shadows to 0 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "sc_enable",
+          "status" : "ok"
+        },
+        {
+          "reason" : "Matches the cited setting rules. CoD2x requires Updates you receive to 40 during competitive play. The server controls this value; no temporary override is offered.",
+          "setting" : "snaps",
+          "status" : "ok"
+        }
+      ],
+      "facts" : {
+        "fs_game" : "zpam408",
+        "g_competitive" : "1",
+        "protocol" : "120"
+      },
+      "fields" : {
+        "fs_game" : "zpam408",
+        "g_competitive" : "1",
+        "protocol" : "120"
+      },
+      "fixes" : {
+        "com_maxfps" : "250"
+      },
+      "ids" : [
+        "zpam-4.08"
+      ],
+      "input" : "c2V0YSBjb21fbWF4ZnBzICIzMzMiCnNldGEgcmF0ZSAiMjUwMDAiCnNldGEgc25hcHMgIjQwIgpzZXRhIGNsX21heHBhY2tldHMgIjEyNSIKc2V0YSBzY19lbmFibGUgIjAiCnNldGEgZnhfc29ydCAiMSIKc2V0YSBtc3NfcTNmcyAiMSIKc2V0YSBtX2ZpbHRlciAiMCIKc2V0YSBjbF9tb3VzZUFjY2VsICIwIgpzZXRhIHJfcGljbWlwICIxIgpzZXRhIHJfcGljbWlwX21hbnVhbCAiMSIK",
+      "limitations" : [
+        "Only the cited, listed config rules are checked; full match, league and live compatibility are not certified.",
+        "Frame pacing, mouse polling and packet loss: Not measured. Server status ping is a query round trip."
+      ],
+      "locks" : [
+
+      ],
+      "mode" : "cod2x",
+      "name" : "zpam4",
+      "requireFresh" : true,
+      "status" : "needsChanges",
+      "summary" : "Review the listed differences before joining."
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

@@ -1,0 +1,1446 @@
+{
+  "bindings" : [
+    {
+      "actions" : [
+        {
+          "group" : "gameUI",
+          "name" : "+activate",
+          "title" : "Use"
+        },
+        {
+          "group" : "combat",
+          "name" : "+attack",
+          "title" : "Fire"
+        },
+        {
+          "group" : "movement",
+          "name" : "+back",
+          "title" : "Move backward"
+        },
+        {
+          "group" : "combat",
+          "name" : "+binoculars",
+          "title" : "Use binoculars"
+        },
+        {
+          "group" : "movement",
+          "name" : "+forward",
+          "title" : "Move forward"
+        },
+        {
+          "group" : "combat",
+          "name" : "+frag",
+          "title" : "Throw frag grenade"
+        },
+        {
+          "group" : "movement",
+          "name" : "+gostand",
+          "title" : "Jump or stand"
+        },
+        {
+          "group" : "combat",
+          "name" : "+holdbreath",
+          "title" : "Hold breath"
+        },
+        {
+          "group" : "movement",
+          "name" : "+leanleft",
+          "title" : "Lean left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+leanright",
+          "title" : "Lean right"
+        },
+        {
+          "group" : "movement",
+          "name" : "+left",
+          "title" : "Turn left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+lookdown",
+          "title" : "Look down"
+        },
+        {
+          "group" : "movement",
+          "name" : "+lookup",
+          "title" : "Look up"
+        },
+        {
+          "group" : "combat",
+          "name" : "+melee",
+          "title" : "Melee attack"
+        },
+        {
+          "group" : "movement",
+          "name" : "+mlook",
+          "title" : "Mouse look"
+        },
+        {
+          "group" : "movement",
+          "name" : "+moveleft",
+          "title" : "Move left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+moveright",
+          "title" : "Move right"
+        },
+        {
+          "group" : "combat",
+          "name" : "+reload",
+          "title" : "Reload"
+        },
+        {
+          "group" : "movement",
+          "name" : "+right",
+          "title" : "Turn right"
+        },
+        {
+          "group" : "gameUI",
+          "name" : "+scores",
+          "title" : "Show scoreboard"
+        },
+        {
+          "group" : "combat",
+          "name" : "+smoke",
+          "title" : "Throw smoke grenade"
+        },
+        {
+          "group" : "combat",
+          "name" : "+speed",
+          "title" : "Hold aim down sights"
+        },
+        {
+          "group" : "movement",
+          "name" : "+stance",
+          "title" : "Cycle stance"
+        },
+        {
+          "group" : "movement",
+          "name" : "+strafe",
+          "title" : "Strafe modifier"
+        },
+        {
+          "group" : "movement",
+          "name" : "gocrouch",
+          "title" : "Crouch"
+        },
+        {
+          "group" : "movement",
+          "name" : "goprone",
+          "title" : "Go prone"
+        },
+        {
+          "group" : "communication",
+          "name" : "mp_QuickMessage",
+          "title" : "Quick messages"
+        },
+        {
+          "group" : "combat",
+          "name" : "toggleads",
+          "title" : "Toggle aim down sights"
+        },
+        {
+          "group" : "movement",
+          "name" : "togglecrouch",
+          "title" : "Toggle crouch"
+        },
+        {
+          "group" : "movement",
+          "name" : "toggleprone",
+          "title" : "Toggle prone"
+        },
+        {
+          "group" : "combat",
+          "name" : "weapnext",
+          "title" : "Next weapon"
+        },
+        {
+          "group" : "combat",
+          "name" : "weapprev",
+          "title" : "Previous weapon"
+        }
+      ],
+      "entries" : [
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "a"
+        },
+        {
+          "action" : null,
+          "binding" : " +attack",
+          "hasReleaseTail" : false,
+          "key" : "b"
+        },
+        {
+          "action" : null,
+          "binding" : "+forward; wait",
+          "hasReleaseTail" : true,
+          "key" : "q"
+        },
+        {
+          "action" : "+forward",
+          "binding" : "+forward",
+          "hasReleaseTail" : false,
+          "key" : "w"
+        },
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "f1"
+        },
+        {
+          "action" : null,
+          "binding" : "say hello",
+          "hasReleaseTail" : false,
+          "key" : "f3"
+        },
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "mouse1"
+        }
+      ],
+      "input" : "YmluZCBGMSAiK2F0dGFjayIKYmluZCBBICIrYXR0YWNrIgpiaW5kIHcgIitmb3J3YXJkIgpiaW5kIE1PVVNFMSAiK2F0dGFjayIKYmluZCBxICIrZm9yd2FyZDsgd2FpdCIKYmluZCBiICIgK2F0dGFjayIKYmluZCBGMyAic2F5IGhlbGxvIgo=",
+      "mode" : "stock"
+    },
+    {
+      "actions" : [
+        {
+          "group" : "gameUI",
+          "name" : "+activate",
+          "title" : "Use"
+        },
+        {
+          "group" : "combat",
+          "name" : "+attack",
+          "title" : "Fire"
+        },
+        {
+          "group" : "movement",
+          "name" : "+back",
+          "title" : "Move backward"
+        },
+        {
+          "group" : "combat",
+          "name" : "+binoculars",
+          "title" : "Use binoculars"
+        },
+        {
+          "group" : "movement",
+          "name" : "+forward",
+          "title" : "Move forward"
+        },
+        {
+          "group" : "combat",
+          "name" : "+frag",
+          "title" : "Throw frag grenade"
+        },
+        {
+          "group" : "movement",
+          "name" : "+gostand",
+          "title" : "Jump or stand"
+        },
+        {
+          "group" : "combat",
+          "name" : "+holdbreath",
+          "title" : "Hold breath"
+        },
+        {
+          "group" : "movement",
+          "name" : "+leanleft",
+          "title" : "Lean left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+leanright",
+          "title" : "Lean right"
+        },
+        {
+          "group" : "movement",
+          "name" : "+left",
+          "title" : "Turn left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+lookdown",
+          "title" : "Look down"
+        },
+        {
+          "group" : "movement",
+          "name" : "+lookup",
+          "title" : "Look up"
+        },
+        {
+          "group" : "combat",
+          "name" : "+melee",
+          "title" : "Melee attack"
+        },
+        {
+          "group" : "movement",
+          "name" : "+mlook",
+          "title" : "Mouse look"
+        },
+        {
+          "group" : "movement",
+          "name" : "+moveleft",
+          "title" : "Move left"
+        },
+        {
+          "group" : "movement",
+          "name" : "+moveright",
+          "title" : "Move right"
+        },
+        {
+          "group" : "combat",
+          "name" : "+reload",
+          "title" : "Reload"
+        },
+        {
+          "group" : "movement",
+          "name" : "+right",
+          "title" : "Turn right"
+        },
+        {
+          "group" : "gameUI",
+          "name" : "+scores",
+          "title" : "Show scoreboard"
+        },
+        {
+          "group" : "combat",
+          "name" : "+smoke",
+          "title" : "Throw smoke grenade"
+        },
+        {
+          "group" : "combat",
+          "name" : "+speed",
+          "title" : "Hold aim down sights"
+        },
+        {
+          "group" : "movement",
+          "name" : "+stance",
+          "title" : "Cycle stance"
+        },
+        {
+          "group" : "movement",
+          "name" : "+strafe",
+          "title" : "Strafe modifier"
+        },
+        {
+          "group" : "movement",
+          "name" : "gocrouch",
+          "title" : "Crouch"
+        },
+        {
+          "group" : "movement",
+          "name" : "goprone",
+          "title" : "Go prone"
+        },
+        {
+          "group" : "communication",
+          "name" : "mp_QuickMessage",
+          "title" : "Quick messages"
+        },
+        {
+          "group" : "combat",
+          "name" : "toggleads",
+          "title" : "Toggle aim down sights"
+        },
+        {
+          "group" : "movement",
+          "name" : "togglecrouch",
+          "title" : "Toggle crouch"
+        },
+        {
+          "group" : "movement",
+          "name" : "toggleprone",
+          "title" : "Toggle prone"
+        },
+        {
+          "group" : "combat",
+          "name" : "weapnext",
+          "title" : "Next weapon"
+        },
+        {
+          "group" : "combat",
+          "name" : "weapprev",
+          "title" : "Previous weapon"
+        }
+      ],
+      "entries" : [
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "a"
+        },
+        {
+          "action" : null,
+          "binding" : " +attack",
+          "hasReleaseTail" : false,
+          "key" : "b"
+        },
+        {
+          "action" : null,
+          "binding" : "+forward; wait",
+          "hasReleaseTail" : true,
+          "key" : "q"
+        },
+        {
+          "action" : "+forward",
+          "binding" : "+forward",
+          "hasReleaseTail" : false,
+          "key" : "w"
+        },
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "f1"
+        },
+        {
+          "action" : null,
+          "binding" : "say hello",
+          "hasReleaseTail" : false,
+          "key" : "f3"
+        },
+        {
+          "action" : "+attack",
+          "binding" : "+attack",
+          "hasReleaseTail" : false,
+          "key" : "mouse1"
+        }
+      ],
+      "input" : "YmluZCBGMSAiK2F0dGFjayIKYmluZCBBICIrYXR0YWNrIgpiaW5kIHcgIitmb3J3YXJkIgpiaW5kIE1PVVNFMSAiK2F0dGFjayIKYmluZCBxICIrZm9yd2FyZDsgd2FpdCIKYmluZCBiICIgK2F0dGFjayIKYmluZCBGMyAic2F5IGhlbGxvIgo=",
+      "mode" : "cod2x"
+    }
+  ],
+  "keyboard" : [
+    {
+      "number" : null,
+      "sdl" : 0
+    },
+    {
+      "number" : 127,
+      "sdl" : 8
+    },
+    {
+      "number" : 9,
+      "sdl" : 9
+    },
+    {
+      "number" : 13,
+      "sdl" : 13
+    },
+    {
+      "number" : 27,
+      "sdl" : 27
+    },
+    {
+      "number" : 32,
+      "sdl" : 32
+    },
+    {
+      "number" : 65,
+      "sdl" : 65
+    },
+    {
+      "number" : 96,
+      "sdl" : 96
+    },
+    {
+      "number" : 126,
+      "sdl" : 126
+    },
+    {
+      "number" : 162,
+      "sdl" : 127
+    },
+    {
+      "number" : null,
+      "sdl" : 300
+    },
+    {
+      "number" : 179,
+      "sdl" : 1073741928
+    },
+    {
+      "number" : 180,
+      "sdl" : 1073741929
+    },
+    {
+      "number" : 181,
+      "sdl" : 1073741930
+    },
+    {
+      "number" : 167,
+      "sdl" : 1073741882
+    },
+    {
+      "number" : 154,
+      "sdl" : 1073741906
+    },
+    {
+      "number" : 150,
+      "sdl" : 1073742051
+    },
+    {
+      "number" : null,
+      "sdl" : 1073741968
+    }
+  ],
+  "rules" : [
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : "0"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : "1"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value Original 1.3 supports (0–1000).",
+      "ruleset" : "stock-1.3",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Matches the cited setting rules. Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "ok",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame rate cap: use a value in the supported CoD2x range (0–1000).",
+      "ruleset" : "public-cod2x",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "git:048ff5e:src/PC/qcommon/common.c"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Frame caps outside 125–250 reset to 250 during CoD2x competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "com_maxfps",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L57-L61",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "CoD2x requires Connection speed to 25000 during competitive play.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "rate",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L64-L67",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "wait is disabled during competitive play while connected; demo playback is exempt.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "wait",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/mss32/competitive.cpp#L15-L29",
+        "git:048ff5e:src/PC/qcommon/cod2x_runtime.c"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "This setting is controlled by the server; its runtime value is not assessed.",
+      "ruleset" : "cod2x-competitive",
+      "setting" : "g_competitive",
+      "sources" : [
+        "https://github.com/callofduty2x/CoD2x/blob/d8c54695a5239ac99d1dfe96212b809b1a54bfee/src/shared/server.cpp#L1313-L1315"
+      ],
+      "status" : "unknown",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "Matches the cited setting rules. zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "ok",
+      "value" : "1"
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "Matches the cited setting rules. zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "ok",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "stock",
+      "owned" : true,
+      "reason" : "zPAM 3.36 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-3.36",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/0ed8a460cddaffb7de0c1b54ce115c4c8dcdcbe6/source/maps/mp/gametypes/_cvar_forces.gsc#L41"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "Matches the cited setting rules. zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "ok",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "Matches the cited setting rules. zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "ok",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : true,
+      "reason" : "zPAM 4.08 sets Tracer chance = 1 when you join. The server controls this setting.",
+      "ruleset" : "zpam-4.08",
+      "setting" : "cg_tracerChance",
+      "sources" : [
+        "https://github.com/eyza-cod2/zpam3/blob/1cfd9fb873206c35054e880ccb1d9eedaf1ec52c/source/maps/mp/gametypes/_cvar_forces.gsc#L38"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : "1"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "Archived ESL EU PunkBuster client setting requirement; other league requirements are outside this numeric policy.",
+      "ruleset" : "esl-eu-2008",
+      "setting" : "cg_fov",
+      "sources" : [
+        "https://web.archive.org/web/20080804082816id_/http://www.esl.eu:80/eu/cod2/sd/1on1/ladder/rules/"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : ""
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : "0"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : "1"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "stock",
+      "owned" : false,
+      "reason" : "WWCL V13.1 LAN numeric rule; this historical requirement does not resolve its conflict with other policies.",
+      "ruleset" : "wwcl-2007",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://web.archive.org/web/20071216093212id_/http://www.wwcl.net/downloads/rules.zip"
+      ],
+      "status" : "violation",
+      "value" : "-9999"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "No direct value is available. Runtime or script state is not assessed.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "unknown",
+      "value" : null
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : ""
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : "0"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : "1"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : " 1.0 "
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : "1.25e2"
+    },
+    {
+      "mode" : "cod2x",
+      "owned" : false,
+      "reason" : "Polish Championship 2026 prints Updates you send 100 as recommended, while required CoD2x/zPAM 4 requires 125. This contradiction is unresolved.",
+      "ruleset" : "polish-2026",
+      "setting" : "cl_maxpackets",
+      "sources" : [
+        "https://www.codmaniac.com/esport_tournament/polish-cod2-championship-1-30-31-may-2026/"
+      ],
+      "status" : "warning",
+      "value" : "-9999"
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

@@ -48,6 +48,26 @@ import Foundation
         var setup = try SetupParity.build(scratch: scratch)
         setup["swiftRevision"] = revision
         try fixture("setup", payload: setup, mode: mode, output: output)
+        var lifecycle = try LifecycleParity.build(root: root, scratch: scratch)
+        lifecycle["swiftRevision"] = revision
+        try fixture("lifecycle", payload: lifecycle, mode: mode, output: output)
+        try await fixture("checker", payload: ["swiftRevision": revision, "cases": CheckerParity.build(root: root)], mode: mode, output: output)
+        try fixture("ready", payload: ["swiftRevision": revision, "cases": ReadyParity.build(root: root)], mode: mode, output: output)
+        var library = try LibraryParity.build()
+        library["swiftRevision"] = revision
+        try fixture("library", payload: library, mode: mode, output: output)
+        var chains = try ChainsParity.build(root: root, scratch: scratch)
+        chains["swiftRevision"] = revision
+        try fixture("chains", payload: chains, mode: mode, output: output)
+        try fixture("checkup", payload: ["swiftRevision": revision, "cases": CheckupParity.build(root: root, scratch: scratch)], mode: mode, output: output)
+        try await MainActor.run {
+            var extras = try ExtrasParity.build(root: root, scratch: scratch)
+            extras["swiftRevision"] = revision
+            try fixture("extras", payload: extras, mode: mode, output: output)
+        }
+        var studio = try StudioParity.build(root: root)
+        studio["swiftRevision"] = revision
+        try fixture("studio", payload: studio, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

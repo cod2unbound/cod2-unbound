@@ -1,0 +1,949 @@
+{
+  "addresses" : [
+    {
+      "address" : "example.invalid:28960",
+      "input" : " EXAMPLE.invalid ",
+      "link" : "cod2x://%2Bconnect+example.invalid:28960/",
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : "localhost:28962",
+      "input" : "localhost:28962",
+      "link" : "cod2x://%2Bconnect+localhost:28962/",
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : "localhost:28960",
+      "input" : " connect/localhost ",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : "localhost:28961",
+      "input" : "cod2://%2Bconnect+LOCALHOST:28961/",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : "localhost:28960",
+      "input" : "cod2x://connect%20localhost%20password%20%22synthetic%22",
+      "link" : null,
+      "password" : "synthetic",
+      "problem" : null
+    },
+    {
+      "address" : null,
+      "input" : "localhost:99999",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : null,
+      "input" : "foo;exec evil",
+      "link" : null,
+      "password" : null,
+      "problem" : "Passwords can’t contain quotation marks, semicolons, backslashes or letters outside plain English."
+    },
+    {
+      "address" : null,
+      "input" : "cod2x://connect+localhost+quit/",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : null,
+      "input" : "hello/world",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    },
+    {
+      "address" : null,
+      "input" : "",
+      "link" : null,
+      "password" : null,
+      "problem" : null
+    }
+  ],
+  "artwork" : [
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQECAgABAAEAJAAAAAAAAAAAAAAAAAAAAAsWISw3Qk1Y",
+      "height" : 1,
+      "id" : "argb.iwi",
+      "rgba" : "IRYLLE1CN1g=",
+      "width" : 2
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAH+////aW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "bad-offset.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYgLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "corrupt.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQACAAIAAAAIVwAAAAAAAAAAAAAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2nzDM9kZWRiYmAEQhUGVMAtpqhj7uQbAQBQSwcIiM1LtRgAAAAkAAAAUEsBAhQDFAAIAAgAAAAhXIjNS7UYAAAAJAAAACAAAAAAAAAAAAAAAIABAAAAAGltYWdlcy9sb2Fkc2NyZWVuX21wX3RvdWphbmUuaXdpUEsFBgAAAAABAAEATgAAAGYAAAAAAA==",
+      "id" : "descriptor.iwd",
+      "image" : "SVdpBQECAgABAAEAJAAAAAAAAAAAAAAAAAAAAAsWISw3Qk1Y",
+      "validArchive" : true
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQsCAwACAAEAJAAAAAAAAAAAAAAAAAAAAAAA////////",
+      "height" : 2,
+      "id" : "dxt1-alpha.iwi",
+      "rgba" : "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "width" : 3
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQsCBAAEAAEAJAAAAAAAAAAAAAAAAAAAAAD44Afk5OTk",
+      "height" : 4,
+      "id" : "dxt1.iwi",
+      "rgba" : "/wAA/wD/AP+qVQD/VaoA//8AAP8A/wD/qlUA/1WqAP//AAD/AP8A/6pVAP9VqgD//wAA/wD/AP+qVQD/VaoA/w==",
+      "width" : 4
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQwCBAAEAAEALAAAAAAAAAAAAAAAAAAAABAyVHaYutz+APjgBwAAAAA=",
+      "height" : 4,
+      "id" : "dxt3.iwi",
+      "rgba" : "/wAAAP8AABH/AAAi/wAAM/8AAET/AABV/wAAZv8AAHf/AACI/wAAmf8AAKr/AAC7/wAAzP8AAN3/AADu/wAA/w==",
+      "width" : 4
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQ0CBAAEAAEALAAAAAAAAAAAAAAAAAAAAAoUiMb6iMb6AAD///////8=",
+      "height" : 4,
+      "id" : "dxt5-alpha.iwi",
+      "rgba" : "qqqqCqqqqhSqqqoMqqqqDqqqqhCqqqoSqqqqAKqqqv+qqqoKqqqqFKqqqgyqqqoOqqqqEKqqqhKqqqoAqqqq/w==",
+      "width" : 4
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQ0CBAAEAAEALAAAAAAAAAAAAAAAAAAAAP8AiMb6iMb6APjgBwAAAAA=",
+      "height" : 4,
+      "id" : "dxt5.iwi",
+      "rgba" : "/wAA//8AAAD/AADa/wAAtv8AAJH/AABt/wAASP8AACT/AAD//wAAAP8AANr/AAC2/wAAkf8AAG3/AABI/wAAJA==",
+      "width" : 4
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAEAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "encrypted.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAIAAAAIVxHSzLJFgAAADAAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2nzDM9kZWRgAkJGBgMGdPD//38QgYQBUEsDBBQAAAAIAAAAIVwqauzWFwAAACQAAAAhAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfY2FyZW50YW4uaXdp8wzPZOVmYmFgYWBkUGFAAz8esD8BAgBQSwMEFAAAAAgAAAAhXMiMSxgaAAAALAAAACIAAABpbWFnZXMvbG9hZHNjcmVlbl9tcF9kYXdudmlsbGUuaXdp8wzPZGVkYmJgYmBk0GFAB///M/wHEUAMBABQSwMEFAAAAAgAAAAhXNk2Wq8YAAAAFgAAAA0AAAB1bnJlbGF0ZWQudHh0C67MK8lILclMVkjLrCgpLUpVyM/LqQQAUEsBAhQDFAAAAAgAAAAhXEdLMskWAAAAMAAAACAAAAAAAAAAAAAAAIABAAAAAGltYWdlcy9sb2Fkc2NyZWVuX21wX3RvdWphbmUuaXdpUEsBAhQDFAAAAAgAAAAhXCpq7NYXAAAAJAAAACEAAAAAAAAAAAAAAIABVAAAAGltYWdlcy9sb2Fkc2NyZWVuX21wX2NhcmVudGFuLml3aVBLAQIUAxQAAAAIAAAAIVzIjEsYGgAAACwAAAAiAAAAAAAAAAAAAACAAaoAAABpbWFnZXMvbG9hZHNjcmVlbl9tcF9kYXdudmlsbGUuaXdpUEsBAhQDFAAAAAgAAAAhXNk2Wq8YAAAAFgAAAA0AAAAAAAAAAAAAAIABBAEAAHVucmVsYXRlZC50eHRQSwUGAAAAAAQABAAoAQAARwEAACoAU3ludGhldGljIFpJUCBjb21tZW50IFBLBQYgd2l0aCBubyB0cmFpbGVy",
+      "id" : "iw_09.iwd",
+      "image" : "SVdpBQEAAgACAAEAMAAAAAAAAAAAAAAAAAAAAAAA////AAD//wAA//8AAP//AAD/",
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAYwAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "method.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQEAAgACAAEAMAAAAAAAAAAAAAAAAAAAAAAA////AAD//wAA//8AAP//AAD/",
+      "height" : 2,
+      "id" : "mips.iwi",
+      "rgba" : "AAD//wAA//8AAP//AAD//w==",
+      "width" : 2
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaG1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "name-mismatch.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAD///9/IAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "oversized.iwd",
+      "image" : null,
+      "validArchive" : true
+    },
+    {
+      "archive" : false,
+      "bytes" : "SVdpBQECAgACAAEALAAAAAAAAAAAAAAAAAAAAAAA//8A/wD//wAA//////8=",
+      "height" : 2,
+      "id" : "quadrants.iwi",
+      "rgba" : "/wAA/wD/AP8AAP///////w==",
+      "width" : 2
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA",
+      "id" : "stored.iwd",
+      "image" : "SVdpBQECAgABAAEAJAAAAAAAAAAAAAAAAAAAAAsWISw3Qk1Y",
+      "validArchive" : true
+    },
+    {
+      "archive" : true,
+      "bytes" : "",
+      "id" : "truncated-0.iwd",
+      "image" : null,
+      "validArchive" : false
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAA=",
+      "id" : "truncated-197.iwd",
+      "image" : null,
+      "validArchive" : false
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAA",
+      "id" : "truncated-21.iwd",
+      "image" : null,
+      "validArchive" : false
+    },
+    {
+      "archive" : true,
+      "bytes" : "UEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYQ==",
+      "id" : "truncated-40.iwd",
+      "image" : null,
+      "validArchive" : false
+    }
+  ],
+  "cod2x" : [
+    {
+      "archive" : null,
+      "dll" : "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAFBFAABmaXh0dXJl"
+    },
+    {
+      "archive" : "UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAdWlfbXAvbWFpbi5tZW51UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLAQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAB1aV9tcC9tYWluLm1lbnVQSwECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAtAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLBQYAAAAAAgACAIcAAABnAAAAAAA=",
+      "dll" : "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAFBFAABmaXh0dXJlUEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAdWlfbXAvbWFpbi5tZW51UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLAQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAB1aV9tcC9tYWluLm1lbnVQSwECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAtAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLBQYAAAAAAgACAIcAAABnAAAAAAA="
+    },
+    {
+      "archive" : null,
+      "dll" : "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAFBFAABmaXh0dXJlUEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAdWlfbXAvbWFpbi5tZW51UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLAQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAB1aV9tcC9tYWluLm1lbnVQSwECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAtAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLBQYAAAAAAgACAIcAAABnAAAAAABQSwMEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAB1aV9tcC9tYWluLm1lbnVQSwMEAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAABtYXRlcmlhbHMvcmFkYXJfcGxheWVyX2Fycm93UEsBAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAHVpX21wL21haW4ubWVudVBLAQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAAAAC0AAABtYXRlcmlhbHMvcmFkYXJfcGxheWVyX2Fycm93UEsFBgAAAAACAAIAhwAAAGcAAAAAAA=="
+    },
+    {
+      "archive" : null,
+      "dll" : "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAFBFAABmaXh0dXJlUEsDBBQAAAAAAAAAIVyIzUu1JAAAACQAAAAgAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lJV2kFAQICAAEAAQAkAAAAAAAAAAAAAAAAAAAACxYhLDdCTVhQSwECFAMUAAAAAAAAACFciM1LtSQAAAAkAAAAIAAAAAAAAAAAAAAAgAEAAAAAaW1hZ2VzL2xvYWRzY3JlZW5fbXBfdG91amFuZS5pd2lQSwUGAAAAAAEAAQBOAAAAYgAAAAAA"
+    },
+    {
+      "archive" : null,
+      "dll" : "AA=="
+    },
+    {
+      "archive" : null,
+      "dll" : "TVoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAFBFAABmaXh0dXJlUEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAdWlfbXAvbWFpbi5tZW51UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLAQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAB1aV9tcC9tYWluLm1lbnVQSwECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAtAAAAbWF0ZXJpYWxzL3JhZGFyX3BsYXllcl9hcnJvd1BLBQYAAAAAAgACAIcAAABnAAAAAA=="
+    }
+  ],
+  "config" : [
+    {
+      "bytes" : "c2V0YSBub3BlIDAKc2V0YSByX2Z1bGxzY3JlZW4gMQo=",
+      "issues" : [
+        {
+          "blocking" : false,
+          "column" : 6,
+          "excerpt" : "nope",
+          "length" : 4,
+          "line" : 1,
+          "message" : "The game doesn’t register this setting. It keeps the line, but nothing reads it unless a mod does.",
+          "start" : 5
+        }
+      ],
+      "text" : "seta nope 0\nseta r_fullscreen 1\n"
+    },
+    {
+      "bytes" : "Ly8gQ29tbWVudA0Kc2V0YSBzZW5zaXRpdml0eSAiNQo=",
+      "issues" : [
+        {
+          "blocking" : true,
+          "column" : 18,
+          "excerpt" : "\"5",
+          "length" : 2,
+          "line" : 2,
+          "message" : "This value opens a quote but never closes it.",
+          "start" : 29
+        }
+      ],
+      "text" : "// Comment\r\nseta sensitivity \"5\n"
+    },
+    {
+      "bytes" : "c2V0YSB4IDEAcmVzdA==",
+      "issues" : [
+        {
+          "blocking" : false,
+          "column" : 6,
+          "excerpt" : "x",
+          "length" : 1,
+          "line" : 1,
+          "message" : "The game doesn’t register this setting. It keeps the line, but nothing reads it unless a mod does.",
+          "start" : 5
+        },
+        {
+          "blocking" : false,
+          "column" : 9,
+          "excerpt" : "\u0000rest",
+          "length" : 5,
+          "line" : 1,
+          "message" : "The game stops reading at an invisible NUL character here.",
+          "start" : 8
+        }
+      ],
+      "text" : "seta x 1\u0000rest"
+    },
+    {
+      "bytes" : "c2V0YSBjbF9tYXhwYWNrZXRzIDEyNQo=",
+      "issues" : [
+
+      ],
+      "text" : "seta cl_maxpackets 125\n"
+    },
+    {
+      "bytes" : null,
+      "issues" : [
+        {
+          "blocking" : true,
+          "column" : 12,
+          "excerpt" : "€",
+          "length" : 1,
+          "line" : 1,
+          "message" : "The game stores single-byte text, so this character can’t be saved.",
+          "start" : 11
+        }
+      ],
+      "text" : "seta name \"€\""
+    }
+  ],
+  "contrast" : [
+    {
+      "dark" : 0.56471825985650481,
+      "high" : 0.95999999999999996,
+      "light" : 0.57636375373162307,
+      "low" : 0
+    },
+    {
+      "dark" : 0.56270788829359097,
+      "high" : 0.94999999999999996,
+      "light" : 0.34099491794702919,
+      "low" : 0.10000000000000001
+    },
+    {
+      "dark" : 0.56864853561841389,
+      "high" : 0.97999999999999998,
+      "light" : 0.29999999999999999,
+      "low" : 0.90000000000000002
+    },
+    {
+      "dark" : 0.34999999999999998,
+      "high" : 0.029999999999999999,
+      "light" : 0.29999999999999999,
+      "low" : 1
+    }
+  ],
+  "diff" : {
+    "changes" : [
+      {
+        "after" : "40%",
+        "before" : "20%",
+        "id" : "snd_volume",
+        "label" : "Game volume"
+      },
+      {
+        "after" : "1 key changed",
+        "before" : "",
+        "id" : "binds",
+        "label" : "Key bindings"
+      },
+      {
+        "after" : "1 line changed",
+        "before" : "",
+        "id" : "other",
+        "label" : "Other lines"
+      },
+      {
+        "after" : "Added",
+        "before" : "",
+        "id" : "chain",
+        "label" : "Advanced binds"
+      }
+    ],
+    "modified" : "c2V0YSBzZW5zaXRpdml0eSAyCnNldGEgc25kX3ZvbHVtZSAwLjQKYmluZCBGMSAiK2ZvcndhcmQiCnNldGEgb3RoZXIgMAo=",
+    "original" : "c2V0YSBzZW5zaXRpdml0eSAyLjAKc2V0YSBzbmRfdm9sdW1lIDAuMgpiaW5kIEYxICIrYXR0YWNrIgo=",
+    "summary" : "Game volume 20% → 40%. Key bindings: 1 key changed. Other lines: 1 line changed. And 1 more."
+  },
+  "duration" : [
+    {
+      "result" : "0 s",
+      "seconds" : -1
+    },
+    {
+      "result" : "0 s",
+      "seconds" : 0
+    },
+    {
+      "result" : "0 s",
+      "seconds" : 0.48999999999999999
+    },
+    {
+      "result" : "1 s",
+      "seconds" : 0.5
+    },
+    {
+      "result" : "1 min",
+      "seconds" : 59.5
+    },
+    {
+      "result" : "1 min",
+      "seconds" : 90.5
+    },
+    {
+      "result" : "1 h 5 min",
+      "seconds" : 3901
+    },
+    {
+      "result" : "2562047788015215 h 30 min",
+      "seconds" : 1.0000000000000001e+300
+    }
+  ],
+  "existing" : [
+    "fast_loadout",
+    "Fast_loadout_2",
+    "Stock"
+  ],
+  "input" : [
+    {
+      "button" : 0,
+      "note" : null,
+      "position" : "right"
+    },
+    {
+      "button" : 0,
+      "note" : "That’s your left button. Click the right button. If your mouse doesn’t have one, choose I Don’t Have This Button.",
+      "position" : "right"
+    },
+    {
+      "button" : 1,
+      "note" : null,
+      "position" : "wheel"
+    },
+    {
+      "button" : -1,
+      "note" : null,
+      "position" : "back"
+    },
+    {
+      "button" : 7,
+      "note" : "Button 8: The original game can’t use it. Map it to a key in your mouse’s software.",
+      "position" : "forward"
+    },
+    {
+      "button" : 3,
+      "note" : null,
+      "position" : "extras"
+    },
+    {
+      "button" : 9,
+      "note" : "Button 10: The original game can’t use it. Map it to a key in your mouse’s software.",
+      "position" : "extras"
+    },
+    {
+      "button" : 9,
+      "note" : "Button 10: The original game can’t use it. Map it to a key in your mouse’s software.",
+      "position" : "extras"
+    },
+    {
+      "button" : -1,
+      "note" : null,
+      "position" : "done"
+    }
+  ],
+  "library" : {
+    "data" : "eyJjYWNoZSI6W3siYWRkcmVzcyI6InRlc3QuaW52YWxpZDoyODk2MCIsImZpZWxkcyI6eyJtYXBuYW1lIjoibXBfdG91amFuZSIsInByb3RvY29sIjoiMTIwIn0sInBpbmciOjQxLCJwbGF5ZXJzIjpbeyJpZCI6MCwibmFtZSI6IlN5bnRoZXRpYyIsInBpbmciOjgsInNjb3JlIjotNH1dfV0sImNhY2hlZEF0IjoxMjMuNSwiZGlzcGF0Y2hlcyI6W10sImZhdm9yaXRlcyI6WyJ0ZXN0LmludmFsaWQ6Mjg5NjAiXSwibmV3cyI6W10sIm5ld3NOZXh0Ijp7Im9wZW4iOiJjb25maWdzIiwic3RhbXAiOiJORVhUIiwic3VtbWFyeSI6IiIsInRpdGxlIjoiTmV3cyJ9LCJwbGF5ZWQiOnsicmVtb3ZlZC5pbnZhbGlkIjo0NTYsInRlc3QuaW52YWxpZDoyODk2MCI6MjM0LjV9LCJyZWNlbnQiOlsidGVzdC5pbnZhbGlkOjI4OTYwIiwib3RoZXIuaW52YWxpZDoyODk2MCJdfQ==",
+    "played" : [
+      "test.invalid:28960"
+    ]
+  },
+  "loadouts" : [
+    {
+      "id" : "Fast_loadout_3",
+      "input" : "Fast loadout"
+    },
+    {
+      "id" : "Element_z",
+      "input" : "  Élément z "
+    },
+    {
+      "id" : "Loadout",
+      "input" : "-.."
+    },
+    {
+      "id" : "Stock_2",
+      "input" : "Ｓｔｏｃｋ"
+    },
+    {
+      "id" : "two_words",
+      "input" : "two__ words"
+    },
+    {
+      "id" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "input" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "preferences" : [
+    {
+      "admits" : true,
+      "count" : 0,
+      "launched" : {
+
+      },
+      "raw" : "{}",
+      "version" : "All"
+    },
+    {
+      "admits" : false,
+      "count" : 6,
+      "launched" : {
+        "localhost:28960" : 123.5
+      },
+      "raw" : "{\"filters\":{\"version\":\"CoD2x 1.4.6.8\",\"mode\":\"tdm\",\"maxPing\":100,\"hideEmpty\":true,\"hideFull\":true,\"hidePassworded\":true},\"launchedAt\":{\"localhost:28960\":123.5}}",
+      "version" : "CoD2x 1.4.6.8"
+    },
+    {
+      "admits" : true,
+      "count" : 0,
+      "launched" : {
+
+      },
+      "raw" : "{\"filters\":{\"version\":\"new-version\",\"mode\":false,\"maxPing\":51,\"hideEmpty\":1},\"launchedAt\":{\"localhost:28960\":\"damaged\"}}",
+      "version" : "All"
+    }
+  ],
+  "session" : {
+    "launch" : "Other",
+    "main" : "Main",
+    "originalSelection" : "TWFpbg0KLy8gcmV0YWluZWQgc2VsZWN0aW9uDQo=",
+    "reserved" : true,
+    "restored" : "TWFpbg0KLy8gcmV0YWluZWQgc2VsZWN0aW9uDQo=",
+    "temporary" : "T3RoZXI="
+  },
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c",
+  "values" : [
+    {
+      "choices" : [
+
+      ],
+      "default" : "5",
+      "setting" : "sensitivity",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "0",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "1",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : true,
+          "text" : "5",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "0.75",
+          "typed" : 0.75
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "-150",
+          "typed" : -150
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "2147483648",
+          "typed" : 2147483648
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "fred",
+          "typed" : null
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "",
+          "typed" : null
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "20",
+      "setting" : "snaps",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "0 updates/s",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "1 updates/s",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : true,
+          "text" : "5 updates/s",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "0 updates/s",
+          "typed" : 0
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "-1 updates/s",
+          "typed" : -1
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "2147483648",
+          "typed" : null
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "0 updates/s",
+          "typed" : 0
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "0 updates/s",
+          "typed" : 0
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "0",
+      "setting" : "m_filter",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "Off",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : true,
+          "text" : "On",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : true,
+          "text" : "On",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "Off",
+          "typed" : 0
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : true,
+          "text" : "On",
+          "typed" : -1
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "2147483648",
+          "typed" : null
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "Off",
+          "typed" : 0
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "Off",
+          "typed" : 0
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "1",
+      "setting" : "snd_volume",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "0%",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "100%",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : true,
+          "text" : "500%",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "75%",
+          "typed" : 0.75
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "-15000%",
+          "typed" : -150
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "214748364800%",
+          "typed" : 2147483648
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "fred",
+          "typed" : null
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "",
+          "typed" : null
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "0",
+      "setting" : "r_picmip",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "Extra",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "High",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : true,
+          "text" : "5",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "Extra",
+          "typed" : 0
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "-1",
+          "typed" : -1
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "2147483648",
+          "typed" : null
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "Extra",
+          "typed" : 0
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "Extra",
+          "typed" : 0
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "",
+      "setting" : "g_password",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : 0.75
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : -150
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : 2147483648
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "Hidden",
+          "typed" : null
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "None",
+          "typed" : null
+        }
+      ]
+    },
+    {
+      "choices" : [
+
+      ],
+      "default" : "Unknown Soldier",
+      "setting" : "name",
+      "values" : [
+        {
+          "raw" : "0",
+          "same" : false,
+          "text" : "0",
+          "typed" : 0
+        },
+        {
+          "raw" : "1",
+          "same" : false,
+          "text" : "1",
+          "typed" : 1
+        },
+        {
+          "raw" : "5.000",
+          "same" : false,
+          "text" : "5.000",
+          "typed" : 5
+        },
+        {
+          "raw" : "0.75",
+          "same" : false,
+          "text" : "0.75",
+          "typed" : 0.75
+        },
+        {
+          "raw" : "-1.5e2xxx",
+          "same" : false,
+          "text" : "-1.5e2xxx",
+          "typed" : -150
+        },
+        {
+          "raw" : "2147483648",
+          "same" : false,
+          "text" : "2147483648",
+          "typed" : 2147483648
+        },
+        {
+          "raw" : "fred",
+          "same" : false,
+          "text" : "fred",
+          "typed" : null
+        },
+        {
+          "raw" : "",
+          "same" : false,
+          "text" : "Empty",
+          "typed" : null
+        }
+      ]
+    }
+  ]
+}

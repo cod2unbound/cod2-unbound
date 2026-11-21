@@ -80,7 +80,8 @@ internal static partial class Program
         Check("hosting admin queue uses only the owned loopback ports and preserves order", () =>
         {
             var fake = new HostingUdp();
-            var queue = new HostedAdminQueue(fake);
+            var clock = new AdvancingClock();
+            var queue = new HostedAdminQueue(fake, clock);
             var server = HostedServer.New("sample-host") with { AdminPassword = "safe pass" };
             var first = queue.NextMapAsync(server, () => true);
             var second = queue.KickAsync(server, new(1, "^2Test\";name", 5, 11), () => true);
@@ -89,6 +90,7 @@ internal static partial class Program
             Equal(true, first.Result);
             Equal(true, second.Result);
             Equal(false, declined.Result);
+            Equal(TimeSpan.FromMilliseconds(1100), clock.GetElapsedTime(0));
             Sequence(new[] { "rcon safepass map_rotate", "rcon safepass kick \"Testname\"" }, fake.Commands);
         });
     }
