@@ -4,3 +4,8 @@ sd mp_brecourt sd 71491 250 4
 ctf mp_carentan ctf 71491 250 4
 hq mp_dawnville hq 71491 250 4
 burgundy-actions mp_burgundy dm 71491 250 4
+ctf-objective mp_carentan ctf 71491 200 4
+hq-objective mp_dawnville hq 71491 360 4
+sd-objective mp_brecourt sd 71491 230 4
+burgundy-weapons mp_burgundy dm 71491 320 4
+toujane-terrain mp_toujane dm 71491 250 4
