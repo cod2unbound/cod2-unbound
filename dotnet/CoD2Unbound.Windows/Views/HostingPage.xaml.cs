@@ -4,6 +4,7 @@ using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
