@@ -28,6 +28,14 @@ import Foundation
         var imports = try await ImportParity.build(catalogURL: root.appendingPathComponent("launcher/Resources/ConfigCatalog.json"))
         imports["swiftRevision"] = revision
         try fixture("import", payload: imports, mode: mode, output: output)
+        let sessionScratch = scratch.appendingPathComponent("parity-import-session")
+        defer { try? FileManager.default.removeItem(at: sessionScratch) }
+        try await MainActor.run {
+            try ConfigImportSessionTests.run(root: sessionScratch, resources: root.appendingPathComponent("launcher/Resources"))
+        }
+        var session = try ImportSessionParity.build()
+        session["swiftRevision"] = revision
+        try fixture("import-session", payload: session, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

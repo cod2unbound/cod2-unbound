@@ -1,6 +1,9 @@
 import Foundation
 
-@main struct ConfigImportSessionTests {
+#if !CORE_PARITY_TESTS
+@main
+#endif
+struct ConfigImportSessionTests {
     static func require(_ value: Bool, _ message: String) {
         if !value { fatalError("FAIL: " + message) }
     }
@@ -65,6 +68,9 @@ import Foundation
     }
     @MainActor static func main() throws {
         let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["COD2_IMPORT_SESSION_SCRATCH"]!)
+        try run(root: root, resources: URL(fileURLWithPath: CommandLine.arguments[1]))
+    }
+    @MainActor static func run(root: URL, resources: URL) throws {
         let home = root.appendingPathComponent("home")
         let store = try ConfigProfileStore(homeURL: home, dialect: .cod2x)
         let original = Data("// retained bytes\r\nseta sensitivity \"2\"\r\nbind MOUSE1 \"+attack\"\r\n".utf8)
@@ -165,7 +171,7 @@ import Foundation
         rejects(ConfigProfileError.cannotPublish) { _ = try failed.apply(to: failing) }
         require(try normal.read(id: "Main").version == beforeFailure.version, "failed first write retains prior bytes")
 
-        let resource = URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathComponent("ConfigCatalog.json")
+        let resource = resources.appendingPathComponent("ConfigCatalog.json")
         let realCatalog = try ConfigCatalog(data: Data(contentsOf: resource))
         let adapter = ConfigImportCatalogAdapter(catalog: realCatalog)
         require(adapter.setting(named: "sensitivity", dialect: .cod2x)?.archived == true, "F4 archive adapter")

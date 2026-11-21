@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 114 rows, with 16 ported, 34 planned, 48 UI and 16 Apple-only.
+Coverage is 114 rows, with 17 ported, 33 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ Coverage is 114 rows, with 16 ported, 34 planned, 48 UI and 16 Apple-only.
 | ConfigImport.swift | Ported | `ConfigImportLoader`, `ConfigImportScript` and `IConfigImportFiles` implement source rules and bounded dependency discovery |
 | ConfigImportCatalogAdapter.swift | Ported | `ConfigImportCatalogAdapter` and `IConfigImportCatalog` use conservative edition-specific registration flags |
 | ConfigImportSafety.swift | Ported | `ConfigImportSafety` reviews saved command shapes, secret redaction, dependency graphs and engine limits |
-| ConfigImportSession.swift | Planned | Candidate projection, reviewed apply, import ownership and error recovery |
+| ConfigImportSession.swift | Ported | `ConfigImportSession` owns eligibility, selection, locks, composition and one-shot commit. `IConfigImportStore` supplies transactional profile ownership. Dialog layout and interaction belong to WinUI. |
 | ConfigImportView.swift | UI | Import source, review and apply dialogs |
 | ConfigLauncherModel.swift · workflows | Planned | Config Studio import and launch coordination |
 | ConfigLauncherModel.swift · dialogs | UI | Open, drop, paste and confirmation flows |

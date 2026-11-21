@@ -71,6 +71,7 @@ work. Windows adapters should supply the following services.
 | `IConfigDirectoryStorage` | Use a user-private `FOLDERID_LocalAppData` subdirectory. Hold a cross-process `LockFileEx` lease across read, compare, discard and publish. Check every path component and final handle using `CreateFileW` with `FILE_FLAG_OPEN_REPARSE_POINT` and handle metadata. Refuse reparse points, directories in file slots and non-private paths. Stage writes on the same volume, flush them and publish with `ReplaceFileW` or a same-directory move for a new file. Test junction and symlink substitution, competing refreshes, process termination during publish, ACLs and corrupt-cache recovery as a standard user on NTFS. |
 | `IConfigTextFetcher` | Use a .NET 10 `HttpClient` with manual redirect validation, response headers first and bounded streaming. Disable cookies and ambient credentials. Preserve response identity and classify cancellation, policy failures and connectivity separately. Test exact-size and oversized declared/chunked bodies, refused redirects, cancellation, timeout, and cache fallback on a Windows PC against a local stand-in. |
 | `IConfigImportFiles` | Resolve the selected file or folder, then read regular files relative to that root with bounded streams. Use `CreateFileW` and handle metadata to refuse reparse-point escapes, alternate data streams and Win32 device names, including paths that change during validation. Test file selection, nested files, substituted junctions and symlinks, oversized files, inaccessible files and an NTFS root with spaces and Unicode. |
+| `IConfigImportStore` | Hold the launcher session's draft and engine ownership interlocks and the profile store lease during version comparison and transactional commit. Preserve `active.txt` and return the receipt of an already-published import. Test two launcher processes, a game save racing an import, an unsaved draft, and a failed write followed by retry. |
 | `ISecretStore` | Use user-scoped Credential Manager entries for the CD key and remembered server passwords. Route a key to the engine through its Windows key contract and keep credentials out of logs and process arguments. |
 | `IGameFiles` | Resolve validated relative paths under the selected engine home and verify regular files without traversing junctions or symlinks. |
 | `IGameDiscovery` | Read the installer inventory for client and dedicated executables by edition. Discover licensed retail data and Steam libraries using Windows registry views and Steam's library records, then validate the archive set. |
@@ -91,7 +92,11 @@ capture need redaction. [CreateProcessW](https://learn.microsoft.com/windows/win
 
 The catalogue accepts only the trusted index and signature responses and
 verifies the original index bytes. Its profile fetch passes the signed bytes through the import loader and retains
-provenance. Dependencies referenced by a signed profile remain unresolved. The stored trust fields identify the cache and the
+provenance. Dependencies referenced by a signed profile remain unresolved.
+Construct a `ConfigImportSession` with the setup's source platform and the launcher's
+destination platform. Windows uses `ConfigImportPlatform.Windows` for its destination.
+The session re-reviews the composed config, prevents overlapping applies, and
+hands one compare-and-commit request to its store. The stored trust fields identify the cache and the
 configured public key provides authority. A network outage can use a reverified
 copy. A valid response may repeat a revision only if the original bytes match.
 [Reparse points](https://learn.microsoft.com/windows/win32/fileio/reparse-points-and-file-operations)
