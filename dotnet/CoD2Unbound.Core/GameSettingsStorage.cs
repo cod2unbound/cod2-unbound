@@ -50,6 +50,11 @@ public static class GameSettingsJson
             }, lenient: true),
             SendCrashReports = Read("sendCrashReports", defaults.SendCrashReports, value => value.GetBoolean(), lenient: true),
             SendCoD2xReports = Read("sendCoD2xReports", defaults.SendCoD2xReports, value => value.GetBoolean(), lenient: true),
+            SendUsageData = Read("sendUsageData", false, value => value.GetBoolean(), lenient: true),
+            WindowsRenderer = Known<WindowsRenderMode?>("windowsRenderer", null, value => value switch
+            {
+                "Direct3D9" => WindowsRenderMode.Direct3D9, "DirectX7" => WindowsRenderMode.DirectX7, _ => null
+            }),
             CrashReportsAsked = Read("crashReportsAsked", defaults.CrashReportsAsked, value => value.GetBoolean(), lenient: true),
             HideWhilePlaying = Read("hideWhilePlaying", defaults.HideWhilePlaying, value => value.GetBoolean(), lenient: true),
             Appearance = Known("appearance", defaults.Appearance, value => value switch

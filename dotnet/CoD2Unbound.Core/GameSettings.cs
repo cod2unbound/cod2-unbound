@@ -44,6 +44,10 @@ public sealed partial record GameSettings
     public int RenderScale { get; init; } = 100;
     public bool SendCrashReports { get; init; }
     public bool SendCoD2xReports { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool SendUsageData { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WindowsRenderMode? WindowsRenderer { get; init; }
     public bool CrashReportsAsked { get; init; }
     public bool HideWhilePlaying { get; init; } = true;
     public LauncherAppearance Appearance { get; init; } = LauncherAppearance.System;

@@ -12,6 +12,11 @@
             <SolidColorBrush x:Key="FavoriteBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="BodyBrush" Color="#ECE6D6" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#A9A28F" />
+            <SolidColorBrush x:Key="NegativeBrush" Color="#FF7A6B" />
+            <SolidColorBrush x:Key="SelectorBarSelectionIndicatorForeground" Color="#C99A4C" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#C99A4C" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#C99A4C" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#C99A4C" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#F3ECDC" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#0D0F0C" />
             <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#C99A4C" />
@@ -36,6 +41,11 @@
             <SolidColorBrush x:Key="FavoriteBrush" Color="#55622F" />
             <SolidColorBrush x:Key="BodyBrush" Color="#26251D" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#615E51" />
+            <SolidColorBrush x:Key="NegativeBrush" Color="#B3261E" />
+            <SolidColorBrush x:Key="SelectorBarSelectionIndicatorForeground" Color="#55622F" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#55622F" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#55622F" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#55622F" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#1F1E17" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#EFE8D8" />
             <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#55622F" />
@@ -60,6 +70,11 @@
             <SolidColorBrush x:Key="FavoriteBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="BodyBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="CaptionBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="NegativeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SelectorBarSelectionIndicatorForeground" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource SystemColorHighlightColor}" />

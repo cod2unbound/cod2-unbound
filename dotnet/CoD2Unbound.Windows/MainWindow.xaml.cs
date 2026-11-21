@@ -23,6 +23,10 @@ public sealed partial class MainWindow : Window
     private double sizedAtScale;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer gameWatcher;
     private GameSessionState? lastGame;
+    private bool minimizedForGame;
+    private bool flushedForClose;
+    private DateTimeOffset? attemptedUpdate;
+    private readonly DateTimeOffset firstUpdate = DateTimeOffset.UtcNow.AddSeconds(8);
 
     public MainWindow()
     {
@@ -36,6 +40,8 @@ public sealed partial class MainWindow : Window
         gameWatcher = DispatcherQueue.CreateTimer();
         gameWatcher.Interval = TimeSpan.FromSeconds(1);
         gameWatcher.Tick += OnWatchGame;
+        session.ClientStarted += OnClientStarted;
+        AppWindow.Closing += OnClosing;
         Closed += (_, _) =>
         {
             gameWatcher.Stop();
@@ -201,13 +207,49 @@ public sealed partial class MainWindow : Window
         else if (place == LauncherPlace.Servers)
         {
             Nav.SelectedItem = ServersItem;
-            ContentFrame.Content = new ServersPage(this, session, scope, address);
+            var page = new ServersPage(this, session, scope, address);
+            ContentFrame.Content = page;
+            if (session.Settings.Working.RefreshServersOnOpen)
+                page.Loaded += OnServersLoaded;
         }
         else
         {
             Nav.SelectedItem = Nav.SettingsItem;
             ContentFrame.Content = new SettingsPage(this, session);
         }
+    }
+
+    private async void OnServersLoaded(object sender, RoutedEventArgs args)
+    {
+        var page = (ServersPage)sender;
+        page.Loaded -= OnServersLoaded;
+        // Yield until the navigation action releases the shell.
+        await Task.Yield();
+        if (ReferenceEquals(ContentFrame.Content, page))
+            await page.RefreshAsync();
+    }
+
+    private void OnClientStarted()
+    {
+        if (session.Settings.Working.HideWhilePlaying && AppWindow.Presenter is OverlappedPresenter presenter &&
+            presenter.State != OverlappedPresenterState.Minimized)
+        {
+            minimizedForGame = true;
+            presenter.Minimize();
+        }
+    }
+
+    private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (flushedForClose || !loaded || session.Settings is null || session.Settings.Saved == session.Settings.Working)
+            return;
+        args.Cancel = true;
+        await ShowProblemAsync(async () =>
+        {
+            await session.Settings.FlushAsync();
+            flushedForClose = true;
+            Close();
+        });
     }
 
     internal async Task RefreshPlayerAsync()
@@ -245,6 +287,21 @@ public sealed partial class MainWindow : Window
         {
             await session.Game.ReconcileAsync();
             var state = session.Game.State;
+            if (!state.Running && minimizedForGame)
+            {
+                minimizedForGame = false;
+                if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+                    presenter.Restore();
+            }
+            var now = DateTimeOffset.UtcNow;
+            if (session.TestMaster is null && session.Settings.Working.CheckUpdatesAutomatically && now >= firstUpdate &&
+                LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
+            {
+                attemptedUpdate = now;
+                await session.CheckUpdatesAsync(automatic: true);
+                if (ContentFrame.Content is SettingsPage settings)
+                    settings.RefreshUpdates();
+            }
             if (lastGame?.Running == state.Running && lastGame.LastExit == state.LastExit)
                 return;
             lastGame = state;
@@ -278,17 +335,19 @@ public sealed partial class MainWindow : Window
         busy = true;
         if (clearProblem)
             Problem.IsOpen = false;
-        try
-        {
-            await action();
-        }
+        try { await ShowProblemAsync(action); }
+        finally { busy = false; }
+    }
+
+    internal async Task ShowProblemAsync(Func<Task> action)
+    {
+        try { await action(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
             or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException)
         {
             Problem.Message = error.Message;
             Problem.IsOpen = true;
         }
-        finally { busy = false; }
     }
 
 }

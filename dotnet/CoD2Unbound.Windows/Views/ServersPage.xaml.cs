@@ -141,7 +141,7 @@ public sealed partial class ServersPage : Page
 
     private async void OnRefresh(object sender, RoutedEventArgs args) => await RefreshAsync();
 
-    private async Task RefreshAsync()
+    internal async Task RefreshAsync()
     {
         if (refreshing is { } active)
         {

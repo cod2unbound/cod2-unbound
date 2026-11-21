@@ -30,7 +30,4 @@ internal sealed class SettingsViewModel(WindowsLauncherSession session)
     }
 
     internal WindowsRenderMode Renderer => session.Renderer;
-    internal Task SetRendererAsync(WindowsRenderMode renderer) => session.SetRendererAsync(renderer);
-
-    internal Task SaveSettingsAsync(GameSettings choice) => session.UpdateSettingsAsync(choice);
 }

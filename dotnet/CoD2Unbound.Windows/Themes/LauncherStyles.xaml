@@ -17,6 +17,12 @@
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <Style x:Key="NegativeText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
+        <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
+    </Style>
+    <Style x:Key="NegativeButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
+    </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />

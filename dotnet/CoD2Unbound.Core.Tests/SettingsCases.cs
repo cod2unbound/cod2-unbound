@@ -68,6 +68,18 @@ internal static partial class Program
             });
         }
         Check("settings storage private seam", () => SettingsStorage().GetAwaiter().GetResult());
+        Check("optional launcher settings round trip and reset", () =>
+        {
+            var legacy = GameSettingsJson.Decode("{}"u8.ToArray());
+            Equal(false, legacy.SendUsageData);
+            Equal<WindowsRenderMode?>(null, legacy.WindowsRenderer);
+            var edited = legacy with { SendUsageData = true, WindowsRenderer = WindowsRenderMode.DirectX7 };
+            var restored = GameSettingsJson.Decode(GameSettingsJson.Encode(edited));
+            Equal(true, restored.SendUsageData);
+            Equal<WindowsRenderMode?>(WindowsRenderMode.DirectX7, restored.WindowsRenderer);
+            Equal(false, restored.Reset(new()).SendUsageData);
+            Equal<WindowsRenderMode?>(null, restored.Reset(new()).WindowsRenderer);
+        });
         Check("stream archive SHA-256 verification", () =>
         {
             byte[] input = "archive fixture"u8.ToArray();

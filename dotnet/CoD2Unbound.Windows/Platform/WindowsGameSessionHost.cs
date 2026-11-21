@@ -34,7 +34,9 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
                 request.Edition == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock, cancellationToken).ConfigureAwait(false);
             if (profile is { } loadout)
                 request = request with { Studio = loadout.Studio, Loadout = loadout.Values };
-            var plan = WindowsLaunchPlan.Client(request, binary, home, renderer(), files);
+            // The Settings switch records consent. Windows reporting ships separately.
+            var plan = WindowsLaunchPlan.Client(request with { Settings = request.Settings with { SendCoD2xReports = false } },
+                binary, home, renderer(), files);
             return new Reservation(plan, lease, profileLease, saveIntro);
         }
         catch

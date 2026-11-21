@@ -19,9 +19,11 @@ internal sealed class WindowsLauncherSession
     internal ServerBrowserPreferences ServerPreferences { get; private set; } = ServerBrowserPreferences.Default;
     internal ServerBrowser Browser { get; }
     internal LauncherLibrary Library { get; private set; } = new();
-    internal WindowsRenderMode Renderer { get; private set; }
+    internal WindowsRenderMode Renderer => Settings.Working.WindowsRenderer ?? WindowsRenderMode.Direct3D9;
+    internal LauncherUpdates Updates { get; }
     private const string RendererFile = "windows-renderer.txt";
     internal string HomePath => gameFolder.Root;
+    internal event Action? ClientStarted;
 
     internal WindowsLauncherSession()
     {
@@ -38,6 +40,8 @@ internal sealed class WindowsLauncherSession
             TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
         ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
+        Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
+            Version, version => $"CoD2-Unbound-{version}-Windows-x64.exe", TimeZoneInfo.Local);
     }
 
     internal LauncherSettingsSession Settings { get; private set; } = null!;
@@ -53,10 +57,14 @@ internal sealed class WindowsLauncherSession
         }
         Library = await LauncherLibrary.LoadAsync(folder);
         ServerPreferences = await ServerBrowserPreferences.LoadAsync(folder);
-        Renderer = await folder.ReadAsync(RendererFile, default) is { } renderer &&
-            renderer.AsSpan().SequenceEqual("dx7\n"u8) ? WindowsRenderMode.DirectX7 : WindowsRenderMode.Direct3D9;
         var storage = new GameSettingsStorage(folder);
         Settings = new LauncherSettingsSession(await storage.ReadAsync(), storage, TimeProvider.System);
+        if (await folder.ReadAsync(RendererFile, default) is { } renderer)
+        {
+            if (Settings.Working.WindowsRenderer is null && renderer.AsSpan().SequenceEqual("dx7\n"u8))
+                await UpdateSettingsAsync(Settings.Working with { WindowsRenderer = WindowsRenderMode.DirectX7 });
+            await folder.DeleteAsync(RendererFile, default);
+        }
         SetupComplete = await folder.ReadAsync(SetupSession.CompletionFile, default) is not null;
         string? remembered = await folder.ReadAsync(SetupSession.DataPathFile, default) is { } path
             ? Encoding.UTF8.GetString(path.AsSpan()).Trim()
@@ -97,6 +105,21 @@ internal sealed class WindowsLauncherSession
     internal Task<SetupSession> ChangeGameDataAsync() => CreateSetupAsync(Setup.DataPath, Setup.HasStoredKey, SetupStep.Data);
 
     internal void SetGameData(string path) => Setup.ChooseData(path);
+    internal async ValueTask<string?> KeyEndingAsync() =>
+        SetupSession.KeyTail(await credentials.ReadAsync(SetupSession.KeySecret, default));
+
+    internal async Task<bool> ReplaceKeyAsync(string key)
+    {
+        var change = new SetupSession(files, folder, credentials, Setup.DataPath, Setup.HasStoredKey, step: SetupStep.Key);
+        change.ReplaceKey();
+        if (!await change.ContinueAsync(key))
+            return false;
+        Setup = new SetupSession(files, folder, credentials, Setup.DataPath, change.HasStoredKey, step: Setup.Step);
+        return true;
+    }
+
+    internal Task DeleteMatchHistoryAsync() => gameFolder.DeleteAsync("main/stats/matches.jsonl", default).AsTask();
+    internal string LogsPath => Path.Join(folder.Root, "logs");
     internal void FinishSetup() => SetupComplete = Setup.Step == SetupStep.Complete;
 
     internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
@@ -135,18 +158,63 @@ internal sealed class WindowsLauncherSession
     internal bool HasClient(GameEdition edition) =>
         inventory.Installed.Any(binary => binary is { Role: EngineRole.Client } && binary.Edition == edition);
 
-    internal Task<GameStartState> LaunchAsync(LaunchLink? link = null, GameEdition? edition = null)
+    internal async Task<GameStartState> LaunchAsync(LaunchLink? link = null, GameEdition? edition = null, string? demo = null)
     {
         var settings = Settings.Working;
-        var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link };
-        return Game.StartAsync(request, SetupComplete);
+        var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo };
+        var start = await Game.StartAsync(request, SetupComplete);
+        if (start == GameStartState.Started)
+            ClientStarted?.Invoke();
+        return start;
     }
 
-    internal async Task SetRendererAsync(WindowsRenderMode renderer)
+    internal async Task<string?> ReadLatestLogAsync()
     {
-        await folder.WriteAsync(RendererFile, renderer == WindowsRenderMode.DirectX7 ? [.. "dx7\n"u8] : [.. "dx9\n"u8], default);
-        Renderer = renderer;
+        if (!Directory.Exists(LogsPath))
+            return null;
+        using var root = new WindowsFiles.DirectoryHandles(LogsPath);
+        var log = new DirectoryInfo(LogsPath).EnumerateFiles("*.log")
+            .Where(file => (file.Attributes & FileAttributes.ReparsePoint) == 0)
+            .OrderByDescending(file => file.LastWriteTimeUtc).FirstOrDefault();
+        if (log is null)
+            return null;
+        using var input = WindowsFiles.Open(LogsPath, log.Name);
+        input.Seek(Math.Max(0, input.Length - 256 * 1024), SeekOrigin.Begin);
+        using var text = new StreamReader(input);
+        return await text.ReadToEndAsync();
     }
+
+    internal Task SetRendererAsync(WindowsRenderMode renderer) =>
+        UpdateSettingsAsync(Settings.Working with { WindowsRenderer = renderer });
+
+    internal async Task<AdvancedSettingsReview> ReviewAdvancedAsync(string draft, GameSettings candidate)
+    {
+        var profile = await ConfigProfileStore.ReadActiveForLaunchAsync(gameFolder,
+            candidate.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock);
+        string data = Setup.DataPath.Length == 0 ? HomePath : Setup.DataPath;
+        return AdvancedSettings.Inspect(candidate, draft, profile is not null, settings =>
+        {
+            try
+            {
+                var request = new ClientLaunchRequest(settings.Engine, settings, data, HomePath)
+                    { Studio = profile?.Studio, Loadout = profile?.Values };
+                _ = WindowsLaunchPlan.Client(request, new(settings.Engine, EngineRole.Client, "cod2_win32.exe"),
+                    HomePath, settings.WindowsRenderer ?? WindowsRenderMode.Direct3D9, files);
+                return null;
+            }
+            catch (LaunchPlanException error) { return error.Message; }
+        });
+    }
+
+    internal async Task CheckUpdatesAsync(bool automatic, CancellationToken cancellationToken = default)
+    {
+        var result = await Updates.CheckAsync(Library, automatic, cancellationToken);
+        var next = result.Library;
+        if (next.DispatchesCheckedAt != Library.DispatchesCheckedAt)
+            await SaveLibraryAsync(Library with { Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt });
+    }
+
+    internal bool CanCheckUpdates => TestMaster is null || WindowsReleaseSource.Fixture is not null;
 
     internal async Task SaveFiltersAsync(ServerFilters filters)
     {
