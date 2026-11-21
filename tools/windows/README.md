@@ -155,3 +155,14 @@ To check sound with no audio hardware, send it to a file with `SDL_AUDIODRIVER=d
 
 `-DCOD2_WIN32_LEGACY=ON` builds the non-`COD2_X64` branches with the 32-bit data blobs. It links and
 boots, but compiles stale logic: collision, menus, HUD and more differ from Windows 1.3.
+
+## Windows 11 x64 releases
+
+From a clean checkout, run `COD2_WINDOWS_COMPANY='Publisher name' tools/windows/release.sh layout`.
+This stages both dedicated servers and both system Direct3D 9 clients under the
+printed release directory's `layout`. The binaries retain the DirectX 7
+renderer preference. The script uses the local release build image by content
+ID. `COD2_WINDOWS_JOBS` defaults to 3. Read
+[Windows release and update notes](../../docs/windows-release.md) for the
+headless compiler, test and production signing modes, and an offline Wine
+install check.
