@@ -58,9 +58,11 @@ public sealed partial record ConfigStudioLaunch(string ProfileId, string? Chain 
 
     internal static void ValidateProfileId(string profileId)
     {
-        if (!ProfileIdPattern().IsMatch(profileId))
+        if (!IsProfileId(profileId))
             throw new LaunchPlanException("The loadout identifier is invalid.");
     }
+
+    internal static bool IsProfileId(string profileId) => ProfileIdPattern().IsMatch(profileId);
 
     [GeneratedRegex(@"\A[A-Za-z0-9][A-Za-z0-9_.-]{0,40}\z", RegexOptions.CultureInvariant)]
     private static partial Regex ProfileIdPattern();

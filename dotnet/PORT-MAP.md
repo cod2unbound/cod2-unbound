@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 114 rows, with 17 ported, 33 planned, 48 UI and 16 Apple-only.
+Coverage is 115 rows, with 21 ported, 30 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -27,7 +27,7 @@ Coverage is 114 rows, with 17 ported, 33 planned, 48 UI and 16 Apple-only.
 | ConfigDiscoverModel.swift · dialogs | UI | File and link handling, navigation and feedback |
 | ConfigDiscoverView.swift | UI | Player Setups directory and result views |
 | ConfigDocument.swift | Ported | `ConfigDocument`, `ConfigDialect`, `ConfigTokenization`, `ConfigCommand`, `ConfigDiagnostic`, `ByteSpan`, `ConfigEditException` |
-| ConfigHistory.swift | Planned | Persistent revisions, timestamps, comparison and recovery |
+| ConfigHistory.swift | Ported | `ConfigHistoryEntry` and `ConfigProfileStore` preserve both revisions, timestamps, restoration and retention |
 | ConfigHistoryView.swift | UI | Revision history and restore actions |
 | ConfigImport.swift | Ported | `ConfigImportLoader`, `ConfigImportScript` and `IConfigImportFiles` implement source rules and bounded dependency discovery |
 | ConfigImportCatalogAdapter.swift | Ported | `ConfigImportCatalogAdapter` and `IConfigImportCatalog` use conservative edition-specific registration flags |
@@ -36,7 +36,8 @@ Coverage is 114 rows, with 17 ported, 33 planned, 48 UI and 16 Apple-only.
 | ConfigImportView.swift | UI | Import source, review and apply dialogs |
 | ConfigLauncherModel.swift · workflows | Planned | Config Studio import and launch coordination |
 | ConfigLauncherModel.swift · dialogs | UI | Open, drop, paste and confirmation flows |
-| ConfigProfiles.swift · profiles and journals | Planned | Profile format, atomic updates, recovery and conflict rules |
+| ConfigProfiles.swift · profiles and journals | Ported | `ConfigProfileStore` owns format, creation, copying, selection, atomic updates and journal replay behind `IConfigProfileFiles` |
+| ConfigProfiles.swift · migration, Trash and connection cleanup | Ported | `ConfigProfileStore` replays migration receipts, preserves companions in Trash and disposes verified temporary profiles |
 | ConfigProfiles.swift · Darwin persistence | Apple-only | Windows private atomic writes, locks, and reparse-point containment |
 | ConfigReadyCheck.swift | Planned | Pre-join preset comparison and temporary override eligibility |
 | ConfigRules.swift | Planned | Ruleset and optimizer resources and known-server inference |
@@ -44,7 +45,7 @@ Coverage is 114 rows, with 17 ported, 33 planned, 48 UI and 16 Apple-only.
 | ConfigShare.swift | Planned | Service payload, Share and withdrawal, private shared records |
 | ConfigShareModel.swift | UI | Share flow, progress and feedback over the service client |
 | ConfigShareView.swift | UI | Share sheets and preview |
-| ConfigSheets.swift · naming | Planned | Loadout name validation |
+| ConfigSheets.swift · naming | Ported | `LoadoutName` validates blank, duplicate and read-only names |
 | ConfigSheets.swift · sheets | UI | Loadout create, rename and select |
 | ConfigStudioBinds.swift | UI | Binding editor display models and keyboard diagram |
 | ConfigStudioBlocks.swift | UI | Studio controls, banners and feedback |

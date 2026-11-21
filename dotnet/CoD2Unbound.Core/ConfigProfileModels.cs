@@ -2,10 +2,23 @@ using System.Collections.Immutable;
 
 namespace CoD2Unbound.Core;
 
-public enum ConfigProfileFailure { Conflict, GameRunning, InvalidMetadata, CannotPublish }
+public enum ConfigProfileFailure
+{
+    InvalidIdentifier, AlreadyExists, MissingProfile, UnsafePath, Conflict, GameRunning,
+    InvalidMetadata, InvalidHistory, InvalidMigration, CannotLock, CannotPublish, InUse, CannotTrash
+}
 
 public sealed class ConfigProfileException(ConfigProfileFailure failure) : IOException(failure switch
 {
+    ConfigProfileFailure.InvalidIdentifier => "Loadout identifiers need 1–41 ASCII letters, numbers, dots, underscores or hyphens, starting with a letter or number.",
+    ConfigProfileFailure.AlreadyExists => "A loadout with this identifier already exists.",
+    ConfigProfileFailure.MissingProfile => "This loadout no longer exists.",
+    ConfigProfileFailure.UnsafePath => "A loadout path points outside the game home or through a symbolic link.",
+    ConfigProfileFailure.CannotLock => "Cannot lock the loadout folder for this change.",
+    ConfigProfileFailure.InvalidHistory => "A history snapshot is invalid. Its original file has been kept.",
+    ConfigProfileFailure.InvalidMigration => "The saved migration cannot be resumed safely. The original backup has been kept.",
+    ConfigProfileFailure.InUse => "This loadout is the one your next game uses. Choose another loadout for your next game first.",
+    ConfigProfileFailure.CannotTrash => "The loadout couldn’t be moved to the Trash. Nothing was removed.",
     ConfigProfileFailure.Conflict => "The config, metadata or selection changed on disk. Refresh before saving.",
     ConfigProfileFailure.GameRunning => "Quit the game before changing loadouts.",
     ConfigProfileFailure.InvalidMetadata => "This loadout's metadata is invalid or uses an unsupported version.",

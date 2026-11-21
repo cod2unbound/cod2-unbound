@@ -41,7 +41,7 @@ public sealed record ConfigImportRow(ConfigImportCandidate Candidate, string Tit
 public sealed record ConfigImportPreview(ConfigDocument Document, ConfigStudioMetadata Metadata);
 public sealed record ConfigImportReceipt(string ProfileId, ConfigHistoryEntry HistoryEntry);
 public sealed record ConfigImportWrite(string ProfileId, ConfigDocument Document, ConfigStudioMetadata Metadata,
-    ConfigProfileVersion? Expected, string Summary);
+    ConfigProfileVersion? Expected, string Summary, string OperationId);
 
 public interface IConfigImportStore
 {
@@ -57,6 +57,7 @@ public interface IConfigImportStore
 public sealed partial class ConfigImportSession
 {
     private readonly Lock gate = new();
+    private readonly string operationId = Guid.NewGuid().ToString();
     private readonly IConfigImportCatalog catalog;
     private readonly ConfigImportSafety safety;
     private readonly Dictionary<string, ConfigImportFile> files;
@@ -168,7 +169,7 @@ public sealed partial class ConfigImportSession
                 ConfigImportTarget.Existing existing => existing.Read.Profile.Id,
                 _ => throw new InvalidOperationException()
             };
-            write = new(profileId, prepared.Document, prepared.Metadata, Baseline?.Version, "Imported reviewed config");
+            write = new(profileId, prepared.Document, prepared.Metadata, Baseline?.Version, "Imported reviewed config", operationId);
             applying = true;
         }
 

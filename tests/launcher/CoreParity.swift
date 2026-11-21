@@ -36,6 +36,9 @@ import Foundation
         var session = try ImportSessionParity.build()
         session["swiftRevision"] = revision
         try fixture("import-session", payload: session, mode: mode, output: output)
+        var profiles = try ProfilesParity.build(scratch: scratch)
+        profiles["swiftRevision"] = revision
+        try fixture("profiles", payload: profiles, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

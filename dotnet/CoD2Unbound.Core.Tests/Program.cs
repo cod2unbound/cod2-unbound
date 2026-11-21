@@ -16,6 +16,8 @@ internal static partial class Program
         DirectoryCases();
         ImportCases();
         ImportSessionCases();
+        ProfileCases();
+        ProfileLifecycleCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }
