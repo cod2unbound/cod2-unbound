@@ -36,8 +36,20 @@ public sealed partial class ServersPage : Page
         int count = model.Filters.Count;
         FilterButton.Content = count == 0 ? "Filters" : $"Filters ({count})";
         if (refreshing is null)
-            RefreshStatus.Text = rows.Length == 0 ? "No servers to show" : $"{rows.Length} {(rows.Length == 1 ? "server" : "servers")}";
+            RefreshStatus.Text = rows.Length == 0 ? EmptyState() : $"{rows.Length} {(rows.Length == 1 ? "server" : "servers")}";
         RenderDetails();
+    }
+
+    private string EmptyState()
+    {
+        if (!string.IsNullOrWhiteSpace(model.Search) || model.Filters.Count > 0)
+            return "No match";
+        return model.Scope switch
+        {
+            ServerScope.Favorites => "No favorites yet",
+            ServerScope.Recent => "Nothing played yet",
+            _ => "No contact yet"
+        };
     }
 
     private void OnScopeChanged(object sender, SelectionChangedEventArgs args)

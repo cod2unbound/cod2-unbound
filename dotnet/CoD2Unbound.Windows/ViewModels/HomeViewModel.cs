@@ -21,6 +21,8 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         : null;
     internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext);
+    internal ImmutableArray<NewsDispatch> AllNews => NewsFeed.Home(session.Version, session.Library.Dispatches,
+        session.Library.News, session.Library.NewsNext, rows: 12);
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
     internal MatchSummary? LastMatch { get; private set; }
     internal bool UnreadableMatches { get; private set; }

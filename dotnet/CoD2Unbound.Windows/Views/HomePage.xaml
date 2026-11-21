@@ -54,11 +54,7 @@
                     <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
                               AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
                     <ComboBox x:Name="DisplayChoice" AutomationProperties.Name="Display mode"
-                              AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged">
-                        <ComboBoxItem Content="Borderless" Tag="borderless" />
-                        <ComboBoxItem Content="Exclusive fullscreen" Tag="exclusive" />
-                        <ComboBoxItem Content="Windowed" Tag="windowed" />
-                    </ComboBox>
+                              AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged" />
                 </StackPanel>
 
                 <Grid Grid.Row="2" ColumnSpacing="12">
@@ -84,7 +80,10 @@
                     </Border>
                     <Border Grid.Column="2" Style="{StaticResource FieldCard}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="What’s New" Style="{StaticResource CardTitle}" />
+                            <Grid>
+                                <TextBlock Text="What’s New" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <HyperlinkButton Content="See all" HorizontalAlignment="Right" Click="OnShowNews" />
+                            </Grid>
                             <StackPanel x:Name="NewsRows" Spacing="8" />
                         </StackPanel>
                     </Border>

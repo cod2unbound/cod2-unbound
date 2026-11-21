@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
+using Color = global::Windows.UI.Color;
 using Windows.Security.Cryptography;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -56,13 +57,21 @@ public sealed partial class HomePage : Page
             Content = profile.DisplayName + " · " + resolution, Tag = profile.Id
         }).ToList();
         var active = model.Loadouts.FirstOrDefault(profile => profile.IsActive);
-        if (active is null)
-            loadouts.Insert(0, new ComboBoxItem { Content = "Loadout unavailable · " + resolution });
+        if (active is null && loadouts.Count > 0)
+            loadouts.Insert(0, new ComboBoxItem { Content = "Loadout unavailable" });
         LoadoutChoice.ItemsSource = loadouts;
-        LoadoutChoice.SelectedItem = active is null ? loadouts[0] :
+        LoadoutChoice.SelectedItem = active is null ? loadouts.FirstOrDefault() :
             loadouts.First(choice => Equals(choice.Tag, active.Id));
+        LoadoutChoice.Visibility = IsVisible(loadouts.Count > 0);
         settingLoadout = false;
         settingDisplay = true;
+        string prefix = loadouts.Count == 0 ? resolution + " · " : "";
+        DisplayChoice.ItemsSource = new[]
+        {
+            new ComboBoxItem { Content = prefix + "Borderless", Tag = "borderless" },
+            new ComboBoxItem { Content = prefix + "Exclusive fullscreen", Tag = "exclusive" },
+            new ComboBoxItem { Content = prefix + "Window", Tag = "windowed" }
+        };
         DisplayChoice.SelectedIndex = settings.Fullscreen switch { "exclusive" => 1, "windowed" => 2, _ => 0 };
         settingDisplay = false;
 
@@ -137,6 +146,24 @@ public sealed partial class HomePage : Page
         }
     }
 
+    private async void OnShowNews(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
+    {
+        var rows = new StackPanel { Spacing = 12 };
+        foreach (var dispatch in model.AllNews)
+        {
+            var item = new StackPanel { Spacing = 4 };
+            item.Children.Add(Secondary(dispatch.Stamp));
+            AddFact(item, dispatch.Title, dispatch.Summary);
+            rows.Children.Add(item);
+        }
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot, Title = "What’s New", CloseButtonText = "Close",
+            Content = new ScrollViewer { MaxHeight = 360, Content = rows }
+        };
+        await dialog.ShowAsync();
+    });
+
     private static void AddFact(StackPanel panel, string title, string detail)
     {
         panel.Children.Add(new TextBlock { Text = title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
@@ -188,10 +215,10 @@ public sealed partial class HomePage : Page
         HeroScrim.Fill = brush;
     }
 
-    private static double Luminance(Windows.UI.Color color) => ScrimMath.Luminance(color.R, color.G, color.B);
+    private static double Luminance(Color color) => ScrimMath.Luminance(color.R, color.G, color.B);
 
-    private static Windows.UI.Color WithAlpha(Windows.UI.Color color, double opacity) =>
-        Windows.UI.Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
+    private static Color WithAlpha(Color color, double opacity) =>
+        Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
 
     private async Task ApplyArtworkAsync(MapPixels art)
     {
