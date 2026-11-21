@@ -43,7 +43,11 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
         }
 
         ValidateTail(arguments, request.Edition, dedicated: false);
-        return new(new(binary.Path, workingDirectory, request.HomePath, arguments, privateFiles), plan.PlaysIntroFilms);
+        var start = new EngineProcessStart(binary.Path, workingDirectory, request.HomePath, arguments, privateFiles)
+        {
+            EnvironmentChanges = CrashConsent(request.Edition == GameEdition.Cod2x && request.Settings.SendCoD2xReports)
+        };
+        return new(start, plan.PlaysIntroFilms);
     }
 
     public static WindowsLaunchPlan Dedicated(GameBinary binary, string workingDirectory, string dataPath, string homePath,
@@ -55,8 +59,15 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
             throw KeyedFailure("hosting.invalidEndpoint");
         var arguments = GameLaunchPlan.DedicatedArguments(EnginePath(dataPath), EnginePath(homePath), port, listed, ip.ToString());
         ValidateTail(arguments, binary.Edition, dedicated: true);
-        return new(new(binary.Path, workingDirectory, homePath, arguments, []), false);
+        var start = new EngineProcessStart(binary.Path, workingDirectory, homePath, arguments, [])
+        {
+            EnvironmentChanges = CrashConsent(enabled: false)
+        };
+        return new(start, false);
     }
+
+    private static ImmutableDictionary<string, string?> CrashConsent(bool enabled) =>
+        ImmutableDictionary<string, string?>.Empty.Add(CrashReporting.ConsentVariable, enabled ? "1" : null);
 
     private static LaunchPlanException KeyedFailure(string key) => new(key, key);
 
