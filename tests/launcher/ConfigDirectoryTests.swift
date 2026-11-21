@@ -129,6 +129,43 @@ private actor IndexGate: ConfigImportTextFetcher {
         try Data("tampered cache".utf8).write(to: cache)
         let refetched = try await ConfigDirectory(configuration: trust, cacheURL: cache, fetcher: emptyFetcher).load()
         require(refetched.snapshot?.origin == .network && FileManager.default.fileExists(atPath: cache.path), "an unreadable cache blocked the network copy")
+        try await popularity(scratch: scratch, trust: trust, key: key)
         print("PASS: Ed25519 exact-byte trust, tamper/wrong-key rejection, offline cache, identity/digest, safety and unavailable default")
     }
+
+    static func popularity(scratch: URL, trust: ConfigDirectoryConfiguration, key: Curve25519.Signing.PrivateKey) async throws {
+        let root = trust.indexURL.deletingLastPathComponent()
+        let figuresURL = root.appendingPathComponent("popularity.json"), signatureURL = root.appendingPathComponent("popularity.sig")
+        let cache = scratch.appendingPathComponent("popularity/index.json")
+        let valid = Data("""
+            {"schemaVersion":1,"periodDays":30,"generatedDate":"2026-11-21","setups":{
+              "synthetic":{"imports":12,"views":51},"views-only":{"imports":4,"views":10},"small":{"imports":2}
+            }}
+            """.utf8)
+        let signature = try key.signature(for: valid)
+        func directory(_ bytes: Data, signature: Data, at url: URL? = nil, cachePath: URL? = nil) -> ConfigDirectory {
+            ConfigDirectory(configuration: trust, cacheURL: cachePath ?? cache, fetcher: FixtureFetcher(responses: [
+                figuresURL: .init(data: bytes, finalURL: url ?? figuresURL, contentType: "application/json"),
+                signatureURL: .init(data: signature, finalURL: signatureURL, contentType: nil)
+            ]))
+        }
+        let online = await directory(valid, signature: signature).loadPopularity()
+        require(online?.periodDays == 30 && online?.generatedDate == "2026-11-21", "signed figures and period")
+        require(online?.setups["synthetic"] == .init(imports: 12, views: 51), "public counts round-trip")
+        require(online?.setups["views-only"] == .init(imports: nil, views: 10) && online?.setups["small"] == nil, "figures under 5 are suppressed individually")
+        let fallback = await ConfigDirectory(configuration: trust, cacheURL: cache, fetcher: StatusFetcher(status: 404)).loadPopularity()
+        require(fallback == online, "missing figures keep the signed offline copy")
+        let absent = await ConfigDirectory(configuration: trust, cacheURL: scratch.appendingPathComponent("no-figures/index.json"), fetcher: StatusFetcher(status: 404)).loadPopularity()
+        require(absent == nil, "missing figures are normal on a clean install")
+        let stale = Data(String(decoding: valid, as: UTF8.self).replacingOccurrences(of: "2026-11-21", with: "2026-11-20").utf8)
+        let refused = await directory(stale, signature: try key.signature(for: stale)).loadPopularity()
+        require(refused == online, "older publication does not roll back cached figures")
+        let unsafe = scratch.appendingPathComponent("unverified-figures/index.json")
+        let wrong = await directory(valid, signature: Data(repeating: 1, count: 64), cachePath: unsafe).loadPopularity()
+        require(wrong == nil, "unverified figures are ignored")
+        let redirected = await directory(valid, signature: signature, at: trust.indexURL, cachePath: unsafe).loadPopularity()
+        require(redirected == nil, "figures require their own exact URL")
+        print("PASS: signed popularity, independent count threshold, missing file, offline cache, rollback and response identity")
+    }
+
 }

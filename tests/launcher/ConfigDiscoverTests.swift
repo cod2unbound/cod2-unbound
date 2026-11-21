@@ -273,7 +273,13 @@ import Darwin
         require(discover.entries.isEmpty && discover.saved.isEmpty && !FileManager.default.fileExists(atPath: cache.path), "no players, no Saved, no cache written")
 
         let fixtureCache = home.url.appendingPathComponent("fixture/index.json")
-        discover.use(try DirectoryFixture.directory(cacheURL: fixtureCache))
+        let popularity = Data("""
+            {"schemaVersion":1,"periodDays":30,"generatedDate":"2026-11-21","setups":{
+              "player-1":{"views":9},"player-2":{"imports":4,"views":9},
+              "player-3":{"imports":12},"player-5":{"imports":7,"views":15}
+            }}
+            """.utf8)
+        discover.use(try DirectoryFixture.directory(cacheURL: fixtureCache, popularity: popularity))
         await discover.reload()
         require(discover.shelves.map(\.id) == ["2005–2008", "2009–2012"], "shelves follow the signed entries' eras")
         // Discover's front page: the banner, a shelf per style, teams, and the picture each card shows.
@@ -282,6 +288,15 @@ import Darwin
         require(discover.styleShelves.first?.entries.map(\.id) == ["player-1", "player-3", "player-2"], "a shelf lists featured setups first, then by name")
         require(discover.teams == [ConfigDirectoryTeam(name: "Team Northwind", count: 4)], "teams with more than one setup")
         require(discover.entry("player-2")?.artMap == "mp_carentan", "a setup's picture is its favourite map when it names one")
+        discover.showAll(.all)
+        discover.setupOrder = .mostImported
+        require(discover.setups.map(\.id) == ["player-3", "player-5", "player-1", "player-2", "player-4"],
+                "imports rank visible figures first, with catalogue order for everything without a figure")
+        require(discover.popularityCount(for: "player-2") == nil && discover.popularity?.periodDays == 30, "only public import figures are exposed")
+        discover.setupOrder = .mostViewed
+        require(discover.setups.map(\.id) == ["player-5", "player-1", "player-2", "player-3", "player-4"],
+                "views use their own counts, with catalogue order for ties")
+        discover.setupOrder = .featuredFirst
         discover.showAll(.cod2x)
         require(discover.page == .home && discover.browsing && discover.setups.map(\.id) == ["player-4", "player-5"], "See All shows one style")
         discover.page = .saved; discover.query = "sniper"

@@ -62,7 +62,8 @@ enum DirectoryFixture {
 
     /// Signs a fresh index with an ephemeral key and serves it, and each config, from memory.
     /// `shared`: entries a player sent from the app, credited as the share service writes them.
-    static func directory(cacheURL: URL, entries: [Player] = players, shared: Set<String> = []) throws -> ConfigDirectory {
+    static func directory(cacheURL: URL, entries: [Player] = players, shared: Set<String> = [],
+                          popularity: Data? = nil) throws -> ConfigDirectory {
         let key = Curve25519.Signing.PrivateKey()
         var responses: [URL: ConfigImportTextResponse] = [:]
         let index = ConfigDirectoryIndex(schemaVersion: 1, revision: 1, entries: entries.map { player in
@@ -86,6 +87,11 @@ enum DirectoryFixture {
         let indexURL = base.appendingPathComponent("index.json"), signatureURL = base.appendingPathComponent("index.sig")
         responses[indexURL] = .init(data: bytes, finalURL: indexURL, contentType: "application/json")
         responses[signatureURL] = .init(data: try key.signature(for: bytes), finalURL: signatureURL, contentType: "application/octet-stream")
+        if let popularity {
+            let url = base.appendingPathComponent("popularity.json"), signature = base.appendingPathComponent("popularity.sig")
+            responses[url] = .init(data: popularity, finalURL: url, contentType: "application/json")
+            responses[signature] = .init(data: try key.signature(for: popularity), finalURL: signature, contentType: "application/octet-stream")
+        }
         let trust = try ConfigDirectoryConfiguration(indexURL: indexURL, signatureURL: signatureURL, publicKey: key.publicKey.rawRepresentation)
         return ConfigDirectory(configuration: trust, cacheURL: cacheURL, fetcher: DirectoryFixtureFetcher(responses: responses))
     }

@@ -10,8 +10,7 @@ import UniformTypeIdentifiers
 /// Discover's pages. Each sits beside the Configs column, like a loadout does.
 enum ConfigDiscoverPage: Hashable { case home, saved, player(String), checker }
 
-/// How Discover groups the player setups. Featured is chosen in the catalogue; nothing is counted about
-/// what people import, so there is no popularity order.
+/// How Discover groups the player setups. Featured is chosen in the catalogue.
 enum ConfigSetupFilter: String, CaseIterable, Identifiable {
     case featured = "Featured", classic = "Classic era", cod2x = "CoD2x era", modern = "Modern", all = "All"
     var id: String { rawValue }
@@ -603,6 +602,9 @@ extension ConfigImportPresentation {
         didSet { if searching, let page, page != .home, page != .checker { self.page = .home } }
     }
     @Published var filter: ConfigSetupFilter = .featured
+    @Published var setupOrder: ConfigSetupOrder = .featuredFirst
+    @Published private(set) var popularity: ConfigDirectoryPopularity?
+    private var reloadID = UUID()
     /// Player Setups shows its front page (the featured banner and the shelves) until See All or a
     /// filter is chosen; then it shows that group as a grid.
     @Published var browsing = false
@@ -636,7 +638,8 @@ extension ConfigImportPresentation {
     /// The review harness swaps in a signed fixture directory (preview mode only).
     func use(_ directory: ConfigDirectory) {
         detailTask?.cancel()
-        self.directory = directory; state = .idle; saved = []; detail = nil
+        reloadID = UUID()
+        self.directory = directory; state = .idle; saved = []; detail = nil; popularity = nil
     }
 
     var snapshot: ConfigDirectorySnapshot? { if case .loaded(let snapshot, _) = state { return snapshot }; return nil }
@@ -653,11 +656,16 @@ extension ConfigImportPresentation {
     var searching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
     /// The filters that keep at least one setup, so no chip leads to an empty page.
     var filters: [ConfigSetupFilter] { ConfigSetupFilter.allCases.filter { filter in entries.contains(where: filter.keeps) } }
-    /// The grid: a search looks through every setup; otherwise the chosen filter, by name.
+    /// The grid: a search looks through every setup; otherwise the chosen filter.
+    /// Ranked setups come first. Ties and unranked setups keep their relative order in the signed index.
     var setups: [ConfigDirectoryEntry] {
         let chosen = filters.contains(filter) ? filter : .all
         let shown = searching ? matches : entries.filter(chosen.keeps)
-        return shown.sorted { $0.player.localizedCaseInsensitiveCompare($1.player) == .orderedAscending }
+        return ConfigDirectoryPopularity.ordered(shown, by: setupOrder, popularity: popularity)
+    }
+    func popularityCount(for id: String, order: ConfigSetupOrder? = nil) -> Int? {
+        guard entry(id) != nil else { return nil }
+        return popularity?.setups[id]?.figure(for: order ?? setupOrder)
     }
     /// The setups the front page's banner pages through: the first featured ones, in the index's order.
     var heroes: [ConfigDirectoryEntry] {
@@ -724,20 +732,27 @@ extension ConfigImportPresentation {
         if case .idle = state { await reload() }
     }
     func reload() async {
-        state = .loading
+        let request = UUID()
+        reloadID = request; state = .loading
         let directory = self.directory
+        async let figures = directory.loadPopularity()
         do {
             let result = try await directory.load()
+            guard reloadID == request, !Task.isCancelled else { return }
             if let snapshot = result.snapshot {
                 fetched = directory.cacheDate
                 state = .loaded(snapshot, refreshError: result.refreshError)
                 if result.refreshError != nil { recordUsage(.errorShown(.directory)) }
                 saved = (try? directory.savedEntries(snapshot: snapshot)) ?? []
+                let fresh = await figures
+                if reloadID == request, !Task.isCancelled { popularity = fresh }
             } else {
                 state = .unavailable(result.unavailableReason ?? "The player directory isn’t available.")
-                saved = []
+                saved = []; popularity = nil
             }
         } catch {
+            guard reloadID == request, !Task.isCancelled else { return }
+            popularity = nil
             state = .failed(ConfigImportReviewModel.message(for: error)); saved = []
             recordUsage(.errorShown(.directory))
         }

@@ -340,3 +340,30 @@ is decoded but not displayed. Shared JSON fixtures cover new and old summaries.
 About keeps the canvas spacing and all five real credit rows; a bottom fade indicates
 more content when scrolling is required.
 <!-- /ship-play -->
+
+
+## Usage data
+
+`UsageEvents.swift` defines the closed event types and PostHog JSON. `UsageData.swift` owns the
+local journals and batch sender. `ModelUsage.swift` exposes consent, preview and install-number
+actions for the launcher and the model's own actions record events. Consent is saved in
+`launcher-settings.json` as `usageConsent` (`notAsked`, `yes` or `no`) and survives Reset Settings.
+
+Release builds take the public project token from `COD2_POSTHOG_KEY` and write `CoD2PostHogKey`
+into the launcher's Info.plist. A build without the token has usage data unavailable.
+The sender uses `https://eu.i.posthog.com/batch/`. `COD2_USAGE_URL` can name a stand-in on
+`127.0.0.1` with a fixture token. To run the headless usage tests, use
+`sh tests/launcher/usage_data.sh`. This starts `tools/usage/usage_standin.py` on a free local
+port and checks the captured JSON. `COD2_LAUNCHER_SKIP_WINDOWS=1` runs the full launcher
+suite through its headless checks.
+
+`usage-setup.json` is a private, versioned setup journal of at most 24 steps with UTC minute
+timestamps. A yes moves eligible steps into ordinary events, and either answer clears that
+journal. `usage-data.json` is a private, versioned send journal with the install UUID, a daily
+app-open marker and up to 300 typed events from the past week. It sends up to 32 events per
+POST and retries with exponential backoff. Off clears the UUID and queue. Reset Number
+replaces the UUID and clears the old queue. The daily marker can remain on the Mac so a
+reset or re-enable cannot count the same UTC day twice.
+
+`ConfigDirectory.swift` verifies optional public popularity figures alongside the catalogue.
+See [the publisher format](../tools/config-directory/README.md#optional-popularity-figures).
