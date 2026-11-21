@@ -225,7 +225,7 @@ void *Z_MallocInternal(int size)
     }
 #endif
 #if !defined(COD2_X64)
-#line 212
+#line 169
 #endif
     Sys_OutOfMemErrorInternal(__FILE__, __LINE__);
     return buf;
@@ -241,7 +241,7 @@ void *Z_MallocGarbageInternal(int size)
 #endif
     if (!buf) {
 #if !defined(COD2_X64)
-#line 224
+#line 181
 #endif
         Sys_OutOfMemErrorInternal(__FILE__, __LINE__);
     }
@@ -391,7 +391,7 @@ void Com_InitHunkMemory(void)
     s_hunkData = (byte *)VirtualAlloc(0, s_hunkTotal, 0x1000, 4);
     if (!s_hunkData) {
 #if !defined(COD2_X64)
-#line 367
+#line 320
 #endif
         Sys_OutOfMemErrorInternal(__FILE__, __LINE__);
     }
