@@ -1,11 +1,13 @@
 using System.Text.Json;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
+using Microsoft.UI.System;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.Graphics;
 
@@ -14,6 +16,7 @@ namespace CoD2Unbound.Windows;
 public sealed partial class MainWindow : Window
 {
     private readonly WindowsLauncherSession session = new();
+    private readonly ThemeSettings windowTheme;
     private SetupSession? pendingData;
     private bool busy;
     private bool loaded;
@@ -26,6 +29,10 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(WindowBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
+        windowTheme.Changed += OnSystemThemeChanged;
+        Root.ActualThemeChanged += OnAppThemeChanged;
+        Closed += (_, _) => windowTheme.Changed -= OnSystemThemeChanged;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs args)
@@ -34,6 +41,7 @@ public sealed partial class MainWindow : Window
             return;
         loaded = true;
         ResizeForDisplay(startup: true);
+        UpdateCaptionColors();
         await RunAsync(async () =>
         {
             await session.InitializeAsync();
@@ -60,6 +68,22 @@ public sealed partial class MainWindow : Window
         double centerOffset = WindowBar.ActualWidth / 2 - hostLeft - hostWidth / 2;
         double offset = Math.Clamp(centerOffset, -availableOffset, availableOffset);
         JumpButton.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
+    }
+
+    private void OnAppThemeChanged(FrameworkElement sender, object args) =>
+        DispatcherQueue.TryEnqueue(UpdateCaptionColors);
+
+    private void OnSystemThemeChanged(ThemeSettings sender, object args) =>
+        DispatcherQueue.TryEnqueue(UpdateCaptionColors);
+
+    private void UpdateCaptionColors()
+    {
+        var foreground = windowTheme.HighContrast ? null : (WindowBar.Foreground as SolidColorBrush)?.Color;
+        var caption = AppWindow.TitleBar;
+        caption.ButtonForegroundColor = foreground;
+        caption.ButtonHoverForegroundColor = foreground;
+        caption.ButtonPressedForegroundColor = foreground;
+        caption.ButtonInactiveForegroundColor = foreground;
     }
 
     private void UpdatePaneMode(double width)
