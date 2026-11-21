@@ -1,5 +1,8 @@
 #include "PC/qcommon/port_debug.h"
 #include "common_types.h"
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+#include "PC/universal/windows_number.h"
+#endif
 #if COD2_APPLE_SDK
 #include <time.h>
 #endif
@@ -7158,21 +7161,21 @@ static unsigned int VM_CandidateWaitTimeFromValue(VariableValue *value)
         }
 
 #if defined(COD2_X64)
-#if COD2_APPLE_SDK && !defined(DEDICATED)
-        /* Windows VM_Execute 0x47e86d adds 2^-30 and rounds with fistp. In the game, where
-           Direct3D holds the FPU at single precision, the 2^-30 is lost and an exact half
-           goes to the even tick: a Windows player hosting a match waits 2 ticks for 0.125. */
-        float rounded = __builtin_rintf(seconds * 20.0f);
-#elif COD2_APPLE_SDK
-        /* A dedicated server never loads Direct3D: there the 2^-30 survives and an exact
-           half goes up, as on the Linux server and in the Mac game (0x859cf, floorf(x + 0.5)). */
-        float rounded = floorf(seconds * 20.0f + 0.5f);
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+        /* WinMain and Com_Frame select 24-bit x87 precision, including on a
+           dedicated server. At 0x47e862 the VM scales and rounds ties to even. */
+        ticks = Q_WindowsScaleDoubleToInt(seconds, 20);
 #else
+#if COD2_APPLE_SDK && !defined(DEDICATED)
+        float rounded = __builtin_rintf(seconds * 20.0f);
+#else
+        /* Linux and Mac dedicated servers round waits half up. */
         float rounded = floorf(seconds * 20.0f + 0.5f);
 #endif
         /* cvttss2si in the Mac VM produces INT_MIN for NaN/overflow. */
         ticks = rounded >= -2147483648.0f && rounded < 2147483648.0f
                     ? (int)rounded : (int)0x80000000u;
+#endif
 #else
         ticks = (int)floorf(seconds * 20.0f + 0.5f);
 #endif

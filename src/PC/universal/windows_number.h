@@ -15,7 +15,7 @@ static uint64_t Q_WindowsRoundShiftEven(uint64_t value, unsigned shift)
     return whole + (remainder > half || (remainder == half && (whole & 1)));
 }
 
-/* Windows PC24 FMUL of a parsed binary64 by 255 or 1000, followed by
+/* Windows PC24 FMUL of a binary64 by a small integer, followed by
  * the original float store and nearest-even signed 32-bit FISTP.
  * scale is an exact positive integer no larger than 1000.
  * No floating-point expression may replace the exact significand product.
