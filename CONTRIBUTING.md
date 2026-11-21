@@ -7,31 +7,38 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Preserve the original build
 
-With **`COD2_X64=OFF`, the i386 objects and binaries must remain byte-for-byte
-unchanged** from opencod2 `410342a`. A successful compile or an include-free
-preprocessor comparison does not prove this; the Linux multilib comparison
-gate below does. Do not alter original data blobs, legacy flags or shared
-layouts to make arm64 compile.
+With **`COD2_X64=OFF`, preserve the i386 build** from opencod2 `410342a`.
+The [intended differences](docs/macos-port/intended-differences.md) record
+what may differ. The include-free source check and Linux multilib object
+comparison check different parts of this contract. Do not alter original
+data blobs, legacy flags or shared layouts to make arm64 compile.
 
-- Use `COD2_X64` for pointer-width/layout changes. Existing source frequently
-  tests `defined(COD2_X64)`, so CMake OFF must omit the definition, not define
-  `COD2_X64=0` as a substitute.
+- Put code that exists because of a platform behind its value-tested guard.
+  Use `#if COD2_X64` for native pointer-width or layout changes,
+  `#if COD2_APPLE_SDK` for SDK-dependent code, `#if COD2_MAC_D3D9` for the
+  Metal renderer, and the appropriate value-tested Windows guard for
+  Windows-specific code. Use `#if` or `#if !` to test numeric switches.
+  `COD2_APPLE_SDK` is always defined as 0 or 1. CMake still omits
+  `COD2_X64` when disabled because existing code tests for its presence.
 - `COD2_APPLE_SDK` selects SDK-backed declarations for native Apple and Linux
   builds with `COD2_X64`, and for native Windows. Legacy builds use the
   reconstructed STABS declarations.
+- Fix bugs in shared code for every build, unguarded, when the upstream code
+  is wrong on any system. Examples include a crash, lost input or an operation
+  on the wrong row. Record the upstream behavior, the correction, the player
+  impact and the evidence in the intended-differences file.
 - Use `__APPLE__` and `__aarch64__` / `__arm64__` where a change depends on the
-  platform or instruction set. Architecture-neutral fixes must still pass the
-  legacy comparison. CoD2x hooks need both native and `COD2_CODX` gates.
+  compiler's platform or instruction set. CoD2x hooks need both native and
+  `COD2_CODX` gates.
 - Keep `-ffp-contract=off`: the Mac i386 reference used SSE scalar semantics,
   not x87 extended precision. Preserve fixed-width disk/wire records and
   handle/bytecode offsets; widening every integer is not an LP64 fix.
 
-Use a value test such as `#if COD2_APPLE_SDK` for a switch that is defined
-as either 0 or 1. Reserve a presence test for a switch whose build contract
-omits the definition when disabled. Run `python3 tests/fixes13/legacy.py
---base main` to check for new inactive-branch differences. This comparison
-also reports edits that exactly restore upstream source. Run the same
-command with `--base 410342a` to see all remaining inactive-branch differences.
+Run `python3 tests/fixes13/legacy.py --base main` to check for new
+inactive-branch differences. It reports exact restorations at their upstream
+positions. Run the same command with `--base 410342a` to check the record
+against upstream. It reports intended differences and fails on unlisted or
+stale ones.
 
 Verify behavior against actual commands, code and the original reference.
 Compare other projects to understand intent, then independently implement;
@@ -78,10 +85,10 @@ GitHub Actions are switched off for this repository at the moment, so no
 check runs on a pull request by itself. Run the merge gate below on your Mac
 and say in the pull request what you ran.
 
-The x86 byte-for-byte comparison (`tools/ci/compare-x86.sh`) is not a
-required check. It defines `__cdecl` and `__stdcall` away for both builds,
-but upstream `410342a` still fails to compile in seven files with GCC 14 on
-Linux, so it never links.
+The optional x86 comparison (`tools/ci/compare-x86.sh`) checks the compiled
+Linux i386 differences against the same record. Upstream `410342a` still
+fails to compile in seven files with GCC 14, so the script reports the
+available objects and marks the link check incomplete.
 To run it on a Mac, use Docker with `--platform linux/amd64`, an `ubuntu:24.04`
 image with the packages from the `x86-reference` job in
 `.github/workflows/ci.yml`, and `bash tools/ci/compare-x86.sh` inside it; see

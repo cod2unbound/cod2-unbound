@@ -110,7 +110,7 @@ Known upstream limitation: the array is declared as 1024 entities in `bss.c`,
 while the hash code accepts counts up to 4096. Corrupt counts can crash this
 instrumentation. WS5 leaves it unchanged to preserve the ILP32 reference.
 
-## CI and the unchanged x86 build
+## CI and the x86 reference
 
 `bash tools/ci/compare-x86.sh [base-ref] [head-ref] [new-output-directory]`
 runs only on x86_64 Linux with README multilib dependencies and GCC 14 or newer
@@ -118,9 +118,12 @@ runs only on x86_64 Linux with README multilib dependencies and GCC 14 or newer
 `-Wno-error=return-mismatch`; see the [GCC 14 porting guide](https://gcc.gnu.org/gcc-14/porting_to.html).
 CI installs the versioned GCC 14 multilib packages from Ubuntu. It builds git
 archives of base `410342a82da1b2e8286c290274aeb0f1731a6859` and committed HEAD,
-with `COD2_X64=OFF`. Uncommitted changes are deliberately excluded.
+with `COD2_X64=OFF`. For this base it reads the candidate's
+[intended-differences record](intended-differences.md) and compiles the listed
+objects from the pinned review commit as controls. Uncommitted changes are
+excluded. Other base refs still require identical unstripped artifacts.
 
-Both builds use the same gcc, libraries, locale, timezone, fixed source mtimes,
+All builds use the same GCC, libraries, locale, timezone, fixed source mtimes,
 `SOURCE_DATE_EPOCH` from the base commit (`__DATE__`/`__TIME__`), and GCC
 `-ffile-prefix-map`/`-fdebug-prefix-map` to one virtual source/build root.
 Git discovery is stopped above each archive via `GIT_CEILING_DIRECTORIES`, so
@@ -129,21 +132,27 @@ Passing `-DCOD2_GIT_HASH=...` alone would not work: upstream overwrites it.
 Both builds also get `-D__cdecl= -D__stdcall=`: GCC on Linux has no such
 keywords, so the defines change only files that would otherwise fail to parse
 (objects that compiled without them come out byte-identical with them).
-Upstream `410342a` still fails in seven files for other reasons and never links,
-so the comparison does not yet complete (tracking issue 10).
-No source file is patched, stripped or excluded from comparison. Every game
-object, the object path set and both unstripped ELF32 binaries must match;
-build IDs are retained. Debug line-number changes from added source guards also
-fail this strict check, even when instruction bytes agree. A future difference fails and must be explained, not
-silenced by excluding crash_handler or removing arbitrary sections.
+The script compares game object paths and uses `objcopy --strip-debug` on
+copies to distinguish debug-only changes from code and data changes. Listed
+objects must differ from upstream and match the corresponding reviewed object
+after stripping debug info. Missing, unlisted, or stale differences fail the
+comparison. When both revisions link, the executables are also compared with
+debug sections and the GNU build ID removed from the comparison copies. A
+linked difference must match the reviewed build.
 
-To diagnose a failure, configure both archives separately with the flags in
-`tools/ci/compare-x86.sh`. In the same amd64 multilib image, build each with
-`cmake --build <build-directory> --parallel 3 --target cod2_lnxded cod2_linux -- -k`.
-Compare the engine object paths present in both builds and report extra or
-missing paths separately. For each byte difference, compare copies made with
-`objcopy --strip-debug` and use `readelf` or `objdump` to account for any
-remaining section, symbol or relocation differences.
+Upstream `410342a` still fails in seven files and never links (tracking issue
+10). The script builds with keep-going and explicitly compiles any listed
+entry-point objects that the build cannot reach. It reports the available
+object results in `comparison.txt` and returns 2 for an incomplete build when
+the object comparison found no mismatches. See the build logs for compile
+errors and inspect any object difference with `readelf` or `objdump`.
+
+Run `python3 tests/fixes13/legacy.py --base 410342a` to check the record's
+source entries across ten include-free configurations. All listed source
+differences must still match the pinned projections and all other checked
+sources must match upstream. Run `python3 tests/fixes13/legacy.py --base main`
+as the release gate. It accepts exact upstream restorations at their
+original positions.
 
 This proves equality under the normalized build conditions, not that an old
 release artifact from another toolchain has identical bytes. The workflow's

@@ -24,17 +24,15 @@ jobs:
       - run: shellcheck tools/ci/*.sh tools/macos/*.sh
 
   x86-reference:
-    name: x86 ILP32 byte-for-byte reference (410342a versus head)
+    name: x86 ILP32 reference (410342a versus head)
     runs-on: ubuntu-latest
     # A clean container avoids the hosted image's preinstalled amd64 GLib
     # development packages, which conflict with the i386 multilib set.
     container: ubuntu:24.04
     # The script now defines __cdecl and __stdcall away for both snapshots, but
     # upstream 410342a still fails in seven other translation units with GCC 14
-    # on Linux and never links, and this tree still differs from it (always-true
-    # `defined(COD2_APPLE_SDK)` guards, unguarded changes, debug line numbers).
-    # Non-blocking until both are resolved; see the tracking issue linked from
-    # CONTRIBUTING.md.
+    # on Linux and never links. The script compares the available objects
+    # against the reviewed differences. See the tracking issue in CONTRIBUTING.md.
     continue-on-error: true
     steps:
       - name: README multilib build dependencies
@@ -49,7 +47,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Build both snapshots and compare all game objects and both binaries
+      - name: Compare available objects and binaries with the x86 reference
         env:
           PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: bash tools/ci/compare-x86.sh

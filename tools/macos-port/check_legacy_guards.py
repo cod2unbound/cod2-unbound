@@ -17,9 +17,10 @@ CONFIGURATIONS = {
     'wasm': ['__GNUC__=4', '__clang__=1', '__EMSCRIPTEN__=1', '__wasm__=1'],
     'clang-i386': ['__GNUC__=4', '__clang__=1', '__i386__=1'],
 }
+QUOTED = r""""(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'"""
 
 
-def body(source, defines):
+def body(source, defines, *, preserve_literals=False):
     source = re.sub(r'^\s*#\s*(?:include|import)\b[^\n]*', '', source, flags=re.M)
     result = subprocess.run(
         ['clang', '-E', '-P', '-x', 'c', '-undef', '-DCOD2_APPLE_SDK=0',
@@ -27,7 +28,12 @@ def body(source, defines):
          '-DSDL_VERSION_ATLEAST(x,y,z)=1', '-Wno-builtin-macro-redefined',
          *('-D' + value for value in defines), '-'],
         input=source, capture_output=True, text=True, check=True)
-    return re.sub(r'\s+', ' ', result.stdout).strip()
+    if not preserve_literals:
+        return re.sub(r'\s+', ' ', result.stdout).strip()
+    # Whitespace in a C literal is data. Clang has already removed comments.
+    parts = re.split(f'({QUOTED})', result.stdout)
+    parts[::2] = [re.sub(r'\s+', ' ', part) for part in parts[::2]]
+    return ''.join(parts).strip()
 
 
 def main():
