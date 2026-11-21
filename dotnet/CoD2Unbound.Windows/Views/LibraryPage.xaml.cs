@@ -182,6 +182,8 @@ internal sealed record MediaRow(MediaKind Kind, MediaFile File)
 {
     public string Name => File.Name;
     public string MenuName => $"More options for {Name}";
+    public override string ToString() => Name;
+
     public string Detail
     {
         get
