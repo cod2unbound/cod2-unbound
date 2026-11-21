@@ -492,13 +492,23 @@ edge_trace_tests: {
                 float dx = startX - vert->xyz[0];
                 float dy = startY - vert->xyz[1];
                 float dz = startZ - vert->xyz[2];
+#if COD2_WINDOWS_NATIVE
+                /* Retail sums Z and Y before X at 0x4194c6. */
+                float dirDotDelta = (dz * tw->delta[2] + dy * tw->delta[1]) + dx * tw->delta[0];
+#else
                 float dirDotDelta = dx * tw->delta[0] + dy * tw->delta[1] + dz * tw->delta[2];
+#endif
 
                 if (dirDotDelta >= 0.0f)
                     continue;
 
                 {
+#if COD2_WINDOWS_NATIVE
+                    /* Retail sums X and Z before Y at 0x4194f5. */
+                    float deltaLenSq = (dx * dx + dz * dz) + dy * dy;
+#else
                     float deltaLenSq = dx * dx + dy * dy + dz * dz;
+#endif
                     float discrim = deltaLenSq - radiusSq;
 
                     if (0.0f >= discrim) {
