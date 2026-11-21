@@ -583,25 +583,34 @@ void PM_UpdateLean(playerState_t *ps, float msec, usercmd_t *cmd, void (*capsule
     if (ps->eFlags & 0x300)
         leaning = 0;
     float limit = PM_GetEffectiveStance(ps) == 1 ? 0.25f : 0.5f;
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    /* Retail PM_UpdateLean multiplies by binary32 reciprocals at 0x519068
+       and 0x5190d8 before applying the stance limit. */
+    float release_step = msec * (1.0f / 280.0f) * limit;
+    float press_step = msec * (1.0f / 350.0f) * limit;
+#else
+    float release_step = msec / 280.0f * limit;
+    float press_step = msec / 350.0f * limit;
+#endif
     float lean = ps->leanf;
     if (!leaning) {
         if (lean > 0.0f) {
-            lean += msec / -280.0f * limit;
+            lean -= release_step;
             if (lean < 0.0f)
                 lean = 0.0f;
         } else if (lean < 0.0f) {
-            lean += msec / 280.0f * limit;
+            lean += release_step;
             if (lean > 0.0f)
                 lean = 0.0f;
         }
     } else if (leaning > 0) {
         if (lean < limit)
-            lean += msec / 350.0f * limit;
+            lean += press_step;
         if (lean > limit)
             lean = limit;
     } else {
         if (lean > -limit)
-            lean += msec / -350.0f * limit;
+            lean -= press_step;
         if (lean < -limit)
             lean = -limit;
     }
