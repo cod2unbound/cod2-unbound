@@ -51,6 +51,17 @@ public sealed partial class MainWindow : Window
         UpdatePaneMode(args.NewSize.Width);
     }
 
+    private void OnJumpHostSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        // The native title and caption buttons reserve different widths on each side.
+        double hostLeft = JumpHost.TransformToVisual(WindowBar).TransformPoint(default).X;
+        double hostWidth = args.NewSize.Width;
+        double availableOffset = Math.Max(0, (hostWidth - JumpButton.Width) / 2);
+        double centerOffset = WindowBar.ActualWidth / 2 - hostLeft - hostWidth / 2;
+        double offset = Math.Clamp(centerOffset, -availableOffset, availableOffset);
+        JumpButton.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
+    }
+
     private void UpdatePaneMode(double width)
     {
         var mode = width >= 1200 ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftCompact;

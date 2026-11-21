@@ -25,19 +25,29 @@
                 <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
             </TitleBar.Resources>
             <TitleBar.Content>
-                <Button x:Name="JumpButton" HorizontalAlignment="Center" Width="280" IsEnabled="False"
-                        AutomationProperties.AcceleratorKey="Ctrl+K" ToolTipService.ToolTip="Jump to… (Ctrl+K)">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="Find" />
-                        <TextBlock Text="Jump to…" />
-                    </StackPanel>
-                    <Button.Flyout>
-                        <MenuFlyout x:Name="JumpMenu">
-                            <MenuFlyoutItem Text="Home" Click="OnHomeInvoked" />
-                            <MenuFlyoutItem Text="Settings" Click="OnSettingsInvoked" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
+                <Grid x:Name="JumpHost" SizeChanged="OnJumpHostSizeChanged">
+                    <Button x:Name="JumpButton" HorizontalAlignment="Center" HorizontalContentAlignment="Stretch"
+                            Width="300" IsEnabled="False" AutomationProperties.Name="Jump to…"
+                            AutomationProperties.AcceleratorKey="Ctrl+K" ToolTipService.ToolTip="Jump to… (Ctrl+K)">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <SymbolIcon Symbol="Find" />
+                            <TextBlock Grid.Column="1" Text="Jump to…" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="Ctrl+K" VerticalAlignment="Center"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                        </Grid>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="JumpMenu">
+                                <MenuFlyoutItem Text="Home" Click="OnHomeInvoked" />
+                                <MenuFlyoutItem Text="Settings" Click="OnSettingsInvoked" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </Grid>
             </TitleBar.Content>
         </TitleBar>
 
