@@ -51,14 +51,21 @@ guest_workspace_requested=0
 cleanup() {
     result=$?
     trap - EXIT HUP INT TERM
+    if [ "$guest_workspace_requested" -eq 1 ]; then
+        if guest 60 "\$ErrorActionPreference = 'Stop'; if (Test-Path -LiteralPath '$vmroot') { Remove-Item -LiteralPath '$vmroot' -Recurse }; Set-Content -LiteralPath '$vmroot.cleaned' -Value cleaned -Encoding ascii; exit 0" > "$scratch/guest-cleanup.log" 2>&1 &&
+            utm 12 file pull --hide cod2-win11 "$vmroot.cleaned" > "$scratch/receipt" 2>> "$scratch/guest-cleanup.log" &&
+            [ "$(tr -d '\r\n' < "$scratch/receipt")" = cleaned ]; then
+            guest 15 "Remove-Item -LiteralPath '$vmroot.cleaned' -ErrorAction Stop; exit 0" >> "$scratch/guest-cleanup.log" 2>&1 || result=1
+        else
+            echo "Could not confirm guest workspace cleanup. See $scratch/guest-cleanup.log." >&2
+            result=1
+        fi
+    fi
     for file in "$scratch/source.zip" "$scratch/build.ps1" "$scratch/receipt"; do
         if [ -f "$file" ]; then
             rm "$file" || result=1
         fi
     done
-    if [ "$guest_workspace_requested" -eq 1 ]; then
-        guest 60 "\$ErrorActionPreference = 'Stop'; if (Test-Path -LiteralPath '$vmroot') { Remove-Item -LiteralPath '$vmroot' -Recurse }; exit 0" > "$scratch/guest-cleanup.log" 2>&1 || result=1
-    fi
     echo "Evidence is in $scratch"
     exit "$result"
 }
@@ -81,6 +88,7 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 $env:DOTNET_CLI_USE_MSBUILD_SERVER = '0'
 $env:MSBUILDDISABLENODEREUSE = '1'
+$env:UseSharedCompilation = 'false'
 $env:NUGET_PACKAGES = Join-Path $work 'packages'
 $env:NUGET_HTTP_CACHE_PATH = Join-Path $work 'http-cache'
 $source = 'https://api.nuget.org/v3/index.json'
@@ -129,8 +137,11 @@ try {
             $output = Join-Path $work $rid
             Invoke-DotNet restore $project -r $rid "-p:Platform=$platform" --source $source '-p:NuGetAudit=false' '-m:4'
             Invoke-DotNet publish $project --no-restore -c Release -r $rid "-p:Platform=$platform" -o $output '-m:4'
-            $exe = Join-Path $output 'CoD2Unbound.Windows.exe'
-            if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Missing $rid launcher executable" }
+            foreach ($name in 'CoD2Unbound.Windows.exe', 'CoD2Unbound.Windows.pri') {
+                if (!(Test-Path -LiteralPath (Join-Path $output $name) -PathType Leaf)) {
+                    throw "Missing $rid launcher file: $name"
+                }
+            }
             $files = @(Get-ChildItem -LiteralPath $output -Recurse -File)
             Write-Output "$rid publish contains $($files.Count) files and $(($files | Measure-Object Length -Sum).Sum) bytes."
         }
