@@ -218,4 +218,18 @@ int Win_InputCursorDelta(int *dx, int *dy)
     cursorCenter = center;
     return *dx != 0 || *dy != 0;
 }
+
+/* Retail MainWndProc lowers the optional process priority on blur. Hold the
+ * display awake during foreground play, and let Windows handle system sleep. */
+void Win_WindowActivity(int focused, int autoPriority)
+{
+    static int displayRequired, background;
+    int wantBackground = autoPriority && !focused;
+    if (focused != displayRequired &&
+        SetThreadExecutionState(ES_CONTINUOUS | (focused ? ES_DISPLAY_REQUIRED : 0)))
+        displayRequired = focused;
+    if (wantBackground != background &&
+        SetPriorityClass(GetCurrentProcess(), wantBackground ? IDLE_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS))
+        background = wantBackground;
+}
 #endif

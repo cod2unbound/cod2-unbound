@@ -419,6 +419,9 @@ void IN_Init(void)
 {
     dvar_t *p = Dvar_RegisterBool("in_mouse", 1, 0x1021);
     in_mouse = p;
+#if COD2_WINDOWS_NATIVE && COD2_X64 && !defined(DEDICATED)
+    Dvar_RegisterBool("r_autopriority", 0, 0x1001);
+#endif
 #if COD2_APPLE_SDK && !defined(DEDICATED)
 #if COD2_WINDOWS_NATIVE && !COD2_CODX
     /* An explicit launch preset enables SDL Raw Input for this session. */

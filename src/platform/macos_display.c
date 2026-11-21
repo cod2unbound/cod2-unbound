@@ -174,6 +174,10 @@ int MacDisplay_Initialize(void)
 #endif
     if (initialized)
         return 0;
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    /* The foreground window owns the display idle request. */
+    SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
+#endif
 #if !defined(COD2_X64)
     SDL_SetHint("SDL_MAC_USE_GCMOUSE", "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "0");
@@ -1218,6 +1222,9 @@ uint16_t MacDisplay_ReleaseContext(void **reference)
 
 void MacDisplay_ReleaseDisplay(void)
 {
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void Win_WindowActivity(int focused, int autoPriority); Win_WindowActivity(0, 0); }
+#endif
 #if defined(__APPLE__) && defined(COD2_X64)
     MacWindow_SetBorderless(0);
 #endif

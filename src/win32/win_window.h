@@ -11,5 +11,6 @@ enum WinInputKind Win_InputMessage(const struct SDL_SysWMmsg *message, int *valu
 char *Win_InputTextToAnsi(const char *utf8);
 int Win_InputCaptureCursor(int capture);
 int Win_InputCursorDelta(int *dx, int *dy);
+void Win_WindowActivity(int focused, int autoPriority);
 
 #endif

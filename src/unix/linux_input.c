@@ -688,6 +688,9 @@ void IN_Frame(void)
     extern int MacDisplay_WindowVisible(void);
     int focused = sdl_gl_window && (SDL_GetWindowFlags(sdl_gl_window) & SDL_WINDOW_INPUT_FOCUS) &&
         MacDisplay_WindowVisible();
+#if COD2_WINDOWS_NATIVE
+    { extern int Dvar_GetInt(const char *); Win_WindowActivity(focused, sdl_gl_window && Dvar_GetInt("r_autopriority")); }
+#endif
     static int hadFocus;
     if (hadFocus && !focused) {
         extern void Key_ClearStates(void);
