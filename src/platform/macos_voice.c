@@ -1,4 +1,4 @@
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
 #include "common_types.h"
 #include "macos_audio.h"
 #include "macos_record.h"
@@ -26,7 +26,7 @@ typedef struct {
     int allocated;
 } MacVoiceSample;
 
-/* Mac 1.3 narrowband PCM rate, shared by recording and voice playback. */
+/* The 1.3 narrowband PCM rate, shared by recording and voice playback. */
 int g_sound_recordFrequency = 8192;
 int g_sound_channels = 1;
 
