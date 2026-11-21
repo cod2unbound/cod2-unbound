@@ -769,6 +769,14 @@ void IN_Frame(void)
 #endif
     MacRawMouse_SetActive(mac_use_raw);
     SDL_PumpInputEvents();
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+    {
+        extern int Dvar_GetInt(const char *);
+        extern float Dvar_GetFloat(const char *);
+        extern void Win_D3D9_WindowGamma(int, float);
+        Win_D3D9_WindowGamma(focused && !Dvar_GetInt("r_ignorehwgamma"), Dvar_GetFloat("r_gamma"));
+    }
+#endif
 #if !COD2_WINDOWS_NATIVE
     int dx, dy;
     if (mac_use_raw && MacRawMouse_Read(&dx, &dy))

@@ -679,6 +679,9 @@ static void R_Shutdown(qboolean destroyWindow)
     R_FlushStaticModelCache();
 
     if (destroyWindow) {
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+        { extern void Win_D3D9_WindowGamma(int, float); Win_D3D9_WindowGamma(0, 1.0f); }
+#endif
         R_ReleaseForShutdownOrReset();
 
 #if defined(COD2_X64)
@@ -712,6 +715,11 @@ void R_SetColorMappings(void)
     float invGamma;
     int i;
 
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+    /* Windowed CoD2x gamma is saved and restored per monitor on the main thread. */
+    if (!vidConfig.isFullscreen)
+        return;
+#endif
     if (!vidConfig.deviceSupportsGamma)
         return;
 

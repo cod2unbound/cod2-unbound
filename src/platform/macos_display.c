@@ -1222,6 +1222,9 @@ uint16_t MacDisplay_ReleaseContext(void **reference)
 
 void MacDisplay_ReleaseDisplay(void)
 {
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+    { extern void Win_D3D9_WindowGamma(int, float); Win_D3D9_WindowGamma(0, 1.0f); }
+#endif
 #if COD2_WINDOWS_NATIVE && COD2_X64
     { extern void Win_WindowActivity(int focused, int autoPriority); Win_WindowActivity(0, 0); }
 #endif

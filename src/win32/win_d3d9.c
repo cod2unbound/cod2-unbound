@@ -12,6 +12,9 @@
 #include <d3dcompiler.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
+#if COD2_WINDOWS_NATIVE && COD2_CODX
+#include <math.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +27,57 @@ extern int MacDisplay_Initialize(void);
 extern int Dvar_GetInt(const char *name);
 #endif
 
+#if COD2_WINDOWS_NATIVE && COD2_CODX
+static HMONITOR gammaMonitor;
+static HDC gammaDC;
+static WORD originalGamma[3][256];
+static float appliedGamma;
+static int gammaChanged;
+
+/* CoD2x v1.4.6.8 window.cpp gamma_update/gamma_restore. Windowed gamma
+ * belongs to the current monitor. Exclusive gamma stays with the D3D device. */
+void Win_D3D9_WindowGamma(int focused, float gamma)
+{
+    HMONITOR monitor = NULL;
+    if (focused && sdl_gl_window && !MacDisplay_IsFullscreen() && gamma > 0 && gamma != 1.0f) {
+        SDL_SysWMinfo info;
+        SDL_VERSION(&info.version);
+        if (SDL_GetWindowWMInfo(sdl_gl_window, &info))
+            monitor = MonitorFromWindow(info.info.win.window, MONITOR_DEFAULTTONEAREST);
+    }
+    if (monitor != gammaMonitor) {
+        if (gammaDC) {
+            if (gammaChanged)
+                SetDeviceGammaRamp(gammaDC, originalGamma);
+            DeleteDC(gammaDC);
+        }
+        gammaDC = NULL;
+        gammaChanged = 0;
+        gammaMonitor = monitor;
+        appliedGamma = 1.0f;
+        if (monitor) {
+            MONITORINFOEXA info = { .cbSize = sizeof(info) };
+            if (GetMonitorInfoA(monitor, (MONITORINFO *)&info)) {
+                gammaDC = CreateDCA(NULL, info.szDevice, NULL, NULL);
+                if (gammaDC && !GetDeviceGammaRamp(gammaDC, originalGamma)) {
+                    DeleteDC(gammaDC);
+                    gammaDC = NULL;
+                }
+            }
+        }
+    }
+    if (gammaDC && gamma != appliedGamma) {
+        WORD ramp[3][256];
+        for (int i = 0; i < 256; ++i)
+            ramp[0][i] = ramp[1][i] = ramp[2][i] = (WORD)(pow(i / 255.0, 1.0 / gamma) * 65535.0 + 0.5);
+        if (SetDeviceGammaRamp(gammaDC, ramp))
+            gammaChanged = 1;
+        else
+            fputs("Couldn't apply windowed gamma on the current monitor\n", stderr);
+        appliedGamma = gamma;
+    }
+}
+#endif
 
 typedef IDirect3D9 *(WINAPI *Direct3DCreate9Fn)(UINT sdkVersion);
 typedef HRESULT(WINAPI *D3DCompileFn)(LPCVOID data, SIZE_T size, LPCSTR name, const D3D_SHADER_MACRO *defines,
@@ -88,6 +142,7 @@ void *Win_D3D9_PrepareWindow(void *d3dInterface, unsigned adapter, int width, in
     if (MacDisplay_Initialize() != 0)
         return NULL;
 #if COD2_CODX
+    Win_D3D9_WindowGamma(0, 1.0f);
     if (!fullscreen && haveMonitor && width == monitor.rcMonitor.right - monitor.rcMonitor.left &&
         height == monitor.rcMonitor.bottom - monitor.rcMonitor.top)
         mode = MAC_BORDERLESS;
