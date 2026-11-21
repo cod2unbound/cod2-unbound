@@ -52,8 +52,24 @@ queries, and then replays the same two synthetic clients for 600 simulation
 ticks. `tools/parity/compare.py --raw --require-clients 2` checks the result
 against the saved Windows x64 reference traces in
 [`fixtures/two-bot/`](fixtures/two-bot/README.md). These traces cover the
-tracked entity hashes and player fields for this fixture. Retail parity and
-rendering require separate acceptance checks.
+tracked entity hashes and player fields for this fixture.
+
+**Retail 1.3 comparison.** Set `COD2_WINDOWS_RETAIL_DIR` to the directory
+containing the licensed 1.3 `CoD2MP_s.exe` and renderer DLL to compare a
+fresh retail replay with the Original 1.3 server. The licensed game
+directory supplies `main/*.iwd` and `mss32.dll`.
+
+```sh
+COD2_WINDOWS_RETAIL_DIR="/path/to/Windows 1.3" tools/windows/check-servers.sh "/path/to/CoD2"
+```
+
+The recorder checks the executable's SHA-256 and builds a Miles DLL forwarder
+from the local exports. It runs the original PE with the pinned i386 Wine 8.0
+image and a private Xvfb display in a network-isolated container. Set
+`COD2_WINDOWS_RETAIL_IMAGE` to the ID of a compatible local i386 Wine image
+with Xvfb. The 600-tick capture and the first strict comparison difference
+are written under `output/r05/oracle/`. The command exits nonzero while
+retail and the port differ. The internal replay checks pass independently.
 
 ## Direct3D 9
 

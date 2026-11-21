@@ -16,9 +16,14 @@ for edition in original cod2x; do
     fi
 done
 mkdir -p "$output/wine"
+run=$(mktemp -d "$output/wine/headless-XXXXXXXX")
 
-exec docker run --rm --init --pull=never --platform linux/amd64 --network none \
+docker run --rm --init --pull=never --platform linux/amd64 --network none \
     --label cod2.windows.check=wine \
     -v "$root:/src:ro" -v "$data:/data:ro" \
     -v "$output/matrix:/matrix:ro" -v "$output/wine:/out" \
-    "${COD2_WINDOWS_IMAGE:-cod2-build-win}" python3 -B /src/tools/windows/check-servers.py
+    "${COD2_WINDOWS_IMAGE:-cod2-build-win}" python3 -B /src/tools/windows/check-servers.py "/out/${run##*/}"
+
+if [[ -n ${COD2_WINDOWS_RETAIL_DIR:-} ]]; then
+    exec "$root/tools/windows/check-retail.sh" "$data" "$COD2_WINDOWS_RETAIL_DIR" "$run/original/replay"
+fi

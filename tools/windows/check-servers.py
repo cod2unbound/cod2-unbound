@@ -116,8 +116,8 @@ def replay(run, env, port, edition):
     )
 
 
-def main():
-    output = Path(tempfile.mkdtemp(prefix="headless-", dir="/out"))
+def main(output=None):
+    output = Path(output or tempfile.mkdtemp(prefix="headless-", dir="/out"))
     print(f"Evidence in output/r05/builds/wine/{output.name}", flush=True)
     env = dict(
         os.environ, WINEARCH="win64",
@@ -149,4 +149,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(*sys.argv[1:]))
