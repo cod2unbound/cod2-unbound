@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory, string logs) : IProcessSupervisor
+internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory, string logs, bool logInEngineHome = false) : IProcessSupervisor
 {
     public ValueTask<ImmutableArray<int>> FindEngineProcessesAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult<ImmutableArray<int>>([..inventory.FindRunning(role: null, cancellationToken).Select(game => game.Id)]);
@@ -30,7 +30,7 @@ internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory,
                 await stream.WriteAsync(file.Data.AsMemory(), cancellationToken).ConfigureAwait(false);
                 stream.Flush(flushToDisk: true);
             }
-            log = new WindowsSessionLog(logs, start);
+            log = new WindowsSessionLog(logInEngineHome ? Path.Join(start.HomeDirectory, "logs") : logs, start);
             pipe = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
             cancellationToken.ThrowIfCancellationRequested();
             var handle = NativeEngineStart.Start(start, pipe, out int id);

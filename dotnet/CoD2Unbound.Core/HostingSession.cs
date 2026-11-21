@@ -19,7 +19,7 @@ public interface IHostingFiles
 }
 
 public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles files, IGameFiles gameFiles,
-    IUdpTransport udp, TimeProvider clock, Func<int, bool> portAvailable)
+    IUdpTransport udp, TimeProvider clock, Func<int, bool> portAvailable, string listenAddress = "0.0.0.0")
 {
     private readonly SemaphoreSlim gate = new(1);
     private readonly Dictionary<string, Slot> slots = new(StringComparer.OrdinalIgnoreCase);
@@ -68,7 +68,7 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
             try
             {
                 var plan = WindowsLaunchPlan.Dedicated(binary, home, dataRoot, home,
-                    server.Port, server.Reach == HostedReach.Listed);
+                    server.Port, server.Reach == HostedReach.Listed, listenAddress);
                 string? template = await files.PrepareAsync(server.Id, home, package, cancellationToken).ConfigureAwait(false);
                 string config = HostingConfig.Render(server, template);
                 var start = plan.Start with

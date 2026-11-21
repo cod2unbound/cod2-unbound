@@ -139,6 +139,9 @@ public sealed partial class ServersPage : Page
         Render();
     });
 
+    private async void OnHost(object sender, RoutedEventArgs args) =>
+        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Hosting));
+
     private async void OnRefresh(object sender, RoutedEventArgs args) => await RefreshAsync();
 
     internal async Task RefreshAsync()

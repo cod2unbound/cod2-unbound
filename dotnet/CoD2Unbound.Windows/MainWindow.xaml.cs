@@ -26,6 +26,8 @@ public sealed partial class MainWindow : Window
     private GameSessionState? lastGame;
     private bool minimizedForGame;
     private bool flushedForClose;
+    private bool closing;
+    private DateTimeOffset hostPolled;
     private DateTimeOffset? attemptedUpdate;
     private readonly DateTimeOffset firstUpdate = DateTimeOffset.UtcNow.AddSeconds(8);
 
@@ -223,6 +225,13 @@ public sealed partial class MainWindow : Window
                 page.Loaded += OnServersLoaded;
             ContentFrame.Content = page;
         }
+        else if (place == LauncherPlace.Hosting)
+        {
+            Nav.SelectedItem = ServersItem;
+            var page = new HostingPage(this, session);
+            ContentFrame.Content = page;
+            await page.RefreshAsync();
+        }
         else if (place == LauncherPlace.Library)
         {
             Nav.SelectedItem = LibraryItem;
@@ -263,15 +272,25 @@ public sealed partial class MainWindow : Window
 
     private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (flushedForClose || !loaded || session.Settings is null || session.Settings.Saved == session.Settings.Working)
+        if (flushedForClose || !loaded || session.Settings is null)
+            return;
+        if (!closing && !busy && !session.Hosting.HasActiveServers && session.Settings.Saved == session.Settings.Working)
             return;
         args.Cancel = true;
-        await ShowProblemAsync(async () =>
+        if (closing || busy)
+            return;
+        closing = true;
+        try
         {
-            await session.Settings.FlushAsync();
-            flushedForClose = true;
-            Close();
-        });
+            await ShowProblemAsync(async () =>
+            {
+                await session.Settings.FlushAsync();
+                await session.Hosting.StopAllAsync();
+                flushedForClose = true;
+                Close();
+            });
+        }
+        finally { closing = false; }
     }
 
     internal async Task RefreshPlayerAsync()
@@ -303,7 +322,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnWatchGame(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
     {
-        if (!session.SetupComplete || busy)
+        if (!session.SetupComplete || busy || closing)
             return;
         await RunAsync(async () =>
         {
@@ -316,6 +335,13 @@ public sealed partial class MainWindow : Window
                     presenter.Restore();
             }
             var now = DateTimeOffset.UtcNow;
+            if (session.Hosting.HasActiveServers && now - hostPolled >= TimeSpan.FromSeconds(3))
+            {
+                hostPolled = now;
+                await session.Hosting.PollAsync();
+                if (ContentFrame.Content is HostingPage hosting)
+                    hosting.UpdateRunState();
+            }
             if (session.TestMaster is null && session.Settings.Working.CheckUpdatesAutomatically && now >= firstUpdate &&
                 LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
             {
@@ -375,4 +401,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, Servers, Library, Configs }
+internal enum LauncherPlace { Setup, Home, Settings, Servers, Hosting, Library, Configs }

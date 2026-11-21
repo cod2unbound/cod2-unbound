@@ -9,7 +9,7 @@ internal sealed class WindowsLauncherSession
 {
     private readonly WindowsFiles files = new();
     private readonly ISettingsFolder folder;
-    private readonly WindowsCredentials credentials = new();
+    private readonly ISecretStore credentials;
     private readonly WindowsGameDiscovery discovery;
     private readonly WindowsSettingsFolder gameFolder;
     private readonly WindowsEngineInventory inventory;
@@ -21,14 +21,19 @@ internal sealed class WindowsLauncherSession
     internal LauncherLibrary Library { get; private set; } = new();
     internal WindowsRenderMode Renderer => Settings.Working.WindowsRenderer ?? WindowsRenderMode.Direct3D9;
     internal LauncherUpdates Updates { get; }
+    internal WindowsHosting Hosting { get; }
     private const string RendererFile = "windows-renderer.txt";
     internal string HomePath => gameFolder.Root;
     internal event Action? ClientStarted;
 
     internal WindowsLauncherSession()
     {
+        if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
+            TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
         string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        gameFolder = new WindowsSettingsFolder(Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
+        string? testHome = TestMaster is not null ? Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME") : null;
+        credentials = testHome is null ? new WindowsCredentials() : new ProbeCredentials();
+        gameFolder = new WindowsSettingsFolder(testHome ?? Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
         folder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         string installRoot = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, ".."));
         inventory = new WindowsEngineInventory(installRoot, files);
@@ -36,10 +41,9 @@ internal sealed class WindowsLauncherSession
         var processes = new WindowsProcessSupervisor(inventory, Path.Join(folder.Root, "logs"));
         var gameHost = new WindowsGameSessionHost(inventory, files, HomePath, gameFolder, () => Renderer, SaveIntroAsync);
         Game = new GameLifecycle(processes, gameHost, files, TimeProvider.System);
-        if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
-            TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
         ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
+        Hosting = new(HomePath, inventory, files, TestMaster is not null);
         Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
             Version, version => $"CoD2-Unbound-{version}-Windows-x64.exe", TimeZoneInfo.Local);
     }
@@ -170,17 +174,19 @@ internal sealed class WindowsLauncherSession
         return start;
     }
 
-    internal async Task<string?> ReadLatestLogAsync()
+    internal Task<string?> ReadLatestLogAsync() => ReadLatestLogAsync(LogsPath);
+
+    internal static async Task<string?> ReadLatestLogAsync(string logPath)
     {
-        if (!Directory.Exists(LogsPath))
+        if (!Directory.Exists(logPath))
             return null;
-        using var root = new WindowsFiles.DirectoryHandles(LogsPath);
-        var log = new DirectoryInfo(LogsPath).EnumerateFiles("*.log")
+        using var root = new WindowsFiles.DirectoryHandles(logPath);
+        var log = new DirectoryInfo(logPath).EnumerateFiles("engine-*.log")
             .Where(file => (file.Attributes & FileAttributes.ReparsePoint) == 0)
             .OrderByDescending(file => file.LastWriteTimeUtc).FirstOrDefault();
         if (log is null)
             return null;
-        using var input = WindowsFiles.Open(LogsPath, log.Name);
+        using var input = WindowsFiles.Open(logPath, log.Name);
         input.Seek(Math.Max(0, input.Length - 256 * 1024), SeekOrigin.Begin);
         using var text = new StreamReader(input);
         return await text.ReadToEndAsync();
@@ -264,5 +270,16 @@ internal sealed class WindowsLauncherSession
         });
         string initialPath = SetupSession.InitialDataPath(candidates, remembered, SetupComplete);
         return new SetupSession(files, folder, credentials, initialPath, hasKey, step: step);
+    }
+
+    private sealed class ProbeCredentials : ISecretStore
+    {
+        private string? key;
+        public ValueTask<string?> ReadAsync(string name, CancellationToken cancellationToken) => ValueTask.FromResult(key);
+        public ValueTask WriteAsync(string name, string? value, CancellationToken cancellationToken)
+        {
+            key = value;
+            return ValueTask.CompletedTask;
+        }
     }
 }

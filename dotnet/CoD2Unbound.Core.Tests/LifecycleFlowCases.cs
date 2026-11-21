@@ -97,13 +97,14 @@ internal static partial class Program
             var udp = new StatusUdp();
             foreach (string archive in GameArchives.Required)
                 files.PutFile(archive);
-            var session = new HostingSession(processes, hostingFiles, files, udp, clock, port => port != 28961);
+            var session = new HostingSession(processes, hostingFiles, files, udp, clock, port => port != 28961, "127.0.0.1");
             var server = HostedServer.New("test") with { Name = "Test", JoinPassword = "join secret", AdminPassword = "admin secret" };
             var binary = new GameBinary(server.Engine, EngineRole.Dedicated, "C:/engine.exe");
             Equal(HostedPhase.PortBusy, session.StartAsync(server with { Port = 28961 }, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult().Phase);
             Equal(HostedPhase.Starting, session.StartAsync(server, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult().Phase);
             var process = processes.Process!;
             var start = processes.Starts.Single();
+            Equal("127.0.0.1", start.EngineArguments[start.EngineArguments.IndexOf("net_ip") + 1]);
             Equal("main/server.cfg", start.PrivateFiles.Single().RelativePath);
             Equal(2, start.LogSecrets.Length);
             session.PollAsync().GetAwaiter().GetResult();

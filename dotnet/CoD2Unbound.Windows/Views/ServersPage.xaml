@@ -25,6 +25,7 @@
                            Style="{StaticResource SecondaryText}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                <Button Content="Host" AccessKey="T" Click="OnHost" />
                 <Button x:Name="RefreshButton" Content="Refresh" AccessKey="R" Click="OnRefresh"
                         AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list" />
                 <Button Content="Connect to address…" AccessKey="C" Click="OnConnect"
@@ -46,7 +47,7 @@
             <TextBox x:Name="SearchBox" Grid.Column="1" PlaceholderText="Search servers, maps or mods"
                      AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                      TextChanged="OnSearch" VerticalAlignment="Center" MaxLength="256" />
-            <Button x:Name="FilterButton" Grid.Column="2" Content="Filters" AccessKey="T" VerticalAlignment="Center">
+            <Button x:Name="FilterButton" Grid.Column="2" Content="Filters" AccessKey="F" VerticalAlignment="Center">
                 <Button.Flyout>
                     <Flyout Opening="OnFiltersOpening">
                         <StackPanel Spacing="8" Width="200">
