@@ -77,6 +77,17 @@ with Xvfb. The comparison checks raw entity-state hashes and the tracked player
 fields for every tick. The capture and comparison result are written under
 `output/r05/oracle/`. The command exits nonzero if the replay differs.
 
+For the short four-client retail cases on additional stock maps, pass the same
+game and retail paths to `tools/windows/check-retail-cases.sh`. Its optional
+third argument selects one case from `fixtures/retail-extra/cases.tsv`.
+
+For the protocol 118 loopback comparison, run `tools/windows/check-snapshot-wire.sh`
+with the game path, retail path, successful Toujane retail capture directory,
+and a new output directory. The headless receiver uses the engine's client
+parser. Each side saves length-prefixed UDP datagrams and decoded records. The
+comparison reports decoded field, message order, and packet size differences,
+along with snapshot times received by only one side.
+
 ## Direct3D 9
 
 `-DCOD2_WIN32_D3D9=ON` makes the client create a real Direct3D 9 device on its SDL window, as
