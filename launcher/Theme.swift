@@ -129,10 +129,25 @@ enum ControlMetrics {
 }
 
 // MARK: - ship-integrate
+/// Every sheet's content goes through this. The sheet's background is the system's own (Apple: a
+/// macOS sheet is always opaque and adopts the system look by itself; apps should not draw their
+/// own), so the palette is checked against it: #282727 in dark, white in light on macOS 26. Only
+/// dark tertiary text fell short (4.2:1); in a sheet it is lifted to 4.9:1. Increase Contrast and
+/// light already pass.
 private struct SheetShapeAuditScope: ViewModifier {
     @Environment(\.shapeAudit) private var audit
+    @Environment(\.palette) private var palette
     func body(content: Content) -> some View {
         content.environment(\.shapeAudit, audit?.sheet).environment(\.shapeAuditContainer, nil)
+            .environment(\.palette, palette.onSystemSheet)
+    }
+}
+extension Palette {
+    /// The palette for text and wells on the system's sheet background (see SheetShapeAuditScope).
+    var onSystemSheet: Palette {
+        var p = self
+        if dark, p.tertiary == Self.dark.tertiary { p.tertiary = Self.hex(0x9a937f) }
+        return p
     }
 }
 extension View {

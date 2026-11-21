@@ -18,7 +18,7 @@ struct ConfigImportFlows: ViewModifier {
         content
             .sheet(isPresented: Binding(get: { discover.step != nil }, set: { if !$0 { discover.closeImport() } })) {
                 // The sheet is its own window: the review harness's shape audit covers the main window only.
-                ConfigImportSheet(discover: discover, undo: undoManager).environment(\.palette, palette).environment(\.shapeAudit, nil)
+                ConfigImportSheet(discover: discover, undo: undoManager).environment(\.palette, palette.onSystemSheet).environment(\.shapeAudit, nil)
             }
             .onDrop(of: [UTType.fileURL, UTType.plainText], isTargeted: $targeted) { accept($0) }
             .overlay {
