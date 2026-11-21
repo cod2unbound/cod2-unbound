@@ -12,6 +12,16 @@
     },
     {
       "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "input" : "0000000000000000000000000000000000000000000000000000000000000000  other.zip\r\nAB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12 *CoD2-Unbound-0.4.0-macos-arm64.zip\r\n"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : null,
+      "input" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\r\nab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\r\n"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
       "hash" : null,
       "input" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\nab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\n"
     },

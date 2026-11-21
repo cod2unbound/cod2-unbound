@@ -69,7 +69,11 @@ enum SettingsParity {
         let hex = String(repeating: "ab12", count: 16)
         let name = AppUpdate.archiveName("0.4.0")
         let line = "\(hex)  \(name)"
-        let hashes = [line, "\(hex.uppercased()) *\(name)\r\n", "\(line)\n\(line)\n", "\(hex)  other.zip", "not a checksum"].map {
+        let other = "\(String(repeating: "0", count: 64))  other.zip"
+        let binary = "\(hex.uppercased()) *\(name)"
+        let hashes = [line, "\(binary)\r\n", "\(other)\r\n\(binary)\r\n",
+                      "\(line)\r\n\(line)\r\n", "\(line)\n\(line)\n",
+                      "\(hex)  other.zip", "not a checksum"].map {
             ["input": $0, "archive": name, "hash": (try? AppUpdate.checksum(Data($0.utf8), name: name)) as Any? ?? NSNull()]
         }
         let joins: [[String: Any]] = GameEngine.allCases.flatMap { engine in
