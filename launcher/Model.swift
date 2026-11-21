@@ -74,7 +74,9 @@ struct MediaEntry: Identifiable {
 
 @MainActor final class LauncherModel: ObservableObject {
     // MARK: - Core state (ship-foundation)
-    @Published var page: LauncherPage = .home
+    @Published var page: LauncherPage = .home {
+        didSet { if page != oldValue { recordUsageNavigation() } }
+    }
     @Published var onboard = true
     @Published var gameRunning = false
     /// The toast at the bottom of the main window (things that happened elsewhere).
@@ -87,7 +89,9 @@ struct MediaEntry: Identifiable {
     @Published var confirmation: ConfirmationRequest?
     @Published var settingsConfirmation: ConfirmationRequest?
     /// The Settings window's selected pane; `openSettings(_:)` sets it and brings the window forward.
-    @Published var settingsPane: SettingsPane = .general
+    @Published var settingsPane: SettingsPane = .general {
+        didSet { if settingsPane != oldValue && settingsWindow?.isVisible == true { recordUsageSettingsPane() } }
+    }
     /// Opens a window scene by id ("launcher", "settings"). The app's scenes register it; the harness its own.
     var openWindowHandler: ((LauncherWindowID) -> Void)?
     weak var launcherWindow: NSWindow?
@@ -141,6 +145,24 @@ struct MediaEntry: Identifiable {
     var exitAfterGame = false
     /// Creates the native export dialog; callers configure it before presentation.
     var makeExportPanel: @MainActor () -> NSSavePanel = { NSSavePanel() }
+
+    // MARK: - Usage data
+    lazy var usageData = UsageData(home: home, consent: settings.usageConsent, endpoint: usageEndpoint,
+                                   facts: { [version] in UsageFacts.current(appVersion: version) })
+    private var usageEndpoint: UsageEndpoint? {
+        guard !snapshot else { return nil }
+        let environment = ProcessInfo.processInfo.environment
+        let override = environment["COD2_USAGE_URL"]
+        guard environment["COD2_SETUP_NONINTERACTIVE"] != "1" || override != nil,
+              let key = Bundle.main.object(forInfoDictionaryKey: UsageEndpoint.infoKey) as? String else { return nil }
+        return UsageEndpoint(key: key, override: override)
+    }
+    @Published var usageInstallNumber: UUID?
+    @Published var usageQuestionPending = false
+    var usageGameStartedAt: Date?
+    var usageSettingsBaseline: GameSettings?
+    var usageJoinSheetContext: (address: String, source: UsageJoinSource)?
+    var usageDismissedJoinContext: (address: String, source: UsageJoinSource)?
 
     // MARK: - ship-shell state (setup, sidebar, player card, Jump)
     @Published var sidebarVisibility = NavigationSplitViewVisibility.all
@@ -260,7 +282,11 @@ struct MediaEntry: Identifiable {
     @Published var sortAscending = true
     @Published var serverSearchRequested = false
     /// All · Favorites · Recent, the switch at the left of the Servers toolbar.
-    @Published var serverScope: ServerScope = .all
+    @Published var serverScope: ServerScope = .all {
+        didSet {
+            if page == .servers, !onboard, (serverScope == .hosting) != (oldValue == .hosting) { recordUsageNavigation() }
+        }
+    }
     /// The Filters popover's choices; saved in launcher-servers.json whenever they change.
     @Published var serverFilters = ServerFilters() { didSet { if serverFilters != oldValue { saveServerPrefs() } } }
     @Published var serverFiltersPresented = false
@@ -354,8 +380,17 @@ struct MediaEntry: Identifiable {
                                gameBundle: Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/CoD2 Game.app"))
         discover.landsOnHome = !snapshot
         discover.notify = { [weak self] in self?.notice = $0 }
+        discover.recordUsage = { [weak self] in self?.recordUsage($0) }
+        discover.onPageChanged = { [weak self] in self?.recordUsageConfigsPage() }
+        studio.onTabChanged = { [weak self] in
+            if let self, self.discover.page == nil { self.recordUsageConfigsPage() }
+        }
+        studio.onLoadoutCreated = { [weak self] in self?.recordUsage(.loadoutMade) }
+        studio.onSaveFailure = { [weak self] in self?.recordUsage(.errorShown(.saveLoadout)) }
         hosting.dataPath = { [weak self] in self?.dataPath ?? "" }
         hosting.notify = { [weak self] in self?.notice = $0 }
+        hosting.onStarted = { [weak self] reach, engine in self?.recordUsage(.hostingStarted(reach, engine: engine)) }
+        hosting.onFailure = { [weak self] in self?.recordUsage(.errorShown(.hosting)) }
         if let sessionError { notice = sessionError }
         if snapshot { seedPreview(); return }
         mainDisplay = MainDisplay.current()
@@ -414,11 +449,16 @@ struct MediaEntry: Identifiable {
     }
     var dataPathDisplay: String { PathDisplay.short(dataPath) }
     func boot() {
-        guard !snapshot else { return }
+        guard !snapshot, !booted else { return }
         booted = true
+        usageInstallNumber = usageData.installNumber
+        usageSettingsBaseline = settings
+        usageData.applicationOpened()
+        if onboard { recordUsageSetupStep(setupStep) } else { recordUsageNavigation() }
         sweepSteam()  // ship-shell: nothing of an interrupted Steam download's tool or sign-in stays
         startSettings()  // ship-settings: appearance, the last Settings pane, the daily update check
         askAboutCrashReportsOnce()
+        offerUsageQuestionOnThisLaunch()
         _ = attachExistingGame()
         startGameMonitor()
         let args = CommandLine.arguments
@@ -500,7 +540,9 @@ struct MediaEntry: Identifiable {
     }
     /// The one way into Settings: selects `pane` (or keeps the last one) and brings the window forward.
     func openSettings(_ pane: SettingsPane? = nil) {
+        let paneWillBeRecorded = settingsWindow?.isVisible == true && (pane.map { $0 != settingsPane } ?? false)
         if let pane { settingsPane = pane }
+        if !paneWillBeRecorded { recordUsageSettingsPane() }
         openWindowHandler?(.settings)
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -509,11 +551,21 @@ struct MediaEntry: Identifiable {
     var settingsInFront: Bool { settingsWindow.map { $0.isVisible && $0.isKeyWindow } ?? false }
     /// Shows `sheet` attached to the window in front (Settings when it's key, otherwise the main window).
     func present(_ sheet: AppSheet) {
+        usageJoinSheetContext = nil
         if settingsInFront { settingsSheet = sheet; return }
         if launcherWindow?.isVisible != true { openWindowHandler?(.main) }
         self.sheet = sheet
     }
-    func dismissSheet() { sheet = nil; settingsSheet = nil }
+    func dismissSheet() {
+        // The connect and password sheets dismiss synchronously just before calling join.
+        // A cancellation must not attribute a later, unrelated action to that sheet.
+        usageDismissedJoinContext = usageJoinSheetContext
+        usageJoinSheetContext = nil
+        if usageDismissedJoinContext != nil {
+            Task { [weak self] in self?.usageDismissedJoinContext = nil }
+        }
+        sheet = nil; settingsSheet = nil
+    }
     /// Asks a single question as an alert on the window in front.
     func confirm(_ request: ConfirmationRequest) {
         if settingsInFront { settingsConfirmation = request } else { confirmation = request }
@@ -586,24 +638,23 @@ struct MediaEntry: Identifiable {
     /// Home's Launch: rejoin the last server, or open the game's menu when there is none.
     func launch() {
         guard !onboard else { return }
-        if let address = library.recent.first { join(address) }
+        if let address = library.recent.first { join(address, source: .list) }
         else { openGameMenu() }
     }
     func openLink(_ url: String) {
-        do {
-            let link = try LaunchLink(url)
-            try serverConnection.select(address: link.address)
-            if let pid = activeGamePID {
-                // Startup overrides cannot be applied to an already running
-                // game through the read-only launch API.
-                serverConnection.clear()
-                scheduleLink(link, pid: pid)
-            } else {
-                // A cold link can arrive before launch finishes; boot() starts the game then, so the
-                // Dock hand-off always runs after AppKit's own launch-time activation.
-                pendingLink = link; fastPlay = true; if booted && !onboard { play() }
-            }
-        } catch { notice = error.localizedDescription }
+        do { try openLink(LaunchLink(url)) }
+        catch { notice = error.localizedDescription; recordUsage(.errorShown(.serverAddress)) }
+    }
+    func openLink(_ link: LaunchLink) throws {
+        try serverConnection.select(address: link.address)
+        if let pid = activeGamePID {
+            // Startup overrides cannot be applied to an already running game.
+            serverConnection.clear()
+            scheduleLink(link, pid: pid)
+        } else {
+            // A cold link can arrive before launch finishes; boot() starts the game then.
+            pendingLink = link; fastPlay = true; if booted && !onboard { play() }
+        }
     }
     private func scheduleLink(_ link: LaunchLink, pid: pid_t) {
         sessionLog?.protect(password: link.password)
@@ -616,14 +667,18 @@ struct MediaEntry: Identifiable {
                         let event = NSAppleEventDescriptor(eventClass: AEEventClass(kInternetEventClass), eventID: AEEventID(kAEGetURL), targetDescriptor: NSAppleEventDescriptor(processIdentifier: pid), returnID: AEReturnID(kAutoGenerateReturnID), transactionID: AETransactionID(kAnyTransactionID))
                         event.setParam(NSAppleEventDescriptor(string: link.url), forKeyword: AEKeyword(keyDirectObject))
                         _ = try event.sendEvent(options: .noReply, timeout: 2)
+                        let executable = engine?.executableURL ?? attachedGames[pid]?.executableURL
+                        let joinedEngine = GameEngine.allCases.first { engine in GameRenderer.allCases.contains { renderer in engine.executableName(renderer) == executable?.lastPathComponent } }
+                        recordUsage(.serverJoined(link.usageSource, engine: joinedEngine))
                         library.joined(link.address); saveLibrary()
                         NSRunningApplication(processIdentifier: pid)?.activate(options: .activateAllWindows)
-                    } catch { notice = "Could not deliver the server link to the game. Try again after the menu appears." }
+                    } catch { notice = "Could not deliver the server link to the game. Try again after the menu appears."; recordUsage(.errorShown(.serverLink)) }
                     return
                 }
                 try? await Task.sleep(for: .milliseconds(200))
             }
             notice = "The game hasn't finished starting. Open the server link again after the menu appears."
+            recordUsage(.errorShown(.serverLink))
         }
     }
 
@@ -637,6 +692,7 @@ struct MediaEntry: Identifiable {
         guard let app = apps.first else { return false }
         attachedGames = Dictionary(uniqueKeysWithValues: apps.map { ($0.processIdentifier, $0) })
         gameRunning = true; gameStartedAt = Date()
+        usageGameStartedAt = app.launchDate
         do { try configStudio?.reconcileGames(Set(attachedGames.keys)) } catch { notice = error.localizedDescription }
         // ship-shell: hide the windows if the player wants them hidden while playing (ModelShell.swift).
         gameTookOver()
@@ -666,7 +722,7 @@ struct MediaEntry: Identifiable {
         var pids = Set(attachedGames.keys)
         if let engine, engine.isRunning { pids.insert(engine.processIdentifier) }
         let wasRunning = gameRunning
-        if !pids.isEmpty && !wasRunning { gameStartedAt = Date() }
+        if !pids.isEmpty && !wasRunning { gameStartedAt = Date(); usageGameStartedAt = apps.first?.launchDate }
         gameRunning = !pids.isEmpty
         do { try configStudio?.reconcileGames(pids) } catch { notice = error.localizedDescription }
         if wasRunning && !gameRunning { gameEnded(code: lastExitCode); lastExitCode = nil }
@@ -683,7 +739,7 @@ struct MediaEntry: Identifiable {
         if let refresh = shaderRefresh { Task { await refresh.value; play(demo: demo) }; return }
         if attachExistingGame() {
             if demo != nil { mediaError = true; mediaMessage = "Close the game before playing a recording." }
-            if let link = pendingLink { pendingLink = nil; openLink(link.url) }
+            if let link = pendingLink { pendingLink = nil; do { try openLink(link) } catch { notice = error.localizedDescription } }
             return
         }
         if onboard { return }
@@ -758,6 +814,8 @@ struct MediaEntry: Identifiable {
             }
             try PrivateFile.write(Data(try settings.launchConfig(migrated: configLaunch != nil).utf8), to: home.appendingPathComponent("main/launcher.cfg"))
             try process.run(); log.closeParentWriter(); engine = process; gameRunning = true; gameStartedAt = Date(); crashReport = nil; notice = ""
+            usageGameStartedAt = gameStartedAt
+            recordUsage(.gameStarted(engine: gameEngine, renderer: renderer, mode: UsageDisplayMode(rawValue: settings.fullscreen) ?? .unknown, scale: settings.renderScale))
             configStudio?.gameLaunched(pid: process.processIdentifier)
             // The engine records the films as played as soon as it starts, even if the player quits during them.
             if plan.playsIntroFilms { settings.introFilmsPlayed = true; flushSettings() }
@@ -827,11 +885,20 @@ struct MediaEntry: Identifiable {
         let started = gameStartedAt
         let outcome = GameExit.outcome(code: code, sessionLog: { GameSessionLog.latest(home: home) },
                                        crashReport: { CrashReports.latest(in: home, since: started) })
+        let reports = closed ? [] : CrashReports.all(in: home, since: started)
+        if usageConsent == .yes, let start = usageGameStartedAt {
+            let usageReports = start < started && !closed ? CrashReports.all(in: home, since: start) : reports
+            if let how = UsageGameEnd.observed(code: code, requestedQuit: quittingGame, reports: usageReports) {
+                recordUsage(.gameEnded(how, minutes: max(0, Int(Date().timeIntervalSince(start) / 60))))
+            }
+        }
+        usageGameStartedAt = nil
         if outcome.unexpected {
+            recordUsage(.errorShown(.gameEndedUnexpectedly))
             crashReport = outcome.report
             notice = "The game closed unexpectedly. Your settings and loadouts are safe."
         }
-        if !closed { sendCrashReports(CrashReports.all(in: home, since: gameStartedAt)) }
+        if !closed { sendCrashReports(reports) }
         print("CoD2 Unbound: returned to launcher (game exit \(code.map(String.init) ?? "unavailable")).")
         fflush(stdout)
         readPlayerName()

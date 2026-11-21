@@ -76,7 +76,11 @@ enum GameArchives {
 @MainActor extension LauncherModel {
     var setupStep: SetupStep {
         get { SetupStep(rawValue: step) ?? .welcome }
-        set { step = newValue.rawValue }
+        set {
+            guard setupStep != newValue else { return }
+            step = newValue.rawValue
+            recordUsageSetupStep(newValue)
+        }
     }
     /// Set Up Again (from Settings): Cancel shows at every step and leaves with nothing changed.
     var canCancelSetup: Bool { setupReturnPage != nil }
@@ -146,6 +150,7 @@ enum GameArchives {
         if Self.steamDownloadUnfinished(url.path) {
             dataArchivesFound = 0
             dataError = Self.steamUnfinishedMessage
+            recordUsage(.errorShown(.badGameData))
             return false
         }
         if let valid = LauncherFindData(url.path) {
@@ -159,6 +164,7 @@ enum GameArchives {
         dataError = more > 0
             ? "This folder is missing \(first) and \(more) more game archive\(more == 1 ? "" : "s"). Choose the Call of Duty 2 folder itself, the one that contains “main” with iw_00.iwd through iw_15.iwd."
             : "This folder is missing \(first). Choose the Call of Duty 2 folder itself, the one that contains “main” with iw_00.iwd through iw_15.iwd."
+        recordUsage(.errorShown(.badGameData))
         return false
     }
     func rememberData() throws {
@@ -207,6 +213,7 @@ enum GameArchives {
                 if !snapshot { try rememberData() }
                 dataChanged = dataChanged || dataPath != confirmedDataPath
                 confirmedDataPath = dataPath
+                if !steamActive { recordUsage(.setupStepReached(.gameData, source: .ownFiles)) }
                 if steamActive { leaveSteam() }
                 setupStep = .key
             case .key:
@@ -215,22 +222,24 @@ enum GameArchives {
                     keyInput = ""; keyVerified = true; replacingKey = false
                 }
                 enterShaders()
-            case .shaders: enterYours()
+            case .shaders:
+                if shaderFailed { recordUsage(.setupStepSkipped(.shaders)) }
+                enterYours()
             case .yours:
                 try applyYours()
                 setupStep = setupStep(after: .yours)
             case .crash: answerCrashReports(send: true); setupStep = .ready
             case .ready: finishSetup()
             }
-        } catch { setupError = error.localizedDescription }
+        } catch { setupError = error.localizedDescription; recordUsage(.errorShown(.saveSetup)) }
     }
     /// The bottom bar's second action: Skip for Now (CD key, Make it yours), Don’t Send (Crash reports), Find a Server (Ready).
     func alternateSetup() {
         setupError = ""
         switch setupStep {
         case .data: stopSteam()
-        case .key: keyInput = ""; replacingKey = false; enterShaders()
-        case .yours: setupNameError = nil; setupStep = setupStep(after: .yours)
+        case .key: recordUsage(.setupStepSkipped(.cdKey)); keyInput = ""; replacingKey = false; enterShaders()
+        case .yours: recordUsage(.setupStepSkipped(.yours)); setupNameError = nil; setupStep = setupStep(after: .yours)
         case .crash: answerCrashReports(send: false); setupStep = .ready
         case .ready: finishSetup(findServer: true)
         default: break
@@ -331,6 +340,7 @@ enum GameArchives {
             shaderSeconds = verified ? max(1, Int(Date().timeIntervalSince(started).rounded())) : nil
             dataChanged = false
             shaderMessage = verified ? "Original shaders ready" : "The original shaders couldn’t be built"
+            if !verified { recordUsage(.errorShown(.shaderBuild)) }
             // Setup may have been left in the background; only then say so outside the window.
             if verified, onboard, !NSApp.isActive { notifyShadersReady() }
         }
@@ -361,11 +371,13 @@ enum GameArchives {
         do {
             if !snapshot { try PrivateFile.write(Data("prepared\n".utf8), to: home.appendingPathComponent(".launcher-setup-complete")) }
             onboard = false; setupReturnPage = nil
-            navigate(to: findServer ? .servers : .home)
+            let destination: LauncherPage = findServer ? .servers : .home
+            if page == destination { recordUsageNavigation() }
+            navigate(to: destination)
             loadArtwork()
             if !findServer && hasPendingLaunch { play() }
-            if let address = pendingJoinAddress { pendingJoinAddress = nil; connectToAddress(address) }
-        } catch { setupError = "Setup couldn’t be saved. Try again. " + error.localizedDescription }
+            if let address = pendingJoinAddress { pendingJoinAddress = nil; connectToAddress(address, source: .link) }
+        } catch { setupError = "Setup couldn’t be saved. Try again. " + error.localizedDescription; recordUsage(.errorShown(.saveSetup)) }
     }
     func restartSetup() { restartSetup(at: .data) }
     /// Older callers pass the step of the four-step setup: 0 game data, 1 CD key, 2 shaders.
@@ -382,6 +394,7 @@ enum GameArchives {
         if steamActive { leaveSteam() }
         setupNameError = nil; shaderFailed = approximate && !shaderBusy
         jumpPresented = false; playerCardPresented = false
+        if setupStep == requested { recordUsageSetupStep(requested) }
         setupStep = requested; onboard = true
         if requested == .shaders && approximate { prepareShaders() }
     }
@@ -428,6 +441,7 @@ enum GameArchives {
         case "setup-data-unfinished":
             setupStep = .data; dataPath = ""; attemptedDataPath = NSHomeDirectory() + "/Games/CoD2"; dataArchivesFound = 0
             dataError = Self.steamUnfinishedMessage
+            recordUsage(.errorShown(.badGameData))
         case "setup-key": setupStep = .key; keyVerified = false
         case "setup-key-ok": setupStep = .key; keyVerified = false; keyInput = KeyFormat.display(Self.previewKey)
         case "setup-key-bad": setupStep = .key; keyVerified = false; keyInput = KeyFormat.display("000000000000000086D0")

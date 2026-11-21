@@ -153,10 +153,18 @@ extension KeyStore {
             let text = try settings.launchConfig(migrated: configStudio?.migrationCompleted == true)
             guard !snapshot else { savedSettings = settings; settingsSaveError = nil; return }
             try PrivateFile.write(Data(text.utf8), to: home.appendingPathComponent("main/launcher.cfg"))
-            try PrivateFile.write(JSONEncoder().encode(settings), to: home.appendingPathComponent("launcher-settings.json"))
+            try writeLauncherSettings(settings)
+            for change in UsageSetting.changes(from: usageSettingsBaseline ?? savedSettings, to: settings) { recordUsage(.settingChanged(change)) }
+            usageSettingsBaseline = settings
             savedSettings = settings; settingsSaveError = nil
             studio.checkup.matchSummariesEnabled = settings.matchSummariesEnabled
-        } catch { settingsSaveError = "Your changes couldn’t be saved. Check that your CoD2 Unbound folder is writable, then try again." }
+        } catch {
+            if settingsSaveError == nil { recordUsage(.errorShown(.saveSettings)) }
+            settingsSaveError = "Your changes couldn’t be saved. Check that your CoD2 Unbound folder is writable, then try again."
+        }
+    }
+    func writeLauncherSettings(_ settings: GameSettings) throws {
+        try PrivateFile.write(JSONEncoder().encode(settings), to: home.appendingPathComponent("launcher-settings.json"))
     }
 
     // MARK: Start-up (boot calls this once)
@@ -337,12 +345,14 @@ extension KeyStore {
     func useGameData(_ url: URL) {
         guard let valid = LauncherFindData(url.path) else {
             dataChangeError = "“\(url.lastPathComponent)” is incomplete, so the game still uses \(dataPathDisplay.isEmpty ? "no folder" : dataPathDisplay). Choose the folder whose main folder has all 16 game archives."
+            recordUsage(.errorShown(.badGameData))
             return
         }
         let previous = dataPath
         dataPath = valid
-        do { try rememberData() } catch { dataPath = previous; dataChangeError = error.localizedDescription; return }
+        do { try rememberData() } catch { dataPath = previous; dataChangeError = error.localizedDescription; recordUsage(.errorShown(.badGameData)); return }
         confirmedDataPath = valid; dataChangeError = nil
+        if previous != valid { recordUsage(.settingChanged(.gameDataFolder)) }
         refreshGameData()
         loadArtwork()
         if approximate { refreshShaders() }
@@ -413,7 +423,7 @@ extension KeyStore {
         let home = self.home
         cod2xFilesTask = Task {
             var failure: String?
-            do { try await work(home) }
+            do { try await work(home); recordUsage(.settingChanged(.cod2xMenus)) }
             catch { if !Task.isCancelled { failure = CoD2xFiles.message(error) } }
             cod2xFilesBusy = false
             refreshCoD2xFiles()
@@ -425,7 +435,7 @@ extension KeyStore {
     func cancelCoD2xFiles() { cod2xFilesTask?.cancel() }
     func removeCoD2xFiles() {
         guard !snapshot, !cod2xFilesBusy else { return }
-        do { try CoD2xFiles.remove(home: home); refreshCoD2xFiles() } catch { cod2xFilesMessage = CoD2xFiles.message(error) }
+        do { try CoD2xFiles.remove(home: home); refreshCoD2xFiles(); recordUsage(.settingChanged(.cod2xMenus)) } catch { cod2xFilesMessage = CoD2xFiles.message(error) }
     }
 
     // MARK: Privacy
@@ -567,12 +577,14 @@ extension KeyStore {
                     updateNotes = feed.latestNotes
                     // Integration hook (ship-shell's notifyUpdateReady): a version the automatic check finds, once per version.
                     // Nothing installs at quit, so installsOnQuit is always false.
+                    if announced != latest { recordUsageUpdate(from: version, to: latest, installed: false) }
                     if automatic, announced != latest { onUpdateReady?(latest, false) }
                 } else { updateMessage = "You’re up to date · \(version)"; releaseURL = nil; updateOffer = nil; availableVersion = nil; updateNotes = [] }
             } catch {
                 if automatic { updateMessage = before.message; updateError = before.error; updateFailedStage = before.stage; return }
                 updateMessage = "The update server didn’t answer. Check your connection and try again. Your current version keeps working."
                 updateError = true; updateFailedStage = .check
+                recordUsage(.errorShown(.updateCheck))
             }
         }
     }
@@ -635,6 +647,8 @@ extension KeyStore {
                 if let refusal = AppUpdate.refusal(app: app, gameRunning: gameRunning, serversRunning: !hosting.running.isEmpty) { throw refusal }
                 updateMessage = AppUpdate.Message.installing(offer.version)
                 try AppUpdate.swap(app, with: candidate)
+                recordUsageUpdate(from: version, to: offer.version, installed: true)
+                if usageConsent == .yes { await usageData.savePendingEvents() }
                 try? FileManager.default.removeItem(at: staged.folder)
                 updateMessage = AppUpdate.Message.restarting
                 relaunch(app)
@@ -650,6 +664,7 @@ extension KeyStore {
     func cancelUpdate() { updateTask?.cancel() }
     var canCancelUpdate: Bool { checkingUpdates || (installingUpdate && updateMessage != AppUpdate.Message.restarting && !updateMessage.hasPrefix("Installing")) }
     func updateFailed(_ error: Error) {
+        recordUsage(.errorShown(.updateInstall))
         updateError = true; updateFailedStage = .install
         updateMessage = AppUpdate.message(error)
         studio.announce(updateMessage)
@@ -729,6 +744,7 @@ extension KeyStore {
         keyVerified = true
         refreshGameData()
         settingsFeedback = .init(pane: .gameData, text: "CD key replaced.")
+        recordUsage(.settingChanged(.cdKey))
         return nil
     }
     /// Home's update pill and Settings › Updates.

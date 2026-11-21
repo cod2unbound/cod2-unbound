@@ -81,10 +81,32 @@ struct ConfigDirectoryConfiguration: Sendable {
         self.indexURL = indexURL; self.signatureURL = signatureURL; self.publicKey = publicKey
     }
 }
+/// A public slug obtained from the signed index, never from a player or a loadout.
+struct ConfigDirectoryUsageID: Codable, Sendable {
+    let rawValue: String
+
+    fileprivate init(_ rawValue: String) { self.rawValue = rawValue }
+
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+        guard ConfigDirectory.validID(value) else { throw ConfigDirectoryError.invalidCache }
+        rawValue = value
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var value = encoder.singleValueContainer()
+        try value.encode(rawValue)
+    }
+}
+
 struct ConfigDirectorySnapshot: Sendable {
     enum Origin: Sendable { case network, cache }
     let index: ConfigDirectoryIndex
     let origin: Origin
+    func usageID(_ candidate: String) -> ConfigDirectoryUsageID? {
+        index.entries.first { $0.id == candidate }.map { ConfigDirectoryUsageID($0.id) }
+    }
+
     fileprivate let bytes: Data
     fileprivate let signature: Data
     fileprivate let configuration: ConfigDirectoryConfiguration
@@ -260,7 +282,7 @@ struct ConfigDirectory: Sendable {
               entry.sha256.utf8.count == 64, entry.sha256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { return false }
         return true
     }
-    private static func validID(_ value: String) -> Bool {
+    fileprivate static func validID(_ value: String) -> Bool {
         let bytes = Array(value.utf8)
         let alphanumeric: (UInt8) -> Bool = { (97...122).contains($0) || (48...57).contains($0) }
         return !bytes.isEmpty && bytes.count <= 64 && alphanumeric(bytes[0]) && bytes.allSatisfy { alphanumeric($0) || $0 == 45 }

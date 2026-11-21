@@ -287,6 +287,7 @@ enum ServerPasswords {
     func refresh() {
         guard !snapshot, !refreshing else { return }
         loadServerPrefsOnce()
+        if let list = UsageServerList(rawValue: serverScope.rawValue) { recordUsage(.serverListRefreshed(list)) }
         refreshing = true; refreshAsked = 0; refreshFinished = 0; refreshAnswered = 0
         browserTask = Task {
             let discovered = await ServerQueries.masterAddresses()
@@ -325,6 +326,7 @@ enum ServerPasswords {
             saveLibrary()
             refreshing = false
             let count = "\(fresh.count) \(fresh.count == 1 ? "server" : "servers")"
+            if !stopped, !answered { recordUsage(.errorShown(.serverList)) }
             studio.announce(stopped ? "Refresh stopped. \(count) answered." : answered ? "\(count) answered." : "The master servers didn’t answer.")
             loadArtwork()
         }
@@ -403,24 +405,32 @@ enum ServerPasswords {
     /// Launch on a server from the list, its details, a menu or Home. nil launches on the selected server.
     func connect(_ server: GameServer? = nil) {
         guard let server = server ?? selected else { return }
-        join(server.address)
+        join(server.address, source: page == .servers && serverScope == .favorites ? .favorite : .list)
     }
     /// Every launch on a server comes here: a locked server asks for its password (filled in when it was
     /// remembered), then the game starts; the version check happens in `admit(_:)` on the way.
-    func join(_ address: String, password: String? = nil, loadout: String? = nil) {
-        guard let canonical = try? LaunchLink.canonicalAddress(address) else { notice = "This server address isn’t valid."; return }
+    func join(_ address: String, password: String? = nil, loadout: String? = nil, source: UsageJoinSource? = nil) {
+        let context = usageDismissedJoinContext
+        usageDismissedJoinContext = nil
+        guard let canonical = try? LaunchLink.canonicalAddress(address) else { notice = "This server address isn’t valid."; recordUsage(.errorShown(.serverAddress)); return }
+        let how = source ?? (loadout == nil
+            ? (page == .servers && serverScope == .hosting && context == nil ? .list : Self.usageJoinSource(address: canonical, pendingAddress: context?.address, pendingSource: context?.source))
+            : (serverScope == .favorites ? .favorite : .list))
         let server = knownServer(canonical)
         if let server, server.password, password == nil {
             if let loadout { try? useLoadoutForServer(loadout, address: server.address) }
-            present(.password(server: server.address)); return
+            present(.password(server: server.address))
+            usageJoinSheetContext = (canonical, how)
+            return
         }
         do {
-            let link = try LaunchLink.direct(server?.address ?? canonical, password: password ?? "")
+            var link = try LaunchLink.direct(server?.address ?? canonical, password: password ?? "")
+            link.usageSource = how
             try serverConnection.select(address: link.address)
             if let loadout { try useLoadoutForServer(loadout, address: link.address) }
-            if activeGamePID != nil { openLink(link.url) }
+            if activeGamePID != nil { try openLink(link) }
             else { pendingLink = link; play() }
-        } catch { notice = ConfigImportReviewModel.message(for: error) }
+        } catch { notice = ConfigImportReviewModel.message(for: error); recordUsage(.errorShown(.serverJoin)) }
     }
     /// Before a game starts on a server: when it runs the other game version, launch with that version
     /// for this match (asking first, unless “Don’t ask again” is on). Original 1.3 can't join a CoD2x
@@ -450,6 +460,7 @@ enum ServerPasswords {
             if needed == .cod2x, normal == .original, !installedEngines.contains(.cod2x) {
                 pendingLink = nil; fastPlay = false
                 notice = "This server runs CoD2x, which this copy of CoD2 Unbound doesn’t include. Reinstall the app to get it."
+                recordUsage(.errorShown(.serverVersion))
                 return false
             }
             stampLaunch(address); return true
@@ -573,7 +584,13 @@ enum ServerPasswords {
 
     // MARK: Menu commands and sheets this unit owns
     /// File › Connect to Address… (⌘L), the Servers toolbar, and `cod2x://` links with the address filled in.
-    func connectToAddress(_ address: String? = nil) { loadServerPrefsOnce(); present(.connect(address: address)) }
+    func connectToAddress(_ address: String? = nil, source: UsageJoinSource = .typedAddress) {
+        loadServerPrefsOnce()
+        present(.connect(address: address))
+        if let address = address.flatMap({ ServerAddressInput.parse($0)?.address }) {
+            usageJoinSheetContext = (address, source)
+        }
+    }
     /// Server › Launch on Selected Server.
     func launchSelectedServer() { if let selected { connect(selected) } }
     /// Server › Add to Favorites (⌘D) for the selected server.

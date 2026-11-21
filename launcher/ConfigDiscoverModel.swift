@@ -401,11 +401,15 @@ extension ConfigImportPresentation {
     @Published private(set) var session: ConfigImportSession? { didSet { refreshItems() } }
     @Published private(set) var items: [ConfigImportItem] = []
     @Published var showDetails = false
-    @Published var applyError: String?
+    @Published var applyError: String? {
+        didSet { if applyError != nil { onFailure() } }
+    }
     @Published private(set) var receipt: ConfigImportReceipt?
     private let studio: ConfigStudioModel
     private var task: Task<Void, Never>?
     private var newLoadoutID = ""
+    var onApplied: (Bool) -> Void = { _ in }
+    var onFailure: () -> Void = {}
 
     init(studio: ConfigStudioModel, displayName: String, provenance: ConfigImportProvenance) {
         self.studio = studio; self.displayName = displayName; self.provenance = provenance
@@ -435,7 +439,7 @@ extension ConfigImportPresentation {
             }
         }
     }
-    func fail(_ message: String) { phase = .failed(message) }
+    func fail(_ message: String) { phase = .failed(message); onFailure() }
     func cancel() { task?.cancel(); task = nil }
     /// Review only: the harness and tests install a reviewed session directly.
     func install(_ session: ConfigImportSession) {
@@ -534,6 +538,7 @@ extension ConfigImportPresentation {
             let result = try session.apply(to: live)
             self.session = session
             receipt = result; applyError = nil
+            if case .newLoadout = session.target { onApplied(true) } else { onApplied(false) }
             if case .existing = session.target, let undo {
                 let entry = result.historyEntry, id = result.profileID
                 undo.registerUndo(withTarget: studio) { studio in ConfigImportReviewModel.undoImport(studio: studio, profileID: id, entry: entry) }
@@ -587,7 +592,11 @@ extension ConfigImportPresentation {
 @MainActor final class ConfigDiscoverModel: ObservableObject {
     let studio: ConfigStudioModel
     private(set) var directory: ConfigDirectory
-    @Published var page: ConfigDiscoverPage?
+    @Published var page: ConfigDiscoverPage? {
+        didSet { if page != oldValue { onPageChanged() } }
+    }
+    var onPageChanged: () -> Void = {}
+    var recordUsage: (UsageEvent) -> Void = { _ in }
     @Published private(set) var state: ConfigDirectoryState = .idle
     /// A search looks through every setup, so it leaves Saved or a player's page for the results.
     @Published var query = "" {
@@ -621,6 +630,7 @@ extension ConfigImportPresentation {
         checker = ConfigCheckerModel(studio: studio)
         checker.save = { [weak self] name, data in self?.importChecked(name: name, data: data) }
         checker.notify = { [weak self] in self?.notify($0) }
+        checker.recordUsage = { [weak self] in self?.recordUsage($0) }
     }
 
     /// The review harness swaps in a signed fixture directory (preview mode only).
@@ -702,8 +712,12 @@ extension ConfigImportPresentation {
     }
 
     func open(_ page: ConfigDiscoverPage) {
+        let changed = self.page != page
         self.page = page
-        if case .player(let id) = page { loadDetail(id) }
+        if case .player(let id) = page {
+            if changed, let publicID = snapshot?.usageID(id) { recordUsage(.playerSetupViewed(publicID)) }
+            loadDetail(id)
+        }
         Task { await loadIfNeeded() }
     }
     func loadIfNeeded() async {
@@ -717,6 +731,7 @@ extension ConfigImportPresentation {
             if let snapshot = result.snapshot {
                 fetched = directory.cacheDate
                 state = .loaded(snapshot, refreshError: result.refreshError)
+                if result.refreshError != nil { recordUsage(.errorShown(.directory)) }
                 saved = (try? directory.savedEntries(snapshot: snapshot)) ?? []
             } else {
                 state = .unavailable(result.unavailableReason ?? "The player directory isn’t available.")
@@ -724,6 +739,7 @@ extension ConfigImportPresentation {
             }
         } catch {
             state = .failed(ConfigImportReviewModel.message(for: error)); saved = []
+            recordUsage(.errorShown(.directory))
         }
     }
 
@@ -762,6 +778,7 @@ extension ConfigImportPresentation {
             } catch {
                 guard let self, self.detail?.entryID == id else { return }
                 self.detail?.phase = .failed(ConfigImportReviewModel.message(for: error))
+                self.recordUsage(.errorShown(.directory))
             }
         }
     }
@@ -790,10 +807,16 @@ extension ConfigImportPresentation {
 
     /// Opens a review sheet at once; the source is read and reviewed while it shows progress.
     func beginImport(displayName: String, provenance: ConfigImportProvenance, platform: ConfigImportPlatform = .native,
-                     origin: ConfigOrigin? = nil, load: @escaping @Sendable (ConfigImportCatalogAdapter, ConfigDialect) async throws -> ConfigImportBundle) {
+                     origin: ConfigOrigin? = nil, usageID: ConfigDirectoryUsageID? = nil, load: @escaping @Sendable (ConfigImportCatalogAdapter, ConfigDialect) async throws -> ConfigImportBundle) {
         guard studio.session != nil else { notify("Configs aren’t available, so nothing can be imported."); return }
         review?.cancel()
         let review = ConfigImportReviewModel(studio: studio, displayName: displayName, provenance: provenance)
+        review.onApplied = { [weak self] madeLoadout in
+            if let usageID { self?.recordUsage(.playerSetupImported(usageID)) }
+            if madeLoadout { self?.recordUsage(.loadoutMade) }
+        }
+        review.onFailure = { [weak self] in self?.recordUsage(.errorShown(.importConfig)) }
+        if let usageID { recordUsage(.playerSetupTried(usageID)) }
         self.review = review
         step = .review
         guard let catalog = catalog() else { review.fail("The settings catalog is missing or damaged. Reinstall CoD2 Unbound to restore it."); return }
@@ -898,14 +921,14 @@ extension ConfigImportPresentation {
     }
     /// Try this setup: a signed entry, downloaded by its exact digest, reviewed like any other source.
     func tryEntry(_ entry: ConfigDirectoryEntry) {
-        guard let snapshot else { return }
+        guard let snapshot, let usageID = snapshot.usageID(entry.id) else { return }
         let cached = detail?.entryID == entry.id ? detail?.bundle : nil
         let directory = self.directory
         beginImport(displayName: entry.player,
                     provenance: .init(source: "Players catalog", signed: true, credit: entry.credit, publishedBy: entry.provenance.publishedBy,
                                       windows: entry.platform == .windows, symbol: "person.2"),
                     platform: entry.platform == .windows ? .windows : .native,
-                    origin: ConfigOrigin(kind: .imported, source: entry.sourceURL.absoluteString, credit: entry.credit)) { adapter, dialect in
+                    origin: ConfigOrigin(kind: .imported, source: entry.sourceURL.absoluteString, credit: entry.credit), usageID: usageID) { adapter, dialect in
             if let cached { return cached }
             return try await directory.profile(entryID: entry.id, snapshot: snapshot, dialect: dialect, catalog: adapter)
         }

@@ -102,10 +102,15 @@ enum WireParser {
     }
 }
 
+enum UsageJoinSource: String, Codable, Sendable {
+    case list = "from the list", favorite = "from a favourite", link = "from a link", typedAddress = "from a typed address"
+}
+
 struct LaunchLink: Sendable {
     var address: String
     var password: String
     var url: String
+    var usageSource = UsageJoinSource.link
     init(_ url: String) throws {
         guard let parsed = LauncherParseLink(url) else { throw LauncherError(message: "This link is invalid. Only connect and password are accepted.") }
         self.url = url; address = parsed["address"] ?? ""; password = parsed["password"] ?? ""
@@ -1042,6 +1047,11 @@ enum CoD2xFiles {
     }
 }
 
+/// The launcher stores the answer with its other preferences. Older settings have no answer.
+enum UsageConsent: String, Codable, Sendable {
+    case notAsked, yes, no
+}
+
 struct GameSettings: Codable, Sendable, Equatable {
     /// What CoD2 Unbound sets at every launch: the display mode, which the game has no control for,
     /// and what must be decided before it starts. Resolution and vertical sync are not here: they
@@ -1072,6 +1082,7 @@ struct GameSettings: Codable, Sendable, Equatable {
     /// The player has answered “Send crash reports?” (Setup's sixth step, or the one-time sheet for
     /// people set up before the question existed). Until then nothing is sent and the question is owed.
     var crashReportsAsked = false
+    var usageConsent = UsageConsent.notAsked
     // MARK: - ship-settings (launcher preferences other units read; decoded below)
     /// General › Hide CoD2 Unbound while the game is running. On by default; the launcher comes back when the game quits.
     var hideWhilePlaying = true
@@ -1088,10 +1099,11 @@ struct GameSettings: Codable, Sendable, Equatable {
     var introFilmsPlayed = false
     // MARK: - end ship-settings
     /// Settings › Advanced › Reset Settings: `defaults` for everything the Settings window shows, keeping what it
-    /// doesn't: whether the intro films have played and whether the crash report question was answered.
+    /// doesn't: whether the intro films have played. Keep the crash question marker and usage consent.
     func reset(to defaults: GameSettings) -> GameSettings {
         var reset = defaults
         reset.introFilmsPlayed = introFilmsPlayed; reset.crashReportsAsked = crashReportsAsked
+        reset.usageConsent = usageConsent
         return reset
     }
     static let anisotropyLevels = [2, 4, 8, 16]
@@ -1121,6 +1133,7 @@ struct GameSettings: Codable, Sendable, Equatable {
         sendCrashReports = (try? c.decodeIfPresent(Bool.self, forKey: .sendCrashReports)) ?? d.sendCrashReports
         sendCoD2xReports = (try? c.decodeIfPresent(Bool.self, forKey: .sendCoD2xReports)) ?? d.sendCoD2xReports
         crashReportsAsked = (try? c.decodeIfPresent(Bool.self, forKey: .crashReportsAsked)) ?? d.crashReportsAsked
+        usageConsent = (try? c.decodeIfPresent(UsageConsent.self, forKey: .usageConsent)) ?? d.usageConsent
         // ship-settings: launcher preferences; a value this version doesn't know keeps the default.
         hideWhilePlaying = (try? c.decodeIfPresent(Bool.self, forKey: .hideWhilePlaying)) ?? d.hideWhilePlaying
         appearance = (try? c.decodeIfPresent(LauncherAppearance.self, forKey: .appearance)) ?? d.appearance

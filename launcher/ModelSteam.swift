@@ -340,7 +340,8 @@ struct SteamWork {
         if let awake = steamWork.awake { ProcessInfo.processInfo.endActivity(awake) }
         steamWork.awake = nil
     }
-    private func steamStopped(title: String, detail: String, retry: String) {
+    private func steamStopped(title: String, detail: String, retry: String, failed: Bool = true) {
+        if failed { recordUsage(.errorShown(.steam)) }
         steam.stoppedTitle = title; steam.stoppedDetail = detail; steam.retryTitle = retry
         steam.qr = nil; steam.secondsLeft = nil
         steam.phase = .stopped
@@ -357,6 +358,7 @@ struct SteamWork {
         if work.notOwned {
             steam.qr = nil
             steam.phase = .notOwned
+            recordUsage(.errorShown(.steam))
         } else if !work.signedIn {
             let detail = work.timedOut ? "The code wasn’t approved in time. Nothing was downloaded."
                 : work.failure == "Steam didn’t answer." ? "Steam didn’t answer. Check your connection and try again."
@@ -364,7 +366,7 @@ struct SteamWork {
                 : "The connection to Steam closed before the sign-in finished. Nothing was downloaded."
             steamStopped(title: "The sign-in didn’t go through", detail: detail, retry: "Try Again")
         } else if work.stopRequested {
-            steamStopped(title: "The download stopped at \(steamAmountWords)", detail: "You stopped it. " + kept, retry: "Resume")
+            steamStopped(title: "The download stopped at \(steamAmountWords)", detail: "You stopped it. " + kept, retry: "Resume", failed: false)
         } else if work.stalled {
             steamStopped(title: "The download stopped at \(steamAmountWords)", detail: "The connection to Steam was lost. " + kept, retry: "Resume")
         } else {
@@ -401,6 +403,7 @@ struct SteamWork {
                 self.steam.downloadedBytes = bytes
                 self.attemptedDataPath = valid; self.dataPath = valid; self.dataError = ""
                 self.steam.phase = .done
+                self.recordUsage(.setupStepReached(.gameData, source: .steam))
                 if !NSApp.isActive { self.notifySteamDone() }
             } else if ended {
                 let more = survey.missing.count - 1
