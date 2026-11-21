@@ -21,6 +21,7 @@ internal static partial class Program
         ShareCases();
         HostingCases();
         HostingPackageCases();
+        SetupCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }

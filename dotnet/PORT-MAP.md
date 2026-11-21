@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 116 rows, with 24 ported, 28 planned, 48 UI and 16 Apple-only.
+Coverage is 117 rows, with 25 ported, 28 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -93,7 +93,8 @@ Coverage is 116 rows, with 24 ported, 28 planned, 48 UI and 16 Apple-only.
 | ModelServers.swift · Keychain and native actions | Apple-only | Windows Credential Manager and shell/clipboard adapters |
 | ModelSettings.swift · settings lifecycle | Planned | Reset orchestration, eligible update checks and retained state |
 | ModelSettings.swift · Mac integration | Apple-only | Installer activation, monitor modes, application folders and system information |
-| ModelSetup.swift · setup rules | Planned | Licensed archive checks, migration, preflight and rollback |
+| ModelSetup.swift · game-data preflight | Ported | `GameArchives` checks all 16 required archives and recovers a valid remembered or discovered root |
+| ModelSetup.swift · setup coordination and rollback | Planned | Confirmation, preferences and key handoff, setup completion and recovery ownership |
 | ModelSetup.swift · Mac setup effects | Apple-only | Retail/Steam discovery and path validation. Windows uses the system shader compiler |
 | ModelShell.swift | UI | Status, windows, menu actions and notifications |
 | ModelSteam.swift · recovery and progress | Planned | Portable progress and restore rules if a download route is retained |

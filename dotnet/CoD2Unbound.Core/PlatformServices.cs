@@ -20,7 +20,7 @@ public interface ISecretStore
 
 public interface IGameFiles
 {
-    // True only for a regular file contained under root, without following symlinks or junctions.
+    // True only for a readable regular file contained under root, without following symlinks or junctions.
     bool IsRegularFile(string root, string relativePath);
 }
 

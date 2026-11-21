@@ -45,6 +45,9 @@ import Foundation
         var hosting = try HostingParity.build()
         hosting["swiftRevision"] = revision
         try fixture("hosting", payload: hosting, mode: mode, output: output)
+        var setup = try SetupParity.build(scratch: scratch)
+        setup["swiftRevision"] = revision
+        try fixture("setup", payload: setup, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

@@ -43,6 +43,6 @@ target=arm64-apple-macos26
     "$root/tests/launcher/CoreParitySession.swift" "$root/tests/launcher/ConfigImportSessionTests.swift" \
     "$root/tests/launcher/CoreParityProfiles.swift" \
     "$root/tests/launcher/CoreParityShare.swift" "$root/tests/launcher/ConfigShareTests.swift" \
-    "$root/tests/launcher/CoreParityHosting.swift" \
+    "$root/tests/launcher/CoreParityHosting.swift" "$root/tests/launcher/CoreParitySetup.swift" \
     "$scratch/setup.o" "$scratch/shaders.o" "$scratch/url.o" -framework AppKit -lz -o "$scratch/parity"
 "$scratch/parity" "$mode" "$output" "$revision" "$root" "$scratch"
