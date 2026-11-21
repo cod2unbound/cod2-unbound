@@ -1,98 +1,112 @@
 # CoD2 Unbound Windows 11 laptop check
 
-This kit checks the Windows build of CoD2 Unbound for the 0.5 release. It includes Original 1.3, CoD2x 1.4.6.8, both dedicated servers and two test installers. The package version reads 0.4.0 at this revision. The 0.3.9 installer contains the same engine source with an older version number so Setup has something to upgrade.
+This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays version 0.4.0. The 0.3.9 test installer gives Setup an older version to upgrade.
 
-Allow **90–120 minutes** for the main sitting, including about 20–30 minutes of script and loading time. Allow **another 60–90 minutes** for the two-player comparisons, every saved replay, and uncommon account or install layouts. Times vary with storage and how many optional cases are available.
+## Part A — The essential sitting
 
-Have ready a **Windows 11 x64** PC, a **disposable standard Windows account**, and a licensed Steam or retail Call of Duty 2 installation with a `main` folder. Keep at least 5 GB free, or 15 GB if you will make retail comparison copies. For the expanded checks, bring a mouse with side buttons and a wheel, headphones and a mic, two keyboard layouts, and a second screen if available. Two-person checks need a second Windows PC with a licensed copy, and a local network physically disconnected from the internet with no default gateway. For comparisons with original games, bring the exact retail 1.3 files and Miles library from your own copy. Leave existing keys on their PC.
+Allow **45–60 minutes**, including **about 15–20 minutes** for the automatic file, key and server checks. This is an estimate for a laptop with the game already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
 
-Copy this entire folder to a writable local folder. In File Explorer open it, type `powershell` in the address bar and press Enter. Stay in that ordinary, non-administrator window. Run this once and follow the list as the prompts appear.
+The kit reads the installed game files and saves test settings and screenshots in a temporary folder under LocalAppData. CoD2x keeps this run apart from your saved Windows registry settings. The kit creates a temporary test key in **Credential Manager** and removes it and the temporary folder when it finishes. If you already have a key saved for **CoD2 Unbound**, the kit stops before replacing it. Use an account without a saved Unbound key in that case. The Setup check temporarily adds CoD2 Unbound to **Start** and **Installed apps** for your account, then removes it. If CoD2 Unbound is already installed, the Setup check stops before changing it. The dated results folder stays for you to review.
+
+Copy this whole folder to a writable folder on the PC. In File Explorer, open it, type `powershell` in the address bar and press Enter. Open PowerShell normally.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Run-All.ps1
 ```
 
-The programs are test-signed. A copied file may open directly. If the blue **Windows protected your PC** screen appears, select **More info**, confirm the file name matches this kit, then select **Run anyway** if offered. A UAC prompt for the optional all-users setup can say **Do you want to allow this app from an unknown publisher to make changes to your device?** Approve only for that setup and its uninstall if you are doing the administrator check. If Windows gives a hard block, for example **Smart App Control has blocked an app that may be unsafe**, record the exact text or take a screenshot and skip that test. Leave security settings as they are and keep the internet disconnected. [Microsoft SmartScreen guidance](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
+The programs have a test signature. If **Windows protected your PC** appears, select **More info**, check the file name, then select **Run anyway** if offered. Record a block such as **Smart App Control has blocked an app that may be unsafe** and leave Windows security settings as they are. [Microsoft SmartScreen guidance](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
-Use the boxes for each step. Write which edition, renderer or account you used and the first thing that differed. Mark unavailable cases as skipped in the note. The script creates a dated folder inside `results` and shows the path before it finishes.
+Allow about 20–25 minutes for the four portable runs and 10–15 minutes for Setup and packing. Mark each box when it passes. At a script prompt, press Enter to go ahead or type S if it offers a skip. For a failure or skip, write what happened beside the step.
 
-1. **Prepare and check the portable files · 5–10 minutes for steps 1–2.** Close CoD2 and Steam, disconnect Wi-Fi, Ethernet and VPN, then start the script above and type `TEST`.\
-   **Expect [automatic]** SHA-256 passes for the kit files. The script records the Windows build, GPU, driver, DxDiag, signature status and the server catalogue digest. Keep the test-signer trust result as shown by Windows.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-2. **Record the equipment and security settings.** Note screen resolutions and scaling, keyboard layouts, headset type and the Smart App Control and Defender state in Windows Security. Leave them as they are.\
-   **Expect [manual]** The notes identify the settings used for this sitting. A copied test-signed file may show no reputation prompt, an untrusted signature or a block.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-3. **Find the game's files · 10–15 minutes for steps 3–7.** Accept the found game folder or paste another valid one. If testing two installs, choose the one the game did not pick. Supply your retail 1.3 path when asked or press Enter to skip that comparison.\
-   **Expect [automatic]** Steam wins if both are valid. A valid explicit folder wins over discovery, an incomplete one fails, and an installation junction works. Both retail registry views are listed when present. The game writes its test config under LocalAppData from an unrelated working folder and refuses a junction in the writable home.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-4. **Check real install layouts if available.** Try Steam with App 2630 only in a secondary library. On a lab PC with Steam unavailable, try each retail registry view alone and together. Also try a PC with no valid archives. Changing or restoring test values in HKLM requires an administrator. Keep any real install values and keys as they are.\
-   **Expect [manual]** The secondary library resolves to its physical path, the 32-bit retail view wins when both are valid, and missing data gives a clear diagnostic. Game processes use the standard account and launch without UAC.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-5. **Check user storage on the test account.** If you have a protected retail install, place a distinctive throwaway old profile or loose config in its matching VirtualStore folder before the run. During play save a config, screenshot and demo. If ready, repeat using a lab account with a space and non-ASCII characters in its profile path, game and home paths over 260 characters with spaces, non-ASCII and `+`, and default long-path policy. Try OneDrive moving Documents and Desktop, or redirected LocalAppData if available.\
-   **Expect [manual and automatic]** Test files go to the private LocalAppData game home, following its known-folder location. The old profile stays hidden, the install and VirtualStore file hashes stay the same, and Documents or Desktop gain no game files. The script checks the initial and final tree hashes for the selected installs and this account's VirtualStore.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-6. **Keep the key check synthetic.** Watch the credential result. Keep the disposable account throughout the sitting and use the automatic key. Leave any key prompt alone if the synthetic key fails.\
-   **Expect [automatic]** Credential Manager accepts the synthetic key, a corrupt explicit credential is rejected, and the valid fixture is restored for the remaining checks. The script removes the synthetic entry at the end. Real key precedence, authentication and a second user's key require separate controlled fixtures.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-7. **Compare retail mouse arithmetic if you supplied exact retail 1.3.** Let the script run the two small probes.\
-   **Expect [automatic]** The retail executable and renderer hashes are recorded. The probe staging uses a licensed copy of Miles and stops before the retail game loop. All 4,096 rows match, or the first differing row is reported.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-8. **Open all four client runs · 15–20 minutes for steps 8–9.** For each edition in Direct3D 9 and DirectX 7 mode, open the console with the key above Tab and enter `/toggleconsole; screenshotJpeg kit-menu`. Then enter `/devmap mp_toujane`, continue from the briefing, pick a team and a weapon and press F12. Use `/quit` to finish each run.\
-   **Expect [manual and automatic]** The menu draws and the briefing background is upright. Buildings, sky, weapons and HUD look right. The script collects the two screenshots and console output after a clean exit. The console and graphics options show the requested renderer.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-9. **Exercise graphics and recovery.** On the first Direct3D 9 run in each edition, apply a different resolution or fullscreen, change anti-aliasing to an available value, Alt+Tab twice, minimise and restore. Use `/set r_rendererPreference dx7` then `/vid_restart` once in a loaded map. Restore with the same commands using `dx9`. F10 saves an extra image.\
-   **Expect [manual]** The scene redraws, settings stick, the desktop gets its pointer back and the game returns without a black screen or jump. Note the mode and exact error on failure.\
-   **Result** ☐ Pass ☐ Fail · Note ____________________
-10. **Compare mouse controls · 30–35 minutes for steps 10–13.** Use the prompted game menu. Compare Original with retail, then CoD2x with the source-built reference if available. On Toujane move between two marks 10 cm apart slowly and quickly. Try Windows pointer speed and Enhance pointer precision, direct Original and Original raw, and CoD2x `m_rinput` 0/1/2. For 1/2 record `m_rinput_hz` and `m_rinput_hz_max` while moving and then stopped. Test windowed and fullscreen menus, pointer position on reopening a menu, MOUSE4/5 press and release, and slow and fast scrolling in both directions. Restore pointer settings.\
-    **Expect [manual]** Direct Original follows Windows pointer settings. Raw Original and raw CoD2x are consistent, and plain Original returns to cursor input. Record pointer jumps, drifting, missed releases or extra wheel steps.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-11. **Compare keyboards and focus.** Use US and one non-US layout. Try the physical console key, AZERTY Z/W and accented keys or German Y/Z and dead-key accent, AltGr in chat and typed versus pasted text. Compare `bindlist`, arrows, Num Lock, keypad Enter, the left and right modifiers, Backspace repeat and releasing a movement key outside the window. Try the Windows key and Alt+Enter at `developer 0` and `1`.\
-    **Expect [manual]** Console, text, saved binds, repeats and releases behave like the paired game. No movement remains stuck after switching away.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-12. **Compare window placement, monitor and controls after restore.** Move the window, quit and reopen it using the same menu choice to reuse the test profile. Try resizing CoD2x and desktop-sized windowed mode. Use a second screen with different scaling if available, set `r_monitor 2` in exclusive mode and compare the same focus cycle in DirectX 7 mode. Note `vid_xpos` and `vid_ypos`. In SDR change `r_gamma`, move the window across screens, switch away and quit. Repeat under HDR if available. Restore display and gamma settings. If comparing process CPU use, take a ten-second Task Manager sample while active and minimised with the same `r_swapInterval` in both clients. Repeat at `com_maxfps 85` and `125`, then restore both settings.\
-    **Expect [manual]** Window placement and hit targets survive, the selected display stays selected, the pointer releases, and desktop brightness returns. Record the first motion after restore and the settings used.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-13. **Listen to playback and change devices.** Compare menu music, footsteps, front/side/rear fire, two distances and a room with a noticeable decay. Try Original `snd_khz 44` and `22`, and `snd_stereo 1` and `0` on separate starts. Switch speakers and headset, unplug the headset, and try a start with no playback device followed by reconnecting and `/snd_restart`.\
-    **Expect [manual]** Position, level and duration make sense in both editions. The game stays usable with no endpoint, and audio recovers or gives a reproducible error. Record the endpoint and recovery time.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-14. **Run both dedicated servers · 5–10 minutes for steps 14–15, plus 10–20 for the extra replays.** Return to the PowerShell window. The script unpacks the server ZIP into a folder with spaces, then starts the two editions in turn.\
-    **Expect [automatic]** Both use the shipped configuration and answer `getinfo` and `getstatus` on loopback for Toujane Deathmatch. Both info replies say 118. Status says 118 for Original and 120 for CoD2x. Both stop cleanly after 200 ticks.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-15. **Replay the saved inputs.** Let the two standard Toujane runs finish. Press Enter at the four-player replay prompt if you have time for the expanded set. Enter `T` to capture the same replay with exact retail 1.3, or `R` for the source-built CoD2x dedicated control.\
-    **Expect [automatic and manual]** Both standard runs match their saved 600-tick state and player readings. The retail run saves a capture for comparison. The four-player runs save traces from the movement, weapon and objective setups. The source-built 1.4.6.8 reference reaches Toujane with its unchanged 512 MiB hunk, prints dvars and answers local queries with upstream services unavailable. If trying a client join, note which client joined and when. The retail and reference game is copied locally before use. The kit skips these full starts if it finds a legacy key registered.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-16. **Check LAN discovery, a real join and voice · 35–65 minutes for steps 16–18.** Enter `L` on the host and use an isolated LAN. On the second PC run the same command with `-LanOnly` at the end, then choose the LAN browser or direct join. Check each edition's map, occupancy, version and PunkBuster label. For CoD2x set `cl_hideServerIp 1` and compare on-screen address display with the setting off. On Original turn on `cl_voice 1`, use push-to-talk and swap senders. Compare retail and Unbound on separate disposable setups and record CoD2x voice behaviour. Try a different microphone, receive-only with mic access denied, and note when the indicator clears. Use a temporary firewall rule scoped to the private LAN and UDP 29676 only if needed. Creating and removing it can require an administrator.\
-    **Expect [manual and automatic]** Only the private host replies. A numbered phrase is intelligible in both directions in Original, receive-only works without capture, and the indicator clears. The script records the host's local queries, join log and clean exit.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-17. **Play the same movement and weapon routes with another player.** On Toujane try the ladder entry/exit, mantle, landing and falls, crouch/prone/lean, stairs and walls. Try reaching Harbor's water and note any damage or movement change. On Burgundy fire the pistol, rifle, SMG and shotgun, use both grenade types and cook when available, then check pickup, kill and respawn. Use an actual team loadout on Leningrad. Compare active and spectator HUD and watch a normal join and a short pause on the test LAN. For a packet comparison, use `/record kit-lan` after joining and `/stoprecord` when finished. Keep that demo local unless you have reviewed it. On CoD2x compare stock and competitive mode with the host's 40-tick preset. Run the same fixture and routes when comparing the CoD2x reference.\
-    **Expect [manual]** Movement and cues agree in the paired games. Record any late correction, visible skipped update, decal, material and sound difference, or packet or snapshot setting change. Keep the initial join and any delta/base detail the log shows, including `commandTime` if available.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-18. **Play objectives.** Host Brecourt Search & Destroy on the isolated LAN, use real players on both teams, let the normal round and grace period start, then plant and defuse. Compare Original and retail if available. Try a flag capture and return on Carentan and a headquarters capture and defence on Dawnville.\
-    **Expect [manual]** Look for the plant prompt and progress (about five seconds), defuse (about ten), planted sound, score and defender win. Confirm objective HUD and scoring for CTF and HQ. Save a screenshot or the exact mismatch.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-19. **Launcher checks · waiting for a launcher build.** This is the one place to add the native x64 launcher and its checks. Mark it skipped for this kit.\
-    **Expect [later]** Verify Steam/retail/manual discovery, credential precedence and import review, profile safety, launch/restart, layout and active/inactive Mica at 1440 × 900 and 1024 × 640, light and dark, maximised and snapped controls, 125% and 150% scaling, contrast, Narrator and keyboard. Verify optional link handlers, demo/config Open With, existing associations, and updater handoff with a game or host running. Keep owned keys and crash dumps local.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-20. **Test Setup and repair · 15–25 minutes for steps 20–22.** Enter `I` after play. Choose **Install for me only** in the older test installer. Record SmartScreen, Defender and any UAC prompt. The script starts an installed server and tries the new Setup while it is running. When prompted, type `quit` in the CoD2 server console.\
-    **Expect [automatic and manual]** The user install needs no elevation, creates three Start entries and an uninstall entry in the current account. Busy Setup stops safely with the old server still running. Once it stops, upgrade reports the new version and one signed uninstaller. Repair restores a missing test file byte for byte.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-21. **Open the installed clients and optionally test an all-users install.** Try both installed games with the chosen licensed data and use `/vid_restart` to switch to DirectX 7 during one run. Enter `A` for the all-users test only if the PC is a suitable lab machine and administrator approval is available.\
-    **Expect [manual and automatic]** Both installed clients load the same game data without an elevation request. All-users Setup asks for elevation and installs under Program Files with machine-wide Start entries. Public download trust and production installer reputation are separate release checks.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-22. **Uninstall last.** Confirm each uninstall prompt from the script. Check Installed apps and Start afterwards. Review the preservation result.\
-    **Expect [automatic and manual]** Setup removes installed files, shortcuts and registrations. The private config, demo, screenshot and synthetic credential survive uninstall. Retail files and the retail InstallPath stay unchanged, then the script removes its own synthetic credential.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
-23. **Pack the results · 2–3 minutes.** Copy this checklist with your notes into `results`. Review logs and images, remove identifying details, and run the command below. Bring back the resulting ZIP.\
-    **Expect [automatic]** The ZIP contains evidence and your notes. Keep copied retail files, private profiles, credentials, device identifiers and dumps on the test laptop.\
-    **Result** ☐ Pass ☐ Fail · Note ____________________
+1. [ ] **Start the checks.** Close CoD2 and Steam, disconnect Wi-Fi, Ethernet and VPN, run the command above and type `TEST`.\
+   **Expect (automatic)** The kit confirms the copy is complete and records your Windows version, graphics card, driver and Windows signature results.
+2. [ ] **Confirm the game folder.** Press Enter to use the folder shown, or paste the Call of Duty 2 folder that contains `main`.\
+   **Expect (automatic)** The game accepts a complete folder and saves settings in the test folder. It accepts the valid key from Windows and refuses the damaged key.
+3. [ ] **Let both servers run.** Wait while the script opens the servers and repeats the saved Toujane match in each.\
+   **Expect (automatic)** Both servers open Toujane, answer on this PC and close. Both saved matches play back as expected.
+4. [ ] **Original 1.3 · Direct3D 9.** Follow the play instructions below, including the quick controls and display check.\
+   **Expect** You can play Toujane, take both pictures and return to PowerShell.
+5. [ ] **Original 1.3 · DirectX 7 mode.** Follow the same play instructions.\
+   **Expect** You can play Toujane, take both pictures and return to PowerShell.
+6. [ ] **CoD2x · Direct3D 9.** Follow the play instructions, including the quick controls and display check.\
+   **Expect** You can play Toujane, take both pictures and return to PowerShell.
+7. [ ] **CoD2x · DirectX 7 mode.** Follow the same play instructions.\
+   **Expect** You can play Toujane, take both pictures and return to PowerShell.
+8. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only**, keep the default folder, and type `quit` in the CoD2 server console when asked.\
+   **Expect** Setup installs without asking for administrator approval. The first upgrade attempt leaves the running server alone. After it closes, Setup upgrades and restores the test file the script removes.
+9. [ ] **Play the installed games.** Open Toujane in each installed edition. In one, switch to DirectX 7 mode with `/set r_rendererPreference dx7` then `/vid_restart`. Quit each game.\
+   **Expect** Both installed games find your game files, and the picture returns after changing graphics mode.
+10. [ ] **Uninstall.** Confirm the uninstall prompt, then look for CoD2 Unbound in **Start** and **Installed apps**.\
+    **Expect** Its entries are gone. The script confirms uninstall kept the test saves and key, then removes its temporary files and test key.
+11. [ ] **Pack the results.** Put your notes in the dated results folder. Review the logs and pictures, then run the packing command below and type `PACK`.\
+    **Expect** A `CoD2-Unbound-results-…zip` file appears next to the scripts. Bring back that ZIP.
+
+### Play each portable edition
+
+At the menu, open the game console with the key above Tab and enter `/toggleconsole; screenshotJpeg kit-menu`. Open it again, enter `/devmap mp_toujane`, select **Click to Continue** on the briefing, then pick a team and weapon, and play briefly. Press **F12** while playing to save the second picture. The briefing should be upright and the sky, buildings, weapon and HUD should look right. Check that the graphics options show the mode from the prompt. Use `/quit` to return to PowerShell.
+
+On each Direct3D 9 run, look around quickly, move and release the movement keys, and listen to footsteps and a shot. Aim and movement should feel steady and the sounds should be clear. Alt+Tab to the desktop and back, then apply a different game resolution in the graphics options. The desktop should get its pointer back, and the picture and controls should return when you switch back or apply the resolution.
+
+### Pack the results
+
+Include the Windows warnings you saw and a note for any skipped step. Check for names, keys, device IDs and personal paths in the logs and screenshots. Keep licensed game files, private profiles, demos you have yet to review and memory dumps on the laptop.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Pack-Results.ps1
 ```
 
+## Part B — Extras, when you have them
+
+Each group can be done another day. Record the screen resolution and scaling, keyboard layout and sound devices you use. Run the same command with `-Extras` at the end and choose a group by number. Take notes as you go, restore any Windows settings you change, and pack the extra results the same way.
+
+### 1. More checks on this PC · 35–55 minutes
+
+- **Mouse.** Try Original 1.3 with both mouse options on the script menu and CoD2x with `m_rinput` set to 0, 1 and 2. Move between two marks 10 cm apart slowly and quickly. Try changes to Windows pointer speed and **Enhance pointer precision**. Original’s regular mouse should follow Windows settings, and the direct mouse modes should stay consistent. For CoD2x modes 1 and 2, note `m_rinput_hz` and `m_rinput_hz_max` while moving and again while stopped. Try menus in windowed and fullscreen play, reopen a menu to check pointer position, and try both side buttons and slow and fast wheel turns in both directions if your mouse has them. Note missed releases, extra scroll steps, jumps or drift.
+- **Keys and focus.** Try the console key, arrows, **Num Lock**, keypad Enter, left and right modifiers, Backspace held down, and typed and pasted chat. Check saved bindings with `/bindlist`. Switch away while holding a movement key and release it on the desktop. Try the Windows key and Alt+Enter with `developer` set to 0 and 1. Movement should stop when released and saved keys should work after you return.
+- **Display recovery.** Change anti-aliasing to an available value, switch between windowed and fullscreen play, Alt+Tab twice and minimise and restore. On a loaded map switch graphics modes with `/set r_rendererPreference dx7` and `/vid_restart`, then repeat with `dx9`. **F10** saves an extra picture. Move the window and restart using the same game menu choice to check its restored position. Note `vid_xpos` and `vid_ypos`. Try resizing CoD2x and running in a window the size of the desktop. Watch for misplaced clicks, black screens and a jump on the first mouse movement after returning. For the Task Manager comparison, note CPU usage over ten seconds active and minimised with the same `r_swapInterval` in both games. Repeat with `com_maxfps 85` and `com_maxfps 125`, then restore both settings.
+- **Sound devices.** Listen to menu music, footsteps and gunfire from the front, side and rear, at two distances and in a room where sounds trail off. In Original, try `snd_khz 44` and `22`, and `snd_stereo 1` and `0` on separate starts. Switch between speakers and a headset if available, unplug the headset, then try starting with no playback device and reconnecting it before `/snd_restart`. Note whether sound returns, how long it takes and whether the game stays usable.
+- **Saved matches with four players.** Accept the script’s offer when you leave the game menu. Both servers should finish the saved movement, weapon and objective cases. This part takes about 10–20 minutes on its own.
+
+### 2. A second PC on the same network · 15–25 minutes
+
+Connect two licensed Windows PCs to a private network disconnected from the internet, with no default gateway. Choose this group on the host and run the same command with `-LanOnly` on the second PC. Host and join each edition from the LAN list and by address. Check the map, player count, version and PunkBuster label. In CoD2x, compare whether the address is visible with `cl_hideServerIp` on and off. Only the local host should answer. If Windows Firewall blocks the test and administrator approval is available, use a temporary rule limited to UDP port 29676 on the private test network and remove it afterwards. Type `quit` in the host’s CoD2 server console when finished.
+
+### 3. A second player · 25–40 minutes
+
+Use the two-PC setup above. Type `P` on the host to play there as well, and join from the other PC.
+
+- **Voice.** In Original set `cl_voice 1` and take turns using push-to-talk to read numbered phrases. Both players should hear clearly and the voice indicator should clear. Try a different microphone and receiving voice with microphone access denied if you can. Note what CoD2x does. Compare against the disc edition on separate spare setups if available.
+- **Movement and weapons.** On Toujane try ladders, mantling, landing and falls, crouch, prone, lean, stairs and walls. In Harbor try reaching the water and note changes in movement or damage. On Burgundy fire the pistol, rifle, SMG and shotgun, throw both grenade types and hold the grenade before throwing when the game allows it. Check pickups, kills and respawns. Try a team loadout on Leningrad. Compare playing and spectator views, watch a normal join and note what happens during a short server pause if you can arrange one. Record visible jumps, skipped updates, changes to marks or surfaces and sound differences. Compare normal and competitive CoD2x rules, and repeat the routes in the older game when available. Use `/record kit-lan` and `/stoprecord` to save a local demo. Copy it out of the temporary folder shown in PowerShell before the kit closes. Review it before sharing.
+- **Objectives.** On Brecourt **Search & Destroy**, join opposite teams and let a normal round start. Plant and defuse after the opening wait. Look for the prompt, progress, planted sound, score and defender win. On Carentan capture and return a flag, and on Dawnville capture and defend headquarters. Check the on-screen objectives and scores. Compare with the disc edition if available.
+
+### 4. Another keyboard layout · 10–15 minutes
+
+Try a US layout and one other. In AZERTY try Z/W and accents, or in German try Y/Z and typing an accent before a letter. Try AltGr in chat, the physical console key and saved bindings. Repeat the key and focus checks in group 1. Compare the same presses in the disc or older CoD2x game if available. Note any key or typed text that changes unexpectedly.
+
+### 5. A second screen · 10–15 minutes
+
+If possible use screens with different scaling. Move the window from one to the other, restart to check position and use `r_monitor 2` in fullscreen. Try switching away and back in Direct3D 9 and DirectX 7 mode. Change `r_gamma` in SDR, move across screens, switch away and quit. Repeat in HDR if available. The game should use the chosen screen, mouse clicks should line up, and desktop brightness should return.
+
+### 6. A retail disc install · 20–35 minutes
+
+Use your own Call of Duty 2 version 1.3 disc installation with its original program, graphics library and Miles audio library. Allow up to 15 GB free for copies.
+
+- **Compare mouse readings and controls.** The kit checks the original files and compares 4,096 mouse readings. It reports the first difference or says they all match. Use the game menu to compare controls with the disc edition and older CoD2x 1.4.6.8. Repeat the movement between marks and the keyboard, window and sound comparisons above.
+- **Repeat the match and start the older server.** Accept the prompts to record the same Toujane match from the disc edition and open the older CoD2x server. It should reach Toujane and answer on this PC. Type `J` to try joining from CoD2x on this PC and note if it worked. Type `quit` in the server window when done. Full starts are skipped if Windows already has a key for the old game. Use a suitable spare PC if you need to run those comparisons.
+
+### 7. A spare Windows account or a lab PC · 25–45 minutes
+
+- **Try other game locations.** Try Steam with CoD2 installed only in a second Steam library. On a lab PC without Steam, test the 32-bit and 64-bit disc install entries separately and together, then try with no valid game files. The 32-bit entry should win when both point to valid installs, and missing game files should get a clear message. Changing the lab entries needs an administrator. Game processes should open as an ordinary user.
+- **Try other Windows folders.** On a spare account with a protected disc install, put a distinctive test profile or loose configuration in its matching `VirtualStore` folder before running. On Toujane use /writeconfig kit-saves.cfg, F12, /record kit-saves and /stoprecord. Check the temporary folder shown in PowerShell before the kit closes. All three files should be there, and the old profile should stay hidden. Try a user folder with spaces and accented characters, game and test paths longer than 260 characters with spaces, accents and a `+`, with Windows’ usual long-path setting. Try OneDrive moving Documents and Desktop, or redirected LocalAppData if available. The game should use Windows’ LocalAppData location and leave the disc files, VirtualStore, Documents and Desktop as they were.
+- **Install for everyone.** Type `A` at the prompt only on a lab PC with administrator approval. **User Account Control** can ask **Do you want to allow this app from an unknown publisher to make changes to your device?** Approve for this Setup and its uninstall. Setup should use **Program Files**, add shared **Start** entries, and remove them when you confirm uninstall. Note the Windows Security, Defender and signing messages you see.
+
+### Launcher checks · when a launcher build is available
+
+The launcher checks are waiting for a separate build. Its checklist covers finding game files, handling saved keys and imported settings, opening and restarting the game, keyboard and Narrator navigation, links and opening saved files, and updating while a game or server is running.
+
 ## If something goes wrong
 
-- **Windows blocks a file.** Note the file name, exact message, Smart App Control state and whether **Run anyway** was offered. Capture just the warning window.
-- **Game data is missing or the key prompt appears.** Copy the discovery messages from `results` and note Steam, retail or chosen folder. Confirm the folder contains all 16 `iw_00.iwd` through `iw_15.iwd` archives under `main`. Keep keys out of notes and screenshots.
-- **Black screen, checkerboards, missing sound or a hung process.** Record edition, renderer, display mode and last action. Capture the game window if it responds, and keep that run's console, DxDiag and exit output. If necessary close only the test client or server from Task Manager.
-- **Setup fails or PowerShell was closed early.** Keep its setup log and the exact warning. Use Installed apps to remove any kit install you started. If the synthetic credential remains, use Windows Credential Manager in the disposable account to remove the entry named `CoD2 Unbound/CD Key` that this run created.
+- **Windows blocks a file.** Note its name, the exact message, Smart App Control’s setting and whether **Run anyway** was offered. A picture of the warning is enough.
+- **The game folder or key is rejected.** Check that `main` contains `iw_00.iwd` through `iw_15.iwd`. Note whether you used Steam, disc or a chosen folder. Leave any key prompt blank and keep keys out of notes and screenshots.
+- **The game goes black, loses sound or hangs.** Note the edition, graphics mode and last action. Save a picture if you can. Use **Task Manager** to close only the kit game or server that is stuck.
+- **Setup or PowerShell stops early.** Keep the results and exact warning. Use **Installed apps** to remove an install you started with this kit. If you know the kit added the entry, remove **CoD2 Unbound/CD Key** in **Credential Manager** under **Windows Credentials**. Delete only that run’s dated folder under `%LOCALAPPDATA%\CoD2 Unbound\Windows Kit` once its programs have closed.

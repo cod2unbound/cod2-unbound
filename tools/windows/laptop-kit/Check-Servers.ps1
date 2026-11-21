@@ -13,7 +13,7 @@ function Receive-Status($Socket, $Process, [string]$Query, [string]$Kind) {
         $text = [Text.Encoding]::ASCII.GetString($response, 4, $response.Length - 4)
         if ($text.StartsWith($Kind + "`n") -and $text -match ('\\challenge\\' + $challenge + '(\\|\r?\n|$)')) { return $text }
     } while ((Get-Date) -lt $deadline -and -not $Process.HasExited)
-    throw "The server did not answer $Query."
+    throw 'The game server did not answer on this PC.'
 }
 
 function Save-ServerQueries($Process, [string]$Evidence, [int]$Port, [string]$Protocol,
@@ -32,7 +32,7 @@ function Save-ServerQueries($Process, [string]$Evidence, [int]$Port, [string]$Pr
             $fields = @{}
             for ($i = 1; $i + 1 -lt $pairs.Count; $i += 2) { $fields[$pairs[$i]] = $pairs[$i + 1] }
             if ($fields.protocol -ne $spec.Protocol -or $fields.mapname -ne $MapName -or $fields[$spec.GameKey] -ne $GameType) {
-                throw "Unexpected $($spec.Query) map, game type or protocol. See results."
+                throw 'The server reply showed different game details than expected. See results.'
             }
             if ($SampleConfig -and $fields.sv_hostname -ne 'CoD2 Unbound LAN') {
                 throw 'The server did not use the included sample configuration.'
@@ -76,12 +76,12 @@ function Invoke-ServerCheck([string]$Edition, [string]$GamePath, [string]$Binary
 }
 
 function Read-LanAddress {
-    $address = Read-Host 'Enter the host PC private IPv4 address (without port), or press Enter to go back'
+    $address = Read-Host 'Enter the host PC local IPv4 address on this network, or press Enter to go back'
     if (-not $address) { return }
     $ip = $null
     if ($address -notmatch '^\d{1,3}(\.\d{1,3}){3}$' -or -not [Net.IPAddress]::TryParse($address, [ref]$ip) -or
         $ip.ToString() -ne $address -or $address -notmatch '^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)') {
-        throw 'Use a private or link-local IPv4 address from the isolated test LAN.'
+        throw 'Use the host PC address from your private test network.'
     }
     $address
 }
@@ -102,7 +102,7 @@ function Invoke-LanSessions([string]$GamePath) {
                 if ($role -eq 'j') { Invoke-ClientCheck $edition $GamePath -Label "lan-$number-join" -JoinAddress "${address}:29676" }
                 else { Invoke-ClientCheck $edition $GamePath -Label "lan-$number-browser" -Lan }
             } elseif ($role -eq 'h') {
-                $choice = Read-Host 'Choose D for Toujane DM, S for Brecourt S&D, C for Carentan CTF, H for Dawnville HQ, B for Burgundy DM A for Harbor DM or L for Leningrad TDM'
+                $choice = Read-Host 'Choose D for Toujane Deathmatch, S for Brecourt Search & Destroy, C for Carentan Capture the Flag, H for Dawnville Headquarters, B for Burgundy Deathmatch, A for Harbor Deathmatch or L for Leningrad Team Deathmatch'
                 $cases = @{ d = @('mp_toujane','dm'); s = @('mp_brecourt','sd'); c = @('mp_carentan','ctf')
                     h = @('mp_dawnville','hq'); a = @('mp_harbor','dm'); b = @('mp_burgundy','dm'); l = @('mp_leningrad','tdm') }
                 if ($choice -notin $cases.Keys) { continue }
@@ -110,7 +110,7 @@ function Invoke-LanSessions([string]$GamePath) {
                 $entry = New-RunContext "lan-$number-host"
                 $homePath = New-Folder (Join-Path $entry.Folder 'game')
                 $argsText = (Get-EngineArgs $homePath $GamePath -Address $address) + ' +set dedicated 1 +set sv_voice 1 +set g_logSync 1'
-                if ($edition -eq 'cod2x' -and (Read-Host 'Enter C for competitive with server tick setting 40, or press Enter for stock') -eq 'c') {
+                if ($edition -eq 'cod2x' -and (Read-Host 'Enter C for competitive rules, or press Enter for normal rules') -eq 'c') {
                     $argsText += ' +set g_competitive 1 +set sv_fps 40'
                 }
                 $argsText += " +set g_gametype $gameType +map $mapName"
@@ -118,7 +118,13 @@ function Invoke-LanSessions([string]$GamePath) {
                 try {
                     $protocol = if ($edition -eq 'original') { '118' } else { '120' }
                     Save-ServerQueries $run.Process $entry.Evidence 29676 $protocol $address $mapName $gameType
-                    Write-Host "Host ready on ${address}:29676. When finished, type quit in the CoD2 console."
+                    Write-Host "Host ready on ${address}:29676."
+                    if ((Read-Host 'Type P to play on this PC as well, or press Enter to wait for the other PC') -eq 'p') {
+                        try {
+                            Invoke-ClientCheck $edition $GamePath -Label "lan-$number-host-player" -JoinAddress "${address}:29676"
+                        } catch { Write-Warning $_.Exception.Message }
+                    }
+                    Write-Host 'When finished, type quit in the CoD2 server console.'
                 } finally {
                     $done = Complete-KitProcess $run $entry.Evidence 1800
                     Save-GameEvidence $homePath $entry.Evidence

@@ -10,7 +10,7 @@ function Test-KitFiles {
             $failed += $file
         }
     }
-    if ($failed.Count) { throw "Copy the kit again. SHA-256 failed for $($failed -join ', ')." }
+    if ($failed.Count) { throw "Copy the kit again. These files are missing or different: $($failed -join ', ')." }
     'All kit checksums matched.' | Set-Content -LiteralPath (Join-Path $Results 'kit-checksums.txt')
 }
 

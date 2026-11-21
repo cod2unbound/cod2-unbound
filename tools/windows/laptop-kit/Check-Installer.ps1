@@ -38,7 +38,7 @@ function New-PreservationFiles {
     return $data
 }
 
-function Invoke-InstallChecks([string]$GamePath) {
+function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $install = Join-Path $Kit 'install'
     $setup = Get-ChildItem -LiteralPath $install -File -Filter '*-setup.exe'
     $prior = Get-ChildItem -LiteralPath (Join-Path $install 'previous') -File -Filter '*-setup.exe'
@@ -62,7 +62,20 @@ function Invoke-InstallChecks([string]$GamePath) {
     $installed = $false
     $allInstalled = $false
     try {
-        Write-Host 'In Setup choose Install for me only. Record the warning, any UAC prompt and the Start entries.'
+        if ($AllUsers) {
+            Write-Host 'Approve the User Account Control prompt for this test and its uninstall. Keep the default install folder.'
+            $allExit = Invoke-Setup $setup.FullName 'setup-all-users' '/ALLUSERS'
+            if ($allExit -ne 0) { throw 'Setup for all users was cancelled, blocked or failed.' }
+            $allInstalled = $true
+            if ((Read-InstalledVersion 'HKLM' $allRoot) -ne $newVersion -or
+                @(Get-ChildItem -LiteralPath $commonStart -File -Filter '*.lnk').Count -ne 3) {
+                throw 'The install for all users did not appear in Installed apps or Start as expected.'
+            }
+            Assert-InstalledFiles $allRoot (Join-Path $Kit 'portable')
+            return
+        }
+
+        Write-Host 'In Setup choose Install for me only and keep the default folder. Note any Windows warning or permission prompt.'
         if ((Invoke-Setup $prior.FullName 'setup-previous') -ne 0) { throw 'The previous installer was cancelled or blocked.' }
         $installed = $true
         if ((Read-InstalledVersion 'HKCU' $root) -ne $oldVersion -or
@@ -80,7 +93,8 @@ function Invoke-InstallChecks([string]$GamePath) {
             $busyExit = Invoke-Setup $setup.FullName 'setup-busy-upgrade' $quiet
             "Setup exit code $busyExit" | Set-Content -LiteralPath (Join-Path $entry.Evidence 'busy-exit.txt')
             if ($busyExit -eq 0 -or $running.Process.HasExited -or (Read-InstalledVersion 'HKCU' $root) -ne $oldVersion -or
-                (Get-FileHash -LiteralPath $server).Hash -ne $oldHash) { throw 'Busy setup failed to preserve the running installation.' }
+                (Get-FileHash -LiteralPath $server).Hash -ne $oldHash) { throw 'Setup changed the old install while the server was still running.' }
+            Write-Host 'Setup left the old install alone while the server was running.'
         } finally {
             if (-not $running.Process.HasExited) {
                 Write-Host 'Type quit in the CoD2 server console. Setup waits for it to stop.'
@@ -100,27 +114,19 @@ function Invoke-InstallChecks([string]$GamePath) {
         if ((Invoke-Setup $setup.FullName 'setup-repair' $quiet) -ne 0) { throw 'Repair failed.' }
         Assert-InstalledFiles $root (Join-Path $Kit 'portable')
 
-        if (Confirm-Step 'Try both installed clients now') {
+        Write-Host 'The newer version is installed and Setup restored the removed test file.'
+        if (Confirm-Step 'Open both installed editions and load Toujane') {
+            $clientFailed = $false
             foreach ($edition in 'original','cod2x') {
                 try { Invoke-ClientCheck $edition $GamePath -Label "installed-$edition" -BinaryRoot $root }
-                catch { Write-Warning $_.Exception.Message }
+                catch { $clientFailed = $true; Write-Warning $_.Exception.Message }
             }
-        }
-        if ((Read-Host 'Enter A for the optional all-users test (requires administrator approval), or press Enter to skip') -eq 'a') {
-            $allExit = Invoke-Setup $setup.FullName 'setup-all-users' '/ALLUSERS'
-            if ($allExit -eq 0) {
-                $allInstalled = $true
-                if ((Read-InstalledVersion 'HKLM' $allRoot) -ne $newVersion -or
-                    @(Get-ChildItem -LiteralPath $commonStart -File -Filter '*.lnk').Count -ne 3) {
-                    throw 'The all-users registration or Start entries were missing.'
-                }
-                Assert-InstalledFiles $allRoot (Join-Path $Kit 'portable')
-            } else { Write-Warning "All-users setup ended with exit code $allExit." }
+            if ($clientFailed) { throw 'An installed edition did not close normally. See results.' }
         }
     } finally {
         $uninstallFailed = $false
         if ($installed -or $allInstalled) {
-            Write-Host 'Uninstall is last. Record any elevation request and confirm the uninstall prompt.'
+            Write-Host 'Confirm the uninstall prompt. Then check Installed apps and Start for CoD2 Unbound.'
             foreach ($scope in @(
                 @{ Present = $allInstalled; Directory = $allRoot; Group = $commonStart; Key = "HKLM:\$uninstallKey"; Label = 'uninstall-all-users' },
                 @{ Present = $installed; Directory = $root; Group = $start; Key = "HKCU:\$uninstallKey"; Label = 'uninstall-current-user' }
@@ -143,7 +149,7 @@ function Invoke-InstallChecks([string]$GamePath) {
         if ($before -ne $after -or $registry -ne (@(Find-RetailPaths) | ConvertTo-Json)) {
             throw 'A preservation file or retail InstallPath changed during the installer checks.'
         }
-        'Synthetic config, screenshot, demo, CD key and retail InstallPath preserved.' |
+        'Uninstall kept the test settings, screenshot, demo and key, and the disc game location.' |
             Add-Content -LiteralPath (Join-Path $Results 'setup-summary.txt')
         if ($uninstallFailed) { throw 'An uninstall check failed. See setup-summary and the setup logs.' }
     }

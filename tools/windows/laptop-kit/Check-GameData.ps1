@@ -30,7 +30,8 @@ function Invoke-DataCheck([string]$Name, [string]$GamePath, [switch]$Invalid, [s
             -not (Select-String -LiteralPath (Join-Path $entry.Folder 'stderr.txt') -SimpleMatch $expected -Quiet)) {
             throw 'The game did not reject the folder with the expected diagnostic.'
         }
-        Write-Host 'The game refused the requested path.'
+        if ($TestHome) { Write-Host 'The game refused to save settings outside the test folder.' }
+        else { Write-Host 'The game refused the folder with missing game files.' }
     } elseif ($result.ExitCode -eq 0 -and $found -and $written) {
         [pscustomobject]@{ Source = $found.Matches[0].Groups[1].Value; Path = $found.Matches[0].Groups[2].Value }
     } elseif ($GamePath -or $found) {
@@ -77,7 +78,7 @@ function Get-RetailPath([string]$Provided, [string]$Selected) {
             return Get-DataRoot $candidate
         }
     }
-    $answer = Read-Host 'Paste the retail 1.3 folder for comparisons, or press Enter to skip them'
+    $answer = Read-Host 'Paste the folder for your Call of Duty 2 version 1.3 disc install, or press Enter to skip'
     if ($answer) { Get-DataRoot $answer }
 }
 
@@ -90,7 +91,7 @@ function Test-RetailMouse([string]$RetailPath) {
     @($exe, $renderer, $miles) | Get-FileHash | Select-Object @{n='File';e={Split-Path $_.Path -Leaf}},Hash |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $entry.Evidence 'retail-files.json')
     if ((Get-FileHash -LiteralPath $exe).Hash -ine '8f482e647b250babe098c6e3deb10129f9a935d013e852c99689cf8dff0d12cc') {
-        throw 'The retail executable differs from the one this mouse probe supports.'
+        throw 'This disc game is a different build from the one used for the mouse comparison.'
     }
     Copy-Item -LiteralPath $exe,$renderer -Destination $entry.Folder
     Copy-Item -LiteralPath $miles -Destination (Join-Path $entry.Folder 'miles_retail.dll')
@@ -103,10 +104,10 @@ function Test-RetailMouse([string]$RetailPath) {
     $portRows = @($port.Output.GetAwaiter().GetResult() -split '\r?\n' | Where-Object { $_ })
     if ($capturedRetail.ExitCode -ne 0 -or $capturedPort.ExitCode -ne 0 -or
         $capturedRetail.TimedOut -or $capturedPort.TimedOut -or $retailRows.Count -ne 4096 -or $portRows.Count -ne 4096) {
-        throw 'Expected 4,096 mouse readings from each probe.'
+        throw 'One of the two games did not produce all 4,096 mouse readings.'
     }
     for ($i = 0; $i -lt 4096; $i++) {
-        if ($retailRows[$i] -cne $portRows[$i]) { throw "Mouse arithmetic first differs at row $($i + 1)." }
+        if ($retailRows[$i] -cne $portRows[$i]) { throw "The first mouse reading that differs is number $($i + 1)." }
     }
     'All 4,096 mouse readings matched.' | Set-Content -LiteralPath (Join-Path $entry.Evidence 'comparison.txt')
 }

@@ -27,7 +27,14 @@ function Invoke-ClientCheck {
         $launchArgs += ' +set sensitivity 5 +set m_pitch 0.022 +set m_yaw 0.022 +set m_filter 0 +set cl_mouseAccel 0'
     }
     if ($Raw) { $launchArgs += ' +set in_rawmouse 1' }
-    Write-Host "$Edition, $Renderer. Use /quit to return to this window."
+    Write-Host "$(Get-EditionName $Edition), $(Get-GraphicsMode $Renderer). Use /quit to return to this window."
+    if ($RequireScreens) {
+        Write-Host 'Open the console with the key above Tab and enter /toggleconsole; screenshotJpeg kit-menu'
+        Write-Host 'Reopen the console, enter /devmap mp_toujane, select Click to Continue, then pick a team and weapon. Play briefly and press F12.'
+        if ($Renderer -eq 'dx9') {
+            Write-Host 'Try the mouse, keyboard and sound. Alt+Tab out and back, then change the game resolution.'
+        }
+    }
     $proc = Start-KitProcess (Get-Binary $Edition -Root $BinaryRoot) $launchArgs $entry.Folder
     $done = Complete-KitProcess $proc $entry.Evidence 1200
     Save-GameEvidence $homePath $entry.Evidence
@@ -36,10 +43,10 @@ function Invoke-ClientCheck {
         $log = Join-Path $entry.Evidence 'console_mp.log'
         $pathMessage = 'Using Direct3D {0} code path' -f $Renderer.Substring(2)
         if (-not (Test-Path -LiteralPath $log) -or -not (Select-String -LiteralPath $log -SimpleMatch $pathMessage -Quiet)) {
-            throw "$Label did not report the requested renderer. See its logs."
+            throw "The game did not report $(Get-GraphicsMode $Renderer). See its results."
         }
         foreach ($capture in 'kit-menu.jpg','kit-toujane.jpg') {
-            if (-not (Test-Path -LiteralPath (Join-Path $entry.Evidence $capture))) { throw "$Label is missing $capture." }
+            if (-not (Test-Path -LiteralPath (Join-Path $entry.Evidence $capture))) { throw "The game did not save $capture." }
         }
     }
 }
@@ -66,7 +73,7 @@ function Test-ClassicKeyIsAbsent {
 
 function New-ClassicCopy([string]$RetailPath, [string]$GamePath, [string]$Root, [switch]$Cod2x) {
     if (-not (Test-ClassicKeyIsAbsent)) {
-        throw 'A legacy CD key is registered on this PC. The reference game is skipped to protect that key.'
+        throw 'Windows has a saved key for the old game. This comparison was skipped to protect it.'
     }
     $main = New-Folder (Join-Path $Root 'main')
     foreach ($name in 'CoD2MP_s.exe','gfx_d3d_mp_x86_s.dll','mss32.dll') {
@@ -98,30 +105,36 @@ function Invoke-Classic([string]$RetailPath, [string]$GamePath, [string]$Label, 
     $arguments = (Get-EngineArgs $copy $copy) +
         ' +set fs_cdpath "" +set sv_pure 0 +set g_gametype dm +set cl_allowDownload 0'
     if ($Server) {
-        Write-Host 'The reference server will be queried on loopback. Close its console or type quit when prompted.'
+        Write-Host 'The older CoD2x server will open and answer on this PC.'
         $arguments += ' +set dedicated 1 +map mp_toujane +dvarlist'
     } else {
         $arguments += ' +set net_noudp 1 +set r_fullscreen 0 +set sensitivity 5 +set m_filter 0 +set cl_mouseAccel 0'
-        Write-Host 'Use the copied reference game for the control comparison. Use /quit when finished.'
+        Write-Host 'Try the controls in this separate copy of the older game. Use /quit when finished.'
     }
     $run = Start-KitProcess (Join-Path $copy 'CoD2MP_s.exe') $arguments $copy
     try {
         if ($Server) {
             Save-ServerQueries $run.Process $entry.Evidence 29676 '120'
-            Read-Host 'Try the local join from the isolated test setup, then type quit in the server console and press Enter here' | Out-Null
+            if ((Read-Host 'Type J to join the older server from CoD2x, or press Enter to skip') -eq 'j') {
+                try {
+                    Invoke-ClientCheck 'cod2x' $GamePath -Label 'reference-server-join' -JoinAddress '127.0.0.1:29676'
+                } catch { Write-Warning $_.Exception.Message }
+            }
+            Read-Host 'Type quit in the server console, then press Enter here' | Out-Null
         }
     } finally {
         $done = Complete-KitProcess $run $entry.Evidence 1200
         Save-GameEvidence $copy $entry.Evidence
     }
-    if ($done.TimedOut -or $done.ExitCode -ne 0) { throw "The reference process did not exit cleanly. See $Label in results." }
+    if ($done.TimedOut -or $done.ExitCode -ne 0) { throw 'The older game did not close normally. See its results.' }
 }
 
 function Invoke-ControlSessions([string]$GamePath, [string]$RetailPath) {
     $number = 0
     do {
-        Write-Host '1 Unbound Original  2 Unbound Original raw  3 Unbound CoD2x  4 Retail Original  5 CoD2x reference'
-        $selection = Read-Host 'Choose a game for the controls and sound checks, or press Enter to finish this section'
+        Write-Host '1 Original 1.3    2 Original 1.3 with direct mouse input    3 CoD2x'
+        if ($RetailPath) { Write-Host '4 Disc edition    5 Older CoD2x 1.4.6.8' }
+        $selection = Read-Host 'Choose a game by number, or press Enter to finish this group'
         if (-not $selection) { break }
         $number++
         try {

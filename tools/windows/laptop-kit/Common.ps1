@@ -17,9 +17,22 @@ function Assert-StandardUser {
     }
     $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        throw 'Open an ordinary PowerShell window in the disposable standard account.'
+        throw 'Open PowerShell normally from File Explorer, without choosing Run as administrator.'
     }
     Assert-Offline
+}
+
+function New-KitLock {
+    $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    [Threading.Mutex]::new($false, "Global\CoD2UnboundWindowsKit-$sid")
+}
+
+function Get-EditionName([string]$Edition) {
+    if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x' }
+}
+
+function Get-GraphicsMode([string]$Renderer) {
+    if ($Renderer -eq 'dx9') { 'Direct3D 9' } else { 'DirectX 7 mode' }
 }
 
 function New-Folder([string]$Path) {
@@ -140,15 +153,15 @@ function Invoke-TestKey([string]$Action) {
     $log = New-RunContext ('key-' + $Action)
     $run = Start-KitProcess $exe $Action $log.Folder
     $checked = Complete-KitProcess $run $log.Evidence 15
-    if ($checked.TimedOut -or $checked.ExitCode -ne 0) { throw "Synthetic key check '$Action' failed." }
+    if ($checked.TimedOut -or $checked.ExitCode -ne 0) { throw "Windows could not complete the test key check ($Action)." }
 }
 
-function Start-TestSession {
+function Assert-NoSavedKitKey {
     $listed = & "$env:SystemRoot\System32\cmdkey.exe" /list
-    if ($LASTEXITCODE -ne 0 -or ($listed -match 'CoD2 Unbound/CD Key')) {
-        throw 'This account may already have a CoD2 Unbound credential. Use a fresh disposable account.'
+    if ($LASTEXITCODE -ne 0) { throw 'Windows could not check for an existing saved CoD2 Unbound key.' }
+    if ($listed -match 'CoD2 Unbound/CD Key') {
+        throw 'This account already has a saved CoD2 Unbound key. Leave it in place and use another account for the kit.'
     }
-    Invoke-TestKey 'seed'
 }
 
 function Get-Binary([string]$Edition, [switch]$Server, [string]$Root = (Join-Path $Kit 'portable')) {
