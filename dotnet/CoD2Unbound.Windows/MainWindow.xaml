@@ -87,7 +87,7 @@
 
             <Border BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="1,1,0,0"
                     Background="{ThemeResource PanelBrush}" CornerRadius="8,0,0,0">
-                <Grid RowSpacing="8">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />

@@ -80,7 +80,14 @@ public sealed partial class MainWindow : Window
         DispatcherQueue.TryEnqueue(UpdateCaptionColors);
 
     private void OnSystemThemeChanged(ThemeSettings sender, object args) =>
-        DispatcherQueue.TryEnqueue(UpdateCaptionColors);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            UpdateCaptionColors();
+            if (ContentFrame.Content is HomePage home)
+                home.RenderArtScrim();
+        });
+
+    internal bool IsHighContrast => windowTheme.HighContrast;
 
     private void UpdateCaptionColors()
     {

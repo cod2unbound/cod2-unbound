@@ -118,8 +118,7 @@ internal sealed class WindowsLauncherSession
     {
         await using var launch = await WindowsGameSessionHost.OpenLeaseAsync(HomePath, ".launcher-start.lock", default);
         await using var profile = await WindowsGameSessionHost.OpenLeaseAsync(HomePath, "main/players/.studio.lock", default);
-        await Game.ReconcileAsync();
-        if (Game.State.Running)
+        if (Game.State.Running || !inventory.FindRunning(EngineRole.Client, default).IsEmpty)
             throw new ConfigProfileException(ConfigProfileFailure.GameRunning);
         await ConfigProfileStore.SelectForNextLaunchAsync(gameFolder, id);
     }

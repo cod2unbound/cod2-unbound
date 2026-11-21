@@ -16,6 +16,9 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal ImmutableArray<GameServer> Recent => [.. session.Library.Recent.Take(3).Select(session.ServerForAddress)];
     internal GameServer? LastServer => session.Library.Recent.FirstOrDefault() is { } address
         ? session.ServerForAddress(address) : null;
+    internal string? LastPlayed => LastServer is { } server && session.Library.Played.TryGetValue(server.Address, out var date)
+        ? "Played " + MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: true).ToLowerInvariant()
+        : null;
     internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext);
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];

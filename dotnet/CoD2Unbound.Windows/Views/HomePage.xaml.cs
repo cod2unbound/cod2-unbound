@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
 using Windows.Security.Cryptography;
@@ -18,14 +19,15 @@ public sealed partial class HomePage : Page
     private readonly HomeViewModel model;
     private bool settingDisplay = true;
     private bool settingLoadout = true;
+    private (double Low, double High)? artworkLuminance;
 
     internal HomePage(MainWindow shell, WindowsLauncherSession session)
     {
         this.shell = shell;
         model = new(session);
         InitializeComponent();
-        ActualThemeChanged += (_, _) => RenderFallback();
-        RenderFallback();
+        ActualThemeChanged += (_, _) => RenderBackdrop();
+        Loaded += (_, _) => RenderBackdrop();
     }
 
     internal async Task RefreshAsync()
@@ -39,7 +41,7 @@ public sealed partial class HomePage : Page
             if (map is not null)
                 HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
             HeroDetail.Text = string.Join(" · ", new[] { QuakeColors.Plain(last.Name),
-                last.GameType != "—" ? GameModes.Long(last.GameType) : null }.OfType<string>());
+                last.GameType != "—" ? GameModes.Long(last.GameType) : null, model.LastPlayed }.OfType<string>());
         }
         else
         {
@@ -78,7 +80,7 @@ public sealed partial class HomePage : Page
         LaunchButton.IsEnabled = reason is null;
         LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
         OpenGameData.Visibility = IsVisible(reason == "Choose a complete game data folder before launching.");
-        LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "Call of Duty 2 closed unexpectedly."
+        LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe."
             : model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server");
         AutomationProperties.SetHelpText(LaunchButton, LaunchReason.Text);
     }
@@ -146,16 +148,54 @@ public sealed partial class HomePage : Page
         Text = text, Style = (Style)Application.Current.Resources["SecondaryText"]
     };
 
-    private void RenderFallback()
+    private void RenderBackdrop()
     {
-        if (HeroArt.Source is SoftwareBitmapSource)
-            return;
-        string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
-        HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
+        if (HeroArt.Source is not SoftwareBitmapSource)
+        {
+            string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
+            HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
+        }
+        RenderArtScrim();
     }
+
+    internal void RenderArtScrim()
+    {
+        HeroScrim.Fill = null;
+        HeroFade.Fill = null;
+        if (shell.IsHighContrast || PanelPalette.Background is not SolidColorBrush panel ||
+            HeroLead.Foreground is not SolidColorBrush lead || HeroTitle.Foreground is not SolidColorBrush title)
+            return;
+
+        var fade = new LinearGradientBrush { StartPoint = new(0, 0), EndPoint = new(0, 1) };
+        var paper = panel.Color;
+        fade.GradientStops.Add(new GradientStop { Color = WithAlpha(paper, 0), Offset = 0.65 });
+        fade.GradientStops.Add(new GradientStop { Color = paper, Offset = 1 });
+        HeroFade.Fill = fade;
+        if (artworkLuminance is not { } brightness)
+            return;
+
+        bool dark = ActualTheme != ElementTheme.Light;
+        var shade = dark ? Microsoft.UI.Colors.Black : paper;
+        double first = Luminance(lead.Color);
+        double second = Luminance(title.Color);
+        double opacity = dark ? ScrimMath.DarkScrim(brightness.High, Math.Min(first, second)) :
+            ScrimMath.LightWash(brightness.Low, Math.Max(first, second), Luminance(paper));
+        var tint = WithAlpha(shade, opacity);
+        var brush = new LinearGradientBrush { StartPoint = new(0, 0), EndPoint = new(1, 0) };
+        brush.GradientStops.Add(new GradientStop { Color = tint, Offset = 0 });
+        brush.GradientStops.Add(new GradientStop { Color = tint, Offset = 0.64 });
+        brush.GradientStops.Add(new GradientStop { Color = WithAlpha(shade, 0), Offset = 1 });
+        HeroScrim.Fill = brush;
+    }
+
+    private static double Luminance(Windows.UI.Color color) => ScrimMath.Luminance(color.R, color.G, color.B);
+
+    private static Windows.UI.Color WithAlpha(Windows.UI.Color color, double opacity) =>
+        Windows.UI.Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
 
     private async Task ApplyArtworkAsync(MapPixels art)
     {
+        artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0, 1);
         var bgra = art.Rgba.ToArray();
         for (int i = 0; i < bgra.Length; i += 4)
         {
@@ -167,6 +207,7 @@ public sealed partial class HomePage : Page
         var image = new SoftwareBitmapSource();
         await image.SetBitmapAsync(bitmap);
         HeroArt.Source = image;
+        RenderArtScrim();
     }
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args)
@@ -174,7 +215,7 @@ public sealed partial class HomePage : Page
         bool wide = args.NewSize.Width >= 1000;
         ContentLayout.Padding = wide ? new Thickness(48, 64, 48, 32) : new Thickness(28, 28, 28, 24);
         HeroTitle.FontSize = wide ? 112 : 84;
-        HeroArt.Height = wide ? 520 : 330;
+        ArtLayer.Height = wide ? 520 : 360;
         ContentLayout.MinHeight = args.NewSize.Height;
     }
 
