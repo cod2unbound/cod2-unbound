@@ -1086,8 +1086,14 @@ static void PM_REGPARM2_ABI PM_Friction(playerState_t *ps, pml_t *pml)
         drop += control * PM_DvarFloat(friction, 5.5f) * pml->frametime;
     }
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    /* Retail Windows applies frame time before spectator drag. */
+    if (ps->pm_type == 4)
+        drop += (speed * pml->frametime) * 5.0f;
+#else
     if (ps->pm_type == 4)
         drop += speed * 5.0f * pml->frametime;
+#endif
 
     newspeed = speed - drop;
     if (newspeed < 0.0f)
@@ -2748,8 +2754,15 @@ static void PM_FlyMove(pmove_t *pm, pml_t *pml)
     PM_Friction(ps, pml);
     float scale = PM_CmdScale(ps, &pm->cmd);
     vec3_t wishdir;
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    /* Retail Windows scales the sum of the two movement contributions. */
+    for (int i = 0; i < 3; ++i)
+        wishdir[i] = scale ? (pml->forward[i] * (float)pm->cmd.forwardmove
+                            + pml->right[i] * (float)pm->cmd.rightmove) * scale : 0.0f;
+#else
     for (int i = 0; i < 3; ++i)
         wishdir[i] = scale ? scale * pml->forward[i] * (float)pm->cmd.forwardmove + scale * pml->right[i] * (float)pm->cmd.rightmove : 0.0f;
+#endif
     if (ps->speed) {
         /* Preserve the original scalar rounding in PM_MoveScale(0, 0, 127). */
         float vertical = (float)ps->speed * 127.0f / 16129.0f;

@@ -108,7 +108,7 @@ def replay(run, env, port, edition):
     reference_state = run / "reference-statehash.txt"
     reference_players = run / "reference-players.txt"
     reference_state.write_bytes(gzip.decompress((FIXTURE / f"{edition}-statehash.txt.gz").read_bytes()))
-    reference_players.write_bytes(gzip.decompress((FIXTURE / "players.txt.gz").read_bytes()))
+    reference_players.write_bytes(gzip.decompress((FIXTURE / f"{edition}-players.txt.gz").read_bytes()))
     subprocess.run(
         [sys.executable, PARITY / "compare.py", reference_state, run / "statehash.txt",
          "--players", reference_players, run / "players.txt", "--require-clients", "2", "--raw"],
