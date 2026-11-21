@@ -77,7 +77,10 @@ struct MediaEntry: Identifiable {
     @Published var page: LauncherPage = .home {
         didSet { if page != oldValue { recordUsageNavigation() } }
     }
-    @Published var onboard = true
+    @Published var onboard = true {
+        // Nothing leaves the Mac during setup (its welcome says so): usage data waits for the end.
+        didSet { if booted, onboard != oldValue { usageData.holdSending = onboard } }
+    }
     @Published var gameRunning = false
     /// The toast at the bottom of the main window (things that happened elsewhere).
     @Published var notice = ""
@@ -460,6 +463,7 @@ struct MediaEntry: Identifiable {
         booted = true
         usageInstallNumber = usageData.installNumber
         usageSettingsBaseline = settings
+        usageData.holdSending = onboard
         usageData.applicationOpened()
         if onboard { recordUsageSetupStep(setupStep) } else { recordUsageNavigation() }
         sweepSteam()  // ship-shell: nothing of an interrupted Steam download's tool or sign-in stays

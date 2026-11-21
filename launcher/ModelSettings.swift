@@ -787,6 +787,10 @@ extension KeyStore {
             message: "You’ll go through game data, CD key and shaders. Your loadouts, demos and screenshots stay, and you can cancel at any step.", actionTitle: "Set Up Again", destructive: false) {}
         case "settings-privacy": settingsPane = .privacy
         case "settings-privacy-sent": settingsPane = .privacy; privacyDetailsShown = true
+        // Usage data (SetPrivacyUsage and SetPrivacyUsageOn boards): before a yes, and after one.
+        case "settings-privacy-usage": settingsPane = .privacy; previewUsage = (.notAsked, nil)
+        case "settings-privacy-usage-on": settingsPane = .privacy; previewUsage = (.yes, UUID(uuidString: "7F3C9A2E-41D8-4B6E-9C05-2D8E61A4B7F0"))
+        case "settings-privacy-usage-sent": settingsPane = .privacy; previewUsage = (.yes, UUID(uuidString: "7F3C9A2E-41D8-4B6E-9C05-2D8E61A4B7F0")); settingsSheet = .usagePreview
         case "settings-delete-summaries": settingsPane = .privacy; settingsConfirmation = deleteSummariesRequest(count: 37)
         case "settings-updates": settingsPane = .updates; updateWasChecked = true; updateMessage = "You’re up to date · \(version)"
         case "settings-updates-never": settingsPane = .updates; library.dispatchesCheckedAt = nil

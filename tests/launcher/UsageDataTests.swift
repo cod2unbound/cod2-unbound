@@ -133,6 +133,20 @@ import Foundation
         try check(!disabled.available && !disabled.shouldAsk && disabled.installNumber == nil &&
                   !FileManager.default.fileExists(atPath: disabled.setupURL.path), "no key disables usage data and its local journals")
         print("PASS: consent, pre-question journal, unavailable build, daily app open")
+
+        // A yes given in setup waits on the Mac until setup ends (the welcome says nothing leaves during setup).
+        let sentBefore = f.events().count
+        let inSetup = f.usage("held-in-setup")
+        inSetup.holdSending = true
+        inSetup.record(.setupStepReached(.welcome))
+        inSetup.setConsent(.yes, source: .setup) { _ in }
+        inSetup.record(.setupStepReached(.ready))
+        try await Task.sleep(for: .milliseconds(450))
+        try check(f.events().count == sentBefore && inSetup.queuedCount == 3, "nothing is sent while setup is open")
+        inSetup.holdSending = false
+        try await f.wait("held events were not sent after setup") { f.events().count == sentBefore + 3 }
+        try await f.wait("held events did not drain") { inSetup.queuedCount == 0 }
+        print("PASS: a yes in setup is held on the Mac until setup ends, then sent")
     }
 
     static func retryAndRotation(_ f: Fixture) async throws {

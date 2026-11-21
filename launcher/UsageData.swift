@@ -283,8 +283,17 @@ struct UsageEndpoint: Sendable {
         sendTask?.cancel(); sendTask = nil
         retryDelay = firstRetryDelay
     }
+    /// Setup's welcome says nothing leaves the Mac during setup: a yes given in setup is kept on the
+    /// Mac until setup ends, then sent.
+    var holdSending = false {
+        didSet {
+            guard holdSending != oldValue else { return }
+            if holdSending { cancelSend() } else { scheduleSend(after: firstBatchDelay) }
+        }
+    }
+
     private func scheduleSend(after delay: Duration) {
-        guard sendTask == nil, installNumber != nil, !state.events.isEmpty else { return }
+        guard !holdSending, sendTask == nil, installNumber != nil, !state.events.isEmpty else { return }
         let generation = sendGeneration
         sendTask = Task(priority: .utility) { [weak self] in
             do { try await Task.sleep(for: delay) } catch { return }
