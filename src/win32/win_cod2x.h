@@ -19,7 +19,6 @@ int Win_Cod2xCrashDialog(const char *reportPath, EXCEPTION_POINTERS *exception);
 /* The executable, its folder and its arguments; files named after it. */
 const char *Win_Cod2xExeName(void);
 const char *Win_Cod2xExePath(void);
-const char *Win_Cod2xExeDirectory(void);
 const char *Win_Cod2xCommandLine(void);
 void Win_Cod2xDiagnosticPath(char *path, size_t size, const char *kind, const SYSTEMTIME *time, const char *suffix);
 void Win_Cod2xCrashed(void);

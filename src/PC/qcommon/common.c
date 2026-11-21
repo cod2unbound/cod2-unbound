@@ -541,6 +541,11 @@ void Com_StartupVariable(const char *match)
 
     for (lineIndex = 0; lineIndex < com_numConsoleLines; lineIndex++) {
         Cmd_TokenizeString(com_consoleLines[lineIndex]);
+#if COD2_WINDOWS_NATIVE
+        const char *name = Cmd_Argv(1);
+        if (!stricmp(name, "fs_basepath") || !stricmp(name, "fs_homepath") ||
+            !stricmp(name, "fs_cdpath") || !stricmp(name, "fs_copyfiles")) continue;
+#endif
         if (match) {
             if (strcmp(Cmd_Argv(1), match) != 0)
                 continue;

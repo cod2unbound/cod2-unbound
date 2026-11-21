@@ -1,6 +1,8 @@
 /* Windows implementation of the native platform interface in platform/macos_system.h. */
-#if defined(_WIN32) && defined(COD2_X64)
+#include "cod2_platform.h"
+#if COD2_WINDOWS_NATIVE
 #include "platform/macos_system.h"
+#include "win_paths.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -33,8 +35,7 @@ void MacSystem_WaitUntil(uint64_t deadline)
 
 char *MacSystem_HomePath(void)
 {
-    /* Windows keeps its files in the install folder: fs_homepath follows fs_basepath. */
-    return NULL;
+    return (char *)WIN_USER_ROOT;
 }
 
 uint64_t MacSystem_MemoryBytes(void)

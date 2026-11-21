@@ -561,6 +561,10 @@ static int cr_win_owned(CONTEXT *context)
 }
 #    endif
 
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_files.h"
+#endif
+
 static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
 {
     char path[1024];
@@ -596,7 +600,11 @@ static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
         Win_Cod2xCrashDialog(path, ep);
 #    else
     snprintf(path, sizeof(path), "cod2_crash_%lu.txt", (unsigned long)pid);
+#if COD2_WINDOWS_NATIVE
+    fd = Win_OpenWrite(path);
+#else
     fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+#endif
 
     cr_emit_common(fd, desc);
     cr_win_regs(fd, ep ? ep->ContextRecord : NULL);
@@ -611,6 +619,7 @@ static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
         Sys_CrashReceive(path, desc);
 #    endif
 
+#    if !COD2_WINDOWS_NATIVE
     {
         int fd2 = open("Z:\\tmp\\cod2_crash_latest.txt", O_CREAT | O_TRUNC | O_WRONLY, 0644);
         if (fd2 >= 0) {
@@ -621,6 +630,7 @@ static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
             close(fd2);
         }
     }
+#    endif
     if (getenv("COD2_CRASH_NOPOPUP"))
         return;
 

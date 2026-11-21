@@ -5,6 +5,7 @@ dbghelp.dll
 gdi32.dll
 kernel32.dll
 msvcrt.dll
+ole32.dll
 shell32.dll
 user32.dll
 winmm.dll

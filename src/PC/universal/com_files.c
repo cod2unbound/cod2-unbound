@@ -4,6 +4,10 @@
 #include "common_types.h"
 #include "imports.h"
 #include "PC/qcommon/com_fileaccess.h"
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#include "win32/win_files.h"
+#endif
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
 #include "../qcommon/cod2x.h"
 #include "../qcommon/cod2x_policy.h"
@@ -443,6 +447,14 @@ Bool FS_RegisterDvars(void)
         return 0;
 
     fs_debug = Dvar_RegisterInt("fs_debug", 0, 0, 2, 0x1000);
+#if COD2_WINDOWS_NATIVE
+    /* These roots were bound before engine initialization. Configs and mods
+     * cannot redirect writes or turn on the legacy copy-to-install path. */
+    fs_copyfiles = Dvar_RegisterBool_mac("fs_copyfiles", 0, 0x1050);
+    fs_cdpath = Dvar_RegisterString_mac("fs_cdpath", "", 0x1050);
+    fs_basepath = Dvar_RegisterString_mac("fs_basepath", WIN_DATA_ROOT, 0x1050);
+    fs_homepath = Dvar_RegisterString_mac("fs_homepath", WIN_USER_ROOT, 0x1050);
+#else
     fs_copyfiles = Dvar_RegisterBool_mac("fs_copyfiles", 0, 0x1010);
     fs_cdpath = Dvar_RegisterString_mac("fs_cdpath", Sys_DefaultCDPath(), 0x1010);
     fs_basepath = Dvar_RegisterString_mac("fs_basepath", Sys_DefaultInstallPath(), 0x1010);
@@ -460,6 +472,11 @@ Bool FS_RegisterDvars(void)
     }
 
     fs_homepath = Dvar_RegisterString_mac("fs_homepath", homePath, 0x1010);
+#endif
+#if COD2_WINDOWS_NATIVE
+    fs_basegame = Dvar_RegisterString_mac("fs_basegame", "", 0x1010);
+    fs_useOldAssets = Dvar_RegisterBool_mac("fs_useOldAssets", 0, 0x1000);
+#endif
     fs_gameDirVar = Dvar_RegisterString_mac("fs_game", "", 0x101c);
     fs_restrict = Dvar_RegisterBool_mac("fs_restrict", 0, 0x1010);
     fs_ignoreLocalized = Dvar_RegisterBool_mac("fs_ignoreLocalized", 0, 0x10a0);
@@ -1530,11 +1547,15 @@ fileHandle_t FS_OpenFileOverwrite(const char *qpath)
         Com_Printf("FS_FOpenFileOverWrite: %s\n", ospath);
     }
 
+#if COD2_WINDOWS_NATIVE
+    if (!Win_MakeWritable(ospath)) return 0;
+#else
     attrs = GetFileAttributesA(ospath);
     writableAttrs = attrs & ~1u;
     if (writableAttrs != attrs) {
         SetFileAttributesA(ospath, writableAttrs);
     }
+#endif
 
     fp = FS_FileOpen(ospath, "wb");
     if (!fp) {

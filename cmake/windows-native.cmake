@@ -7,7 +7,7 @@ option(COD2_WIN32_D3D9 "Client: render through the system d3d9.dll instead of Op
 if(COD2_WIN32_D3D9 AND NOT COD2_WIN32_CLIENT)
   message(FATAL_ERROR "COD2_WIN32_D3D9 needs COD2_WIN32_CLIENT")
 endif()
-enable_language(CXX)
+enable_language(CXX RC)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # -Wreturn-mismatch is GCC 14; older MinGW compilers reject the -Wno-error form.
@@ -28,6 +28,7 @@ list(FILTER WIN_C EXCLUDE REGEX "/Mac/Tools/(MacThreads|CCircularBuffer)\\.c$")
 list(FILTER WIN_C EXCLUDE REGEX "/stubs/(agl_stubs|cpp_compat|cpp_trampoline|fx_override|zlib_alloc)\\.c$")
 list(FILTER WIN_C EXCLUDE REGEX "/stubs/(iokit_stubs|corefoundation_stubs)\\.c$")
 list(APPEND WIN_C src/unix/sysdiff_statehash.c src/win32/win_system.c
+  src/win32/win_paths.c src/win32/win_files.c
   src/platform/macos_threads.c src/platform/macos_ring.c src/platform/macos_cpp_abi.cpp)
 
 include(${CMAKE_SOURCE_DIR}/cmake/datagen.cmake)
@@ -116,7 +117,10 @@ set(COD2_WIN_C_OPTIONS -w -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fn
   -fno-strict-overflow -fno-delete-null-pointer-checks -fno-aggressive-loop-optimizations
   -include ${COD2_SRC_DIR}/headers/win32_compat.h ${COD2_WNO})
 
-add_executable(${WIN_TARGET} ${WIN_TARGET_C})
+add_executable(${WIN_TARGET} ${WIN_TARGET_C} src/win32/unbound.rc)
+set_source_files_properties(src/win32/unbound.rc PROPERTIES
+  COMPILE_OPTIONS "-I${COD2_SRC_DIR}/win32"
+  OBJECT_DEPENDS "${COD2_SRC_DIR}/win32/unbound.manifest")
 target_include_directories(${WIN_TARGET} PRIVATE
   ${COD2_SRC_DIR}/PC/speex ${COD2_SRC_DIR} ${COD2_SRC_DIR}/headers ${COD2_SRC_DIR}/win32/shims
   ${COD2_SRC_DIR}/win32/sdl2/include ${CMAKE_SOURCE_DIR})
@@ -144,7 +148,7 @@ target_link_options(${WIN_TARGET} PRIVATE -static -static-libgcc -static-libstdc
   -Wl,--defsym,${WIN_SYM}sv_ptr=${WIN_SYM}sv
   -Wl,--defsym,${WIN_SYM}svs_ptr=${WIN_SYM}svs
   -Wl,--defsym,${WIN_SYM}r_limits_ptr=${WIN_SYM}vidConfig)
-target_link_libraries(${WIN_TARGET} PRIVATE z ws2_32 winmm winpthread dbghelp advapi32)
+target_link_libraries(${WIN_TARGET} PRIVATE z ws2_32 winmm winpthread dbghelp advapi32 shell32 ole32 uuid)
 set_target_properties(${WIN_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} SUFFIX ".exe")
 set_source_files_properties(src/platform/macos_cpp_abi.cpp PROPERTIES COMPILE_OPTIONS -fvisibility=hidden)
 set_source_files_properties(src/PC/qcommon/crash_handler.c PROPERTIES
@@ -213,3 +217,8 @@ endif()
 include(${CMAKE_SOURCE_DIR}/cmake/cod2x-layer.cmake)
 cod2x_layer_order(${WIN_TARGET})
 # export-end
+
+# The adapters call the raw CRT only after validating and translating a path.
+# The parity recorder is an instrumented build tool and takes its own output path.
+set_source_files_properties(src/win32/win_paths.c src/win32/win_files.c
+  src/unix/sysdiff_statehash.c PROPERTIES COMPILE_DEFINITIONS COD2_WIN_RAW_FILE_IO=1)

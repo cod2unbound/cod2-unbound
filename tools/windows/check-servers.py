@@ -64,17 +64,20 @@ def query_server(sock, process, query, response, gametype_key, protocol):
     raise ValueError(f"No {response.decode()} for {MAP}")
 
 
+def wine_local_app_data(env):
+    users = Path(env["WINEPREFIX"]) / "drive_c/users"
+    return next(user / "AppData/Local" for user in users.iterdir() if user.name != "Public")
+
+
 def smoke(run, env, port, status_protocol):
     run.mkdir()
-    home = run / "game-home"
-    (home / "main").mkdir(parents=True)
     env = {
         **private_home(env, run / "process-home"),
         "SYSDIFF_STATEHASH": str(run / "statehash.txt"),
         "SYSDIFF_MAXFRAMES": "200",
     }
     command = [WINDOWS / "wine-binary.sh", "+set", "fs_basepath", "/data",
-               "+set", "fs_homepath", home, "+set", "dedicated", "1",
+               "+set", "dedicated", "1",
                "+set", "net_ip", "127.0.0.1", "+set", "net_port", str(port),
                "+set", "sv_punkbuster", "0", "+set", "g_gametype", "dm", "+map", MAP]
     with (run / "console.log").open("w") as log:
@@ -101,6 +104,7 @@ def replay(run, env, port, edition):
     subprocess.run(
         [sys.executable, PARITY / "record.py", "--binary", WINDOWS / "wine-binary.sh",
          "--data", "/data", "--output", run, "--map", MAP, "--dedicated",
+         "--home", wine_local_app_data(env) / "CoD2 Unbound/replay",
          "--frames", str(FRAMES), "--seed", "12345", "--timeout", "240", "--port", str(port),
          "--players", "--clients", "2", "--replay", FIXTURE / "usercmds.txt"],
         env=env, check=True,
@@ -118,7 +122,6 @@ def replay(run, env, port, edition):
 
 def main(output=None):
     output = Path(output or tempfile.mkdtemp(prefix="headless-", dir="/out"))
-    print(f"Evidence in output/r05/builds/wine/{output.name}", flush=True)
     env = dict(
         os.environ, WINEARCH="win64",
         WINEDEBUG="-all", WINEDLLOVERRIDES="mscoree,mshtml=",

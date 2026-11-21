@@ -15,7 +15,11 @@
 #include "platform/macos_system.h"
 #endif
 
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#else
 static char cwd[256];
+#endif
 
 extern int Com_sprintf(char *dest, int size, const char *fmt, ...);
 extern qboolean Com_FilterPath(const char *filter, const char *name, int casesensitive);
@@ -75,9 +79,13 @@ char *Sys_DefaultHomePath(void)
 
 char *Sys_DefaultInstallPath(void)
 {
+#if COD2_WINDOWS_NATIVE
+    return (char *)WIN_DATA_ROOT;
+#else
     getcwd(cwd, 255);
     cwd[255] = '\0';
     return cwd;
+#endif
 }
 
 #if COD2_APPLE_SDK && defined(COD2_X64)

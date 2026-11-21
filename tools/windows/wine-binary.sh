@@ -4,9 +4,16 @@
 # record.py passes literal quotes around paths, which Wine would escape. Drop them.
 export WINEDEBUG="${WINEDEBUG:--all}" WINEDLLOVERRIDES="mscoree,mshtml="
 args=()
+previous=
 for arg in "$@"; do
     arg="${arg#\"}"
-    args+=("${arg%\"}")
+    arg="${arg%\"}"
+    if [[ $previous == fs_homepath && $arg == "$WINEPREFIX/drive_c/"* ]]; then
+        arg="${arg#"$WINEPREFIX/drive_c"}"
+        arg="C:${arg//\//\\}"
+    fi
+    args+=("$arg")
+    previous="$arg"
 done
 if [[ ${COD2_WINE_HEADLESS_CHECK:-0} == 1 ]]; then
     args=(+set developer 0 "${args[@]}")
