@@ -21,6 +21,8 @@ public sealed partial class MainWindow : Window
     private bool busy;
     private bool loaded;
     private double sizedAtScale;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer gameWatcher;
+    private GameSessionState? lastGame;
 
     public MainWindow()
     {
@@ -31,7 +33,14 @@ public sealed partial class MainWindow : Window
         windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
         windowTheme.Changed += OnSystemThemeChanged;
         Root.ActualThemeChanged += OnAppThemeChanged;
-        Closed += (_, _) => windowTheme.Changed -= OnSystemThemeChanged;
+        gameWatcher = DispatcherQueue.CreateTimer();
+        gameWatcher.Interval = TimeSpan.FromSeconds(1);
+        gameWatcher.Tick += OnWatchGame;
+        Closed += (_, _) =>
+        {
+            gameWatcher.Stop();
+            windowTheme.Changed -= OnSystemThemeChanged;
+        };
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs args)
@@ -46,6 +55,7 @@ public sealed partial class MainWindow : Window
             await session.InitializeAsync();
             ApplyAppearance(session.Settings.Working.Appearance);
             await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
+            gameWatcher.Start();
         });
     }
 
@@ -91,8 +101,11 @@ public sealed partial class MainWindow : Window
         Nav.IsPaneOpen = mode == NavigationViewPaneDisplayMode.Left;
     }
 
-    private void OnPaneChanged(NavigationView sender, object args) =>
-        PaneLoadout.Visibility = IsVisible(Nav.IsPaneOpen && PaneLoadout.Text.Length > 0);
+    private void OnPaneChanged(NavigationView sender, object args)
+    {
+        PlayerPlate.Visibility = IsVisible(Nav.IsPaneOpen && session.SetupComplete);
+        RefreshFavorites();
+    }
 
     private void ResizeForDisplay(bool startup = false)
     {
@@ -138,6 +151,10 @@ public sealed partial class MainWindow : Window
             await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
         else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
+        else if (ReferenceEquals(args.InvokedItemContainer, ServersItem))
+            await OpenServersAsync(ServerScope.All);
+        else if (args.InvokedItemContainer?.Tag is string address)
+            await OpenServersAsync(ServerScope.Favorites, address);
     }
 
     private async void OnHomeInvoked(object sender, RoutedEventArgs args) =>
@@ -146,11 +163,21 @@ public sealed partial class MainWindow : Window
     private async void OnSettingsInvoked(object sender, RoutedEventArgs args) =>
         await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
 
-    internal async Task NavigateAsync(LauncherPlace place)
+    private async void OnServersInvoked(object sender, RoutedEventArgs args) =>
+        await OpenServersAsync(ServerScope.All);
+
+    internal Task OpenServersAsync(ServerScope scope, string? address = null) =>
+        RunAsync(() => NavigateAsync(LauncherPlace.Servers, scope, address));
+
+    internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null)
     {
         Nav.IsPaneVisible = JumpButton.IsEnabled = session.SetupComplete;
         if (Nav.IsPaneVisible)
+        {
             UpdatePaneMode(Root.ActualWidth);
+            await RefreshPlayerAsync();
+            OnPaneChanged(Nav, EventArgs.Empty);
+        }
         if (place == LauncherPlace.Setup)
         {
             var page = new SetupPage(this, session);
@@ -164,6 +191,11 @@ public sealed partial class MainWindow : Window
             ContentFrame.Content = page;
             await page.RefreshAsync();
         }
+        else if (place == LauncherPlace.Servers)
+        {
+            Nav.SelectedItem = ServersItem;
+            ContentFrame.Content = new ServersPage(this, session, scope, address);
+        }
         else
         {
             Nav.SelectedItem = Nav.SettingsItem;
@@ -171,10 +203,49 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    internal void ShowPaneLoadout(string? loadout)
+    private async Task RefreshPlayerAsync()
     {
-        PaneLoadout.Text = loadout ?? "";
-        OnPaneChanged(Nav, EventArgs.Empty);
+        var player = await session.ReadPlayerAsync();
+        PlayerName.Text = PlayerCardName.Text = player.Name;
+        PaneLoadout.Text = player.Loadout ?? player.Key;
+        PlayerCardLoadout.Text = player.Loadout ?? "Loadout unavailable";
+        PlayerCardKey.Text = player.Key;
+    }
+
+    internal void RefreshFavorites()
+    {
+        while (Nav.MenuItems.Count > 4)
+            Nav.MenuItems.RemoveAt(Nav.MenuItems.Count - 1);
+        if (!Nav.IsPaneOpen || session.Library.Favorites.Count == 0)
+            return;
+        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites" });
+        foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
+            .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
+        {
+            Nav.MenuItems.Add(new NavigationViewItem
+            {
+                Content = QuakeColors.Plain(favorite.Name), Tag = favorite.Address,
+                Icon = new SymbolIcon(Symbol.Favorite), SelectsOnInvoked = false
+            });
+        }
+    }
+
+    private async void OnWatchGame(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
+    {
+        if (!session.SetupComplete || busy)
+            return;
+        await RunAsync(async () =>
+        {
+            await session.Game.ReconcileAsync();
+            var state = session.Game.State;
+            if (lastGame?.Running == state.Running && lastGame.LastExit == state.LastExit)
+                return;
+            lastGame = state;
+            if (ContentFrame.Content is HomePage home)
+                home.RenderGame(state);
+            if (ContentFrame.Content is ServersPage servers)
+                servers.UpdateGameState(state);
+        }, clearProblem: false);
     }
 
     internal void ApplyAppearance(LauncherAppearance appearance) => Root.RequestedTheme = appearance switch
@@ -193,18 +264,19 @@ public sealed partial class MainWindow : Window
         return (await picker.PickSingleFolderAsync())?.Path;
     }
 
-    internal async Task RunAsync(Func<Task> action)
+    internal async Task RunAsync(Func<Task> action, bool clearProblem = true)
     {
         if (busy)
             return;
         busy = true;
-        Problem.IsOpen = false;
+        if (clearProblem)
+            Problem.IsOpen = false;
         try
         {
             await action();
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
-            or ArgumentException or System.Runtime.InteropServices.COMException)
+            or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException)
         {
             Problem.Message = error.Message;
             Problem.IsOpen = true;
@@ -214,4 +286,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings }
+internal enum LauncherPlace { Setup, Home, Settings, Servers }

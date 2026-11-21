@@ -8,6 +8,11 @@
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
+    <Style x:Key="CardTitle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
+    </Style>
     <Style x:Key="SecondaryText" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />

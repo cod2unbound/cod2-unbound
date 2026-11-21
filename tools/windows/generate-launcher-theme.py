@@ -13,6 +13,9 @@ BRUSHES = {
     "FieldBrush": ("field", "Window"),
     "SeparatorBrush": ("separator", "WindowText"),
     "HeadingBrush": ("heading", "WindowText"),
+    "HeroInkBrush": ("ink-on-art", "WindowText"),
+    "HeroAccentBrush": ("accent", "WindowText"),
+    "FavoriteBrush": ("control", "WindowText"),
     "BodyBrush": ("text", "WindowText"),
     "CaptionBrush": ("secondary", "WindowText"),
     "FocusVisualPrimaryBrush": ("heading", "WindowText"),
@@ -53,6 +56,9 @@ def generate(tokens):
         for brush, (token, system_color) in BRUSHES.items():
             color = xaml_color(tokens[token][theme]) if theme else f"{{ThemeResource SystemColor{system_color}Color}}"
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": color})
+        # The contrast backplate covers text only, leaving the rest of the art visible.
+        backplate = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
+        ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": "HeroBackplateBrush", "Color": backplate})
         frame = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
         for brush in ("FrameContrastBrush", "NavigationViewExpandedPaneBackground"):
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": frame})

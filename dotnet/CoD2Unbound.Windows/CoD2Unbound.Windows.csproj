@@ -15,6 +15,7 @@
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationTitle>CoD2 Unbound</ApplicationTitle>
+    <Version>0.5.0</Version>
     <Product>CoD2 Unbound</Product>
     <!-- The portable projects already lock their own restores. -->
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
@@ -23,6 +24,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.7.0]" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.26100.7175]" PrivateAssets="all" />
     <ProjectReference Include="../CoD2Unbound.Core/CoD2Unbound.Core.csproj" />
+    <Content Include="Assets/hero-*.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../launcher/Resources/Fonts/BigShouldersStencilDisplay.ttf;../../launcher/Resources/Fonts/OFL-BigShouldersStencilDisplay.txt"
+             Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/brand/monogram.svg" Link="Assets/monogram.svg"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

@@ -31,7 +31,8 @@ public sealed class ServerBrowser(ServerQueryClient query, TimeProvider clock)
         enabled && Volatile.Read(ref active) == 0 && (library.CachedAt is not { } time || clock.GetUtcNow() - time >= TimeSpan.FromMinutes(2));
 
     public async Task<LauncherLibrary> RefreshAsync(LauncherLibrary library, ImmutableArray<GameServer> current,
-        IProgress<ServerRefreshState> progress, CancellationToken cancellationToken = default)
+        IProgress<ServerRefreshState> progress, CancellationToken cancellationToken = default,
+        IEnumerable<UdpEndpoint>? mastersOverride = null)
     {
         if (Interlocked.Exchange(ref active, 1) != 0)
             return library;
@@ -42,7 +43,8 @@ public sealed class ServerBrowser(ServerQueryClient query, TimeProvider clock)
         try
         {
             progress.Report(new(earlier, true, 0, 0, 0, false));
-            var found = await query.MasterAddressesAsync(cancellationToken).ConfigureAwait(false);
+            var found = await (mastersOverride is null ? query.MasterAddressesAsync(cancellationToken)
+                : query.MasterAddressesAsync(mastersOverride, cancellationToken)).ConfigureAwait(false);
             masters = !found.IsEmpty;
             var addresses = found.Concat(library.Favorites).Concat(library.Recent)
                 .Select(TryAddress).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();

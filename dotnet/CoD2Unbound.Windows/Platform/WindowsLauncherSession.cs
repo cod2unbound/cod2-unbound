@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 using CoD2Unbound.Core;
 
@@ -13,6 +14,10 @@ internal sealed class WindowsLauncherSession
     private readonly WindowsSettingsFolder gameFolder;
     private readonly WindowsEngineInventory inventory;
     internal GameLifecycle Game { get; }
+    internal ServerQueryClient ServerQuery { get; }
+    internal UdpEndpoint[]? TestMaster { get; }
+    internal ServerBrowserPreferences ServerPreferences { get; private set; } = ServerBrowserPreferences.Default;
+    internal ServerBrowser Browser { get; }
     internal LauncherLibrary Library { get; private set; } = new();
     internal WindowsRenderMode Renderer { get; private set; }
     private const string RendererFile = "windows-renderer.txt";
@@ -29,6 +34,10 @@ internal sealed class WindowsLauncherSession
         var processes = new WindowsProcessSupervisor(inventory, Path.Join(folder.Root, "logs"));
         var gameHost = new WindowsGameSessionHost(inventory, files, HomePath, gameFolder, () => Renderer, SaveIntroAsync);
         Game = new GameLifecycle(processes, gameHost, files, TimeProvider.System);
+        if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
+            TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
+        ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
+        Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
     }
 
     internal LauncherSettingsSession Settings { get; private set; } = null!;
@@ -43,6 +52,7 @@ internal sealed class WindowsLauncherSession
                 await folder.WriteAsync(name, bytes, default);
         }
         Library = await LauncherLibrary.LoadAsync(folder);
+        ServerPreferences = await ServerBrowserPreferences.LoadAsync(folder);
         Renderer = await folder.ReadAsync(RendererFile, default) is { } renderer &&
             renderer.AsSpan().SequenceEqual("dx7\n"u8) ? WindowsRenderMode.DirectX7 : WindowsRenderMode.Direct3D9;
         var storage = new GameSettingsStorage(folder);
@@ -55,12 +65,50 @@ internal sealed class WindowsLauncherSession
         Setup = await CreateSetupAsync(remembered, hasKey, SetupStep.Welcome);
     }
 
+    internal string Version => typeof(WindowsLauncherSession).Assembly.GetName().Version!.ToString(3);
+
+    internal GameServer ServerForAddress(string address) =>
+        Library.Cache.FirstOrDefault(server => server.Address == address) ??
+        new GameServer(address, ImmutableDictionary<string, string>.Empty, -1, []);
+
+    internal MapPixels? ReadMapArtwork(string map) =>
+        MapArtwork.Find(map, MapArtwork.ArchiveOrder.Select<string, Func<Stream>>(name =>
+            () => WindowsFiles.Open(Setup.DataPath, name)));
+
+    internal ImmutableArray<MatchSummary> ReadMatches()
+    {
+        try
+        {
+            using var input = WindowsFiles.Open(HomePath, "main/stats/matches.jsonl");
+            return MatchSummaries.Read(input);
+        }
+        catch (FileNotFoundException) { return []; }
+        catch (DirectoryNotFoundException) { return []; }
+    }
+
+    internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null)
+    {
+        var result = await LaunchAsync(LaunchLink.Direct(address.Address, address.Password ?? ""), edition);
+        if (result == GameStartState.Started)
+            await SaveLibraryAsync(Library.Joined(address.Address, TimeProvider.System.GetUtcNow()));
+        return result;
+    }
+
     internal Task<SetupSession> ChangeGameDataAsync() => CreateSetupAsync(Setup.DataPath, Setup.HasStoredKey, SetupStep.Data);
 
     internal void SetGameData(string path) => Setup.ChooseData(path);
     internal void FinishSetup() => SetupComplete = Setup.Step == SetupStep.Complete;
 
     internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
+
+    internal async Task<(string Name, string? Loadout, string Key)> ReadPlayerAsync()
+    {
+        var loadout = await ReadLoadoutAsync();
+        var dialect = Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
+        string? name = await ConfigProfileStore.ReadPlayerNameAsync(gameFolder, dialect);
+        return (string.IsNullOrWhiteSpace(name) ? "Player" : name, loadout?.DisplayName,
+            Setup.HasStoredKey ? "CD key verified" : "CD key needed");
+    }
 
     internal bool HasClient(GameEdition edition) =>
         inventory.Installed.Any(binary => binary is { Role: EngineRole.Client } && binary.Edition == edition);
@@ -77,6 +125,24 @@ internal sealed class WindowsLauncherSession
         await folder.WriteAsync(RendererFile, renderer == WindowsRenderMode.DirectX7 ? [.. "dx7\n"u8] : [.. "dx9\n"u8], default);
         Renderer = renderer;
     }
+
+    internal async Task SaveFiltersAsync(ServerFilters filters)
+    {
+        var preferences = ServerPreferences with { Filters = filters };
+        await preferences.SaveAsync(folder);
+        ServerPreferences = preferences;
+    }
+
+    internal async Task RefreshServersAsync(IProgress<ServerRefreshState> progress, CancellationToken cancellationToken)
+    {
+        var next = await Browser.RefreshAsync(Library, Library.Cache, progress, cancellationToken, TestMaster);
+        await SaveLibraryAsync(next);
+    }
+
+    internal Task ToggleFavoriteAsync(string address) => SaveLibraryAsync(Library with
+    {
+        Favorites = Library.Favorites.Contains(address) ? Library.Favorites.Remove(address) : Library.Favorites.Add(address)
+    });
 
     internal async Task SaveLibraryAsync(LauncherLibrary library)
     {

@@ -7,6 +7,9 @@
             <SolidColorBrush x:Key="FieldBrush" Color="#12FFFFFF" />
             <SolidColorBrush x:Key="SeparatorBrush" Color="#0EFFFFFF" />
             <SolidColorBrush x:Key="HeadingBrush" Color="#F3ECDC" />
+            <SolidColorBrush x:Key="HeroInkBrush" Color="#F3ECDC" />
+            <SolidColorBrush x:Key="HeroAccentBrush" Color="#E2BD72" />
+            <SolidColorBrush x:Key="FavoriteBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="BodyBrush" Color="#ECE6D6" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#A9A28F" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#F3ECDC" />
@@ -18,6 +21,7 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#1C170C" />
+            <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -27,6 +31,9 @@
             <SolidColorBrush x:Key="FieldBrush" Color="#99FFFFFF" />
             <SolidColorBrush x:Key="SeparatorBrush" Color="#1A504628" />
             <SolidColorBrush x:Key="HeadingBrush" Color="#1F1E17" />
+            <SolidColorBrush x:Key="HeroInkBrush" Color="#1F2214" />
+            <SolidColorBrush x:Key="HeroAccentBrush" Color="#6B4A12" />
+            <SolidColorBrush x:Key="FavoriteBrush" Color="#55622F" />
             <SolidColorBrush x:Key="BodyBrush" Color="#26251D" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#615E51" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#1F1E17" />
@@ -38,6 +45,7 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFF8E8" />
+            <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -47,6 +55,9 @@
             <SolidColorBrush x:Key="FieldBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SeparatorBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="HeadingBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="HeroInkBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="HeroAccentBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="FavoriteBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="BodyBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="CaptionBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -58,6 +69,7 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="HeroBackplateBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource SystemColorWindowColor}" />
         </ResourceDictionary>

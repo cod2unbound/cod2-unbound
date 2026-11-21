@@ -43,6 +43,7 @@
                         <Button.Flyout>
                             <MenuFlyout x:Name="JumpMenu">
                                 <MenuFlyoutItem Text="Home" Click="OnHomeInvoked" />
+                                <MenuFlyoutItem Text="Servers" Click="OnServersInvoked" />
                                 <MenuFlyoutItem Text="Settings" Click="OnSettingsInvoked" />
                             </MenuFlyout>
                         </Button.Flyout>
@@ -56,14 +57,32 @@
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
                         ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="HomeItem" Content="Home" Icon="Home" />
-                <NavigationViewItem Content="Servers" Icon="Globe" IsEnabled="False" />
+                <NavigationViewItem x:Name="HomeItem" Content="Home" Icon="Home" AccessKey="H" />
+                <NavigationViewItem x:Name="ServersItem" Content="Servers" Icon="Globe" AccessKey="S" />
                 <NavigationViewItem Content="Library" Icon="Library" IsEnabled="False" />
                 <NavigationViewItem Content="Configs" Icon="Document" IsEnabled="False" />
             </NavigationView.MenuItems>
             <NavigationView.PaneFooter>
-                <TextBlock x:Name="PaneLoadout" Margin="16,8" Style="{StaticResource SecondaryText}"
-                           Visibility="Collapsed" />
+                <Button x:Name="PlayerPlate" Margin="8,8" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch" Visibility="Collapsed"
+                        AutomationProperties.Name="Open your player card" AccessKey="P">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <SymbolIcon Symbol="Contact" />
+                        <StackPanel>
+                            <TextBlock x:Name="PlayerName" FontWeight="SemiBold" Text="Player" />
+                            <TextBlock x:Name="PaneLoadout" Style="{StaticResource SecondaryText}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout>
+                            <StackPanel Spacing="8">
+                                <TextBlock x:Name="PlayerCardName" Style="{StaticResource SectionTitle}" />
+                                <TextBlock x:Name="PlayerCardKey" Style="{StaticResource SecondaryText}" />
+                                <TextBlock x:Name="PlayerCardLoadout" Style="{StaticResource SecondaryText}" />
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
             </NavigationView.PaneFooter>
 
             <Border BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="1,1,0,0"
