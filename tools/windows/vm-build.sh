@@ -39,10 +39,14 @@ prepared=0
 cleanup() {
     result=$?
     trap - EXIT HUP INT TERM
-    rm -f "$scratch/source.zip" "$scratch/build.ps1" "$scratch/receipt"
+    for file in "$scratch/source.zip" "$scratch/build.ps1" "$scratch/receipt"; do
+        if [ -f "$file" ]; then
+            rm "$file" || result=1
+        fi
+    done
     if [ "$reachable" -eq 1 ]; then
         if [ "$prepared" -eq 1 ]; then
-            guest 20 "Remove-Item -LiteralPath '$vmroot' -Recurse -Force -ErrorAction Stop" > "$scratch/guest-cleanup.log" 2>&1 || :
+            guest 20 "Remove-Item -LiteralPath '$vmroot' -Recurse -ErrorAction Stop" > "$scratch/guest-cleanup.log" 2>&1 || :
         fi
         guest 15 'shutdown.exe /s /t 0; exit $LASTEXITCODE' > "$scratch/shutdown.log" 2>&1 || :
         stopped=0
