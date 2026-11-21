@@ -2680,7 +2680,7 @@ void FS_Startup(const char *gameName)
         }
     }
 
-#if !COD2_APPLE_SDK || !defined(DEDICATED)
+#if COD2_WINDOWS_NATIVE || !COD2_APPLE_SDK || !defined(DEDICATED)
     Com_ReadCDKey();
 #endif
     FS_AddCommands();

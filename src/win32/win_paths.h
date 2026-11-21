@@ -18,4 +18,7 @@ wchar_t *Win_UTF16(const char *path);
 const char *Win_ExecutablePath(void);
 const char *Win_ExecutableDirectory(void);
 
+int Win_ReadCDKey(char key[21]);
+int Win_WriteCDKey(const char key[21]);
+
 #endif

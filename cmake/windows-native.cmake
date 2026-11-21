@@ -28,7 +28,7 @@ list(FILTER WIN_C EXCLUDE REGEX "/Mac/Tools/(MacThreads|CCircularBuffer)\\.c$")
 list(FILTER WIN_C EXCLUDE REGEX "/stubs/(agl_stubs|cpp_compat|cpp_trampoline|fx_override|zlib_alloc)\\.c$")
 list(FILTER WIN_C EXCLUDE REGEX "/stubs/(iokit_stubs|corefoundation_stubs)\\.c$")
 list(APPEND WIN_C src/unix/sysdiff_statehash.c src/win32/win_system.c
-  src/win32/win_paths.c src/win32/win_files.c
+  src/win32/win_paths.c src/win32/win_files.c src/win32/win_key.c
   src/platform/macos_threads.c src/platform/macos_ring.c src/platform/macos_cpp_abi.cpp)
 
 include(${CMAKE_SOURCE_DIR}/cmake/datagen.cmake)

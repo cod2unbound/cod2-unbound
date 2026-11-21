@@ -131,42 +131,6 @@ int MacSystem_CaptureStack(void **frames, int count, int skip)
     return captured;
 }
 
-/* Windows 1.3 reads its CD key as the 21-byte "codkey" value of
- * HKLM\SOFTWARE\Activision\Call of Duty 2: 16 key characters, 4 checksum
- * characters and a NUL. It is a 32-bit program, so on 64-bit Windows it sees
- * the 32-bit registry view, and when the game was installed without admin
- * rights Windows redirected the installer's write to the user's VirtualStore,
- * which a 32-bit program then reads first. A 64-bit build sees neither on its
- * own, so look in the same places. */
-int Win_ReadRegistryCDKey(char *key, int size)
-{
-    static const struct {
-        HKEY root;
-        const char *path;
-        REGSAM view;
-    } places[] = {
-        { HKEY_CURRENT_USER, "Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\Activision\\Call of Duty 2", 0 },
-        { HKEY_CURRENT_USER, "Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Activision\\Call of Duty 2", 0 },
-        { HKEY_LOCAL_MACHINE, "SOFTWARE\\Activision\\Call of Duty 2", KEY_WOW64_32KEY },
-        { HKEY_LOCAL_MACHINE, "SOFTWARE\\Activision\\Call of Duty 2", KEY_WOW64_64KEY },
-    };
-    size_t i;
-
-    if (size < 21)
-        return 0;
-    for (i = 0; i < sizeof(places) / sizeof(places[0]); ++i) {
-        HKEY handle;
-        DWORD type = 0, bytes = 21;
-        LONG result;
-        if (RegOpenKeyExA(places[i].root, places[i].path, 0, KEY_QUERY_VALUE | places[i].view, &handle) != ERROR_SUCCESS)
-            continue;
-        result = RegQueryValueExA(handle, "codkey", NULL, &type, (BYTE *)key, &bytes);
-        RegCloseKey(handle);
-        if (result == ERROR_SUCCESS && bytes == 21)
-            return 1;
-    }
-    return 0;
-}
 #if defined(COD2_CODX) && COD2_CODX
 /* com_autoaffinity, CoD2x src/mss32/affinity.cpp. */
 int Sys_Cod2xProcessorCount(void)

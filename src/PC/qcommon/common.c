@@ -18,6 +18,10 @@
 /* dvar globals */
 extern const dvar_t *loc_language;
 
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#endif
+
 extern char cl_cdkey[52];
 extern char cl_cdkeychecksum[12];
 
@@ -686,7 +690,12 @@ void Com_WriteCDKey(void)
     memcpy(regkey, cl_cdkey, 16);
     memcpy(regkey + 16, cl_cdkeychecksum, 4);
     regkey[20] = '\0';
+#if COD2_WINDOWS_NATIVE
+    Win_WriteCDKey(regkey);
+    memset(regkey, 0, sizeof(regkey));
+#else
     MacPreferences_PutString("codkey", regkey);
+#endif
 }
 #endif
 
@@ -1512,7 +1521,7 @@ void Com_CheckSetRecommended(void)
     }
 }
 
-#if !(COD2_APPLE_SDK && defined(DEDICATED))
+#if COD2_WINDOWS_NATIVE || !(COD2_APPLE_SDK && defined(DEDICATED))
 void Com_ReadCDKey(void)
 {
 #if defined(COD2_X64)
@@ -1523,14 +1532,16 @@ void Com_ReadCDKey(void)
     extern qboolean CL_CDKeyValidate(const char *key, const char *checksum);
     char regkey[21];
 
-#if defined(COD2_X64) && COD2_WINDOWS_NATIVE
-    extern int Win_ReadRegistryCDKey(char *key, int size);
-
-    /* Windows 1.3 keeps the key in the registry; the preferences file stays a fallback. */
-    if (Win_ReadRegistryCDKey(regkey, sizeof(regkey)) || MacPreferences_GetString("codkey", regkey, 0x15, 0)) {
+#if COD2_WINDOWS_NATIVE
+    if (Win_ReadCDKey(regkey)) {
+        memcpy(cl_cdkey, regkey, 16);
+        cl_cdkey[16] = '\0';
+        memcpy(cl_cdkeychecksum, regkey + 16, 5);
+        memset(regkey, 0, sizeof(regkey));
+        return;
+    }
 #else
     if (MacPreferences_GetString("codkey", regkey, 0x15, 0)) {
-#endif
         memcpy(cl_cdkey, regkey, 16);
         cl_cdkey[16] = '\0';
         memcpy(cl_cdkeychecksum, regkey + 16, 4);
@@ -1538,6 +1549,7 @@ void Com_ReadCDKey(void)
         if (CL_CDKeyValidate(cl_cdkey, cl_cdkeychecksum))
             return;
     }
+#endif
     memset(cl_cdkey, ' ', 16);
     cl_cdkey[16] = '\0';
 }
@@ -2760,7 +2772,9 @@ void Com_Init_Try_Block_Function(char *commandLine)
     int i;
 
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
+#if !COD2_WINDOWS_NATIVE
     Com_Printf("Command line: '%s'\n", commandLine);
+#endif
     Com_Printf("%s %s build %s %s\n", "CoD2 MP", COD2X_RELEASE, COD2X_PLATFORM, __DATE__ " " __TIME__);
 #else
 #if defined(__APPLE__) && defined(COD2_X64)

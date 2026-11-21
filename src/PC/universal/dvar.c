@@ -850,18 +850,36 @@ const char *__attribute_regparm__(2) Dvar_ValueToString(const dvar_t *dvar, Dvar
     return Dvar_ValueToString_impl(dvar, value);
 }
 
+#if COD2_WINDOWS_NATIVE
+static int Dvar_IsCDKeyField(const dvar_t *dvar)
+{
+    const char *name = dvar->name;
+    return !stricmp(name, "cl_cdkey") || (!strnicmp(name, "cdkey", 5) &&
+        name[5] >= '1' && name[5] <= '5' && !name[6]);
+}
+#endif
+
 const char *Dvar_DisplayableValue(const dvar_t *dvar)
 {
+#if COD2_WINDOWS_NATIVE
+    if (Dvar_IsCDKeyField(dvar)) return "";
+#endif
     return Dvar_ValueToString_impl(dvar, dvar->current);
 }
 
 const char *Dvar_DisplayableResetValue(const dvar_t *dvar)
 {
+#if COD2_WINDOWS_NATIVE
+    if (Dvar_IsCDKeyField(dvar)) return "";
+#endif
     return Dvar_ValueToString_impl(dvar, dvar->reset);
 }
 
 const char *Dvar_DisplayableLatchedValue(const dvar_t *dvar)
 {
+#if COD2_WINDOWS_NATIVE
+    if (Dvar_IsCDKeyField(dvar)) return "";
+#endif
     return Dvar_ValueToString_impl(dvar, dvar->latched);
 }
 
