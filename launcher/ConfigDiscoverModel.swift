@@ -667,6 +667,31 @@ extension ConfigImportPresentation {
         guard entry(id) != nil else { return nil }
         return popularity?.setups[id]?.figure(for: order ?? setupOrder)
     }
+    /// The grid's status line (DiscoverSorted board): “59 setups, the most imported in the last 30 days
+    /// first”, “37 of 59 setups, …” for a filter. Nil for Featured First or a search, which keep their
+    /// own line. Without published figures the setups keep the catalogue's order, and the line says so.
+    func orderStatus(filtered: Bool) -> String? {
+        guard !searching, setupOrder != .featuredFirst else { return nil }
+        let total = entries.count, shown = setups.count
+        let setups = total == 1 ? "1 setup" : "\(total) setups"
+        let count = filtered ? "\(shown) of \(setups)" : setups
+        guard let popularity else { return "\(count), in the catalogue’s order: no figures have been published yet" }
+        let most = setupOrder == .mostImported ? "the most imported" : "the most viewed"
+        return "\(count), \(most) in the last \(Self.period(popularity.periodDays)) first"
+    }
+    /// A card's figure line when the grid is ordered by it and the setup has a figure (5 or more):
+    /// “Imported 64 times in the last 30 days”. Nil otherwise; the card then names its source.
+    func figureLine(for id: String) -> String? {
+        guard setupOrder != .featuredFirst, let popularity, let count = popularityCount(for: id) else { return nil }
+        let verb = setupOrder == .mostImported ? "Imported" : "Viewed"
+        return "\(verb) \(count) times in the last \(Self.period(popularity.periodDays))"
+    }
+    /// The Order menu's note.
+    var orderNote: String {
+        "In the last \(Self.period(popularity?.periodDays ?? 30)), from players who share usage data. A setup used fewer than 5 times shows no figure and keeps the catalogue’s order."
+    }
+    private static func period(_ days: Int) -> String { days == 1 ? "day" : "\(days) days" }
+
     /// The setups the front page's banner pages through: the first featured ones, in the index's order.
     var heroes: [ConfigDirectoryEntry] {
         let featured = entries.filter { $0.featured == true }

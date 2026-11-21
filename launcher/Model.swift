@@ -159,6 +159,13 @@ struct MediaEntry: Identifiable {
     }
     @Published var usageInstallNumber: UUID?
     @Published var usageQuestionPending = false
+    /// The review harness's usage-data state (a build with a key, the answer and the number); the
+    /// real store is never touched in preview mode.
+    @Published var previewUsage: (consent: UsageConsent, install: UUID?)?
+    /// Setup keeps its Usage data step once it was due, so answering it doesn't renumber the steps.
+    var usageStepInSetup = false
+    /// A `cod2unbound://setup/<id>` link that waits for setup to finish (ModelUsage.swift).
+    var pendingSetupLink: String?
     var usageGameStartedAt: Date?
     var usageSettingsBaseline: GameSettings?
     var usageJoinSheetContext: (address: String, source: UsageJoinSource)?
@@ -536,7 +543,7 @@ struct MediaEntry: Identifiable {
     /// Brings the main window forward (reopening it if it was closed).
     func showMainWindow() {
         openWindowHandler?(.main)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp?.activate(ignoringOtherApps: true)
     }
     /// The one way into Settings: selects `pane` (or keeps the last one) and brings the window forward.
     func openSettings(_ pane: SettingsPane? = nil) {

@@ -250,6 +250,10 @@ struct UsageFacts: Codable, Sendable {
     private let hz: Int
     private let language: String
 
+    /// The review harness's Mac: the boards' example (MacBook Pro, Apple M4 Pro, 3024 × 1964 at 120 Hz).
+    static let preview = Self(app: UsageVersion("0.4.2"), osMajor: 27, osMinor: 0, osPatch: 0, model: "Mac16,6", chip: "Apple M4 Pro",
+                              width: 3024, height: 1964, hz: 120, language: "en")
+
     @MainActor static func current(appVersion: String) -> Self {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let display = CGMainDisplayID()

@@ -66,7 +66,6 @@ struct UsageEndpoint: Sendable {
     static let setupLimit = 24
     private static let batchLimit = 32
     private static let maxAgeMinutes = 7 * 24 * 60
-    private static let previewNumber = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
     private struct PendingStep: Codable, Sendable {
         let minute: Int
@@ -139,10 +138,17 @@ struct UsageEndpoint: Sendable {
     /// example replaces the install number. Previewing never creates or saves a real number.
     var sampleEventJSON: String? {
         guard available else { return nil }
-        let example = occurrence(.serverJoined(.list, engine: .cod2x), minute: minute, facts: facts())
+        return Self.sampleJSON(facts: facts(), install: installNumber, minute: minute, id: eventID())
+    }
+
+    /// See What’s Sent’s example, a server joined from the list, through the sender's own encoder.
+    /// Without a number (before a yes) the all-zero example stands in for it.
+    nonisolated static func sampleJSON(facts: UsageFacts, install: UUID?, minute: Int, id: UUID) -> String? {
+        let example = UsageOccurrence(id: id, minute: minute, event: .serverJoined(.list, engine: .cod2x), facts: facts)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return (try? encoder.encode(example.capture(for: installNumber ?? Self.previewNumber))).map { String(decoding: $0, as: UTF8.self) }
+        let number = install ?? UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+        return (try? encoder.encode(example.capture(for: number))).map { String(decoding: $0, as: UTF8.self) }
     }
 
     /// The persistence closure writes the answer to launcher-settings.json. Sending starts only once

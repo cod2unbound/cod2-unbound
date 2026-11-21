@@ -4,12 +4,12 @@ import SwiftUI
 /// The seven steps of setup, in order (Setup boards): the bottom bar shows one dot per step. The
 /// crash reports question is only asked by a build that has somewhere to send them (`setupSteps`).
 enum SetupStep: Int, CaseIterable, Identifiable {
-    case welcome, data, key, shaders, yours, crash, ready
+    case welcome, data, key, shaders, yours, crash, usage, ready
     var id: Int { rawValue }
     var title: String {
         switch self {
         case .welcome: "Welcome"; case .data: "Game data"; case .key: "CD key"
-        case .shaders: "Shaders"; case .yours: "Make it yours"; case .crash: "Crash reports"; case .ready: "Ready"
+        case .shaders: "Shaders"; case .yours: "Make it yours"; case .crash: "Crash reports"; case .usage: "Usage data"; case .ready: "Ready"
         }
     }
 }
@@ -88,7 +88,17 @@ enum GameArchives {
     var setupCompletionTitle: String { pendingLink != nil ? "Join Server" : fastPlay ? "Open Game Menu" : "Open CoD2 Unbound" }
     var setupServerAddress: String? { pendingLink?.address }
     /// The steps this build's setup has: without a report service there is nothing to ask about.
-    var setupSteps: [SetupStep] { SetupStep.allCases.filter { $0 != .crash || crashReportService != nil } }
+    var setupSteps: [SetupStep] {
+        SetupStep.allCases.filter { step in
+            switch step {
+            case .crash: crashReportService != nil
+            // Only while the question is due (a build with a key, not yet answered), and kept for the
+            // rest of this setup once shown, so answering it doesn't renumber the steps.
+            case .usage: usageStepInSetup || shouldAskUsageInSetup
+            default: true
+            }
+        }
+    }
     var setupStepNumber: Int { (setupSteps.firstIndex(of: setupStep) ?? 0) + 1 }
     var setupStepCount: Int { setupSteps.count }
     private func setupStep(after step: SetupStep) -> SetupStep {
@@ -98,7 +108,7 @@ enum GameArchives {
     }
     var setupCanContinue: Bool {
         switch setupStep {
-        case .welcome, .ready, .crash: return true
+        case .welcome, .ready, .crash, .usage: return true
         case .data where steam.phase == .offer: return !steamRoomShort
         case .data where steam.phase == .done: return !dataPath.isEmpty
         case .data where steamActive: return false
@@ -114,6 +124,7 @@ enum GameArchives {
         case .welcome: "Get Started"
         case .shaders: shaderFailed ? "Continue with Approximate Shaders" : "Continue"
         case .crash: "Send Crash Reports"
+        case .usage: UsageDataQuestion.send
         case .ready: setupCompletionTitle
         default: "Continue"
         }
@@ -124,7 +135,7 @@ enum GameArchives {
         case .data where steam.phase == .downloading: "Stop"
         case .key where !(keyVerified && !replacingKey) && keyCheck != .verified: "Skip for Now"
         case .yours: "Skip for Now"
-        case .crash: "Don’t Send"
+        case .crash, .usage: "Don’t Send"
         case .ready where !hasPendingLaunch: "Find a Server"
         default: nil
         }
@@ -228,7 +239,8 @@ enum GameArchives {
             case .yours:
                 try applyYours()
                 setupStep = setupStep(after: .yours)
-            case .crash: answerCrashReports(send: true); setupStep = .ready
+            case .crash: answerCrashReports(send: true); setupStep = setupStep(after: .crash)
+            case .usage: answerUsageInSetup(send: true)
             case .ready: finishSetup()
             }
         } catch { setupError = error.localizedDescription; recordUsage(.errorShown(.saveSetup)) }
@@ -240,7 +252,8 @@ enum GameArchives {
         case .data: stopSteam()
         case .key: recordUsage(.setupStepSkipped(.cdKey)); keyInput = ""; replacingKey = false; enterShaders()
         case .yours: recordUsage(.setupStepSkipped(.yours)); setupNameError = nil; setupStep = setupStep(after: .yours)
-        case .crash: answerCrashReports(send: false); setupStep = .ready
+        case .crash: answerCrashReports(send: false); setupStep = setupStep(after: .crash)
+        case .usage: answerUsageInSetup(send: false)
         case .ready: finishSetup(findServer: true)
         default: break
         }
@@ -252,6 +265,14 @@ enum GameArchives {
         let steps = setupSteps
         let index = steps.firstIndex(of: setupStep) ?? 1
         setupStep = index > 0 ? steps[index - 1] : .welcome
+    }
+
+    // MARK: Usage data
+    /// Setup's “Send usage data?”: either answer is saved at once; the step stays in this setup.
+    private func answerUsageInSetup(send: Bool) {
+        usageStepInSetup = true
+        setUsageConsent(send: send, source: .setup)
+        setupStep = .ready
     }
 
     // MARK: Crash reports
@@ -377,6 +398,7 @@ enum GameArchives {
             loadArtwork()
             if !findServer && hasPendingLaunch { play() }
             if let address = pendingJoinAddress { pendingJoinAddress = nil; connectToAddress(address, source: .link) }
+            else if let id = pendingSetupLink, !findServer, !hasPendingLaunch { openSetupLink(id) }
         } catch { setupError = "Setup couldn’t be saved. Try again. " + error.localizedDescription; recordUsage(.errorShown(.saveSetup)) }
     }
     func restartSetup() { restartSetup(at: .data) }
@@ -394,6 +416,7 @@ enum GameArchives {
         if steamActive { leaveSteam() }
         setupNameError = nil; shaderFailed = approximate && !shaderBusy
         jumpPresented = false; playerCardPresented = false
+        usageStepInSetup = false
         if setupStep == requested { recordUsageSetupStep(requested) }
         setupStep = requested; onboard = true
         if requested == .shaders && approximate { prepareShaders() }
@@ -421,6 +444,8 @@ enum GameArchives {
         case "home-no-favorites": page = .home; library.favorites = []
         case "home-quit-running": page = .home; gameRunning = true; confirmQuitWithGame()
         case "sheet-crash-reports-question": page = .home; sheet = .crashReportsQuestion
+        case "sheet-usage-question": page = .home; previewUsage = (.notAsked, nil); usageQuestionPending = true; sheet = .usageQuestion
+        case "sheet-usage-preview": page = .home; previewUsage = (.notAsked, nil); sheet = .usagePreview
         case "sheet-game-could-not-start": page = .home; launchProblem = .dataMissing("/Volumes/Games/CoD2"); sheet = .gameCouldNotStart(reason: launchProblem!.message)
         case "sheet-game-could-not-start-other": page = .home; launchProblem = .other("The game couldn’t be opened: the operation couldn’t be completed."); sheet = .gameCouldNotStart(reason: launchProblem!.message)
         default: return false
@@ -452,6 +477,7 @@ enum GameArchives {
         case "setup-shaders-failed": setupStep = .shaders; approximate = true; shaderFailed = true; shaderCount = 0
         case "setup-yours": setupStep = .yours; setupName = playerName; setupDisplayMode = "borderless"; settings.resolution = "2560x1440"
         case "setup-crash": setupStep = .crash
+        case "setup-usage": previewUsage = (.notAsked, nil); setupStep = .usage
         case "setup-ready-reports": setupStep = .ready; settings.resolution = "2560x1440"; settings.fullscreen = "borderless"; approximate = false; settings.sendCrashReports = true
         case "setup-ready": setupStep = .ready; settings.resolution = "2560x1440"; settings.fullscreen = "borderless"; approximate = false
         case "setup-ready-approximate": setupStep = .ready; approximate = true; keyVerified = false

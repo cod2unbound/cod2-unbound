@@ -117,6 +117,14 @@ struct ConfigDirectorySnapshot: Sendable {
 enum ConfigSetupOrder: CaseIterable, Identifiable {
     case featuredFirst, mostImported, mostViewed
     var id: Self { self }
+    /// The Order pop-up's words (DiscoverSorted board).
+    var title: String {
+        switch self {
+        case .featuredFirst: "Featured First"
+        case .mostImported: "Most Imported"
+        case .mostViewed: "Most Viewed"
+        }
+    }
 }
 
 struct ConfigDirectoryPopularity: Equatable, Sendable {

@@ -168,6 +168,9 @@ enum PlayerNameRules {
                 case "cfg": openConfigFile(url)
                 default: break
                 }
+            } else if Self.isSetupLinkScheme(url) {
+                // Website setup links go before the server-link handler: none is a server address.
+                receiveSetupLink(url)
             } else { receiveLink(url.absoluteString) }
         }
     }

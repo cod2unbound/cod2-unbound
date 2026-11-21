@@ -14,6 +14,7 @@ import Foundation
         try await bounds(fixture)
         try await privacy(fixture)
         try settings()
+        try screens()
     }
 
     static func check(_ ok: Bool, _ message: String) throws {
@@ -276,6 +277,51 @@ import Foundation
         let preview = try require(JSONSerialization.jsonObject(with: Data(sample.utf8)) as? [String: Any])
         try check(NSDictionary(dictionary: preview).isEqual(to: sent), "preview event and actual batch event match field for field")
         print("PASS: all 21 event kinds, hostile inputs, exact wire preview and shared device metadata")
+    }
+
+    /// What the usage screens read from the model: the fixed example, the preview state the harness
+    /// drives, the words for every See What’s Sent group, and setup's eighth step.
+    static func screens() throws {
+        let install = UUID(uuidString: "7F3C9A2E-41D8-4B6E-9C05-2D8E61A4B7F0")!
+        let id = UUID(uuidString: "2B9D3E51-7C0A-4F6B-9E21-5A8C4D7F0E13")!
+        let before = try require(UsageData.sampleJSON(facts: .preview, install: nil, minute: 29_921_534, id: id))
+        let after = try require(UsageData.sampleJSON(facts: .preview, install: install, minute: 29_921_534, id: id))
+        let a = try require(JSONSerialization.jsonObject(with: Data(before.utf8)) as? [String: Any])
+        let b = try require(JSONSerialization.jsonObject(with: Data(after.utf8)) as? [String: Any])
+        try check(a["event"] as? String == "server joined" && a["distinct_id"] as? String == "00000000-0000-0000-0000-000000000000",
+                  "before a yes the example carries the all-zero number")
+        try check(b["distinct_id"] as? String == "7f3c9a2e-41d8-4b6e-9c05-2d8e61a4b7f0" && b["timestamp"] as? String == "2026-11-21T20:14:00Z",
+                  "after a yes it carries the install number, at the board's minute")
+        let properties = try require(b["properties"] as? [String: Any])
+        try check(properties["how"] as? String == "from the list" && properties["chip"] as? String == "Apple M4 Pro" && properties["app"] as? String == "0.4.2",
+                  "the example is a server joined from the list on the boards' Mac")
+        try check(!after.contains("address") && !after.contains("hostname") && !after.contains("$ip"), "the example names no server and no address")
+
+        try check(UsagePreviewGroup.allCases.map { UsageDataQuestion.group($0).title } == ["Screens and features", "Settings", "This Mac, your country", "Problems", "Never"],
+                  "See What’s Sent lists the five groups in the board's order")
+        try check(UsageDataQuestion.rows.map(\.title) == ["What is sent", "What never is", "Where it goes"], "the question's three rows")
+
+        let model = LauncherModel(snapshot: true)
+        try check(!model.usageAvailable && model.usageSampleJSON == nil && !model.privacyContacts.contains { $0.who == "PostHog, in the EU" },
+                  "a build without the key offers nothing and names no PostHog")
+        model.onboard = true
+        model.previewUsage = (.notAsked, nil)
+        try check(model.shouldAskUsageInSetup && model.setupSteps.count == 8 && model.setupSteps[6] == .usage, "a due question adds step 7 of 8")
+        model.setupStep = .crash
+        model.alternateSetup()
+        try check(model.setupStep == .usage && model.setupPrimaryTitle == "Send Usage Data" && model.setupAlternateTitle == "Don’t Send",
+                  "Crash reports leads to Usage data, with its two answers")
+        model.nextSetup()
+        try check(model.setupStep == .ready && model.usageConsent == .yes && model.usageInstallNumberShort?.count == 9 && model.setupSteps.count == 8,
+                  "Send Usage Data answers, makes a number and keeps eight steps")
+        try check(model.privacyContacts.last?.who == "PostHog, in the EU", "What CoD2 Unbound contacts names PostHog")
+        let first = model.usageInstallNumberFull
+        try check(model.resetUsageNumber() && model.usageInstallNumberFull != first, "Reset Number makes a new number")
+        model.usageSwitch = false
+        try check(model.usageConsent == .no && model.usageInstallNumberShort == nil, "off forgets the number")
+        model.restartSetup(at: .data)
+        try check(!model.setupSteps.contains(.usage) && model.setupSteps.count == 7, "once answered, setup is seven steps again")
+        print("PASS: usage screens' model: fixed example through the sender's encoder, five groups, preview answers, setup step 7 of 8")
     }
 
     static func settings() throws {
