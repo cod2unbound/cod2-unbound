@@ -9,6 +9,9 @@ import Foundation
         var cases = try ConfigParity.build(catalogURL: root.appendingPathComponent("launcher/Resources/ConfigCatalog.json"))
         cases["swiftRevision"] = revision
         try fixture("config", payload: cases, mode: mode, output: output)
+        var wire = try WireParity.build(root: root)
+        wire["swiftRevision"] = revision
+        try fixture("wire", payload: wire, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

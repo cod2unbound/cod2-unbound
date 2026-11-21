@@ -1,0 +1,1151 @@
+{
+  "colors" : [
+    {
+      "input" : "Normal",
+      "plain" : "Normal",
+      "runs" : [
+        {
+          "code" : 7,
+          "text" : "Normal"
+        }
+      ]
+    },
+    {
+      "input" : "^1Red^7White",
+      "plain" : "RedWhite",
+      "runs" : [
+        {
+          "code" : 1,
+          "text" : "Red"
+        },
+        {
+          "code" : 7,
+          "text" : "White"
+        }
+      ]
+    },
+    {
+      "input" : "x^^1y^",
+      "plain" : "x^y^",
+      "runs" : [
+        {
+          "code" : 7,
+          "text" : "x^"
+        },
+        {
+          "code" : 1,
+          "text" : "y^"
+        }
+      ]
+    },
+    {
+      "input" : "^1^2x^3",
+      "plain" : "x",
+      "runs" : [
+        {
+          "code" : 2,
+          "text" : "x"
+        }
+      ]
+    },
+    {
+      "input" : "^x^2🕹️",
+      "plain" : "^x🕹️",
+      "runs" : [
+        {
+          "code" : 7,
+          "text" : "^x"
+        },
+        {
+          "code" : 2,
+          "text" : "🕹️"
+        }
+      ]
+    },
+    {
+      "input" : "^２two^²super^⑦seven^⑩ten",
+      "plain" : "twosuperseven^⑩ten",
+      "runs" : [
+        {
+          "code" : 2,
+          "text" : "two"
+        },
+        {
+          "code" : 2,
+          "text" : "super"
+        },
+        {
+          "code" : 7,
+          "text" : "seven^⑩ten"
+        }
+      ]
+    },
+    {
+      "input" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^1X",
+      "plain" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^",
+      "runs" : [
+        {
+          "code" : 7,
+          "text" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa^"
+        }
+      ]
+    }
+  ],
+  "links" : [
+    {
+      "address" : "LOCALhost:28960",
+      "canonical" : "localhost:28960",
+      "input" : "cod2x://connect/LOCALhost:28960/",
+      "password" : ""
+    },
+    {
+      "address" : "host.test",
+      "canonical" : "host.test:28960",
+      "input" : "COD2X://connect+host.test+password+%22fake%20value%2B%22",
+      "password" : "fake value+"
+    },
+    {
+      "address" : ".a..-:00001",
+      "canonical" : ".a..-:00001",
+      "input" : "cod2x://password%20%22%22%20%2Bconnect%20.a..-:00001",
+      "password" : ""
+    },
+    {
+      "input" : "cod2x://connect%20host%20quit%20x"
+    },
+    {
+      "input" : "cod2x://connect%20host%3A0"
+    },
+    {
+      "input" : "cod2x://connect%20host%3A65536"
+    },
+    {
+      "input" : "cod2x://connect%20host%00"
+    },
+    {
+      "input" : "cod2x://connect%20[::1]"
+    },
+    {
+      "input" : "cod2x://connect%20host%20password%20%22%3B%22"
+    },
+    {
+      "input" : "cod2x://connect%Q0"
+    },
+    {
+      "input" : "cod2x://connect%20host%20password%20a%20password%20b"
+    },
+    {
+      "input" : "cod2x://connect%20host%20password%20%22a%22b"
+    },
+    {
+      "input" : "https://connect/host"
+    },
+    {
+      "input" : "cod2x://connect%20host%20password%20%22%C3%A9%22"
+    },
+    {
+      "input" : "cod2x://connect%20host:289600"
+    }
+  ],
+  "masters" : [
+    {
+      "addresses" : [
+        "103.4.234.229:28960",
+        "103.73.65.171:28960",
+        "104.207.141.82:28960",
+        "116.203.79.194:28960",
+        "130.61.54.67:28960",
+        "139.185.49.7:28960",
+        "142.132.236.230:28960",
+        "143.42.21.188:28960",
+        "146.0.46.12:28960",
+        "148.251.139.73:28961",
+        "148.251.237.10:20000",
+        "148.251.237.10:20001",
+        "148.251.237.10:21000",
+        "148.251.237.10:22000",
+        "148.251.237.10:23000",
+        "148.251.237.10:23002",
+        "148.251.237.10:24000",
+        "148.251.237.10:25000",
+        "148.251.237.10:26000",
+        "148.251.237.10:27000",
+        "148.251.237.10:27001",
+        "148.251.237.10:28000",
+        "148.251.237.10:28001",
+        "148.251.237.10:28987",
+        "148.251.237.10:28990",
+        "148.251.237.10:28991",
+        "148.251.237.10:29000",
+        "148.251.237.10:29001",
+        "148.251.237.10:29002",
+        "149.143.111.89:28991",
+        "149.202.214.100:28921",
+        "149.202.214.100:28922",
+        "149.202.214.100:28923",
+        "151.80.40.237:28962",
+        "152.228.227.132:22800",
+        "163.172.41.184:28990",
+        "163.172.41.184:28991",
+        "168.119.146.94:31000",
+        "169.128.190.120:28960",
+        "176.199.187.156:28960",
+        "176.31.226.111:33200",
+        "185.107.96.161:28960",
+        "185.107.96.161:28963",
+        "185.107.96.161:28964",
+        "185.107.96.161:28967",
+        "185.107.96.161:28969",
+        "185.107.96.161:28990",
+        "185.135.137.176:28961",
+        "185.80.50.230:28960",
+        "188.68.42.149:28960",
+        "192.223.24.167:28940",
+        "192.223.24.167:28961",
+        "192.223.24.167:28962",
+        "192.223.24.167:28963",
+        "193.111.198.101:28964",
+        "193.33.176.42:28966",
+        "195.140.213.123:28960",
+        "195.140.213.123:28980",
+        "195.2.71.200:28960",
+        "195.201.13.114:36330",
+        "2.56.99.191:28965",
+        "204.168.129.254:28960",
+        "209.114.176.56:28960",
+        "213.199.49.8:28960",
+        "213.199.49.8:28964",
+        "213.199.49.8:28965",
+        "213.202.204.249:28960",
+        "213.202.205.44:22800",
+        "217.154.160.67:28960",
+        "23.92.73.179:28960",
+        "31.214.240.223:28960",
+        "31.214.240.84:28960",
+        "31.97.41.156:28970",
+        "31.97.41.156:28990",
+        "32.220.99.110:28961",
+        "37.187.106.177:28965",
+        "37.221.209.98:29013",
+        "37.221.93.251:28961",
+        "45.32.235.35:28960",
+        "45.8.224.125:28910",
+        "45.8.224.125:28940",
+        "45.8.224.125:28960",
+        "45.83.245.150:28961",
+        "46.30.12.39:28970",
+        "46.30.12.39:28972",
+        "49.12.206.226:28130",
+        "49.12.35.223:23130",
+        "51.210.45.51:28960",
+        "51.210.45.51:28961",
+        "51.210.45.51:28962",
+        "54.37.235.217:28960",
+        "54.37.235.217:28961",
+        "62.201.83.58:28960",
+        "66.228.41.89:28960",
+        "77.93.192.134:28960",
+        "78.46.72.162:28960",
+        "78.47.217.50:28960",
+        "78.47.217.50:28961",
+        "78.47.217.50:28962",
+        "78.47.217.50:28963",
+        "81.170.243.12:28960",
+        "82.141.114.147:28970",
+        "83.142.84.216:28970",
+        "85.114.136.223:23000",
+        "85.114.136.223:24900",
+        "85.114.136.223:25400",
+        "87.106.118.205:28960",
+        "87.121.85.190:28960",
+        "88.99.10.130:28965",
+        "91.53.179.218:28960",
+        "94.103.202.220:28960"
+      ],
+      "id" : "master.cod2x.me-118",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZQoAXJdQKO1xIlwf1vBUcSBckgAuDHEgXMEhsCpxJlwf1vDfcSBc1crNLFkQXJXK1mRw+lwtCOB9cSBcLQjgfXDuXC0I4H1xDFy5h4mwcSFc1ccxCHEgXJWPb1lxP1yPKhW8cSBc2ZqgQ3EgXMyogf5xIFxXanbNcSBcuVAy5nEgXCDcY25xIVxC5ClZcSBcJbtqsXElXFGq8wxxIFyjrCm4cT5co6wpuHE/XLAf4m+BsFwuHgwncSpcLh4MJ3EsXNXHMQhxJVwz0i0zcSBcM9ItM3EhXDPSLTNxIlw2JevZcSBcaM+NUnEgXNXHMQhxJFyVytZkcPlclcrWZHD7XNXKzPlxIFzDjNV7cSBcw4zVe3E0XAI4Y79xJVxnSUGrcSBcwN8Yp3EMXMDfGKdxIVzA3xincSNcuWtgoXEpXLlrYKFxIFy5a2ChcSNcuWtgoXEkXLlrYKFxPly5a2ChcSdcV3lVvnEgXKmAvnhxIFw2JevZcSFcwN8Yp3EiXFOOVNhxKlxSjXKTcSpcJd3RYnFVXII9NkNxIFyY5OOEWRBcLVP1lnEhXNFysDhxIFywx7uccSBcLSDrI3EgXIu5MQdxIFzDAkfIcSBcMQwj31paXDEMzuJt4lx0y0/CcSBcTi/ZMnEjXE4v2TJxIFxOLkiicSBclPvtCk4hXKh3kl55GFyOhOzmcSBclPuLSXEhXJT77QpxP1yU++0KcT5clPvtCml4XJT77QppeVyU++0KcUpclPvtCm1gXJT77QptYVyU++0KcUlclPvtCnFIXJT77QpdwFyU++0KWdpcTi/ZMnEiXE4v2TJxIVyU++0KTiBclPvtCnE7XFhjCoJxJVyU++0KUghclPvtCmWQXJT77QpV8FyU++0KYahcw8kNco3qXD7JUzpxIFyU++0KWdhcVXKI31nYXFVyiN9jOFxVcojfYURcF1xJs3EgXGcE6uVxIFwl3V37cSFcH2EpnHEqXB9hKZxxPly8RCqVcSBcXmfK3HEgXE1dwIZxIFxbNbPacSBcwW/GZXEkXEVPVA=="
+    },
+    {
+      "addresses" : [
+        "103.73.65.171:28960",
+        "104.207.141.82:28960",
+        "116.203.79.194:28960",
+        "130.61.54.67:28960",
+        "139.185.49.7:28960",
+        "142.132.236.230:28960",
+        "143.42.21.188:28960",
+        "146.0.46.12:28960",
+        "148.251.139.73:28961",
+        "148.251.237.10:20000",
+        "148.251.237.10:20001",
+        "148.251.237.10:21000",
+        "148.251.237.10:22000",
+        "148.251.237.10:23000",
+        "148.251.237.10:23002",
+        "148.251.237.10:24000",
+        "148.251.237.10:25000",
+        "148.251.237.10:26000",
+        "148.251.237.10:27000",
+        "148.251.237.10:27001",
+        "148.251.237.10:28000",
+        "148.251.237.10:28001",
+        "148.251.237.10:28987",
+        "148.251.237.10:28990",
+        "148.251.237.10:28991",
+        "148.251.237.10:29000",
+        "148.251.237.10:29001",
+        "148.251.237.10:29002",
+        "149.143.111.89:28991",
+        "149.202.214.100:28921",
+        "149.202.214.100:28922",
+        "149.202.214.100:28923",
+        "151.80.40.237:28962",
+        "152.228.227.132:22800",
+        "163.172.41.184:28990",
+        "163.172.41.184:28991",
+        "167.235.140.195:28990",
+        "168.119.146.94:31000",
+        "169.128.190.120:28960",
+        "176.199.187.156:28960",
+        "176.31.226.111:33200",
+        "185.107.96.161:28960",
+        "185.107.96.161:28963",
+        "185.107.96.161:28964",
+        "185.107.96.161:28967",
+        "185.107.96.161:28969",
+        "185.107.96.161:28990",
+        "185.135.137.176:28961",
+        "185.180.2.20:27542",
+        "185.180.2.20:27972",
+        "185.80.50.230:28960",
+        "188.34.180.143:28920",
+        "192.223.24.167:28940",
+        "192.223.24.167:28961",
+        "192.223.24.167:28962",
+        "192.223.24.167:28963",
+        "193.33.176.42:28966",
+        "194.164.245.84:28960",
+        "195.140.213.123:28960",
+        "195.140.213.123:28980",
+        "195.2.71.200:28960",
+        "195.201.13.114:36330",
+        "199.231.213.119:28966",
+        "199.231.213.119:28967",
+        "199.231.213.119:28969",
+        "199.231.213.119:28971",
+        "2.56.99.191:28965",
+        "204.168.129.254:28960",
+        "209.114.176.56:28960",
+        "213.199.49.8:28960",
+        "213.199.49.8:28964",
+        "213.199.49.8:28965",
+        "213.202.204.249:28960",
+        "213.202.205.44:22800",
+        "217.154.160.67:28960",
+        "31.214.240.223:28960",
+        "31.214.240.84:28960",
+        "32.220.99.110:28961",
+        "37.187.106.177:28965",
+        "37.221.209.98:29013",
+        "45.32.235.35:28960",
+        "45.8.224.125:28910",
+        "45.8.224.125:28940",
+        "45.8.224.125:28960",
+        "45.83.245.150:28961",
+        "46.30.12.39:28970",
+        "46.30.12.39:28972",
+        "49.12.206.226:28130",
+        "49.12.35.223:23130",
+        "51.210.45.51:28960",
+        "51.210.45.51:28961",
+        "51.210.45.51:28962",
+        "51.68.176.210:20720",
+        "54.37.235.217:28960",
+        "54.37.235.217:28961",
+        "62.201.83.58:28960",
+        "66.228.41.89:28960",
+        "78.46.72.162:28960",
+        "78.47.217.50:28960",
+        "78.47.217.50:28961",
+        "78.47.217.50:28962",
+        "78.47.217.50:28963",
+        "81.170.243.12:28960",
+        "82.141.114.147:28970",
+        "83.142.84.216:28970",
+        "85.114.136.223:23000",
+        "85.114.136.223:25400",
+        "85.114.136.223:25500",
+        "87.106.118.205:28960",
+        "87.121.85.190:28960",
+        "88.99.10.130:28965"
+      ],
+      "id" : "master.cod2x.me-120",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZQoAXJdQKO1xIlwf1vBUcSBckgAuDHEgXMEhsCpxJlwf1vDfcSBc1crNLFkQXJXK1mRw+lwtCOB9cSBcLQjgfXDuXC0I4H1xDFy5h4mwcSFc1ccxCHEgXJWPb1lxP1yPKhW8cSBc2ZqgQ3EgXMyogf5xIFxXanbNcSBcuVAy5nEgXCDcY25xIVxC5ClZcSBcJbtqsXElXFGq8wxxIFyjrCm4cT5co6wpuHE/XLAf4m+BsFwuHgwncSpcLh4MJ3EsXNXHMQhxJVwz0i0zcSBcM9ItM3EhXDPSLTNxIlwzRLDSUPBcNiXr2XEgXGjPjVJxIFzVxzEIcSRclcrWZHD5XJXK1mRw+1zVysz5cSBcw4zVe3EgXMOM1XtxNFwCOGO/cSVcZ0lBq3EgXMDfGKdxDFzA3xincSFcwN8Yp3EjXLlrYKFxKVy5a2ChcSBcuWtgoXEjXLlrYKFxJFy5a2ChcT5cuWtgoXEnXFd5Vb5xIFyn64zDcT5cqYC+eHEgXDYl69lxIVzA3xincSJcubQCFGuWXLm0AhRtRFxTjlTYcSpcUo1yk3EqXCXd0WJxVVyCPTZDcSBcvCK0j3D4XJjk44RZEFwtU/WWcSFc0XKwOHEgXLDHu5xxIFwtIOsjcSBci7kxB3EgXMMCR8hxIFzCpPVUcSBcMQwj31paXDEMzuJt4lx0y0/CcSBcTi/ZMnEjXE4v2TJxIFxOLkiicSBclPvtCk4hXKh3kl55GFyOhOzmcSBclPuLSXEhXJT77QpxP1yU++0KcT5clPvtCml4XJT77QppeVyU++0KcUpclPvtCm1gXJT77QptYVyU++0KcUlclPvtCnFIXJT77QpdwFyU++0KWdpcTi/ZMnEiXE4v2TJxIVyU++0KTiBclPvtCnE7XFhjCoJxJVyU++0KUghclPvtCmWQXJT77QpV8FyU++0KYahcw8kNco3qXD7JUzpxIFyU++0KWdhcx+fVd3ErXMfn1XdxJ1zH59V3cSlcx+fVd3EmXFVyiN9jnFxVcojfWdhcVXKI32M4XEVPVA=="
+    },
+    {
+      "addresses" : [
+        "103.73.64.198:28961",
+        "103.73.65.171:28960",
+        "104.148.183.178:28960",
+        "104.207.141.82:28960",
+        "108.61.125.49:28960",
+        "116.203.79.194:28960",
+        "130.61.54.67:28960",
+        "130.61.56.231:28960",
+        "132.226.206.120:28968",
+        "134.255.222.162:23400",
+        "135.148.34.205:28960",
+        "139.185.49.7:28960",
+        "143.14.179.142:28960",
+        "143.42.21.188:28960",
+        "144.76.237.46:28962",
+        "146.0.46.12:28960",
+        "146.59.34.100:28960",
+        "147.78.0.67:28961",
+        "148.251.237.10:20000",
+        "148.251.237.10:20001",
+        "149.143.111.89:28991",
+        "149.202.214.100:28801",
+        "149.202.214.100:28811",
+        "149.202.214.100:28822",
+        "149.202.214.100:28921",
+        "149.202.214.100:28922",
+        "149.202.214.100:28923",
+        "149.56.146.64:28960",
+        "151.245.90.154:28960",
+        "151.80.40.237:63618",
+        "159.196.75.130:28964",
+        "167.235.230.6:28964",
+        "169.128.190.120:28960",
+        "178.251.228.119:28961",
+        "185.107.96.125:28960",
+        "185.107.96.161:28960",
+        "185.107.96.161:28963",
+        "185.107.96.161:28964",
+        "185.107.96.161:28969",
+        "185.107.96.161:28990",
+        "185.135.137.176:28961",
+        "185.158.113.146:28885",
+        "185.158.113.146:28998",
+        "185.193.17.18:28960",
+        "185.207.214.19:28960",
+        "185.245.97.149:10018",
+        "185.245.97.149:10022",
+        "185.245.97.155:20002",
+        "185.245.97.155:20003",
+        "185.245.97.155:20006",
+        "185.245.97.155:20014",
+        "185.248.101.155:28712",
+        "185.248.101.155:28723",
+        "185.248.101.155:28732",
+        "185.80.50.230:28960",
+        "187.0.1.201:28960",
+        "188.119.191.46:28961",
+        "192.223.27.172:28960",
+        "193.201.186.67:28961",
+        "193.226.78.45:28961",
+        "193.33.176.42:28966",
+        "193.77.155.77:28960",
+        "193.77.224.247:61751",
+        "194.180.16.113:28960",
+        "2.56.99.191:28965",
+        "2.58.203.63:28961",
+        "204.168.129.254:28960",
+        "212.227.88.101:28960",
+        "213.202.204.249:28960",
+        "213.202.205.207:28960",
+        "213.202.205.44:22800",
+        "23.92.73.179:28960",
+        "31.214.240.223:28960",
+        "31.214.240.84:28960",
+        "45.32.235.35:28960",
+        "45.8.224.125:28910",
+        "45.8.224.125:28940",
+        "45.8.224.125:28960",
+        "45.83.245.150:28961",
+        "46.253.143.61:28960",
+        "46.253.143.61:28961",
+        "49.12.206.226:28130",
+        "49.12.35.223:23130",
+        "51.210.45.51:28960",
+        "51.210.45.51:28961",
+        "51.210.45.51:28962",
+        "54.37.73.239:28960",
+        "62.169.23.46:29960",
+        "62.169.23.46:29961",
+        "64.31.28.148:28960",
+        "64.31.28.164:28960",
+        "64.31.28.172:28960",
+        "64.31.28.187:28960",
+        "66.55.137.89:28960",
+        "74.91.121.227:28960",
+        "78.47.217.50:28960",
+        "78.47.217.50:28962",
+        "78.47.217.50:28963",
+        "78.80.186.215:28960",
+        "83.142.84.216:28970",
+        "85.114.136.223:23000",
+        "85.114.136.223:24900",
+        "85.114.136.223:25400",
+        "85.14.192.145:28960",
+        "85.14.193.148:28960",
+        "87.106.118.205:28960",
+        "87.229.115.24:28960",
+        "90.247.207.100:28960",
+        "93.159.46.121:5123",
+        "93.159.46.121:5125",
+        "94.199.215.100:30040"
+      ],
+      "id" : "cod2master.activision.com-118",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZQoAXGdJQatxIFwf1vBUcSBcsvvkd3EhXGdJQMZxIVzB4k4tcSFck04AQ3EhXJIALgxxIFzBIbAqcSZc1crNLFkQXFOOVNhxKlxX5XMYcSBcQB8cpHEgXEAfHKxxIFyVj29ZcT9cjw6zjnEgXDEMI99aWlwxDM7ibeJclcrWZHCBXMHJukNxIVwf1vDfcSBcvHe/LnEhXEI3iVlxIFyVytZkcPlc1crM+XEgXAI4Y79xJVzA3xuscSBcuWtgfXEgXJdQKO34glxAHxy7cSBcqYC+eHEgXGiUt7JxIFwz0i0zcSJclcrWZHCLXLn4ZZtwM1y5+GWbcDxcufhlm3AoXGw9fTFxIFwz0i0zcSFcM9ItM3EgXAI6yz9xIVxdny55FANcXZ8ueRQFXC0I4H1xIFxAHxyUcSBcjyoVvHEgXE5QutdxIFxVcojfYzhcVXKI31nYXFVyiN9hRFyVytZkcPtcF1xJs3EgXLsAAclxIFyn6+YGcSRcuZ5xknFGXFUOwZRxIFzBTZtNcSBcSlt543EgXLn1YZtOIly59WGbTiNcNiVJ73EgXIb/3qJbaFx0y0/CcSBcaM+NUnEgXF7H12R1WFyVytZkcPpcgj0453EgXJI7ImRxIFy59WGVJyZcVQ7AkXEgXC1T9ZZxIVyHlCLNcSBcl/VamnEgXLlrYKFxPly5a2ChcSRcuWtgoXEpXLlrYKFxI1y5a2ChcSBc1ONYZXEgXLnBERJxIFyQTO0ucSJcgj02Q3EgXC0I4H1w7lwtCOB9cQxclcrWZHCWXC79jz1xIVy5nnGScNVcLSDrI3EgXLmHibBxIVyfxEuCcSRcufVhlSciXITiznhxKFyU++0KTiFclPvtCk4gXJU4kkBxIFzMqIH+cSBci7kxB3EgXE4v2TJxIly59WGbTi5cwU3g9/E3XD6pFy51CFw+qRcudQlcV2p2zXEgXC79jz1xIFzCtBBxcSBcTi/ZMnEjXE4v2TJxIFy5UDLmcSBcuc/WE3EgXNXKzc9xIFy59WGbTiZcWvfPZHEgXEVPVA=="
+    },
+    {
+      "addresses" : [
+        "103.98.214.221:28960",
+        "104.128.55.182:28960",
+        "104.234.189.172:28900",
+        "109.172.8.67:28960",
+        "122.170.200.214:23174",
+        "128.254.207.164:28960",
+        "130.162.218.15:28960",
+        "134.255.222.199:22000",
+        "135.125.233.27:28960",
+        "141.95.73.24:1075",
+        "141.95.73.24:1135",
+        "141.95.73.24:1157",
+        "141.95.73.24:1214",
+        "141.95.73.24:1215",
+        "141.95.73.24:1236",
+        "147.15.36.233:28960",
+        "149.202.214.100:28802",
+        "151.245.32.43:28960",
+        "152.53.101.253:28960",
+        "152.53.101.253:28965",
+        "152.53.3.3:28960",
+        "159.69.149.127:28940",
+        "16.56.130.37:28966",
+        "167.235.140.195:28990",
+        "173.201.37.123:28960",
+        "173.201.37.135:28970",
+        "176.9.62.21:30075",
+        "176.9.62.21:30100",
+        "178.105.239.177:28860",
+        "178.32.223.184:28980",
+        "178.32.223.184:28981",
+        "179.41.2.31:25569",
+        "179.9.162.94:28960",
+        "180.150.8.186:28970",
+        "180.150.8.186:28971",
+        "181.197.220.199:28970",
+        "185.162.124.95:28960",
+        "185.180.2.20:27090",
+        "185.180.2.20:27138",
+        "185.180.2.20:27182",
+        "185.180.2.20:27346",
+        "185.180.2.20:27542",
+        "185.180.2.20:27549",
+        "185.180.2.20:27962",
+        "185.180.2.20:27972",
+        "185.245.99.120:30105",
+        "185.245.99.120:30125",
+        "185.245.99.120:30260",
+        "186.48.16.43:28960",
+        "186.52.189.194:28960",
+        "187.102.10.19:28962",
+        "188.34.180.143:28920",
+        "190.104.34.3:29501",
+        "192.223.24.167:28965",
+        "193.33.176.27:28971",
+        "193.33.176.47:28966",
+        "194.164.245.84:28960",
+        "199.231.213.119:28966",
+        "199.231.213.119:28967",
+        "199.231.213.119:28968",
+        "199.231.213.119:28969",
+        "199.231.213.119:28970",
+        "199.231.213.119:28971",
+        "199.231.213.119:28972",
+        "199.231.213.119:28973",
+        "199.231.213.119:28974",
+        "199.231.213.119:28981",
+        "20.217.193.42:28960",
+        "213.155.252.9:28960",
+        "23.88.100.28:28930",
+        "31.40.212.53:27091",
+        "37.187.138.61:30055",
+        "49.13.157.105:28920",
+        "5.130.157.156:28961",
+        "5.182.206.73:28960",
+        "51.68.176.210:20720",
+        "57.131.148.56:28960",
+        "63.143.56.133:28960",
+        "64.31.28.188:28960",
+        "72.61.23.31:28960",
+        "78.46.193.56:28960",
+        "80.75.221.133:51980",
+        "80.79.53.6:28960",
+        "80.93.209.32:28964",
+        "85.114.136.223:25500",
+        "87.121.85.236:28961",
+        "91.83.39.254:28961",
+        "92.37.64.79:28960",
+        "94.199.215.103:10045",
+        "94.199.215.103:10275",
+        "94.230.149.30:28960"
+      ],
+      "id" : "cod2master.activision.com-120",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZQoAXDNEsNJQ8FytySV7cSBcx+fVd3EpXKfrjMNxPlzH59V3cStcubQCFGuWXLm0AhRtRFzVm/wJcSBcrcklh3EqXMKk9VRxIFy8IrSPcPhcx+fVd3EnXMfn1XdxJlxVcojfY5xcXuaVHnEgXId96RtxIFzH59V3cSpcF1hkHHECXEAfHLxxIFy5tAIUa51cwSGwL3EmXCW7ij11Z1y5tAIUatJcubQCFGouXGdi1t1xIFy5tAIUagJcl/UgK3EgXLmifF9xIFywCT4VdXtcn0WVf3EMXE4uwThxIFzBIbAbcStcsykCH2PhXFBd0SBxJFy59WN4dZlcufVjeHWtXAW2zklxIFwFgp2ccSFcP484hXEgXMDfGKdxJVy5tAIUbTpcgP7PpHEgXGjqvaxw5Fy+aCIDcz1cx+fVd3EuXMfn1XdxLVw5g5Q4cSBctJYIunEqXLSWCLpxK1yyae+xcLxcx+fVd3E1XBA4giVxJlyCotoPcSBcsiDfuHE1XJMPJOlxIFzH59V3cSxcV3lV7HEhXG2sCENxIFyYNWX9cSVclcrWZHCCXEg9Fx9xIFxQTzUGcSBcsiDfuHE0XGiAN7ZxIFy59WN4djRcMQ2daXD4XFtTJ/5xIVyYNQMDcSBcUEvdhcsMXLtmChNxIlwfKNQ1adNchv/ex1XwXLAJPhV1lFyzCaJecSBcmDVl/XEgXLm0AhRp0ly1xdzHcSpcXCVAT3EgXMfn1XdxKFy6MBArcSBcujS9wnEgXF7H12coI1yNX0kYBDNcFNnBKnEgXHqqyNZahlyNX0kYBG9cjV9JGAS+XI1fSRgEv1yNX0kYBIVcjV9JGATUXF7H12cnPVxFT0Y="
+    },
+    {
+      "addresses" : [
+
+      ],
+      "id" : "missing-marker",
+      "packet" : "Z2V0c2VydmVyc1Jlc3BvbnNl"
+    },
+    {
+      "addresses" : [
+        "1.2.3.4:28960",
+        "5.6.7.8:258"
+      ],
+      "id" : "synthetic-master",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZQ0KAFwBAgMEcSBcAAECAwECXO8BAgMBAlwBAgMEcSBcBQYHCAAAXAUGBwgBAlxFT1QAAABcCAgICAEC"
+    },
+    {
+      "addresses" : [
+
+      ],
+      "id" : "truncated-master",
+      "packet" : "/////2dldHNlcnZlcnNSZXNwb25zZVwBAgMEBQ=="
+    }
+  ],
+  "merged" : {
+    "conflicts" : [
+      "case",
+      "protocol"
+    ],
+    "fields" : {
+      "case" : "second",
+      "Case" : "first",
+      "clients" : "2",
+      "hostname" : "Information",
+      "protocol" : "118",
+      "sv_hostname" : "Original"
+    },
+    "gametype" : "—",
+    "map" : "Unknown",
+    "maxPlayers" : 0,
+    "mod" : "",
+    "name" : "Original",
+    "password" : false,
+    "playerCount" : 2,
+    "players" : [
+      {
+        "id" : 0,
+        "name" : "Local",
+        "ping" : 29,
+        "score" : 1
+      }
+    ],
+    "statusObservation" : true,
+    "version" : "1.3"
+  },
+  "statuses" : [
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "challenge" : "ws25",
+        "fs_game" : "kingbot",
+        "g_antilag" : "1",
+        "g_gametype" : "tdm",
+        "gamename" : "Call of Duty 2",
+        "mapname" : "mp_trainstation",
+        "mod" : "1",
+        "protocol" : "118",
+        "pswrd" : "0",
+        "scr_friendlyfire" : "0",
+        "scr_killcam" : "1",
+        "shortversion" : "1.3",
+        "sv_allowAnonymous" : "0",
+        "sv_floodProtect" : "1",
+        "sv_hostname" : "^4|K^9in^4G|^1Bots ... -^5Europe^1- ^1«^5Cracked^1» ^7cod2^1.^7au^1/^7discord",
+        "sv_maxclients" : "33",
+        "sv_maxPing" : "0",
+        "sv_maxRate" : "25000",
+        "sv_minPing" : "0",
+        "sv_privateClients" : "0",
+        "sv_pure" : "1",
+        "sv_voice" : "0"
+      },
+      "gametype" : "tdm",
+      "id" : "recorded-status",
+      "map" : "mp_trainstation",
+      "maxPlayers" : 33,
+      "mod" : "kingbot",
+      "name" : "^4|K^9in^4G|^1Bots ... -^5Europe^1- ^1«^5Cracked^1» ^7cod2^1.^7au^1/^7discord",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClxtb2RcMVxwc3dyZFwwXGNoYWxsZW5nZVx3czI1XHN2X3ZvaWNlXDBcc3ZfcHVyZVwxXHN2X3ByaXZhdGVDbGllbnRzXDBcc3ZfbWluUGluZ1wwXHN2X21heFJhdGVcMjUwMDBcc3ZfbWF4UGluZ1wwXHN2X21heGNsaWVudHNcMzNcc3ZfaG9zdG5hbWVcXjR8S145aW5eNEd8XjFCb3RzIC4uLiAtXjVFdXJvcGVeMS0gXjGrXjVDcmFja2VkXjG7IF43Y29kMl4xLl43YXVeMS9eN2Rpc2NvcmRcc3ZfZmxvb2RQcm90ZWN0XDFcc3ZfYWxsb3dBbm9ueW1vdXNcMFxzaG9ydHZlcnNpb25cMS4zXHNjcl9raWxsY2FtXDFcc2NyX2ZyaWVuZGx5ZmlyZVwwXHByb3RvY29sXDExOFxtYXBuYW1lXG1wX3RyYWluc3RhdGlvblxnYW1lbmFtZVxDYWxsIG9mIER1dHkgMlxnX2dhbWV0eXBlXHRkbVxnX2FudGlsYWdcMVxmc19nYW1lXGtpbmdib3QKMjEgNTUgIlB5cHNvbiIKNDMgMzIgIkpvaG4gV2F5bmVzIFByb3N0YXRlIgoyMSAzOCAiVmFrdmFk4XN6IgozIDAgIl43fF4xPCBeN1BeOWFeMVReOW1eN2FeMU4gXjc8XjEiCjggMCAiXjFGXjdpTFRoWV4xX0ZeN3JlYUteMV8iCjU0IDc3ICJJdmFuIgowIDEwNCAiUHJvMTAwTmlrI14yNjkyIgo1IDAgIl41SF43YXN0YSBeNUxeN2EgXjVWXjdpc3RhIgo2IDAgIl5eMDBTaW5pc3RlciIKOCAwICJTb2FSIFJ4cWUgPjw+Igo1NCA0NCAiYWswdzMiCjkgMCAibWV0YWxsaWNhIgo0NyA0MCAiXjFQXjJJXjNMXjRMXjVeNl43XjVPIgoxNSAwICJeXjAwVCBoIDMgUCBhICEgbi4iCjEgMCAiXl4zM0deXjIyaV5eMzNuXl4yMmdeXjMzYSIKMyAwICJeXjc3Mzl0aF5eOTl8fFdvMS5eXjc3U3RldmVGb1giCjQ3IDY4ICJSb21pY2giCjAgNzEgIl4zTWVyaGFiYSBeNCheMUVeN0dZXjQpIgo1OSA1OCAiXjRWZXMiCjcgMCAiXl4wMEJvYi1OTWNOdWdnZXQiCjMwIDMzICJCb3NuYSBpIEhlcmNlZ292aW5hIgoyIDAgIkthbmUiCjMwIDcxICJBUFBMRSIKMjAgNTUgIl5eNDB8S145aW5eNEd8XjlGYW4uXjEjNDczIgo3IDAgIl5eNDB8S145aW5eNEd8XjlHZW4uXjFCYWRCb3kiCjMgMCAiRHJha2UiCjAgNDggIk5laWdoYm91ciIKNCAwICJeXjExQV5eNDR0b21pYyIKOCAzNyAiUGFydGl6YW43NzciCjI1IDY1ICJWRVRFUkFOXzc3IgoyMiA0OCAiXjJQZW9wbGUiCjE1IDM5ICJJZ2F6aVZhZOFzeiIK",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 32,
+      "players" : [
+        {
+          "id" : 0,
+          "name" : "Pypson",
+          "ping" : 55,
+          "score" : 21
+        },
+        {
+          "id" : 1,
+          "name" : "John Waynes Prostate",
+          "ping" : 32,
+          "score" : 43
+        },
+        {
+          "id" : 2,
+          "name" : "Vakvadász",
+          "ping" : 38,
+          "score" : 21
+        },
+        {
+          "id" : 3,
+          "name" : "^7|^1< ^7P^9a^1T^9m^7a^1N ^7<^1",
+          "ping" : 0,
+          "score" : 3
+        },
+        {
+          "id" : 4,
+          "name" : "^1F^7iLThY^1_F^7reaK^1_",
+          "ping" : 0,
+          "score" : 8
+        },
+        {
+          "id" : 5,
+          "name" : "Ivan",
+          "ping" : 77,
+          "score" : 54
+        },
+        {
+          "id" : 6,
+          "name" : "Pro100Nik#^2692",
+          "ping" : 104,
+          "score" : 0
+        },
+        {
+          "id" : 7,
+          "name" : "^5H^7asta ^5L^7a ^5V^7ista",
+          "ping" : 0,
+          "score" : 5
+        },
+        {
+          "id" : 8,
+          "name" : "^^00Sinister",
+          "ping" : 0,
+          "score" : 6
+        },
+        {
+          "id" : 9,
+          "name" : "SoaR Rxqe ><>",
+          "ping" : 0,
+          "score" : 8
+        },
+        {
+          "id" : 10,
+          "name" : "ak0w3",
+          "ping" : 44,
+          "score" : 54
+        },
+        {
+          "id" : 11,
+          "name" : "metallica",
+          "ping" : 0,
+          "score" : 9
+        },
+        {
+          "id" : 12,
+          "name" : "^1P^2I^3L^4L^5^6^7^5O",
+          "ping" : 40,
+          "score" : 47
+        },
+        {
+          "id" : 13,
+          "name" : "^^00T h 3 P a ! n.",
+          "ping" : 0,
+          "score" : 15
+        },
+        {
+          "id" : 14,
+          "name" : "^^33G^^22i^^33n^^22g^^33a",
+          "ping" : 0,
+          "score" : 1
+        },
+        {
+          "id" : 15,
+          "name" : "^^7739th^^99||Wo1.^^77SteveFoX",
+          "ping" : 0,
+          "score" : 3
+        },
+        {
+          "id" : 16,
+          "name" : "Romich",
+          "ping" : 68,
+          "score" : 47
+        },
+        {
+          "id" : 17,
+          "name" : "^3Merhaba ^4(^1E^7GY^4)",
+          "ping" : 71,
+          "score" : 0
+        },
+        {
+          "id" : 18,
+          "name" : "^4Ves",
+          "ping" : 58,
+          "score" : 59
+        },
+        {
+          "id" : 19,
+          "name" : "^^00Bob-NMcNugget",
+          "ping" : 0,
+          "score" : 7
+        },
+        {
+          "id" : 20,
+          "name" : "Bosna i Hercegovina",
+          "ping" : 33,
+          "score" : 30
+        },
+        {
+          "id" : 21,
+          "name" : "Kane",
+          "ping" : 0,
+          "score" : 2
+        },
+        {
+          "id" : 22,
+          "name" : "APPLE",
+          "ping" : 71,
+          "score" : 30
+        },
+        {
+          "id" : 23,
+          "name" : "^^40|K^9in^4G|^9Fan.^1#473",
+          "ping" : 55,
+          "score" : 20
+        },
+        {
+          "id" : 24,
+          "name" : "^^40|K^9in^4G|^9Gen.^1BadBoy",
+          "ping" : 0,
+          "score" : 7
+        },
+        {
+          "id" : 25,
+          "name" : "Drake",
+          "ping" : 0,
+          "score" : 3
+        },
+        {
+          "id" : 26,
+          "name" : "Neighbour",
+          "ping" : 48,
+          "score" : 0
+        },
+        {
+          "id" : 27,
+          "name" : "^^11A^^44tomic",
+          "ping" : 0,
+          "score" : 4
+        },
+        {
+          "id" : 28,
+          "name" : "Partizan777",
+          "ping" : 37,
+          "score" : 8
+        },
+        {
+          "id" : 29,
+          "name" : "VETERAN_77",
+          "ping" : 65,
+          "score" : 25
+        },
+        {
+          "id" : 30,
+          "name" : "^2People",
+          "ping" : 48,
+          "score" : 22
+        },
+        {
+          "id" : 31,
+          "name" : "IgaziVadász",
+          "ping" : 39,
+          "score" : 15
+        }
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "g_gametype" : "sd",
+        "mapname" : "mp_toujane",
+        "protocol" : "120",
+        "pswrd" : "1",
+        "sv_hostname" : "^1Local",
+        "sv_maxClients" : "16"
+      },
+      "gametype" : "sd",
+      "id" : "status",
+      "map" : "mp_toujane",
+      "maxPlayers" : 16,
+      "mod" : "",
+      "name" : "^1Local",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClxzdl9ob3N0bmFtZVxeMUxvY2FsXHByb3RvY29sXDEyMFxzdl9tYXhDbGllbnRzXDE2XGdfZ2FtZXR5cGVcc2RcbWFwbmFtZVxtcF90b3VqYW5lXHBzd3JkXDEKLTEyIDQ1ICJeMlRlc3RlciIKd3JvbmcgMTkgIlNraXAiCjAgKzEgIl43T3RoZXIiCg==",
+      "password" : true,
+      "ping" : 28,
+      "playerCount" : 2,
+      "players" : [
+        {
+          "id" : 0,
+          "name" : "^2Tester",
+          "ping" : 45,
+          "score" : -12
+        },
+        {
+          "id" : 1,
+          "name" : "^7Other",
+          "ping" : 1,
+          "score" : 0
+        }
+      ],
+      "statusObservation" : true,
+      "version" : "1.4.x"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "clients" : "11",
+        "fs_game" : "mods/test",
+        "g_password" : "1",
+        "gametype" : "tdm",
+        "hostname" : "^3Info",
+        "shortversion" : "1.4.6.8"
+      },
+      "gametype" : "tdm",
+      "id" : "info",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "mods/test",
+      "name" : "^3Info",
+      "packet" : "/////2luZm9SZXNwb25zZQpcaG9zdG5hbWVcXjNJbmZvXGNsaWVudHNcMTFcZ2FtZXR5cGVcdGRtXGdfcGFzc3dvcmRcMVxzaG9ydHZlcnNpb25cMS40LjYuOFxmc19nYW1lXG1vZHMvdGVzdAo=",
+      "password" : true,
+      "ping" : 28,
+      "playerCount" : 11,
+      "players" : [
+
+      ],
+      "statusObservation" : false,
+      "version" : "1.4.6.8"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+
+      },
+      "gametype" : "—",
+      "id" : "minimal",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "loopback.invalid:28960",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlCgo=",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 0,
+      "players" : [
+
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "sv_hostname" : "^1café"
+      },
+      "gametype" : "—",
+      "id" : "latin1",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "^1café",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClxzdl9ob3N0bmFtZVxeMWNhZukKMyA1ICJK9iIK",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 1,
+      "players" : [
+        {
+          "id" : 0,
+          "name" : "Jö",
+          "ping" : 5,
+          "score" : 3
+        }
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "hostname" : "ÿ"
+      },
+      "gametype" : "—",
+      "id" : "legacy-control",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "ÿ",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClxob3N0bmFtZVz/gJIK",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 0,
+      "players" : [
+
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Invalid server response.",
+      "id" : "invalid-marker",
+      "packet" : "c3RhdHVzUmVzcG9uc2UKXHhceQ==",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Invalid server response header.",
+      "id" : "invalid-header",
+      "packet" : "/////25vdFN0YXR1cwpceFx5",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Invalid server info fields.",
+      "id" : "invalid-fields",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClx4",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Invalid server info fields.",
+      "id" : "bad-first-field",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlCnhceVx6",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Oversized server field.",
+      "id" : "oversized-field",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClx4XHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Oversized server field.",
+      "id" : "oversized-key",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClx4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHhcdg==",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "x" : "y"
+      },
+      "gametype" : "—",
+      "id" : "equal-duplicate",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "loopback.invalid:28960",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClx4XHlceFx5",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 0,
+      "players" : [
+
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "error" : "Conflicting server info fields.",
+      "id" : "conflicting-field",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClx4XHlceFxkaWZmZXJlbnQ=",
+      "ping" : 28
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "hostname" : "one\r"
+      },
+      "gametype" : "—",
+      "id" : "status-crlf",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "one\r",
+      "packet" : "/////yBzdGF0dXNSZXNwb25zZSANClxob3N0bmFtZVxvbmUNCjAgNyAidHdvIg0K",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 1,
+      "players" : [
+        {
+          "id" : 0,
+          "name" : "two",
+          "ping" : 7,
+          "score" : 0
+        }
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    },
+    {
+      "address" : "loopback.invalid:28960",
+      "conflicts" : null,
+      "fields" : {
+        "hostname" : "demo"
+      },
+      "gametype" : "—",
+      "id" : "player-name-limit",
+      "map" : "Unknown",
+      "maxPlayers" : 0,
+      "mod" : "",
+      "name" : "demo",
+      "packet" : "/////3N0YXR1c1Jlc3BvbnNlClxob3N0bmFtZVxkZW1vCjEgMiAiZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBZcyBIgo=",
+      "password" : false,
+      "ping" : 28,
+      "playerCount" : 1,
+      "players" : [
+        {
+          "id" : 0,
+          "name" : "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+          "ping" : 2,
+          "score" : 1
+        }
+      ],
+      "statusObservation" : true,
+      "version" : "1.3"
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}
