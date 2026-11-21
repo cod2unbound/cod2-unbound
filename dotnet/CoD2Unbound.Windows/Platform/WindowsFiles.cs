@@ -221,7 +221,7 @@ internal sealed class WindowsSettingsFolder(string root, bool allowNestedWrites 
         string path = FileSlot(name);
         try
         {
-            using var parent = new WindowsFiles.DirectoryHandles(Root);
+            using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!);
             CheckExisting(name);
             File.Delete(path);
         }

@@ -111,7 +111,7 @@ internal sealed class WindowsLauncherSession
                 .Where(entry => (entry.Attributes & FileAttributes.ReparsePoint) == 0).Select(entry => entry.Name);
             return await ConfigProfileStore.ReadChoicesAsync(gameFolder, ids);
         }
-        catch (DirectoryNotFoundException) { return []; }
+        catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return []; }
     }
 
     internal async Task SelectLoadoutAsync(string id)
