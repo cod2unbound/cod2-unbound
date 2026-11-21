@@ -432,7 +432,7 @@ public sealed class ConfigDocument
         return (null, null);
     }
 
-    private static ImmutableArray<byte> Combine(ImmutableArray<ConfigToken> tokens, int first, bool binding)
+    internal static ImmutableArray<byte> Combine(ImmutableArray<ConfigToken> tokens, int first, bool binding)
     {
         int limit = binding ? 1023 : 4095;
         if (binding && tokens.Length == 3)
