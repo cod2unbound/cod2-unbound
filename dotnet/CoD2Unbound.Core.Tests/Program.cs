@@ -13,6 +13,7 @@ internal static partial class Program
         WireCases();
         LaunchCases();
         SettingsCases();
+        DirectoryCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }

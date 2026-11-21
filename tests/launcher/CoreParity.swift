@@ -1,7 +1,7 @@
 import Foundation
 
 @main struct CoreParity {
-    static func main() throws {
+    static func main() async throws {
         let args = CommandLine.arguments
         let mode = args[1], output = URL(fileURLWithPath: args[2])
         let revision = args[3]
@@ -18,6 +18,13 @@ import Foundation
         var settings = try SettingsParity.build(root: root)
         settings["swiftRevision"] = revision
         try fixture("settings", payload: settings, mode: mode, output: output)
+        let scratch = URL(fileURLWithPath: args[5])
+        let directoryScratch = scratch.appendingPathComponent("parity-directory")
+        defer { try? FileManager.default.removeItem(at: directoryScratch) }
+        let signatures = mode == "--check" ? try DirectoryParity.recordedSignatures(in: output) : nil
+        var directory = try await DirectoryParity.build(scratch: scratch, recorded: signatures)
+        directory["swiftRevision"] = revision
+        try fixture("directory", payload: directory, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

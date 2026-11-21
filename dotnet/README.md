@@ -9,7 +9,8 @@ executable. The Windows launcher and a future Linux launcher can reference
 On Linux or macOS with Linux Docker containers, run from the repository root:
 
 ```sh
-sh dotnet/test.sh
+sh dotnet/fetch-packages.sh output/dotnet/nuget
+sh dotnet/test.sh output/dotnet/nuget
 ```
 
 On Windows, run the same command in WSL with Docker integration and Linux containers.
@@ -17,14 +18,22 @@ On Windows, Linux or macOS with a local .NET 10 SDK, you can also run these comm
 from the repository root in PowerShell or a POSIX shell:
 
 ```text
-dotnet build dotnet/CoD2Unbound.sln -c Release -m:4
+dotnet restore dotnet/CoD2Unbound.sln --locked-mode --source output/dotnet/nuget -p:NuGetAudit=false
+dotnet build dotnet/CoD2Unbound.sln --no-restore -c Release -m:4
 dotnet run --project dotnet/CoD2Unbound.Core.Tests -c Release --no-build
 ```
 
-The Docker runner builds and executes with networking disabled. On first use Docker
-fetches the pinned Microsoft SDK image. The build and test method has no NuGet package
-dependencies and uses a test executable with explicit assertions and a failing exit
-status. Both projects enable nullable checks, analyzers, warnings as errors and
+The Docker runner mounts the source and local NuGet feed read-only, restores in
+locked mode, and builds and tests with networking disabled. Populate the local feed
+once with the separate networked acquisition command. It checks the package's
+pinned SHA-256 and verifies its NuGet signatures before publishing it. The core
+has one direct dependency, `BouncyCastle.Cryptography` 2.7.0. .NET 10 lacks a
+standalone Ed25519 verification API. Bouncy Castle supplies a managed verifier for
+Windows and Linux with zero transitive packages. Both lock files record its content
+hash and no package files are tracked. The test executable uses explicit assertions
+and a failing exit status. [Ed25519 API proposal](https://github.com/dotnet/runtime/issues/63174)
+[Package 2.7.0](https://www.nuget.org/packages/BouncyCastle.Cryptography/2.7.0)
+[Locked restore](https://learn.microsoft.com/nuget/consume-packages/package-references-in-project-files#locking-dependencies) Both projects enable nullable checks, analyzers, warnings as errors and
 deterministic compilation. The catalogue reader uses source-generated JSON metadata.
 The existing bundled settings and commands catalogue is embedded directly from
 `launcher/Resources/ConfigCatalog.json`.
@@ -59,6 +68,8 @@ work. Windows adapters should supply the following services.
 | Core service | Windows adapter |
 | --- | --- |
 | `ISettingsFolder` | Resolve a private per-user settings root. Restrict reads and writes to that root, refuse reparse-point traversal, and publish settings with atomic replacement. |
+| `IConfigDirectoryStorage` | Use a user-private `FOLDERID_LocalAppData` subdirectory. Hold a cross-process `LockFileEx` lease across read, compare, discard and publish. Check every path component and final handle using `CreateFileW` with `FILE_FLAG_OPEN_REPARSE_POINT` and handle metadata. Refuse reparse points, directories in file slots and non-private paths. Stage writes on the same volume, flush them and publish with `ReplaceFileW` or a same-directory move for a new file. Test junction and symlink substitution, competing refreshes, process termination during publish, ACLs and corrupt-cache recovery as a standard user on NTFS. |
+| `IConfigTextFetcher` | Use a .NET 10 `HttpClient` with manual redirect validation, response headers first and bounded streaming. Disable cookies and ambient credentials. Preserve response identity and classify cancellation, policy failures and connectivity separately. Test exact-size and oversized declared/chunked bodies, refused redirects, cancellation, timeout, and cache fallback on a Windows PC against a local stand-in. |
 | `ISecretStore` | Use user-scoped Credential Manager entries for the CD key and remembered server passwords. Route a key to the engine through its Windows key contract and keep credentials out of logs and process arguments. |
 | `IGameFiles` | Resolve validated relative paths under the selected engine home and verify regular files without traversing junctions or symlinks. |
 | `IGameDiscovery` | Read the installer inventory for client and dedicated executables by edition. Discover licensed retail data and Steam libraries using Windows registry views and Steam's library records, then validate the archive set. |
@@ -76,6 +87,15 @@ generated join config with a user-private ACL before spawning. It removes the
 file on a failed start and after use, with recovery for interrupted launcher
 sessions. Join config contents may include a password. Engine output and crash
 capture need redaction. [CreateProcessW](https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw)
+
+The catalogue accepts only the trusted index and signature responses and
+verifies the original index bytes. Its profile fetch returns signed bytes and
+provenance for import review. The stored trust fields identify the cache and the
+configured public key provides authority. A network outage can use a reverified
+copy. A valid response may repeat a revision only if the original bytes match.
+[Reparse points](https://learn.microsoft.com/windows/win32/fileio/reparse-points-and-file-operations)
+[LockFileEx](https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-lockfileex)
+[ReplaceFileW](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-replacefilew)
 
 The release offer takes an expected archive name from its caller. Windows
 packaging defines that name and verifies the installer publisher or server ZIP

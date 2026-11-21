@@ -4,6 +4,8 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
+Coverage is 114 rows, with 12 ported, 38 planned, 48 UI and 16 Apple-only.
+
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
 | AppSheets.swift | UI | WinUI dialogs and owner-window placement |
@@ -19,8 +21,8 @@ have separate rows for their logical parts.
 | ConfigCheckup.swift | Planned | Recommendations from the configuration and match measurements |
 | ConfigCheckupView.swift | UI | Check-up results and tune-for controls |
 | ConfigClean.swift | Planned | Import review projection used by the catalogue and sharing |
-| ConfigDirectory.swift · trust and metadata | Planned | Pinned Ed25519 key, raw-index verification, closed schema, per-config SHA-256, and rollback rules |
-| ConfigDirectory.swift · transport and cache | Planned | Bounded fetch seam, private cache with re-verification, saved entries |
+| ConfigDirectory.swift · trust and metadata | Ported | `ConfigDirectory` verifies exact Ed25519-signed bytes, closed metadata, revisions and downloaded profile digests. Review of the signed profile is tracked with the import rows below. |
+| ConfigDirectory.swift · transport and cache | Ported | `IConfigTextFetcher`, `IConfigDirectoryStorage`, core cache re-verification and saved entries. The platform supplies bounded HTTP and private transactional storage. |
 | ConfigDiscoverModel.swift · state rules | Planned | Directory states, retry, and saving selected entries |
 | ConfigDiscoverModel.swift · dialogs | UI | File and link handling, navigation and feedback |
 | ConfigDiscoverView.swift | UI | Player Setups directory and result views |

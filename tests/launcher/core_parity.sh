@@ -31,8 +31,10 @@ target=arm64-apple-macos26
 /usr/bin/xcrun swiftc -j 2 -swift-version 6 -strict-concurrency=complete -warnings-as-errors -O \
     -target "$target" -sdk "$sdk" -import-objc-header "$root/tests/launcher/CoreParityBridge.h" \
     "$root/launcher/ConfigDocument.swift" "$root/launcher/ConfigCatalog.swift" \
+    "$root/launcher/ConfigDirectory.swift" "$root/launcher/ConfigImport.swift" "$root/launcher/ConfigImportSafety.swift" \
     "$root/launcher/Core.swift" "$root/launcher/Presentation.swift" "$root/launcher/Hosting.swift" \
     "$root/tests/launcher/CoreParity.swift" "$root/tests/launcher/CoreParityConfig.swift" "$root/tests/launcher/CoreParityWire.swift" \
     "$root/tests/launcher/CoreParityLaunch.swift" "$root/tests/launcher/CoreParitySettings.swift" \
+    "$root/tests/launcher/CoreParityDirectory.swift" "$root/tests/launcher/DirectoryFixture.swift" \
     "$scratch/setup.o" "$scratch/shaders.o" "$scratch/url.o" -framework AppKit -lz -o "$scratch/parity"
-"$scratch/parity" "$mode" "$output" "$revision" "$root"
+"$scratch/parity" "$mode" "$output" "$revision" "$root" "$scratch"
