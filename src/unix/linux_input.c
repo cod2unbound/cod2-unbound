@@ -170,17 +170,17 @@ static void MacInput_MenuCursor(int x, int y)
         CL_MouseEventAbsolute(x, y, 0, 0);
 }
 
-static void MacInput_MeasureRaw(void)
+static void MacInput_MeasureRaw(int registered)
 {
     uint64_t now = MacSystem_Nanoseconds(), count = MacRawMouse_EventCount();
-    if (mac_use_raw != mouseStatsActive) {
+    if (registered != mouseStatsActive) {
         int maximum = mouseStats.maxHz;
         Cod2x_MouseStatsReset(&mouseStats, now, count);
         mouseStats.maxHz = maximum;
-        mouseStatsActive = mac_use_raw;
+        mouseStatsActive = registered;
         Dvar_SetInt(m_rinput_hz, 0);
     }
-    if (mac_use_raw && Cod2x_MouseStatsUpdate(&mouseStats, now, count)) {
+    if (registered && Cod2x_MouseStatsUpdate(&mouseStats, now, count)) {
         Dvar_SetInt(m_rinput_hz, mouseStats.hz);
         Dvar_SetInt(m_rinput_hz_max, mouseStats.maxHz);
     }
@@ -789,8 +789,10 @@ void IN_Frame(void)
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
 #if COD2_WINDOWS_NATIVE
     if (sdl_gl_window)
+        MacInput_MeasureRaw(rawMode > 0 && MacRawMouse_Available());
+#else
+    MacInput_MeasureRaw(mac_use_raw);
 #endif
-    MacInput_MeasureRaw();
 #endif
 #if COD2_FEATURE_GAMEPAD
     CL_Gamepad_Frame();
