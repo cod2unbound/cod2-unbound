@@ -12,6 +12,9 @@ import Foundation
         var wire = try WireParity.build(root: root)
         wire["swiftRevision"] = revision
         try fixture("wire", payload: wire, mode: mode, output: output)
+        var launch = try LaunchParity.build()
+        launch["swiftRevision"] = revision
+        try fixture("launch", payload: launch, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

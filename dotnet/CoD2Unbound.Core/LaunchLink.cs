@@ -8,9 +8,13 @@ public sealed record LaunchLink
 
     public string Address { get; }
     public string Password { get; }
+    public bool HasPassword { get; }
     public string Url { get; }
 
-    private LaunchLink(string address, string password, string url) => (Address, Password, Url) = (address, password, url);
+    private LaunchLink(string address, string? password, string url) =>
+        (Address, Password, HasPassword, Url) = (address, password ?? "", password is not null, url);
+
+    public override string ToString() => $"LaunchLink {{ Address = {Address} }}";
 
     public static LaunchLink Direct(string address, string password = "") =>
         Parse("cod2x://" + Uri.EscapeDataString($"connect {address} password \"{password}\""));
@@ -78,7 +82,7 @@ public sealed record LaunchLink
 
         if (address is null)
             return false;
-        link = new(address, password ?? "", url);
+        link = new(address, password, url);
         return true;
     }
 
