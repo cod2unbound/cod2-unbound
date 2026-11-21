@@ -102,5 +102,5 @@ SH_INNER
 
 python3 -B "$root/tools/windows/retail-trace.py" "$run"
 python3 -B "$root/tools/parity/compare.py" "$run/statehash.txt" "$trace/statehash.txt" \
-    --players "$run/players.txt" "$trace/players.txt" --require-clients 2 |
+    --raw --players "$run/players.txt" "$trace/players.txt" --require-clients 2 |
     tee "$run/comparison.txt"

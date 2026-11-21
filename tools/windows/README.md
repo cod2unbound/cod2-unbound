@@ -67,9 +67,9 @@ The recorder checks the executable's SHA-256 and builds a Miles DLL forwarder
 from the local exports. It runs the original PE with the pinned i386 Wine 8.0
 image and a private Xvfb display in a network-isolated container. Set
 `COD2_WINDOWS_RETAIL_IMAGE` to the ID of a compatible local i386 Wine image
-with Xvfb. The 600-tick capture and the first strict comparison difference
-are written under `output/r05/oracle/`. The command exits nonzero while
-retail and the port differ. The internal replay checks pass independently.
+with Xvfb. The comparison checks raw entity-state hashes and the tracked player
+fields for every tick. The capture and comparison result are written under
+`output/r05/oracle/`. The command exits nonzero if the replay differs.
 
 ## Direct3D 9
 
