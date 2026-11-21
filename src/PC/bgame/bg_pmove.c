@@ -980,8 +980,14 @@ static void PM_ACCELERATE_ABI PM_Accelerate(playerState_t *ps, pml_t *pml, const
         return;
     }
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    /* Windows 1.3 adds the vertical and lateral products before X at 0x5156fc. */
+    addspeed = wishspeed - ((ps->velocity[2] * wishdir[2] + ps->velocity[1] * wishdir[1])
+                            + ps->velocity[0] * wishdir[0]);
+#else
     addspeed = wishspeed - (ps->velocity[0] * wishdir[0] + ps->velocity[1] * wishdir[1]
                             + ps->velocity[2] * wishdir[2]);
+#endif
     if (addspeed <= 0.0f)
         return;
 
