@@ -98,22 +98,8 @@ static int mac_relative;
 static int mac_use_raw;
 static float mac_wheel_remainder;
 
-#if COD2_WINDOWS_NATIVE && defined(COD2_X64)
-/* The Windows build reads typed text as code points; the Mac goes through MacText_EncodeUTF8. */
-static unsigned int MacInput_DecodeUTF8(const unsigned char **cursor)
-{
-    const unsigned char *p = *cursor;
-    unsigned int value = *p++;
-    int trailing = value < 0x80 ? 0 : ((value & 0xe0) == 0xc0 ? 1 : ((value & 0xf0) == 0xe0 ? 2 : ((value & 0xf8) == 0xf0 ? 3 : -1)));
-    if (trailing < 0) { *cursor = p; return 0; }
-    value &= trailing == 0 ? 0x7f : ((1u << (6 - trailing)) - 1);
-    for (int i = 0; i < trailing; ++i) {
-        if ((*p & 0xc0) != 0x80) { *cursor = p; return 0; }
-        value = (value << 6) | (*p++ & 0x3f);
-    }
-    *cursor = p;
-    return value;
-}
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_window.h"
 #endif
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
 #include "platform/cod2x_native_mouse.h"
@@ -205,17 +191,8 @@ char *Sys_GetClipboardData(void)
     extern void *Z_MallocInternal(int size);
     char *utf8 = SDL_GetClipboardText();
     if (!utf8) return NULL;
-#if COD2_WINDOWS_NATIVE
-    /* As with typed text on Windows: one byte per code point, anything wider is dropped. */
-    char *bytes = malloc(strlen(utf8) + 1);
-    if (bytes) {
-        char *out = bytes;
-        for (const unsigned char *p = (const unsigned char *)utf8; *p;) {
-            unsigned int character = MacInput_DecodeUTF8(&p);
-            if (character && character < 0x100) *out++ = (char)character;
-        }
-        *out = 0;
-    }
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    char *bytes = Win_InputTextToAnsi(utf8);
 #else
     char *bytes = MacText_EncodeUTF8(utf8, loc_language ? loc_language->current.integer : 0);
 #endif
@@ -354,7 +331,7 @@ int SDL_PumpInputEvents(void)
     int eventCount;
     int inputEventCount = 0;
     static int textInputStarted;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
     /* SDL timestamps and Sys_Milliseconds have different epochs. Keep one
      * offset so queued edges retain their spacing even across a stalled frame
      * or the 32-bit SDL clock wrapping (Windows uses MSG.time here). */
@@ -395,7 +372,7 @@ int SDL_PumpInputEvents(void)
 #endif
 #if defined(COD2_X64)
         int eventTime = 0;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
         eventTime = (int)(ev.common.timestamp + eventTimeOffset);
         /* Zero means "now" to Sys_QueEvent, rather than the clock's origin. */
         if (!eventTime) eventTime = 1;
@@ -419,6 +396,9 @@ int SDL_PumpInputEvents(void)
 #endif
             } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
                 extern void MacDisplay_FocusChanged(int focused);
+#if COD2_WINDOWS_NATIVE
+                { extern void Key_ClearStates(void); Key_ClearStates(); }
+#endif
                 MacDisplay_FocusChanged(1);
 #if defined(__APPLE__) && defined(COD2_CODX) && COD2_CODX
                 { extern void Cod2x_FocusPriority(int focused); Cod2x_FocusPriority(1); }
@@ -481,6 +461,41 @@ int SDL_PumpInputEvents(void)
             }
             break;
         }
+#if COD2_WINDOWS_NATIVE && COD2_X64
+        case SDL_SYSWMEVENT: {
+            int value = 0, down = 0;
+            switch (Win_InputMessage(ev.syswm.msg, &value, &down)) {
+            case WIN_INPUT_KEY:
+                Sys_QueEvent(eventTime, SE_KEY, value, down, 0, NULL);
+                break;
+            case WIN_INPUT_CONTROL:
+                Sys_QueEvent(eventTime, SE_CHAR, value, 0, 0, NULL);
+                break;
+            case WIN_INPUT_WHEEL: {
+                int key = value > 0 ? K_MWHEELUP : K_MWHEELDOWN;
+                Sys_QueEvent(eventTime, SE_KEY, key, 1, 0, NULL);
+                Sys_QueEvent(eventTime, SE_KEY, key, 0, 0, NULL);
+                break;
+            }
+            case WIN_INPUT_ALT_ENTER: {
+                extern clientConnection_t clientConnections[1];
+                extern const dvar_t *Dvar_FindVar(const char *);
+                extern int Dvar_GetInt(const char *);
+                extern void Dvar_SetBool(const dvar_t *, unsigned char);
+                extern void Cbuf_AddText(const char *);
+                const dvar_t *fullscreen = Dvar_FindVar("r_fullscreen");
+                if (fullscreen && Dvar_GetInt("developer") && clientConnections[0].state != CA_LOADING) {
+                    Dvar_SetBool(fullscreen, !fullscreen->current.enabled);
+                    Cbuf_AddText("vid_restart\n");
+                }
+                break;
+            }
+            default:
+                break;
+            }
+            break;
+        }
+#else
         case SDL_MOUSEWHEEL: {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
             /* Cocoa already applies the user's scrolling direction, as Carbon
@@ -554,6 +569,7 @@ int SDL_PumpInputEvents(void)
             }
             break;
         }
+#endif
         case SDL_TEXTINPUT:
 
 #if defined(__APPLE__) && defined(COD2_X64)
@@ -570,12 +586,15 @@ int SDL_PumpInputEvents(void)
                 }
             }
 #elif COD2_WINDOWS_NATIVE && defined(COD2_X64)
-            for (const unsigned char *p = (const unsigned char *)ev.text.text; *p;) {
-                unsigned int character = MacInput_DecodeUTF8(&p);
-                if (character >= 0x20 && character != 0x7f) {
-                    Sys_QueEvent(0, SE_CHAR, (int)character, 0, 0, NULL);
-                    ++inputEventCount;
-                }
+            {
+                char *bytes = Win_InputTextToAnsi(ev.text.text);
+                if (bytes)
+                    for (const unsigned char *p = (const unsigned char *)bytes; *p; ++p)
+                        if (*p >= 32 && *p != 127) {
+                            Sys_QueEvent(eventTime, SE_CHAR, *p, 0, 0, NULL);
+                            ++inputEventCount;
+                        }
+                free(bytes);
             }
 #else
             if (ev.text.text[0]) {

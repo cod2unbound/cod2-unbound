@@ -192,6 +192,9 @@ int MacDisplay_Initialize(void)
 #endif
     if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
         return -1;
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void Win_InputEnableMessages(void); Win_InputEnableMessages(); }
+#endif
 #if defined(__APPLE__) && defined(COD2_X64) && !defined(DEDICATED) && (!defined(COD2_ENGINE_ONLY) || (defined(COD2_CODX) && COD2_CODX))
     /* SDL's Cocoa app delegate installs its own URL drop handler at video
      * initialization. Restore the validated link handler afterwards. */
