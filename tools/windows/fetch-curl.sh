@@ -32,7 +32,7 @@ cmake -S "$dest/curl-$VERSION" -B "$dest/build" -G Ninja \
     -DHTTP_ONLY=ON -DCURL_USE_SCHANNEL=ON -DCURL_USE_LIBPSL=OFF -DCURL_USE_LIBSSH2=OFF \
     -DUSE_LIBIDN2=OFF -DUSE_NGHTTP2=OFF -DCURL_ZLIB=OFF -DCURL_BROTLI=OFF -DCURL_ZSTD=OFF \
     >"$dest/configure.log" 2>&1
-cmake --build "$dest/build" --parallel >"$dest/build.log" 2>&1
+cmake --build "$dest/build" --parallel "${COD2_WINDOWS_JOBS:-3}" >"$dest/build.log" 2>&1
 cmake --install "$dest/build" >>"$dest/build.log" 2>&1
 test -f "$dest/install/lib/libcurl.a"
 touch "$dest/.complete-$VERSION"

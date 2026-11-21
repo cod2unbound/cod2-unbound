@@ -118,6 +118,17 @@ set(COD2_WIN_C_OPTIONS -w -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fn
   -include ${COD2_SRC_DIR}/headers/win32_compat.h ${COD2_WNO})
 
 add_executable(${WIN_TARGET} ${WIN_TARGET_C} src/win32/unbound.rc)
+if(DEFINED COD2_WINDOWS_COMPANY)
+  file(STRINGS "${CMAKE_SOURCE_DIR}/RELEASE_VERSION" WIN_RELEASE_VERSION LIMIT_COUNT 1)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/RELEASE_VERSION")
+  if(NOT WIN_RELEASE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "RELEASE_VERSION must contain major.minor.patch")
+  endif()
+  string(REPLACE "." "," WIN_RELEASE_VERSION_RC "${WIN_RELEASE_VERSION}")
+  configure_file("${CMAKE_SOURCE_DIR}/tools/windows/package/version.rc.in" unbound-version.rc @ONLY)
+  target_sources(${WIN_TARGET} PRIVATE "${CMAKE_BINARY_DIR}/unbound-version.rc")
+  target_link_options(${WIN_TARGET} PRIVATE -Wl,--no-insert-timestamp)
+endif()
 set_source_files_properties(src/win32/unbound.rc PROPERTIES
   COMPILE_OPTIONS "-I${COD2_SRC_DIR}/win32"
   OBJECT_DEPENDS "${COD2_SRC_DIR}/win32/unbound.manifest")
