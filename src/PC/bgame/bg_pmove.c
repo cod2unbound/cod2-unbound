@@ -1098,7 +1098,12 @@ static void PM_REGPARM2_ABI PM_Friction(playerState_t *ps, pml_t *pml)
             control *= 0.3f;
 #endif
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+        /* Retail multiplies friction by frame time at 0x515545, then by control. */
+        drop += control * (PM_DvarFloat(friction, 5.5f) * pml->frametime);
+#else
         drop += control * PM_DvarFloat(friction, 5.5f) * pml->frametime;
+#endif
     }
 
 #if COD2_WINDOWS_NATIVE && !COD2_CODX
