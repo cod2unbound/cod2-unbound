@@ -2,6 +2,9 @@
 #include "imports.h"
 #include "bytematch.h"
 #include <math.h>
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+#include "PC/universal/windows_number.h"
+#endif
 extern scr_const_t scr_const;
 extern level_locals_t level;
 
@@ -650,12 +653,24 @@ static void HECmd_SetShader(scr_entref_t entref)
 #if defined(COD2_X64)
 static int HECmd_MillisecondsFromSecondsCeiled(float seconds)
 {
+#if COD2_APPLE_SDK && COD2_WINDOWS_NATIVE
+    /* Retail FAST_CEIL at 0x5264a9 and 0x5265db adds a bias just below
+       one half at 24-bit precision, then rounds to even. */
+    float milliseconds = seconds * 1000.0f;
+    double biased = milliseconds;
+    /* At 2^23 and beyond the bias cannot change the integer result,
+       but adding it in double can round away its low bit. */
+    if (fabsf(milliseconds) < 0x1p23f)
+        biased += 0.5 - 0x1p-30;
+    return Q_WindowsScaleDoubleToInt(biased, 1);
+#else
     float value = ceilf(seconds * 1000.0f);
 
     /* Mac 0x1b3d4f uses CVTTSS2SI's integer-indefinite result. */
     if (!(value >= -2147483648.0f && value < 2147483648.0f))
         return -2147483647 - 1;
     return (int)value;
+#endif
 }
 #endif
 static void HECmd_SetTimer_Internal(scr_entref_t entref, he_type_t type, const char *cmdName)
