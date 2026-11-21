@@ -110,6 +110,7 @@ void Win_InputEnableMessages(void)
     SDL_EventState(SDL_KEYDOWN, SDL_DISABLE);
     SDL_EventState(SDL_KEYUP, SDL_DISABLE);
     SDL_EventState(SDL_MOUSEWHEEL, SDL_DISABLE);
+    SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
 }
 
 enum WinInputKind Win_InputMessage(const SDL_SysWMmsg *message, int *value, int *down)
@@ -162,5 +163,59 @@ char *Win_InputTextToAnsi(const char *utf8)
     }
     free(wide);
     return bytes;
+}
+
+/* Compare retail IN_ActivateWin32Mouse and IN_Win32Mouse. The center uses the
+ * outer window rectangle. Reading the OS cursor keeps pointer speed and
+ * Enhance pointer precision in the input path. */
+static HWND capturedWindow;
+static POINT cursorCenter;
+
+static int Win_InputCursorCenter(HWND window, POINT *center)
+{
+    RECT rect;
+    if (!GetWindowRect(window, &rect))
+        return 0;
+    center->x = (rect.left + rect.right) / 2;
+    center->y = (rect.top + rect.bottom) / 2;
+    return 1;
+}
+
+int Win_InputCaptureCursor(int capture)
+{
+    HWND window = sdl_gl_window ? Win_GameWindow() : NULL;
+    if (!capture || !window || GetForegroundWindow() != window) {
+        if (capturedWindow && GetCapture() == capturedWindow)
+            ReleaseCapture();
+        capturedWindow = NULL;
+        return 0;
+    }
+    if (capturedWindow != window || GetCapture() != window) {
+        if (!Win_InputCursorCenter(window, &cursorCenter))
+            return 0;
+        SetCapture(window);
+        if (!SetCursorPos(cursorCenter.x, cursorCenter.y)) {
+            if (GetCapture() == window)
+                ReleaseCapture();
+            capturedWindow = NULL;
+            return 0;
+        }
+        capturedWindow = window;
+    }
+    return 1;
+}
+
+int Win_InputCursorDelta(int *dx, int *dy)
+{
+    POINT position, center;
+    if (!capturedWindow || GetForegroundWindow() != capturedWindow ||
+        !Win_InputCursorCenter(capturedWindow, &center) || !GetCursorPos(&position) ||
+        !SetCursorPos(center.x, center.y))
+        return 0;
+    /* A window move changes the center without moving the mouse. */
+    *dx = center.x == cursorCenter.x && center.y == cursorCenter.y ? position.x - center.x : 0;
+    *dy = center.x == cursorCenter.x && center.y == cursorCenter.y ? position.y - center.y : 0;
+    cursorCenter = center;
+    return *dx != 0 || *dy != 0;
 }
 #endif

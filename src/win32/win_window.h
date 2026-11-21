@@ -9,5 +9,7 @@ enum WinInputKind {
 void Win_InputEnableMessages(void);
 enum WinInputKind Win_InputMessage(const struct SDL_SysWMmsg *message, int *value, int *down);
 char *Win_InputTextToAnsi(const char *utf8);
+int Win_InputCaptureCursor(int capture);
+int Win_InputCursorDelta(int *dx, int *dy);
 
 #endif

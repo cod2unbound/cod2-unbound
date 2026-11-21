@@ -2365,6 +2365,9 @@ void CL_RunOncePerClientFrame(int msec)
 #endif
     }
 
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void WinInput_SampleMouse(void); WinInput_SampleMouse(); }
+#endif
     int avidemoVal = cl_avidemo->current.integer;
     if (avidemoVal && msec) {
 
