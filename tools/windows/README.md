@@ -20,6 +20,7 @@ Run from the repository root with Docker running. Build the tools image once.
 docker build --platform linux/amd64 -t cod2-build-win tools/windows
 tools/windows/build-matrix.sh
 tools/windows/check-servers.sh "/path/to/CoD2"
+tools/windows/check-paths.sh "/path/to/CoD2"
 ```
 
 On Apple silicon, allow about 10–15 minutes for a clean matrix and 2–3 minutes
@@ -30,7 +31,7 @@ and diagnostic OpenGL binaries, plus the i686 Original 1.3 Direct3D 9 probe.
 The first build downloads checksummed SDL2 2.30.9 and curl 8.14.1, and builds static
 libcurl once per architecture. Set `COD2_WINDOWS_JOBS` to change Ninja's parallelism
 from the default of three. Both scripts accept a locally built image name via
-`COD2_WINDOWS_IMAGE`.
+`COD2_WINDOWS_IMAGE`. Use `COD2_WINDOWS_OUTPUT` to choose a different absolute evidence directory.
 
 Each target directory under `output/r05/builds/matrix/` contains the executable,
 `configure.log`, `build.log`, `pe-header.txt` and `imports.txt`. The build checks
@@ -53,6 +54,11 @@ ticks. `tools/parity/compare.py --raw --require-clients 2` checks the result
 against the saved Windows x64 reference traces in
 [`fixtures/two-bot/`](fixtures/two-bot/README.md). These traces cover the
 tracked entity hashes and player fields for this fixture.
+
+**Path and credential checks.** `check-paths.sh` runs disposable Steam, retail, portable,
+missing-data, Unicode and extended-path fixtures. It checks the selected source, per-user
+writes, unchanged licensed and VirtualStore files, and Credential Manager precedence with
+synthetic keys. See [the Windows path contract](../../docs/windows-game-data.md).
 
 **Retail 1.3 comparison.** Set `COD2_WINDOWS_RETAIL_DIR` to the directory
 containing the licensed 1.3 `CoD2MP_s.exe` and renderer DLL to compare a
