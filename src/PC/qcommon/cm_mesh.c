@@ -654,8 +654,15 @@ edge_trace_tests: {
                                     continue;
 
                                 {
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+                                    /* Windows 1.3 rounds the reciprocal at 0x4193bb. */
+                                    float invRadius = 1.0f / cullEndRadius;
+                                    float normA = (t_hit * dirA + projA) * invRadius;
+                                    float normB = (t_hit * dirB + projB) * invRadius;
+#else
                                     float normA = (t_hit * dirA + projA) / cullEndRadius;
                                     float normB = (t_hit * dirB + projB) / cullEndRadius;
+#endif
 
                                     trace->normal[0] = normA * edgeAx0;
                                     trace->normal[1] = normA * edgeAx1;
