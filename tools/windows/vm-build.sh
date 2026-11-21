@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build the committed launcher and run portable tests on the hidden ARM64 test VM.
+# Run the portable tests and publish the committed launcher on the running test VM.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
@@ -11,13 +11,22 @@ bounded() {
 }
 
 guest() {
+    require_utm || return
     bounded "$(($1 + 60))" "/Users/stix/Library/Containers/com.utmapp.UTM/Data/Documents/win11-assets/tools/gx.sh" "$@"
 }
 
 utm() {
+    require_utm || return
     limit=$1
     shift
     bounded "$limit" /Applications/UTM.app/Contents/MacOS/utmctl "$@"
+}
+
+require_utm() {
+    if ! /usr/bin/pgrep -f '^/Applications/UTM\.app/Contents/MacOS/UTM($| )' >/dev/null; then
+        echo "UTM is closed. Run this script with cod2-win11 already running." >&2
+        return 1
+    fi
 }
 
 check_disk() {
@@ -30,11 +39,14 @@ check_disk() {
 }
 
 check_disk
+if ! status=$(utm 12 status --hide cod2-win11) || [ "$status" != started ]; then
+    echo "Could not confirm that cod2-win11 is running. Check UTM and the guest agent." >&2
+    exit 1
+fi
+
 scratch=$(mktemp -d "$out/vm.XXXXXXXX")
 vmroot="C:\\$(basename "$scratch")"
-started=0
-reachable=0
-prepared=0
+guest_workspace_requested=0
 
 cleanup() {
     result=$?
@@ -44,27 +56,8 @@ cleanup() {
             rm "$file" || result=1
         fi
     done
-    if [ "$reachable" -eq 1 ]; then
-        if [ "$prepared" -eq 1 ]; then
-            guest 20 "Remove-Item -LiteralPath '$vmroot' -Recurse -ErrorAction Stop" > "$scratch/guest-cleanup.log" 2>&1 || :
-        fi
-        guest 15 'shutdown.exe /s /t 0; exit $LASTEXITCODE' > "$scratch/shutdown.log" 2>&1 || :
-        stopped=0
-        for attempt in 1 2 3; do
-            if utm 7 status --hide cod2-win11 >> "$scratch/shutdown.log" 2>&1 &&
-                tail -n 1 "$scratch/shutdown.log" | grep -iq '^[[:space:]]*stopped[[:space:]]*$'; then
-                stopped=1
-                break
-            fi
-            sleep 4
-        done
-        if [ "$stopped" -ne 1 ]; then
-            echo "UTM did not confirm shutdown. See $scratch/shutdown.log." >&2
-            exit 1
-        fi
-    fi
-    if [ "$started" -eq 1 ]; then
-        bounded 10 /usr/bin/osascript -e 'tell application "UTM" to quit' >> "$scratch/shutdown.log" 2>&1 || result=1
+    if [ "$guest_workspace_requested" -eq 1 ]; then
+        guest 60 "\$ErrorActionPreference = 'Stop'; if (Test-Path -LiteralPath '$vmroot') { Remove-Item -LiteralPath '$vmroot' -Recurse }; exit 0" > "$scratch/guest-cleanup.log" 2>&1 || result=1
     fi
     echo "Evidence is in $scratch"
     exit "$result"
@@ -86,6 +79,8 @@ $work = $PSScriptRoot
 $env:DOTNET_CLI_HOME = Join-Path $work 'cli'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
+$env:DOTNET_CLI_USE_MSBUILD_SERVER = '0'
+$env:MSBUILDDISABLENODEREUSE = '1'
 $env:NUGET_PACKAGES = Join-Path $work 'packages'
 $env:NUGET_HTTP_CACHE_PATH = Join-Path $work 'http-cache'
 $source = 'https://api.nuget.org/v3/index.json'
@@ -116,14 +111,15 @@ try {
         if ((Get-FileHash -LiteralPath $sdkZip -Algorithm SHA512).Hash -ne $sdkSha512) {
             throw 'SDK SHA-512 differs from the Microsoft release metadata.'
         }
-        Expand-Archive -LiteralPath $sdkZip -DestinationPath (Join-Path $work 'sdk')
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [IO.Compression.ZipFile]::ExtractToDirectory($sdkZip, (Join-Path $work 'sdk'))
         Remove-Item -LiteralPath $sdkZip
-        Expand-Archive -LiteralPath (Join-Path $work 'source.zip') -DestinationPath (Join-Path $work 'src')
+        [IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $work 'source.zip'), (Join-Path $work 'src'))
         Remove-Item -LiteralPath (Join-Path $work 'source.zip')
         Set-Location (Join-Path $work 'src\dotnet')
         Invoke-DotNet --info
-        Invoke-DotNet restore CoD2Unbound.sln --locked-mode --source $source -p:NuGetAudit=false -m:4
-        Invoke-DotNet build CoD2Unbound.sln --no-restore -c Release -m:4
+        Invoke-DotNet restore CoD2Unbound.sln --locked-mode --source $source '-p:NuGetAudit=false' '-m:4'
+        Invoke-DotNet build CoD2Unbound.sln --no-restore -c Release '-m:4'
         Invoke-DotNet run --project CoD2Unbound.Core.Tests -c Release --no-build
     } else {
         Set-Location (Join-Path $work 'src\dotnet')
@@ -131,8 +127,8 @@ try {
         foreach ($platform in 'ARM64', 'x64') {
             $rid = "win-$($platform.ToLowerInvariant())"
             $output = Join-Path $work $rid
-            Invoke-DotNet restore $project -r $rid "-p:Platform=$platform" --source $source -p:NuGetAudit=false -m:4
-            Invoke-DotNet publish $project --no-restore -c Release -r $rid "-p:Platform=$platform" -o $output -m:4
+            Invoke-DotNet restore $project -r $rid "-p:Platform=$platform" --source $source '-p:NuGetAudit=false' '-m:4'
+            Invoke-DotNet publish $project --no-restore -c Release -r $rid "-p:Platform=$platform" -o $output '-m:4'
             $exe = Join-Path $output 'CoD2Unbound.Windows.exe'
             if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Missing $rid launcher executable" }
             $files = @(Get-ChildItem -LiteralPath $output -Recurse -File)
@@ -157,21 +153,22 @@ if ($code -eq 0) { Set-Content -LiteralPath (Join-Path $work "$Phase.ok") -Value
 exit $code
 POWERSHELL
 
-started=1
-utm 45 start --hide cod2-win11 > "$scratch/start.log" 2>&1
-# The guest agent may register after the VM starts. A successful transfer gives
-# the host a receipt without assuming gx.sh propagates the guest's exit status.
+guest_workspace_requested=1
+ready=0
+# A guest-written receipt carries success across gx.sh and utmctl.
 for attempt in 1 2 3; do
     guest 25 "\$ErrorActionPreference = 'Stop'; if (!(Test-Path -LiteralPath '$vmroot')) { New-Item -Path '$vmroot' -ItemType Directory | Out-Null }; Set-Content -LiteralPath '$vmroot\ready' -Value ready -Encoding ascii" >> "$scratch/guest-ready.log" 2>&1 || :
     if utm 12 file pull --hide cod2-win11 "$vmroot\ready" > "$scratch/receipt" &&
         [ "$(tr -d '\r\n' < "$scratch/receipt")" = ready ]; then
-        reachable=1
-        prepared=1
+        ready=1
         break
     fi
     sleep 8
 done
-[ "$reachable" -eq 1 ] || exit 1
+if [ "$ready" -ne 1 ]; then
+    echo "The cod2-win11 guest agent did not confirm workspace setup. See $scratch/guest-ready.log." >&2
+    exit 1
+fi
 
 utm 210 file push --hide cod2-win11 "$vmroot\source.zip" < "$scratch/source.zip"
 utm 20 file push --hide cod2-win11 "$vmroot\build.ps1" < "$scratch/build.ps1"
@@ -182,8 +179,11 @@ run_phase() {
     check_disk
     guest "$seconds" "& '$vmroot\build.ps1' -Phase '$phase'; exit \$LASTEXITCODE" > "$scratch/$phase.log" 2>&1 || :
     utm 20 file pull --hide cod2-win11 "$vmroot\downloads.csv" > "$scratch/downloads.csv" || :
-    utm 12 file pull --hide cod2-win11 "$vmroot\\$phase.ok" > "$scratch/receipt" &&
-        [ "$(tr -d '\r\n' < "$scratch/receipt")" = "$phase" ]
+    if ! utm 12 file pull --hide cod2-win11 "$vmroot\\$phase.ok" > "$scratch/receipt" ||
+        [ "$(tr -d '\r\n' < "$scratch/receipt")" != "$phase" ]; then
+        echo "Windows $phase phase failed. See $scratch/$phase.log." >&2
+        return 1
+    fi
 }
 
 run_phase core 660
