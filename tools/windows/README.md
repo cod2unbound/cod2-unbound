@@ -81,6 +81,11 @@ For the short four-client retail cases on additional stock maps, pass the same
 game and retail paths to `tools/windows/check-retail-cases.sh`. Its optional
 third argument selects one case from `fixtures/retail-extra/cases.tsv`.
 
+For an upstream CoD2x reference that loads the test-client scripts from an IWD,
+pass `--pack-test-scripts` to `tools/parity/record.py` and use the same scripts in
+the reference archive. Loading the two scripts as loose files consumes two
+random values for file checksums and changes the later bullet spread.
+
 For the protocol 118 loopback comparison, run `tools/windows/check-snapshot-wire.sh`
 with the game path, retail path, successful Toujane retail capture directory,
 and a new output directory. The headless receiver uses the engine's client

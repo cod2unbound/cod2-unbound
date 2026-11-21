@@ -200,6 +200,21 @@ assert not (home / 'main/maps/mp/gametypes/dm.gsc').exists()
 """, gametype='ctf')
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_record_packs_both_test_client_scripts_without_loose_overrides(self):
+        result = self.record(('--players', '--clients', '2', '--pack-test-scripts'), '''
+import sys
+import zipfile
+home = Path(sys.argv[sys.argv.index('fs_homepath') + 1].strip('"'))
+with zipfile.ZipFile(home / 'main/zzz_oracle.iwd') as archive:
+    scripts = set(archive.namelist())
+    assert scripts == {'maps/mp/gametypes/dm.gsc', 'maps/mp/gametypes/_teams.gsc'}
+    assert b'thread oracleTestClient(team);' in archive.read('maps/mp/gametypes/_teams.gsc')
+assert not any((home / 'main' / script).exists() for script in scripts)
+''')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        metadata = json.loads((self.path / 'run/run.json').read_text())
+        self.assertEqual(metadata['testclients_bootstrap'], ['home/main/zzz_oracle.iwd'])
+
     def test_replay_input_is_absolute_and_not_copied_into_metadata(self):
         replay = self.path / 'input.txt'
         replay.write_text('cod2-replay 1\nprivate-replay-data\n')

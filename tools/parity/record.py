@@ -15,6 +15,7 @@ import zipfile
 from compare import read_players, read_trace, validate_players
 
 STOCK_GAMETYPES = ('dm', 'tdm', 'sd', 'ctf', 'hq')
+TEST_SCRIPT_ARCHIVE = 'zzz_oracle.iwd'
 
 # A CoD2x engine asks CoD2x's own services at every start; a test points it at a local stand-in.
 os.environ.setdefault('COD2X_TEST_SERVICE_URL', 'http://127.0.0.1:9')
@@ -80,6 +81,13 @@ oracleTestClient(team)
     return [(member, script), (teams_member, teams)]
 
 
+def pack_test_scripts(path, scripts):
+    """Use fixed ZIP entry metadata so both engines can load the same archive."""
+    with zipfile.ZipFile(path, 'x') as archive:
+        for member, script in scripts:
+            archive.writestr(zipfile.ZipInfo(member), script, compress_type=zipfile.ZIP_DEFLATED)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
@@ -97,6 +105,8 @@ def main():
     parser.add_argument('--players', action='store_true', help='record raw player fields in players.txt')
     parser.add_argument('--clients', type=int, metavar='N', help='request N test clients; requires --players')
     parser.add_argument('--fixture-script', type=Path, help='local GSC defining oracleFixture for the test clients')
+    parser.add_argument('--pack-test-scripts', action='store_true',
+                        help='load test-client overrides from an IWD; requires --clients')
     commands = parser.add_mutually_exclusive_group()
     commands.add_argument('--commands-record', action='store_true', help='record commands in usercmds.txt')
     commands.add_argument('--replay', type=Path, help='replay commands from this file')
@@ -111,6 +121,8 @@ def main():
         parser.error('--clients requires --players and a count from 1 to 64')
     if args.fixture_script is not None and args.clients is None:
         parser.error('--fixture-script requires --clients')
+    if args.pack_test_scripts and args.clients is None:
+        parser.error('--pack-test-scripts requires --clients')
     replay = args.replay.resolve() if args.replay else None
     if replay is not None and (not replay.is_file() or not replay.stat().st_size):
         parser.error('--replay needs a nonempty command stream')
@@ -130,10 +142,16 @@ def main():
     profile.mkdir(parents=True)
     (profile.parent / 'active.txt').write_text('default\n')
     if bootstrap is not None:
-        for member, script in bootstrap:
-            target = home / 'main' / member
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(script)
+        main = home / 'main'
+        if args.pack_test_scripts:
+            pack_test_scripts(main / TEST_SCRIPT_ARCHIVE, bootstrap)
+            bootstrap_files = [TEST_SCRIPT_ARCHIVE]
+        else:
+            bootstrap_files = [member for member, _ in bootstrap]
+            for member, script in bootstrap:
+                target = main / member
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(script)
     command = [str(binary), '+set', 'fs_basepath', f'"{data}"', '+set', 'fs_homepath', f'"{home}"',
                '+set', 'fs_game', '""', '+set', 'dedicated', '1' if args.dedicated else '0',
                '+set', 'logfile', '2', '+set', 'sv_punkbuster', '0',
@@ -170,7 +188,7 @@ def main():
     if args.clients is not None:
         metadata['clients'] = args.clients
         bootstrap_root = home if args.home else Path('home')
-        metadata['testclients_bootstrap'] = [str(bootstrap_root / 'main' / member) for member, _ in bootstrap]
+        metadata['testclients_bootstrap'] = [str(bootstrap_root / 'main' / member) for member in bootstrap_files]
     if args.fixture_script is not None:
         metadata['fixture_script_sha256'] = sha256(args.fixture_script)
     if args.commands_record:
