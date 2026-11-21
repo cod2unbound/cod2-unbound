@@ -163,7 +163,7 @@ struct SetupOrderButton: View {
         let discover = discover
         NativeMenu.popUp(discover.availableOrders.map { order in
             NativeMenu.Item(title: order.title, checked: discover.activeOrder == order) { discover.setupOrder = order }
-        }, below: view, footnote: discover.orderNote, footnoteWidth: 260)
+        }, below: view)
     }
 }
 

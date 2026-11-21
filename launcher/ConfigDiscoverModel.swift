@@ -695,8 +695,6 @@ extension ConfigImportPresentation {
         guard activeOrder != .featuredFirst, let popularity, let count = popularityCount(for: id) else { return nil }
         return PopularityWording.figure(count, order: activeOrder, days: popularity.periodDays)
     }
-    /// The Order menu's note.
-    var orderNote: String { PopularityWording.note(days: popularity?.periodDays ?? 30) }
 
     /// The setups the front page's banner pages through: the first featured ones, in the index's order.
     var heroes: [ConfigDirectoryEntry] {
@@ -988,8 +986,9 @@ extension ConfigImportPresentation {
 }
 
 /// Every word Player Setups shows about usage figures, in one place (DiscoverSorted board, approved
-/// 2026-11-21; the owner may still change how much is said here). Usage data itself is only explained
-/// in setup, its question sheet, See What’s Sent and Settings › Privacy.
+/// 2026-11-21). Counts are stated as plain facts: the owner decided on 2026-11-21 that Player Setups
+/// never says where they come from or how they are gathered (no source, no threshold, no menu note).
+/// Usage data itself is only explained in setup, its question sheet, See What’s Sent and Settings › Privacy.
 enum PopularityWording {
     /// Set false to keep the ordering but show no figure on the cards (each keeps its source line).
     static let figuresOnCards = true
@@ -1001,10 +1000,6 @@ enum PopularityWording {
     static func figure(_ count: Int, order: ConfigSetupOrder, days: Int) -> String? {
         guard figuresOnCards else { return nil }
         return "\(order == .mostImported ? "Imported" : "Viewed") \(count) times in the last \(period(days))"
-    }
-    /// The Order menu's closing note.
-    static func note(days: Int) -> String {
-        "In the last \(period(days)), from players who share usage data. A setup used fewer than 5 times shows no figure and keeps the catalogue’s order."
     }
     private static func period(_ days: Int) -> String { days == 1 ? "day" : "\(days) days" }
 }

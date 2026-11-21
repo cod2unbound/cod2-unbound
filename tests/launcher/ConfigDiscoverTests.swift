@@ -306,11 +306,12 @@ import Darwin
         require(discover.setups.map(\.id) == ["player-3", "player-5", "player-1", "player-2", "player-4"],
                 "imports rank visible figures first, with catalogue order for everything without a figure")
         require(discover.popularityCount(for: "player-2") == nil && discover.popularity?.periodDays == 30, "only public import figures are exposed")
-        // DiscoverSorted board: the status line, each card's figure, no figure under 5, the menu's note.
+        // DiscoverSorted board: the status line, each card's figure, no figure under 5; nothing says where counts come from.
         require(discover.orderStatus(filtered: false) == "5 setups, the most imported in the last 30 days first", "the sorted status line")
         require(discover.figureLine(for: "player-3") == "Imported 12 times in the last 30 days", "a card's figure")
         require(discover.figureLine(for: "player-2") == nil && discover.figureLine(for: "player-4") == nil, "no figure under 5 or without one")
-        require(discover.orderNote.hasPrefix("In the last 30 days, from players who share usage data.") && discover.orderNote.contains("fewer than 5 times"), "the Order menu's note")
+        let shown = [discover.orderStatus(filtered: false), discover.figureLine(for: "player-3")].compactMap { $0 }.joined(separator: " ").lowercased()
+        require(!["usage", "players", "share", "posthog", "analytics", "fewer than"].contains { shown.contains($0) }, "counts carry no source or threshold")
         require(ConfigSetupOrder.allCases.map(\.title) == ["Featured First", "Most Imported", "Most Viewed"], "the Order menu's items")
         discover.setupOrder = .mostViewed
         require(discover.setups.map(\.id) == ["player-5", "player-1", "player-2", "player-3", "player-4"],

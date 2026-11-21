@@ -388,8 +388,9 @@ Viewed, over the publication's period (30 days). Ordered by use, the status line
 card with a figure shows “Imported 64 times in the last 30 days” instead of its source; a setup
 under 5 shows no figure and keeps the catalogue's order. The pop-up offers only the orders the
 published figures can honour, and none at all without a figures file: Player Setups then looks
-exactly as it does without the feature. All its words about figures are in `PopularityWording`
-(`ConfigDiscoverModel.swift`).
+exactly as it does without the feature. Counts are plain facts: Player Setups never says where they
+come from or how they are gathered (the threshold above is for developers, not shown to players).
+All its words about figures are in `PopularityWording` (`ConfigDiscoverModel.swift`).
 
 ### Setup links from the website
 
