@@ -83,7 +83,7 @@ void CG_DrawOffHandName(rectDef_s *rect, struct Font_s *font, float scale, vec_t
 
     hud = hud_fade_offhand;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     time = (int)__builtin_rintf(hud->current.value * 1000.0f);
 #else
     time = (int)floorf(hud->current.value * 1000.0f + 0.5f);
@@ -216,7 +216,7 @@ void CG_DrawOffHandIcon(rectDef_s *rect, float scale, vec_t *color, MaterialHand
 
     hud = hud_fade_offhand;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     time = (int)__builtin_rintf(hud->current.value * 1000.0f);
 #else
     time = (int)floorf(hud->current.value * 1000.0f + 0.5f);
@@ -291,7 +291,7 @@ void CG_DrawOffHandHighlight(rectDef_s *rect, float scale, vec_t *color, Materia
 
     hud = hud_fade_offhand;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     time = (int)__builtin_rintf(hud->current.value * 1000.0f);
 #else
     time = (int)floorf(hud->current.value * 1000.0f + 0.5f);
@@ -369,7 +369,7 @@ void CG_DrawOffHandAmmo(rectDef_s *rect, struct Font_s *font, float scale, vec_t
 
     hud = hud_fade_offhand;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     time = (int)__builtin_rintf(hud->current.value * 1000.0f);
 #else
     time = (int)floorf(hud->current.value * 1000.0f + 0.5f);

@@ -106,7 +106,7 @@ static inline dvar_t *dvar_get_ptr(byte *dvar_pp)
 
 static inline int float_seconds_to_ms(float val)
 {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     return (int)__builtin_rintf(val * 1000.0f);
 #else
     return (int)floorf(val * 1000.0f + 0.5f);
@@ -445,7 +445,7 @@ qboolean CG_DrawShellShockSavedScreenBlend(const shellshock_parms_t *parms, int 
     blend = fadeIn;
     if (timeLeft < fadeDuration) {
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         blend = (int)__builtin_rintf((float)fadeIn * ((float)timeLeft / (float)fadeDuration));
 #elif defined(COD2_X64)
         blend = (int)floorf((float)fadeIn * ((float)timeLeft / (float)fadeDuration) + 0.5f);

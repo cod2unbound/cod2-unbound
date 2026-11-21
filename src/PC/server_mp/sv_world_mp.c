@@ -377,7 +377,7 @@ void SV_LinkEntity(gentity_t *gEnt)
     }
 
     for (i = 0; i < 3; ++i) {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         float rounded = (float)(int)__builtin_rintf(angles[i]);
 #else
         float rounded = (float)(int)floorf(angles[i] + 0.5f);

@@ -1531,7 +1531,7 @@ static inline int CG_RoundFPS(float value)
     __asm fistp result
 
     return result;
-#elif defined(COD2_APPLE_SDK)
+#elif COD2_APPLE_SDK
     return (int)__builtin_rintf(value);
 #else
     return (int)floorf(value + 0.5f);
@@ -2623,7 +2623,7 @@ unsigned int CG_Draw2D(void)
         CG_Draw2D_DrawBottomOverlays(cg);
         return 0;
     } else {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         float notifyY = __builtin_rintf(cgs->compassY -
                                (cg_hudCompassSize->current.value - 1.0f) * cgs->compassHeight + 12.0f);
 #else

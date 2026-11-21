@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #endif
 #include "common_types.h"
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
 #include "PC/universal/win_sort.h"
 #endif
 #if defined(COD2_X64)
@@ -215,7 +215,7 @@ static int CompareSortedEffects(const void *e0, const void *e1)
     if (result)
         return result;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     return (((const SortedEffect *)e1)->distSq > ((const SortedEffect *)e0)->distSq) ? 1 : -1;
 #elif defined(COD2_X64)
     return (((const SortedEffect *)e1)->distSq > ((const SortedEffect *)e0)->distSq) -
@@ -687,7 +687,7 @@ static void FX_CalcOriginAndAxis_impl(byte *prim, vec_t *orgOut, vec3_t *ax)
         }
     } else if (flags & 4) {
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         float height = FxRange_GetVal((const FxRange *)(((char *)primTemp + offsetof(PrimitiveTemplate, mHeight))));
         float rndHeight = flrand(-0.5f, 0.5f);
 #else
@@ -956,7 +956,7 @@ void FX_DrawAll(void)
             float dist = Vec3DistanceSq(effectClusters[i].origin, theFxHelper->mCamera.vieworg);
             *(float *)(sortedClusters + i * 8 + 4) = dist;
         }
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         Com_SortLikeWindows(sortedClusters, effectClusterCount, 8, CompareSortedClusters);
 #else
         qsort(sortedClusters, effectClusterCount, 8, CompareSortedClusters);
@@ -968,7 +968,7 @@ void FX_DrawAll(void)
             sortOrder[cid] = i;
         }
         clusterSort = sortOrder;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         Com_SortLikeWindows(visibleEffectsNonBolt, effectCount, sizeof(visibleEffectsNonBolt[0]), CompareSortedEffects);
 #elif defined(COD2_X64)
         qsort(visibleEffectsNonBolt, effectCount, sizeof(visibleEffectsNonBolt[0]), CompareSortedEffects);

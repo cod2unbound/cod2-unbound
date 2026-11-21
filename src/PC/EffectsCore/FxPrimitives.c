@@ -993,7 +993,7 @@ static inline __attribute__((always_inline)) int FloatToByte(float f)
 
 static inline __attribute__((always_inline)) int FlashColorByte(float f)
 {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     return FxNative_FlashColorByte(FxNative_FloatToInt(__builtin_rintf(f * 255.0f)));
 #elif defined(COD2_X64)
     return FxNative_FlashColorByte(FxNative_FloatToInt(floorf(f * 255.0f + 0.5f)));
@@ -1947,7 +1947,7 @@ void Emitter_UpdateEmitFx(const Emitter *_this, vec_t *bindVelocity, const orien
         float denominator = (speedSq + speedSq) * seconds;
         if (denominator != 0.0f) {
             float correction = (speedSq * secondsSq - stepSq) / denominator;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
             float rounded = __builtin_rintf(correction * 1000.0f);
 #else
             float rounded = floorf(correction * 1000.0f + 0.5f);

@@ -10,7 +10,7 @@
 #include "../qcommon/cod2x.h"
 #endif
 #include "common_types.h"
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
 #include "PC/universal/windows_number.h"
 #endif
 #if COD2_APPLE_SDK
@@ -2229,7 +2229,7 @@ void CL_PlayLogo_f(void)
     SND_FadeAllSounds(1.0f, 0);
 
     name = Cmd_Argv(1);
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     cls.logo.fadein = (int)Q_WindowsScaleDoubleToInt(atof(Cmd_Argv(2)), 1000);
     cls.logo.duration = (int)Q_WindowsScaleDoubleToInt(atof(Cmd_Argv(3)), 1000);
     cls.logo.fadeout = (int)Q_WindowsScaleDoubleToInt(atof(Cmd_Argv(4)), 1000);

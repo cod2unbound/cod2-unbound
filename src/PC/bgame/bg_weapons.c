@@ -3485,7 +3485,7 @@ static void BG_AddWeaponIdleAngles(weaponState_t *ws, vec_t *angles, const Weapo
     if (weapDef->overlayReticle)
         amount *= 1.0f - f;
 
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     /* Windows 1.3 0x4f606c: preserve multiplication order before truncation. */
     *ws->weapIdleTime += (int)((idleSpeed * ws->frametime) * 1000.0f);
 #elif defined(COD2_X64)
@@ -3752,7 +3752,7 @@ static void BG_AddViewIdle(viewState_t *vs, vec_t *angles, const WeaponDef *weap
         BG_TrackViewIdleFactor(vs, idleFactor);
 
     amount = idleAmount * vs->fLastIdleFactor * f * ps->holdBreathScale;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     /* The scoped view also applies hold-breath scaling before milliseconds. */
     *vs->weapIdleTime += (int)(((idleSpeed * vs->frametime) * ps->holdBreathScale) * 1000.0f);
 #elif defined(COD2_X64) && COD2_X64

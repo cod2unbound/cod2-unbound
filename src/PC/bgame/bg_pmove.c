@@ -988,7 +988,7 @@ static void PM_ACCELERATE_ABI PM_Accelerate(playerState_t *ps, pml_t *pml, const
 #if defined(COD2_X64)
     /* Original MAXSS selects wishspeed on equal operands, including signed zero. */
     float speed = stopspeed->current.value > wishspeed ? stopspeed->current.value : wishspeed;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
     /* Windows 1.3 PM_Accelerate multiplies speed by frame time before acceleration. */
     accelspeed = fminf(addspeed, (speed * pml->frametime) * accel);
 #else
@@ -2015,7 +2015,7 @@ restart_lerp: {
 
     ps->viewHeightLerpTime =
         pm->cmd.serverTime -
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         /* Windows 1.3 0x517821: multiply duration before percent conversion. */
         (int)(((float)newDuration * (float)iLerpFrac) * 0.01f);
 #else
@@ -2473,13 +2473,13 @@ static void PM_REGPARM2_ABI PM_GroundTrace(pmove_t *pm, pml_t *pml)
         float grav = (float)ps->gravity;
         float acc = -grav;
         float halfg = acc * 0.5f;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         float disc = vz * vz - ((pml->previous_origin[2] - ps->origin[2]) * halfg) * 4.0f;
 #else
         float disc = vz * vz + (pml->previous_origin[2] - ps->origin[2]) * (halfg * -4.0f);
 #endif
         if (!(disc < 0.0f)) {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
             float t = (-vz - sqrtf(disc)) / (halfg + halfg);
 #else
             float t = (float)((-(double)vz - sqrt((double)disc)) / (double)(halfg + halfg));
@@ -2503,7 +2503,7 @@ static void PM_REGPARM2_ABI PM_GroundTrace(pmove_t *pm, pml_t *pml)
                 }
             }
             if (!(fallHeight <= 12.0f)) {
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
                 viewDip = PM_CrashLandFloatToInt(((fallHeight - 12.0f) * 0.03846153989434242f + 1.0f) * 4.0f);
 #else
                 viewDip = PM_CrashLandFloatToInt((fallHeight - 12.0f) / 26.0f * 4.0f + 4.0f);
@@ -2516,7 +2516,7 @@ static void PM_REGPARM2_ABI PM_GroundTrace(pmove_t *pm, pml_t *pml)
                 if (damage <= 99 && !(pml->groundTrace.surfaceFlags & 2)) {
                     int stun = damage * 35 + 500;
                     if (stun > 2000) stun = 2000;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
                     scale = stun <= 500 ? 0.5f : (stun >= 1500 ? 0.2f : 0.5f - ((float)stun - 500.0f) * 0.001f * 0.3f);
 #else
                     scale = stun <= 500 ? 0.5f : (stun >= 1500 ? 0.2f : ((float)stun - 500.0f) / 1000.0f * -0.3f + 0.5f);

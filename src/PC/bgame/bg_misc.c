@@ -656,7 +656,7 @@ void BG_EvaluateTrajectoryDelta(const trajectory_t *tr, int atTime, vec_t *resul
 
     case TR_SINE:
         elapsed = (float)(atTime - tr->trTime) / (float)tr->trDuration;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         scale = cosf(elapsed * 6.2831854820251465f) * 0.5f;
 #else
         scale = (float)cos((double)elapsed * 3.141592653589793 * 2.0) * 0.5f;
@@ -1119,7 +1119,7 @@ void BG_EvaluateTrajectory(const trajectory_t *tr, int atTime, vec_t *result)
 
     case TR_SINE:
         elapsed = (float)(atTime - tr->trTime) / (float)tr->trDuration;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         {
             /* FSIN retains extra precision until the first x87 multiply. */
             double phase = sin((double)(elapsed * 6.2831854820251465f));
@@ -1137,7 +1137,7 @@ void BG_EvaluateTrajectory(const trajectory_t *tr, int atTime, vec_t *result)
         elapsed = (float)(atTime - tr->trTime) * 0.001f;
         result[0] = tr->trBase[0] + tr->trDelta[0] * elapsed;
         result[1] = tr->trBase[1] + tr->trDelta[1] * elapsed;
-#if defined(COD2_APPLE_SDK)
+#if COD2_APPLE_SDK
         result[2] = (tr->trBase[2] + tr->trDelta[2] * elapsed) - (elapsed * elapsed) * 400.0f;
 #else
         result[2] = tr->trBase[2] + tr->trDelta[2] * elapsed + -400.0f * elapsed * elapsed;
