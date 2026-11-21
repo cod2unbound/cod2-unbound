@@ -144,7 +144,13 @@ public sealed partial class ConfigsPage : Page
             Caption("Its settings, binds and history go with it. Your other loadouts aren’t affected."), "Delete loadout");
         dialog.DefaultButton = ContentDialogButton.None;
         dialog.PrimaryButtonStyle = StyleFor("NegativeButton");
-        dialog.Opened += (sender, _) => FindButton(sender, "Cancel")?.Focus(FocusState.Keyboard);
+        // Keep Cancel as the only available action during ContentDialog's initial focus pass.
+        dialog.IsPrimaryButtonEnabled = false;
+        dialog.Opened += (sender, _) => sender.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            dialog.IsPrimaryButtonEnabled = true;
+            FindButton(sender, "Cancel")?.Focus(FocusState.Keyboard);
+        });
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;
         removed = (profile.Id, model.Delete(profile.Id));
