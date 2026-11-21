@@ -55,7 +55,7 @@ def run_server(exe, cfg, edition, env, run):
         "SYSDIFF_MAXFRAMES": "200",
     }
     port = 29676
-    args = [WINDOWS / "wine-binary.sh", "+set", "fs_basepath", "/data",
+    args = [WINDOWS / "wine-binary.sh", "+set", "fs_basepath", windows_path("/data"),
             "+set", "fs_homepath", str(instance), "+set", "dedicated", "1",
             "+set", "net_ip", "127.0.0.1", "+set", "net_port", str(port),
             "+exec", "server.cfg", "+map", helpers["MAP"]]
@@ -66,17 +66,20 @@ def run_server(exe, cfg, edition, env, run):
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                     sock.settimeout(0.5)
                     sock.connect(("127.0.0.1", port))
-                    helpers["query_server"](sock, process, b"getstatus", b"statusResponse",
-                                            b"g_gametype", b"118" if edition == "original" else b"120")
+                    status = helpers["query_server"](
+                        sock, process, b"getstatus", b"statusResponse", b"g_gametype",
+                        b"118" if edition == "original" else b"120",
+                    )
+                    hostname = status.get(b"sv_hostname")
+                    if hostname != b"CoD2 Unbound LAN":
+                        raise ValueError(f"Expected the sample server hostname, got {hostname!r}")
                 if process.wait(timeout=90):
                     raise ValueError(f"Server exited with {process.returncode}")
             finally:
                 if process.poll() is None:
                     process.kill()
                     process.wait()
-    if "execing server.cfg" not in (run / "console.log").read_text(errors="replace"):
-        raise ValueError("The dedicated server did not read the sample config")
-    print(f"PASS {edition} started from {exe.parent} and exited cleanly", flush=True)
+    print(f"PASS {edition} used the sample config from {exe.parent} and exited cleanly", flush=True)
 
 
 def verify_portable(artifacts, work, sample):
@@ -128,8 +131,9 @@ def verify_installer(artifacts, work, previous, run):
     old_version = previous.name.split("-")[2]
     version = setup.name.split("-")[2]
     helper = run / "check-key.exe"
-    subprocess.run(["x86_64-w64-mingw32-gcc", "-I/src/src", WINDOWS / "path-test-key.c",
-                    "/src/src/win32/win_key.c", "-ladvapi32", "-o", helper], check=True)
+    subprocess.run(["x86_64-w64-mingw32-gcc", "-DCOD2_WINDOWS_NATIVE=1", "-I/src/src",
+                    "-I/src/src/headers", WINDOWS / "path-test-key.c", "/src/src/win32/win_key.c",
+                    "-ladvapi32", "-o", helper], check=True)
     signer = Signer(None, None, work / "test-code.pem", work / "test-tsa.pem",
                     run / "signature-verification.log")
     signer.verify(setup)

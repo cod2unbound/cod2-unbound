@@ -60,7 +60,7 @@ def query_server(sock, process, query, response, gametype_key, protocol):
             if info.get(key) != value:
                 raise ValueError(f"{query.decode()}: expected {key}={value}, got {info.get(key)}")
         print(f"{query.decode()} answered for {MAP}, DM, protocol {protocol.decode()}", flush=True)
-        return
+        return info
     raise ValueError(f"No {response.decode()} for {MAP}")
 
 
