@@ -1587,6 +1587,9 @@ void CL_Input(void)
     if ((*(clientConnection_t **)imp_clc)->state != 8)
         return;
     CL_SyncGpu();
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void WinInput_SampleMouse(void); WinInput_SampleMouse(); }
+#endif
     CL_SendCmdInternal();
 }
 

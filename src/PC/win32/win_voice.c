@@ -93,7 +93,7 @@ static int count;
 static Bool recording;
 static Bool playing;
 static recordingSample_t *currentRecordingSample;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
 static Bool voice_recording_initialized;
 #endif
 
@@ -141,6 +141,14 @@ Bool Voice_Init(void)
         if (!Sound_Init(0))
             return 0;
     } else
+#elif COD2_WINDOWS_NATIVE && COD2_X64
+    voice_recording_initialized = Record_Init(0, 0);
+    if (!Sound_Init(0)) {
+        if (voice_recording_initialized)
+            Record_Shutdown();
+        voice_recording_initialized = 0;
+        return 0;
+    }
 #elif COD2_WINDOWS_NATIVE
     {
         /* DirectSound binds to the game window. */
@@ -161,7 +169,7 @@ Bool Voice_Init(void)
     Encode_Init(*freq);
     Decode_Init(*freq);
 
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     if (voice_recording_initialized) {
 #endif
     mixerGetRecordSource(old_rec_source);
@@ -175,7 +183,7 @@ Bool Voice_Init(void)
     mixerSetRecordLevel("Mic", level);
 
     mixerSetMicrophoneMute(winvoice_mic_mute->current.enabled);
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     }
 #endif
 
@@ -224,7 +232,7 @@ void Voice_Playback(void)
     if (!g_voice_initialized)
         return;
 
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     if (voice_recording_initialized) {
 #endif
     level = (unsigned short)(int)winvoice_mic_reclevel->current.value;
@@ -233,7 +241,7 @@ void Voice_Playback(void)
         level = (unsigned short)(int)winvoice_mic_reclevel->current.value;
         mixerSetRecordLevel("Mic", level);
     }
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     }
 #endif
 
@@ -255,7 +263,10 @@ void Voice_IncomingVoiceData(int talker, unsigned char *data, int packetDataSize
     int decodedLen;
     FILE *fptr;
 
-#if defined(__APPLE__) && defined(COD2_X64)
+#if COD2_WINDOWS_NATIVE
+    if (!g_voice_initialized || (unsigned)talker >= 64)
+        return;
+#elif defined(__APPLE__) && defined(COD2_X64)
     if (!g_voice_initialized)
         return;
 #endif
@@ -323,7 +334,7 @@ void Voice_Shutdown(void)
         recording = 0;
     }
 
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     if (voice_recording_initialized)
 #endif
     Record_Shutdown();
@@ -331,13 +342,13 @@ void Voice_Shutdown(void)
     Decode_Shutdown();
     Sound_Shutdown();
 
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     if (voice_recording_initialized) {
 #endif
     mixerSetMicrophoneMute(1);
     mixerSetRecordLevel("Mic", (unsigned short)mic_old_reclevel);
     mixerSetRecordSource(old_rec_source);
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     }
     voice_recording_initialized = 0;
 #endif
@@ -351,7 +362,7 @@ int Voice_GetLocalVoiceData(ClientVoicePacket_t *voiceData)
 
     if (!g_voice_initialized)
         return 0;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
     if (!voice_recording_initialized)
         return 0;
 #endif

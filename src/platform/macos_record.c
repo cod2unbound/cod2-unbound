@@ -11,12 +11,17 @@
  * and the frame thread only says what it wants and reads the captured sound.
  * The worker also closes the queue when the system's default input changes
  * or the queue stops by itself; the usual retry then opens the new device. */
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && COD2_X64
 #include "macos_record.h"
+#if COD2_WINDOWS_NATIVE
+#include <SDL2/SDL.h>
+#else
 #include <AudioToolbox/AudioToolbox.h>
 #include <CoreAudio/CoreAudio.h>
+#endif
 #include <errno.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -64,9 +69,14 @@ static int record_quit;
 
 /* Owned by the worker thread, which is the only one to call Core Audio
  * functions that can wait. */
-static AudioQueueRef record_queue;
 static double record_next_attempt;
+#if COD2_WINDOWS_NATIVE
+static SDL_AudioDeviceID record_queue;
+static int record_audio_initialized;
+#else
+static AudioQueueRef record_queue;
 static int record_listening;
+#endif
 
 static pthread_t record_thread;
 static int record_thread_started;
@@ -78,10 +88,6 @@ static int record_level = 0xffff;
 static void *record_monitor;
 static struct { int unused; } record_sample;
 
-static const AudioObjectPropertyAddress record_default_input = {
-    kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain
-};
-
 static double RecordSeconds(void)
 {
     struct timespec now;
@@ -89,12 +95,8 @@ static double RecordSeconds(void)
     return (double)now.tv_sec + (double)now.tv_nsec * 1e-9;
 }
 
-static void RecordInput(void *user, AudioQueueRef queue, AudioQueueBufferRef buffer, const AudioTimeStamp *start,
-                        UInt32 packets, const AudioStreamPacketDescription *descriptions)
+static int RecordStore(const int16_t *pcm, size_t samples)
 {
-    (void)user; (void)start; (void)packets; (void)descriptions;
-    const int16_t *pcm = buffer->mAudioData;
-    size_t samples = buffer->mAudioDataByteSize / sizeof(int16_t);
     pthread_mutex_lock(&record_mutex);
     int running = record_running;
     for (size_t i = 0; running && i < samples; ++i) {
@@ -106,6 +108,25 @@ static void RecordInput(void *user, AudioQueueRef queue, AudioQueueBufferRef buf
         record_ring[(record_read + record_count++) % RECORD_RING_SAMPLES] = pcm[i];
     }
     pthread_mutex_unlock(&record_mutex);
+    return running;
+}
+
+#if COD2_WINDOWS_NATIVE
+static void SDLCALL RecordInput(void *unused, Uint8 *bytes, int size)
+{
+    (void)unused;
+    RecordStore((const int16_t *)bytes, (size_t)size / sizeof(int16_t));
+}
+#else
+static const AudioObjectPropertyAddress record_default_input = {
+    kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain
+};
+
+static void RecordInput(void *user, AudioQueueRef queue, AudioQueueBufferRef buffer, const AudioTimeStamp *start,
+                        UInt32 packets, const AudioStreamPacketDescription *descriptions)
+{
+    (void)user; (void)start; (void)packets; (void)descriptions;
+    int running = RecordStore(buffer->mAudioData, buffer->mAudioDataByteSize / sizeof(int16_t));
     if (running)
         AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
 }
@@ -139,6 +160,7 @@ static OSStatus RecordDefaultInputChanged(AudioObjectID object, UInt32 count, co
     RecordReset();
     return noErr;
 }
+#endif
 
 static void RecordCloseDevice(void)
 {
@@ -147,9 +169,14 @@ static void RecordCloseDevice(void)
     pthread_mutex_lock(&record_mutex);
     record_running = 0;
     pthread_mutex_unlock(&record_mutex);
+#if COD2_WINDOWS_NATIVE
+    SDL_CloseAudioDevice(record_queue);
+    record_queue = 0;
+#else
     AudioQueueStop(record_queue, true);
     AudioQueueDispose(record_queue, true);
     record_queue = NULL;
+#endif
     pthread_mutex_lock(&record_mutex);
     record_read = record_count = 0;
     pthread_mutex_unlock(&record_mutex);
@@ -157,6 +184,27 @@ static void RecordCloseDevice(void)
 
 static int RecordOpenDevice(void)
 {
+#if COD2_WINDOWS_NATIVE
+    /* The 1.3 DirectSound capture format. SDL converts from the default
+     * Windows input endpoint before the shared Speex path takes the samples. */
+    SDL_AudioSpec format = {
+        .freq = g_sound_recordFrequency, .format = AUDIO_S16SYS, .channels = 1,
+        .samples = 256, .callback = RecordInput
+    };
+    record_queue = SDL_OpenAudioDevice(NULL, SDL_TRUE, &format, NULL, 0);
+    if (!record_queue) {
+        static int reported;
+        if (!reported) {
+            fprintf(stderr, "Voice chat: the microphone could not be opened (%s).\n", SDL_GetError());
+            reported = 1;
+        }
+        return 0;
+    }
+    pthread_mutex_lock(&record_mutex);
+    record_running = 1;
+    pthread_mutex_unlock(&record_mutex);
+    SDL_PauseAudioDevice(record_queue, 0);
+#else
     AudioStreamBasicDescription format = { 0 };
     format.mSampleRate = g_sound_recordFrequency > 0 ? g_sound_recordFrequency : 8192;
     format.mFormatID = kAudioFormatLinearPCM;
@@ -195,6 +243,7 @@ static int RecordOpenDevice(void)
         }
         return 0;
     }
+#endif
     return 1;
 }
 
@@ -214,9 +263,11 @@ static void RecordWaitUntil(double when)
 static void *RecordWorker(void *unused)
 {
     (void)unused;
+#if !COD2_WINDOWS_NATIVE
     /* The first call into the audio hardware layer can itself be slow. */
     record_listening = AudioObjectAddPropertyListener(kAudioObjectSystemObject, &record_default_input,
                                                       RecordDefaultInputChanged, NULL) == noErr;
+#endif
     pthread_mutex_lock(&record_mutex);
     while (!record_quit) {
         int release = record_queue && (record_reset || !record_keep);
@@ -241,17 +292,37 @@ static void *RecordWorker(void *unused)
             record_next_attempt = now + RECORD_RETRY_SECONDS;
             record_request = 0;
             pthread_mutex_unlock(&record_mutex);
+#if COD2_WINDOWS_NATIVE
+            RecordOpenDevice();
+#else
             if (MacMicrophone_Allowed())
                 RecordOpenDevice();
+#endif
             pthread_mutex_lock(&record_mutex);
             continue;
         }
+#if COD2_WINDOWS_NATIVE
+        if (record_queue) {
+            /* WASAPI follows default endpoint changes. Reopen if SDL reports
+             * permanent loss, such as removing the only input device. */
+            pthread_mutex_unlock(&record_mutex);
+            int removed = SDL_GetAudioDeviceStatus(record_queue) == SDL_AUDIO_STOPPED;
+            pthread_mutex_lock(&record_mutex);
+            if (removed)
+                record_reset = 1;
+            else if (!record_quit && record_keep)
+                RecordWaitUntil(RecordSeconds() + RECORD_RETRY_SECONDS);
+            continue;
+        }
+#endif
         pthread_cond_wait(&record_wake, &record_mutex);
     }
     pthread_mutex_unlock(&record_mutex);
+#if !COD2_WINDOWS_NATIVE
     if (record_listening)
         AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &record_default_input, RecordDefaultInputChanged, NULL);
     record_listening = 0;
+#endif
     RecordCloseDevice();
     return NULL;
 }
@@ -298,7 +369,19 @@ int DSOUNDRecord_Init(int initialize, const void *handle)
     (void)initialize;
     (void)handle;
     g_currently_recording = 0;
+#if COD2_WINDOWS_NATIVE
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+        return 0;
+    record_audio_initialized = 1;
+#endif
     RecordStartWorker();
+#if COD2_WINDOWS_NATIVE
+    if (!record_thread_started) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        record_audio_initialized = 0;
+        return 0;
+    }
+#endif
     g_recording_initialized = 1;
     return 1;
 }
@@ -329,6 +412,12 @@ int DSOUNDRecord_Stop(void *sample)
 void DSOUNDRecord_Shutdown(void)
 {
     RecordStopWorker();
+#if COD2_WINDOWS_NATIVE
+    if (record_audio_initialized) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        record_audio_initialized = 0;
+    }
+#endif
     g_recording_initialized = g_currently_recording = 0;
 }
 

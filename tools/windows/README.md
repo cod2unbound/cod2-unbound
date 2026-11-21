@@ -138,18 +138,19 @@ compile-only.
   the auto-update check and IPX.
 - **The CD key** comes from the registry as on Windows 1.3 (the 32-bit view and the
   VirtualStore), then from the preferences file. **Preferences** use a file under `%HOME%`.
-- **Voice chat.** The client is built without it (`src/win32/win_voice_none.c`): the DirectSound
-  layer of Windows 1.3 is not in this source tree yet. A checkout that has one lists its files in
-  `cmake/windows-voice.cmake` as `COD2_WIN_VOICE_C`, and the build uses them.
-
 ## Sound
 
 Windows uses the same mixer as macOS, `src/platform/macos_audio.c`, with SDL playing the output and
 reading WAV, and `third_party/minimp3` reading MP3. The original loads `mss32.dll`, which is
 closed-source and 32-bit only.
 
+The x64 Original 1.3 client uses SDL for voice capture and the shared Speex and playback paths.
+It opens the default microphone when you use push-to-talk. The CoD2x client follows the upstream
+release with voice chat disabled. The i686 matrix probe uses a stub for voice.
+
 To check sound with no audio hardware, send it to a file with `SDL_AUDIODRIVER=disk` and
-`SDL_DISKAUDIOFILE=sound.raw`. The file is 44.1 kHz stereo 32-bit float.
+`SDL_DISKAUDIOFILE=sound.raw`. The file contains 32-bit float PCM at the mix rate selected by
+`snd_khz`, with mono or stereo selected by `snd_stereo`. The defaults are 44.1 kHz and stereo.
 
 ## The older plain path
 

@@ -41,14 +41,15 @@ if(COD2_WIN32_CLIENT)
   # Sound is the macOS mixer over SDL, in place of the Mac Miles layer.
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/Mac/Tools/(MacDisplay|CAudioRecorder|MacMSS[^/]*)\\.c$")
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/stubs/audio_stubs\\.c$")
-  # Voice is the Windows 1.3 DirectSound layer, in place of the Mac one.
+  # The stock x64 client uses SDL capture and the shared voice playback mixer.
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/Mac/Main/(mac_play_dsound|mac_record_dsound)\\.c$")
-  # The DirectSound layer itself is not in this source tree. A checkout that has one
-  # lists its files in cmake/windows-voice.cmake as COD2_WIN_VOICE_C; without it the
-  # client is built with voice chat off.
   include(${CMAKE_SOURCE_DIR}/cmake/windows-voice.cmake OPTIONAL)
   if(NOT COD2_WIN_VOICE_C)
-    set(COD2_WIN_VOICE_C src/win32/win_voice_none.c)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT COD2_FEATURE_CFLAGS MATCHES "(^| )-DCOD2_CODX=1( |$)")
+      set(COD2_WIN_VOICE_C src/platform/macos_voice.c src/platform/macos_record.c)
+    else()
+      set(COD2_WIN_VOICE_C src/win32/win_voice_none.c)
+    endif()
   endif()
   list(APPEND WIN_TARGET_C src/platform/macos_audio.c ${COD2_WIN_VOICE_C} src/win32/win_window.c)
   # export-begin: codx

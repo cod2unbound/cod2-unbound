@@ -12,6 +12,9 @@
 #include <d3dcompiler.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
+#if COD2_WINDOWS_NATIVE && COD2_CODX
+#include <math.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +23,61 @@
 
 extern SDL_Window *sdl_gl_window;
 extern int MacDisplay_Initialize(void);
+#if COD2_WINDOWS_NATIVE
+extern int Dvar_GetInt(const char *name);
+#endif
+
+#if COD2_WINDOWS_NATIVE && COD2_CODX
+static HMONITOR gammaMonitor;
+static HDC gammaDC;
+static WORD originalGamma[3][256];
+static float appliedGamma;
+static int gammaChanged;
+
+/* CoD2x v1.4.6.8 window.cpp gamma_update/gamma_restore. Windowed gamma
+ * belongs to the current monitor. Exclusive gamma stays with the D3D device. */
+void Win_D3D9_WindowGamma(int focused, float gamma)
+{
+    HMONITOR monitor = NULL;
+    if (focused && sdl_gl_window && !MacDisplay_IsFullscreen() && gamma > 0 && gamma != 1.0f) {
+        SDL_SysWMinfo info;
+        SDL_VERSION(&info.version);
+        if (SDL_GetWindowWMInfo(sdl_gl_window, &info))
+            monitor = MonitorFromWindow(info.info.win.window, MONITOR_DEFAULTTONEAREST);
+    }
+    if (monitor != gammaMonitor) {
+        if (gammaDC) {
+            if (gammaChanged)
+                SetDeviceGammaRamp(gammaDC, originalGamma);
+            DeleteDC(gammaDC);
+        }
+        gammaDC = NULL;
+        gammaChanged = 0;
+        gammaMonitor = monitor;
+        appliedGamma = 1.0f;
+        if (monitor) {
+            MONITORINFOEXA info = { .cbSize = sizeof(info) };
+            if (GetMonitorInfoA(monitor, (MONITORINFO *)&info)) {
+                gammaDC = CreateDCA(NULL, info.szDevice, NULL, NULL);
+                if (gammaDC && !GetDeviceGammaRamp(gammaDC, originalGamma)) {
+                    DeleteDC(gammaDC);
+                    gammaDC = NULL;
+                }
+            }
+        }
+    }
+    if (gammaDC && gamma != appliedGamma) {
+        WORD ramp[3][256];
+        for (int i = 0; i < 256; ++i)
+            ramp[0][i] = ramp[1][i] = ramp[2][i] = (WORD)(pow(i / 255.0, 1.0 / gamma) * 65535.0 + 0.5);
+        if (SetDeviceGammaRamp(gammaDC, ramp))
+            gammaChanged = 1;
+        else
+            fputs("Couldn't apply windowed gamma on the current monitor\n", stderr);
+        appliedGamma = gamma;
+    }
+}
+#endif
 
 typedef IDirect3D9 *(WINAPI *Direct3DCreate9Fn)(UINT sdkVersion);
 typedef HRESULT(WINAPI *D3DCompileFn)(LPCVOID data, SIZE_T size, LPCSTR name, const D3D_SHADER_MACRO *defines,
@@ -41,6 +99,96 @@ void *Win_D3D9_Direct3DCreate9(void)
     return create(D3D_SDK_VERSION);
 }
 
+#if COD2_WINDOWS_NATIVE
+unsigned Win_D3D9_SelectAdapter(void *d3dInterface, int monitorNumber)
+{
+    IDirect3D9 *d3d = d3dInterface;
+    HMONITOR monitor = NULL;
+    if (MacDisplay_Initialize() != 0)
+        return D3DADAPTER_DEFAULT;
+    if (monitorNumber > 0) {
+        SDL_Rect bounds;
+        if (SDL_GetDisplayBounds(monitorNumber - 1, &bounds) == 0) {
+            POINT center = {bounds.x + bounds.w / 2, bounds.y + bounds.h / 2};
+            monitor = MonitorFromPoint(center, MONITOR_DEFAULTTONULL);
+        }
+    } else {
+        RECT saved = {Dvar_GetInt("vid_xpos"), Dvar_GetInt("vid_ypos"), 0, 0};
+        saved.right = saved.left + 1;
+        saved.bottom = saved.top + 1;
+        monitor = MonitorFromRect(&saved, MONITOR_DEFAULTTONULL);
+    }
+    if (monitor) {
+        UINT count = IDirect3D9_GetAdapterCount(d3d);
+        for (UINT adapter = 0; adapter < count; ++adapter)
+            if (IDirect3D9_GetAdapterMonitor(d3d, adapter) == monitor)
+                return adapter;
+    }
+    return D3DADAPTER_DEFAULT;
+}
+
+/* The window the device presents to. It keeps SDL's window (and with it SDL's
+ * input) and has no OpenGL context. Exclusive fullscreen belongs to the device:
+ * the window only loses its border, and SDL never switches modes itself. */
+void *Win_D3D9_PrepareWindow(void *d3dInterface, unsigned adapter, int width, int height,
+                            int fullscreen, int refresh)
+{
+    SDL_SysWMinfo info;
+    MONITORINFO monitor = { .cbSize = sizeof(monitor) };
+    int x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
+    int mode = fullscreen ? MAC_FULLSCREEN : MAC_WINDOWED;
+    int haveMonitor = GetMonitorInfoA(IDirect3D9_GetAdapterMonitor((IDirect3D9 *)d3dInterface, adapter), &monitor);
+
+    if (MacDisplay_Initialize() != 0)
+        return NULL;
+#if COD2_CODX
+    Win_D3D9_WindowGamma(0, 1.0f);
+    if (!fullscreen && haveMonitor && width == monitor.rcMonitor.right - monitor.rcMonitor.left &&
+        height == monitor.rcMonitor.bottom - monitor.rcMonitor.top)
+        mode = MAC_BORDERLESS;
+#endif
+    MacPlatform_ConfigureWindow(width, height, mode, refresh);
+    if (!sdl_gl_window) {
+        sdl_gl_window = SDL_CreateWindow("Call of Duty 2", x, y, width, height,
+                                         SDL_WINDOW_HIDDEN | (mode != MAC_WINDOWED ? SDL_WINDOW_BORDERLESS : 0));
+        if (!sdl_gl_window) {
+            fprintf(stderr, "Couldn't create the game window: %s\n", SDL_GetError());
+            return NULL;
+        }
+    } else {
+        SDL_SetWindowBordered(sdl_gl_window, mode == MAC_WINDOWED ? SDL_TRUE : SDL_FALSE);
+        SDL_SetWindowSize(sdl_gl_window, width, height);
+    }
+    if (mode == MAC_WINDOWED) {
+        int top = 0, left = 0;
+        RECT title = {Dvar_GetInt("vid_xpos"), Dvar_GetInt("vid_ypos"), 0, 0};
+        RECT visible;
+        SDL_GetWindowBordersSize(sdl_gl_window, &top, &left, NULL, NULL);
+        title.right = title.left + width;
+        title.bottom = title.top + (top > 0 ? top : 1);
+        if (haveMonitor && IntersectRect(&visible, &title, &monitor.rcWork)) {
+            x = title.left + left;
+            y = title.top + top;
+        } else if (haveMonitor) {
+            x = monitor.rcWork.left + (monitor.rcWork.right - monitor.rcWork.left - width) / 2;
+            y = monitor.rcWork.top + (monitor.rcWork.bottom - monitor.rcWork.top - height) / 2;
+        }
+    } else if (haveMonitor) {
+        x = monitor.rcMonitor.left;
+        y = monitor.rcMonitor.top;
+    }
+    SDL_SetWindowPosition(sdl_gl_window, x, y);
+    SDL_ShowWindow(sdl_gl_window);
+    SDL_RaiseWindow(sdl_gl_window);
+    SDL_VERSION(&info.version);
+    if (!SDL_GetWindowWMInfo(sdl_gl_window, &info)) {
+        fprintf(stderr, "Couldn't get the game window's handle: %s\n", SDL_GetError());
+        return NULL;
+    }
+    return info.info.win.window;
+}
+
+#else
 /* The window the device presents to. It keeps SDL's window (and with it SDL's
  * input) and has no OpenGL context. Exclusive fullscreen belongs to the device:
  * the window only loses its border, and SDL never switches modes itself. */
@@ -75,6 +223,8 @@ void *Win_D3D9_PrepareWindow(int width, int height, int fullscreen, int refresh)
     }
     return info.info.win.window;
 }
+
+#endif
 
 /* r_init.c describes the presentation in fourteen 32-bit words: width, height,
  * back buffer format and count, multisample type and quality, swap effect,

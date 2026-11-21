@@ -98,22 +98,9 @@ static int mac_relative;
 static int mac_use_raw;
 static float mac_wheel_remainder;
 
-#if COD2_WINDOWS_NATIVE && defined(COD2_X64)
-/* The Windows build reads typed text as code points; the Mac goes through MacText_EncodeUTF8. */
-static unsigned int MacInput_DecodeUTF8(const unsigned char **cursor)
-{
-    const unsigned char *p = *cursor;
-    unsigned int value = *p++;
-    int trailing = value < 0x80 ? 0 : ((value & 0xe0) == 0xc0 ? 1 : ((value & 0xf0) == 0xe0 ? 2 : ((value & 0xf8) == 0xf0 ? 3 : -1)));
-    if (trailing < 0) { *cursor = p; return 0; }
-    value &= trailing == 0 ? 0x7f : ((1u << (6 - trailing)) - 1);
-    for (int i = 0; i < trailing; ++i) {
-        if ((*p & 0xc0) != 0x80) { *cursor = p; return 0; }
-        value = (value << 6) | (*p++ & 0x3f);
-    }
-    *cursor = p;
-    return value;
-}
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_window.h"
+static int win_cursor_mode;
 #endif
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
 #include "platform/cod2x_native_mouse.h"
@@ -183,17 +170,17 @@ static void MacInput_MenuCursor(int x, int y)
         CL_MouseEventAbsolute(x, y, 0, 0);
 }
 
-static void MacInput_MeasureRaw(void)
+static void MacInput_MeasureRaw(int registered)
 {
     uint64_t now = MacSystem_Nanoseconds(), count = MacRawMouse_EventCount();
-    if (mac_use_raw != mouseStatsActive) {
+    if (registered != mouseStatsActive) {
         int maximum = mouseStats.maxHz;
         Cod2x_MouseStatsReset(&mouseStats, now, count);
         mouseStats.maxHz = maximum;
-        mouseStatsActive = mac_use_raw;
+        mouseStatsActive = registered;
         Dvar_SetInt(m_rinput_hz, 0);
     }
-    if (mac_use_raw && Cod2x_MouseStatsUpdate(&mouseStats, now, count)) {
+    if (registered && Cod2x_MouseStatsUpdate(&mouseStats, now, count)) {
         Dvar_SetInt(m_rinput_hz, mouseStats.hz);
         Dvar_SetInt(m_rinput_hz_max, mouseStats.maxHz);
     }
@@ -205,17 +192,8 @@ char *Sys_GetClipboardData(void)
     extern void *Z_MallocInternal(int size);
     char *utf8 = SDL_GetClipboardText();
     if (!utf8) return NULL;
-#if COD2_WINDOWS_NATIVE
-    /* As with typed text on Windows: one byte per code point, anything wider is dropped. */
-    char *bytes = malloc(strlen(utf8) + 1);
-    if (bytes) {
-        char *out = bytes;
-        for (const unsigned char *p = (const unsigned char *)utf8; *p;) {
-            unsigned int character = MacInput_DecodeUTF8(&p);
-            if (character && character < 0x100) *out++ = (char)character;
-        }
-        *out = 0;
-    }
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    char *bytes = Win_InputTextToAnsi(utf8);
 #else
     char *bytes = MacText_EncodeUTF8(utf8, loc_language ? loc_language->current.integer : 0);
 #endif
@@ -354,7 +332,7 @@ int SDL_PumpInputEvents(void)
     int eventCount;
     int inputEventCount = 0;
     static int textInputStarted;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
     /* SDL timestamps and Sys_Milliseconds have different epochs. Keep one
      * offset so queued edges retain their spacing even across a stalled frame
      * or the 32-bit SDL clock wrapping (Windows uses MSG.time here). */
@@ -395,7 +373,7 @@ int SDL_PumpInputEvents(void)
 #endif
 #if defined(COD2_X64)
         int eventTime = 0;
-#if defined(__APPLE__) && defined(COD2_X64)
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
         eventTime = (int)(ev.common.timestamp + eventTimeOffset);
         /* Zero means "now" to Sys_QueEvent, rather than the clock's origin. */
         if (!eventTime) eventTime = 1;
@@ -414,11 +392,17 @@ int SDL_PumpInputEvents(void)
                 mac_wheel_remainder = 0;
                 MacRawMouse_SetActive(0);
                 MacDisplay_FocusChanged(0);
+#if COD2_WINDOWS_NATIVE
+                Win_InputCaptureCursor(0);
+#endif
 #if defined(__APPLE__) && defined(COD2_CODX) && COD2_CODX
                 { extern void Cod2x_FocusPriority(int focused); Cod2x_FocusPriority(0); }
 #endif
             } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
                 extern void MacDisplay_FocusChanged(int focused);
+#if COD2_WINDOWS_NATIVE
+                { extern void Key_ClearStates(void); Key_ClearStates(); }
+#endif
                 MacDisplay_FocusChanged(1);
 #if defined(__APPLE__) && defined(COD2_CODX) && COD2_CODX
                 { extern void Cod2x_FocusPriority(int focused); Cod2x_FocusPriority(1); }
@@ -432,6 +416,14 @@ int SDL_PumpInputEvents(void)
 #endif
         case SDL_MOUSEMOTION: {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
+#if COD2_WINDOWS_NATIVE
+            if (win_cursor_mode)
+                break;
+#if !COD2_CODX
+            if (!mac_relative)
+                break;
+#endif
+#endif
             if (mac_relative) {
                 if (!mac_use_raw)
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
@@ -458,6 +450,10 @@ int SDL_PumpInputEvents(void)
             break;
         }
         case SDL_MOUSEBUTTONDOWN: {
+#if COD2_WINDOWS_NATIVE && COD2_X64
+            if (!in_mouse || !in_mouse->current.enabled)
+                break;
+#endif
             int k = sdl_button_to_keynum(ev.button.button);
             if (k) {
 #if defined(COD2_X64)
@@ -470,6 +466,10 @@ int SDL_PumpInputEvents(void)
             break;
         }
         case SDL_MOUSEBUTTONUP: {
+#if COD2_WINDOWS_NATIVE && COD2_X64
+            if (!in_mouse || !in_mouse->current.enabled)
+                break;
+#endif
             int k = sdl_button_to_keynum(ev.button.button);
             if (k) {
 #if defined(COD2_X64)
@@ -481,6 +481,41 @@ int SDL_PumpInputEvents(void)
             }
             break;
         }
+#if COD2_WINDOWS_NATIVE && COD2_X64
+        case SDL_SYSWMEVENT: {
+            int value = 0, down = 0;
+            switch (Win_InputMessage(ev.syswm.msg, &value, &down)) {
+            case WIN_INPUT_KEY:
+                Sys_QueEvent(eventTime, SE_KEY, value, down, 0, NULL);
+                break;
+            case WIN_INPUT_CONTROL:
+                Sys_QueEvent(eventTime, SE_CHAR, value, 0, 0, NULL);
+                break;
+            case WIN_INPUT_WHEEL: {
+                int key = value > 0 ? K_MWHEELUP : K_MWHEELDOWN;
+                Sys_QueEvent(eventTime, SE_KEY, key, 1, 0, NULL);
+                Sys_QueEvent(eventTime, SE_KEY, key, 0, 0, NULL);
+                break;
+            }
+            case WIN_INPUT_ALT_ENTER: {
+                extern clientConnection_t clientConnections[1];
+                extern const dvar_t *Dvar_FindVar(const char *);
+                extern int Dvar_GetInt(const char *);
+                extern void Dvar_SetBool(const dvar_t *, unsigned char);
+                extern void Cbuf_AddText(const char *);
+                const dvar_t *fullscreen = Dvar_FindVar("r_fullscreen");
+                if (fullscreen && Dvar_GetInt("developer") && clientConnections[0].state != CA_LOADING) {
+                    Dvar_SetBool(fullscreen, !fullscreen->current.enabled);
+                    Cbuf_AddText("vid_restart\n");
+                }
+                break;
+            }
+            default:
+                break;
+            }
+            break;
+        }
+#else
         case SDL_MOUSEWHEEL: {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
             /* Cocoa already applies the user's scrolling direction, as Carbon
@@ -554,6 +589,7 @@ int SDL_PumpInputEvents(void)
             }
             break;
         }
+#endif
         case SDL_TEXTINPUT:
 
 #if defined(__APPLE__) && defined(COD2_X64)
@@ -570,12 +606,15 @@ int SDL_PumpInputEvents(void)
                 }
             }
 #elif COD2_WINDOWS_NATIVE && defined(COD2_X64)
-            for (const unsigned char *p = (const unsigned char *)ev.text.text; *p;) {
-                unsigned int character = MacInput_DecodeUTF8(&p);
-                if (character >= 0x20 && character != 0x7f) {
-                    Sys_QueEvent(0, SE_CHAR, (int)character, 0, 0, NULL);
-                    ++inputEventCount;
-                }
+            {
+                char *bytes = Win_InputTextToAnsi(ev.text.text);
+                if (bytes)
+                    for (const unsigned char *p = (const unsigned char *)bytes; *p; ++p)
+                        if (*p >= 32 && *p != 127) {
+                            Sys_QueEvent(eventTime, SE_CHAR, *p, 0, 0, NULL);
+                            ++inputEventCount;
+                        }
+                free(bytes);
             }
 #else
             if (ev.text.text[0]) {
@@ -612,6 +651,35 @@ void MacInput_WaitIfMinimized(void)
 }
 #endif
 
+#if COD2_WINDOWS_NATIVE
+void WinInput_WaitIfMinimized(void)
+{
+    extern SDL_Window *sdl_gl_window;
+    extern void Win_SleepMs(unsigned int);
+    if (sdl_gl_window && (SDL_GetWindowFlags(sdl_gl_window) & SDL_WINDOW_MINIMIZED))
+        Win_SleepMs(5);
+}
+#endif
+
+#if COD2_WINDOWS_NATIVE && COD2_X64
+void WinInput_SampleMouse(void)
+{
+    if (!win_cursor_mode)
+        return;
+    int dx = 0, dy = 0;
+    int moved = Win_InputCursorDelta(&dx, &dy);
+#if COD2_CODX
+    if (mac_use_raw)
+        moved = MacRawMouse_Read(&dx, &dy);
+    if (moved)
+        MacInput_Move(dx, dy, mac_use_raw);
+#else
+    if (moved)
+        CL_MouseEvent(dx, dy);
+#endif
+}
+#endif
+
 void IN_Frame(void)
 {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
@@ -620,6 +688,9 @@ void IN_Frame(void)
     extern int MacDisplay_WindowVisible(void);
     int focused = sdl_gl_window && (SDL_GetWindowFlags(sdl_gl_window) & SDL_WINDOW_INPUT_FOCUS) &&
         MacDisplay_WindowVisible();
+#if COD2_WINDOWS_NATIVE
+    { extern int Dvar_GetInt(const char *); Win_WindowActivity(focused, sdl_gl_window && Dvar_GetInt("r_autopriority")); }
+#endif
     static int hadFocus;
     if (hadFocus && !focused) {
         extern void Key_ClearStates(void);
@@ -629,8 +700,9 @@ void IN_Frame(void)
     extern int MacDisplay_IsFullscreen(void);
     /* Original menus consume relative counts in 640x480 virtual coordinates.
      * CoD2x has its own windowed desktop-pointer policy. */
+    int fullscreen = MacDisplay_IsFullscreen();
     int wantRelative = focused && in_mouse && in_mouse->current.enabled &&
-        MacInput_CaptureMouse(MacDisplay_IsFullscreen(), client && client->active,
+        MacInput_CaptureMouse(fullscreen, client && client->active,
             client ? client->keyCatchers : 0,
 #if defined(COD2_CODX) && COD2_CODX
             1
@@ -638,35 +710,74 @@ void IN_Frame(void)
             0
 #endif
         );
+#if COD2_WINDOWS_NATIVE
+#if COD2_CODX
+    extern clientConnection_t clientConnections[1];
+    extern const dvar_t *cl_bypassMouseInput;
+    int menu = clientConnections[0].state < CA_PRIMED ||
+        (client && (client->keyCatchers & 8) && cl_bypassMouseInput && !cl_bypassMouseInput->current.enabled &&
+         (!m_enable || m_enable->current.enabled));
+    wantRelative = focused && in_mouse && in_mouse->current.enabled && (fullscreen ||
+        (!menu && (win_cursor_mode || SDL_GetMouseFocus() == sdl_gl_window)));
+    int wantCursor = wantRelative;
+#else
+    int wantCursor = wantRelative && !(in_rawmouse && in_rawmouse->current.enabled);
+#endif
+    wantRelative = wantRelative && !wantCursor;
+#endif
     mac_relative = SDL_GetRelativeMouseMode() == SDL_TRUE;
     if (wantRelative != mac_relative) {
         SDL_SetWindowGrab(sdl_gl_window, wantRelative ? SDL_TRUE : SDL_FALSE);
         SDL_SetRelativeMouseMode(wantRelative ? SDL_TRUE : SDL_FALSE);
         mac_relative = SDL_GetRelativeMouseMode() == SDL_TRUE;
     }
+#if COD2_WINDOWS_NATIVE
+    win_cursor_mode = Win_InputCaptureCursor(wantCursor);
+#endif
     {
         /* The game draws its own cursor in menus, so the system pointer stays
          * hidden while the window has focus and returns when it loses focus. */
         static int cursorHidden = -1;
-        if (focused != cursorHidden) {
-            SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
+        int hideCursor = focused;
+#if COD2_WINDOWS_NATIVE
+        hideCursor = win_cursor_mode || mac_relative;
+#if COD2_CODX
+        hideCursor |= focused && menu && SDL_GetMouseFocus() == sdl_gl_window;
+#endif
+#endif
+        if (hideCursor != cursorHidden) {
+            SDL_ShowCursor(hideCursor ? SDL_DISABLE : SDL_ENABLE);
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
             if (m_debug && m_debug->current.enabled)
-                Com_Printf(focused ? "Hiding system cursor\n" : "Show system cursor\n");
+                Com_Printf(hideCursor ? "Hiding system cursor\n" : "Show system cursor\n");
 #endif
-            cursorHidden = focused;
+            cursorHidden = hideCursor;
         }
     }
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
+#if COD2_WINDOWS_NATIVE
+    int rawMode = sdl_gl_window ? MacInput_RawMode() : 0;
+    mac_use_raw = win_cursor_mode && rawMode > 0 && MacRawMouse_Available();
+#else
     int rawMode = MacInput_RawMode();
     mac_use_raw = MacInput_UseRaw(client && client->active, client ? client->keyCatchers : -1,
         mac_relative, rawMode, in_rawmouse && in_rawmouse->current.enabled, MacRawMouse_Available());
+#endif
 #else
     mac_use_raw = MacInput_UseRaw(client && client->active, client ? client->keyCatchers : -1,
         mac_relative, 1, in_rawmouse && in_rawmouse->current.enabled, MacRawMouse_Available());
 #endif
     MacRawMouse_SetActive(mac_use_raw);
     SDL_PumpInputEvents();
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+    {
+        extern int Dvar_GetInt(const char *);
+        extern float Dvar_GetFloat(const char *);
+        extern void Win_D3D9_WindowGamma(int, float);
+        Win_D3D9_WindowGamma(focused && !Dvar_GetInt("r_ignorehwgamma"), Dvar_GetFloat("r_gamma"));
+    }
+#endif
+#if !COD2_WINDOWS_NATIVE
     int dx, dy;
     if (mac_use_raw && MacRawMouse_Read(&dx, &dy))
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
@@ -674,8 +785,14 @@ void IN_Frame(void)
 #else
         CL_MouseEvent(dx, dy);
 #endif
+#endif
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
-    MacInput_MeasureRaw();
+#if COD2_WINDOWS_NATIVE
+    if (sdl_gl_window)
+        MacInput_MeasureRaw(rawMode > 0 && MacRawMouse_Available());
+#else
+    MacInput_MeasureRaw(mac_use_raw);
+#endif
 #endif
 #if COD2_FEATURE_GAMEPAD
     CL_Gamepad_Frame();

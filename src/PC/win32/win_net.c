@@ -197,6 +197,11 @@ static qboolean NET_GetDvars(void)
 
 void NET_Sleep(int msec)
 {
+#if COD2_WINDOWS_NATIVE
+    /* Retail Windows 1.3 NET_Sleep yields even when there is no UDP socket. */
+    extern void Win_SleepMs(unsigned int milliseconds);
+    Win_SleepMs(msec);
+#else
     fd_set fdset;
     struct timeval timeout;
 
@@ -227,6 +232,7 @@ void NET_Sleep(int msec)
     timeout.tv_usec = (msec - timeout.tv_sec * 1000) * 1000;
 
     select(ip_socket + 1, &fdset, NULL, NULL, &timeout);
+#endif
 }
 
 qboolean Sys_StringToAdr(const char *s, netadr_t *a)

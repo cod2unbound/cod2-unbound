@@ -4,6 +4,9 @@
 #include "snd_rounding.h"
 #endif
 #include "bytematch.h"
+#if COD2_WINDOWS_NATIVE
+#include <math.h>
+#endif
 extern snd_local_t g_snd;
 
 /* g_snd is a struct in the Mac 1.3 binary (0x1404 bytes at 0x10d6780), not a
@@ -429,7 +432,12 @@ float SND_Get2DChannelVolume(int index)
 
 float SND_Get3DChannelVolume(int index)
 {
+#if COD2_WINDOWS_NATIVE
+    /* Retail's overlay reads the gain in game units again. */
+    return (float)pow(AIL_3D_sample_volume(milesGlob.handle_3D[index]), 1.0f / 0.6f);
+#else
     return AIL_3D_sample_volume(milesGlob.handle_3D[index]);
+#endif
 }
 
 float SND_GetStreamChannelVolume(int index)
@@ -1372,6 +1380,9 @@ int SND_StartAlias3DSample(const snd_alias_t *pAlias0, const snd_alias_t *pAlias
         scaledVol *= SND_GetLerpedSlavePercentage(pAlias0->fSlavePercentage);
     }
 
+#if COD2_WINDOWS_NATIVE
+    scaledVol = (float)pow(scaledVol, 0.6f);
+#endif
     AIL_set_3D_sample_volume(handle, scaledVol);
     AIL_set_3D_sample_distances(handle, pAlias0->fDistMin, pAlias0->fDistMax);
 
@@ -1741,6 +1752,9 @@ void SND_Update3DChannel(int i, int frametime)
         volTable = (float *)sndGlob->channelvol;
         channel = (aliasFlags & 0x780) >> 7;
         scaledVol = volume * volTable[channel * 3] * sndGlob->volume;
+#if COD2_WINDOWS_NATIVE
+        scaledVol = (float)pow(scaledVol, 0.6f);
+#endif
         AIL_set_3D_sample_volume(milesGlob.handle_3D[i], scaledVol);
 
         {

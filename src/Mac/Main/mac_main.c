@@ -666,6 +666,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #if COD2_WIN_CODX_CLIENT
         Cod2xNative_Frame();
 #endif
+#if COD2_WINDOWS_NATIVE
+#if defined(DEDICATED)
+        { extern void Win_SleepMs(unsigned int); Win_SleepMs(5); }
+#else
+        {
+            extern dvar_t *com_dedicated;
+            extern void Win_SleepMs(unsigned int);
+            extern void WinInput_WaitIfMinimized(void);
+            if (com_dedicated && com_dedicated->current.integer)
+                Win_SleepMs(5);
+            else
+                WinInput_WaitIfMinimized();
+        }
+#endif
+#endif
         Com_Frame();
 #if (defined(__APPLE__) || (defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE)) && defined(COD2_X64) && COD2_X64 && \
     defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)

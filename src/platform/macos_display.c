@@ -174,6 +174,10 @@ int MacDisplay_Initialize(void)
 #endif
     if (initialized)
         return 0;
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    /* The foreground window owns the display idle request. */
+    SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
+#endif
 #if !defined(COD2_X64)
     SDL_SetHint("SDL_MAC_USE_GCMOUSE", "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "0");
@@ -192,6 +196,9 @@ int MacDisplay_Initialize(void)
 #endif
     if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
         return -1;
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void Win_InputEnableMessages(void); Win_InputEnableMessages(); }
+#endif
 #if defined(__APPLE__) && defined(COD2_X64) && !defined(DEDICATED) && (!defined(COD2_ENGINE_ONLY) || (defined(COD2_CODX) && COD2_CODX))
     /* SDL's Cocoa app delegate installs its own URL drop handler at video
      * initialization. Restore the validated link handler afterwards. */
@@ -310,7 +317,7 @@ static int cod2xInternalMode;
 #endif
 void MacPlatform_ConfigureWindow(int width, int height, int mode, int refresh)
 {
-#if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
+#if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX && !COD2_WIN32_D3D9
     if (!cod2xInternalMode) {
         /* CoD2x: a window as large as the display becomes a borderless window
            covering it; there is no dvar for this. The lines are printed when the
@@ -589,6 +596,10 @@ static void ResolveFrameBuffer(MacContext *ctx)
  * the exclusive mode chosen by SetWindowMode. */
 void MacDisplay_FocusChanged(int focused)
 {
+    /* The native D3D9 device owns exclusive mode and its reset path. */
+#if COD2_WIN32_D3D9
+    (void)focused;
+#else
     if (!sdl_gl_window || windowMode != MAC_FULLSCREEN)
         return;
     if (!focused)
@@ -603,6 +614,7 @@ void MacDisplay_FocusChanged(int focused)
             exclusiveResumeArmed = 0;
         }
     }
+#endif
 }
 
 int MacDisplay_WindowVisible(void)
@@ -622,6 +634,7 @@ int MacDisplay_WindowState(void)
 
 void MacDisplay_PumpVisibility(void)
 {
+#if !COD2_WIN32_D3D9
     /* Mission Control briefly exposes thumbnails while animating. Latch the
      * safe desktop mode until a real focus-loss/gain pair, rather than treating
      * those exposures as a request to capture the display again. */
@@ -630,6 +643,7 @@ void MacDisplay_PumpVisibility(void)
         if (SDL_SetWindowFullscreen(sdl_gl_window, SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
             exclusiveSuspended = 1;
     }
+#endif
 }
 #endif
 
@@ -1208,6 +1222,12 @@ uint16_t MacDisplay_ReleaseContext(void **reference)
 
 void MacDisplay_ReleaseDisplay(void)
 {
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9 && COD2_CODX
+    { extern void Win_D3D9_WindowGamma(int, float); Win_D3D9_WindowGamma(0, 1.0f); }
+#endif
+#if COD2_WINDOWS_NATIVE && COD2_X64
+    { extern void Win_WindowActivity(int focused, int autoPriority); Win_WindowActivity(0, 0); }
+#endif
 #if defined(__APPLE__) && defined(COD2_X64)
     MacWindow_SetBorderless(0);
 #endif
@@ -1395,7 +1415,14 @@ uint16_t MacDisplay_SetMode(int w, int h, int d, int r)
     return 0;
 }
 int MacDisplay_SetupDisplay(int w, int h) { sdl_gl_width = w; sdl_gl_height = h; return MacDisplay_Initialize(); }
-int MacDisplay_IsFullscreen(void) { return screenContext && windowMode != MAC_WINDOWED; }
+int MacDisplay_IsFullscreen(void)
+{
+#if COD2_WIN32_D3D9
+    return sdl_gl_window && windowMode == MAC_FULLSCREEN;
+#else
+    return screenContext && windowMode != MAC_WINDOWED;
+#endif
+}
 #if defined(COD2_X64) && COD2_X64
 void MacDisplay_WindowMoved(int x, int y)
 {
