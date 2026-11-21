@@ -34,7 +34,7 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
     private static async ValueTask<ImmutableArray<byte>> ReadAsync(Stream stream, CancellationToken cancellationToken)
     {
         byte[] input = new byte[1024 * 1024 + 1];
-        int length = await stream.ReadAtLeastAsync(input, input.Length, throwIfEndOfStream: false, cancellationToken);
+        int length = await stream.ReadAtLeastAsync(input, input.Length, false, cancellationToken);
         if (length == input.Length)
             throw new IOException("The release list is too large.");
         return [.. input.AsSpan(0, length)];
