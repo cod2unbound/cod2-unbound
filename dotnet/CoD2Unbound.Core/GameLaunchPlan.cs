@@ -70,7 +70,7 @@ public sealed partial record ConfigStudioLaunch(string ProfileId, string? Chain 
 
 public sealed partial record ConfigConnectionLaunch(string Address, ImmutableDictionary<string, string> Values)
 {
-    private static readonly ImmutableHashSet<string> AllowedSettings = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
+    internal static readonly ImmutableHashSet<string> AllowedSettings = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
         "com_maxfps", "rate", "snaps", "cl_maxpackets", "m_filter", "cl_mouseaccel", "r_picmip", "r_picmip_manual");
 
     internal IEnumerable<string> ArgumentsFor(LaunchLink? link)
@@ -152,7 +152,7 @@ public sealed partial record GameLaunchPlan(ImmutableArray<string> Arguments, La
 
         if (request.Demo is { } demo)
         {
-            if (!DemoName().IsMatch(demo))
+            if (!MediaName.Playable(demo))
                 throw new LaunchPlanException("Rename this demo using letters, numbers, dots, underscores or hyphens before playback.");
             arguments.AddRange(new[] { "+demo", demo });
         }
@@ -199,6 +199,4 @@ public sealed partial record GameLaunchPlan(ImmutableArray<string> Arguments, La
         arguments.Add(Quote(value));
     }
 
-    [GeneratedRegex(@"\A[A-Za-z0-9_.-]+\z", RegexOptions.CultureInvariant)]
-    private static partial Regex DemoName();
 }
