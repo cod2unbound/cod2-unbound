@@ -66,6 +66,7 @@ public sealed partial class SettingsPage : Page
         try
         {
             EditionChoice.SelectedIndex = settings.Engine == GameEdition.Original ? 1 : 0;
+            RendererChoice.SelectedIndex = (int)model.Renderer;
             ThemeChoice.SelectedIndex = (int)settings.Appearance;
         }
         finally { updatingSettings = false; }
@@ -99,4 +100,20 @@ public sealed partial class SettingsPage : Page
         });
     }
 
+    private async void OnRendererChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (updatingSettings || RendererChoice.SelectedIndex < 0)
+            return;
+        var renderer = (WindowsRenderMode)RendererChoice.SelectedIndex;
+        if (shell.IsBusy || renderer == model.Renderer)
+        {
+            SyncChoices(model.Settings.Working);
+            return;
+        }
+        await shell.RunAsync(async () =>
+        {
+            try { await model.SetRendererAsync(renderer); }
+            finally { SyncChoices(model.Settings.Working); }
+        });
+    }
 }

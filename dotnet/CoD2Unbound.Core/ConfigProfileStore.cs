@@ -118,13 +118,38 @@ public sealed partial class ConfigProfileStore(
         CancellationToken cancellationToken = default)
     {
         var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
-        if (selected.ProfileId is not { } id)
-            return null;
+        return selected.ProfileId is { } id
+            ? await ReadForDisplayAsync(home, id, id, cancellationToken).ConfigureAwait(false)
+            : null;
+    }
+
+    public static async ValueTask<ImmutableArray<ConfigProfile>> ReadChoicesAsync(ISettingsFolder home, IEnumerable<string> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
+        var result = ImmutableArray.CreateBuilder<ConfigProfile>();
+        foreach (string id in ids.Where(ValidIdentifier).Distinct(StringComparer.OrdinalIgnoreCase))
+            if (await ReadForDisplayAsync(home, id, selected.ProfileId, cancellationToken).ConfigureAwait(false) is { } profile)
+                result.Add(profile);
+        return [.. result.OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
+    }
+
+    // The native host holds both launch and profile leases and checks for a live game before calling this.
+    public static async ValueTask SelectForNextLaunchAsync(ISettingsFolder home, string id, CancellationToken cancellationToken = default)
+    {
+        if (await ReadForDisplayAsync(home, id, null, cancellationToken).ConfigureAwait(false) is null)
+            throw new ConfigProfileException(ConfigProfileFailure.MissingProfile);
+        await home.WriteAsync(Active, [.. Encoding.UTF8.GetBytes(id)], cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<ConfigProfile?> ReadForDisplayAsync(ISettingsFolder home, string id, string? active,
+        CancellationToken cancellationToken)
+    {
         string directory = DirectoryName(id);
         if (await home.ReadAsync(directory + ConfigName, cancellationToken).ConfigureAwait(false) is null)
             return null;
         var metadata = await home.ReadAsync(directory + MetadataName, cancellationToken).ConfigureAwait(false);
-        return ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), id);
+        return ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), active);
     }
 
     public static async ValueTask<string?> ReadPlayerNameAsync(ISettingsFolder home, ConfigDialect dialect,

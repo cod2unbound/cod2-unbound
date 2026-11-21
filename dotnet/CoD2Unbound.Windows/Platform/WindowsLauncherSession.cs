@@ -26,7 +26,7 @@ internal sealed class WindowsLauncherSession
     internal WindowsLauncherSession()
     {
         string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        gameFolder = new WindowsSettingsFolder(Path.Join(localData, "CoD2 Unbound"));
+        gameFolder = new WindowsSettingsFolder(Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
         folder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         string installRoot = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, ".."));
         inventory = new WindowsEngineInventory(installRoot, files);
@@ -100,6 +100,29 @@ internal sealed class WindowsLauncherSession
     internal void FinishSetup() => SetupComplete = Setup.Step == SetupStep.Complete;
 
     internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
+
+    internal async Task<ImmutableArray<ConfigProfile>> ReadLoadoutChoicesAsync()
+    {
+        string players = Path.Join(HomePath, "main", "players");
+        try
+        {
+            using var root = new WindowsFiles.DirectoryHandles(players);
+            var ids = new DirectoryInfo(players).EnumerateDirectories()
+                .Where(entry => (entry.Attributes & FileAttributes.ReparsePoint) == 0).Select(entry => entry.Name);
+            return await ConfigProfileStore.ReadChoicesAsync(gameFolder, ids);
+        }
+        catch (DirectoryNotFoundException) { return []; }
+    }
+
+    internal async Task SelectLoadoutAsync(string id)
+    {
+        await using var launch = await WindowsGameSessionHost.OpenLeaseAsync(HomePath, ".launcher-start.lock", default);
+        await using var profile = await WindowsGameSessionHost.OpenLeaseAsync(HomePath, "main/players/.studio.lock", default);
+        await Game.ReconcileAsync();
+        if (Game.State.Running)
+            throw new ConfigProfileException(ConfigProfileFailure.GameRunning);
+        await ConfigProfileStore.SelectForNextLaunchAsync(gameFolder, id);
+    }
 
     internal async Task<(string Name, string? Loadout, string Key)> ReadPlayerAsync()
     {

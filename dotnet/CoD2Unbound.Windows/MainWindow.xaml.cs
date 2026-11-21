@@ -203,7 +203,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshPlayerAsync()
+    internal async Task RefreshPlayerAsync()
     {
         var player = await session.ReadPlayerAsync();
         PlayerName.Text = PlayerCardName.Text = player.Name;

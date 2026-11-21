@@ -12,7 +12,7 @@
                     <TextBlock x:Name="SettingsDataPath" TextWrapping="Wrap"
                                Foreground="{ThemeResource BodyBrush}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Choose a folder…" Click="OnChooseSettingsFolder" />
+                        <Button Content="Choose a folder…" Click="OnChooseSettingsFolder" AccessKey="F" />
                         <StackPanel x:Name="SettingsDataActions" Visibility="Collapsed"
                                     Orientation="Horizontal" Spacing="8">
                             <Button x:Name="SaveFolder" Content="Use this folder" Click="OnSaveFolder"
@@ -27,6 +27,12 @@
                 <ComboBox x:Name="EditionChoice" Header="Game version" SelectionChanged="OnSettingsChanged">
                     <ComboBoxItem Content="CoD2x 1.4.6.8" />
                     <ComboBoxItem Content="Original 1.3" />
+                </ComboBox>
+            </Border>
+            <Border Style="{StaticResource FieldCard}">
+                <ComboBox x:Name="RendererChoice" Header="Graphics" SelectionChanged="OnRendererChanged" AccessKey="G">
+                    <ComboBoxItem Content="Direct3D 9" />
+                    <ComboBoxItem Content="DirectX 7" />
                 </ComboBox>
             </Border>
             <TextBlock Text="Launcher" Style="{StaticResource SectionTitle}" />

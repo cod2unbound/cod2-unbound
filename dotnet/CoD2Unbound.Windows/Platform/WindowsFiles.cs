@@ -163,7 +163,7 @@ internal sealed class WindowsFiles : IGameFiles
     private static extern bool GetFileInformationByHandleEx(SafeFileHandle file, int kind, out AttributeTagInfo info, uint size);
 }
 
-internal sealed class WindowsSettingsFolder(string root) : ISettingsFolder
+internal sealed class WindowsSettingsFolder(string root, bool allowNestedWrites = false) : ISettingsFolder
 {
     public string Root { get; } = WindowsFiles.NormalizeFolder(root);
 
@@ -191,9 +191,10 @@ internal sealed class WindowsSettingsFolder(string root) : ISettingsFolder
     public async ValueTask WriteAsync(string name, ImmutableArray<byte> data, CancellationToken cancellationToken)
     {
         string path = FileSlot(name);
-        using var parent = new WindowsFiles.DirectoryHandles(Root, create: true);
+        string directory = Path.GetDirectoryName(path)!;
+        using var parent = new WindowsFiles.DirectoryHandles(directory, create: true);
         CheckExisting(name);
-        string temporary = Path.Join(Root, $".launcher-{Guid.NewGuid():N}.tmp");
+        string temporary = Path.Join(directory, $".launcher-{Guid.NewGuid():N}.tmp");
         bool ownsTemporary = false;
         try
         {
@@ -230,7 +231,7 @@ internal sealed class WindowsSettingsFolder(string root) : ISettingsFolder
 
     private string FileSlot(string name)
     {
-        if (name.Contains('/') || name.Contains('\\'))
+        if (!allowNestedWrites && (name.Contains('/') || name.Contains('\\')))
             throw new IOException("Only top-level launcher settings can be written here.");
         return WindowsFiles.Under(Root, name);
     }

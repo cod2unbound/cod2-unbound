@@ -42,7 +42,7 @@
 
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
                     <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
-                              AccessKey="O" IsEnabled="False" MinWidth="160" />
+                              AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
                     <ComboBox x:Name="DisplayChoice" AutomationProperties.Name="Display mode"
                               AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged">
                         <ComboBoxItem Content="Borderless" Tag="borderless" />

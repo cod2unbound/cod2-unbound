@@ -6,6 +6,8 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Graphics.Imaging;
+using Windows.Security.Cryptography;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -15,6 +17,7 @@ public sealed partial class HomePage : Page
     private readonly MainWindow shell;
     private readonly HomeViewModel model;
     private bool settingDisplay = true;
+    private bool settingLoadout = true;
 
     internal HomePage(MainWindow shell, WindowsLauncherSession session)
     {
@@ -29,7 +32,7 @@ public sealed partial class HomePage : Page
     {
         await model.RefreshAsync();
         var last = model.LastServer;
-        string? map = last is null ? null : MapCatalog.Key(last.Map);
+        string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
         if (last is not null)
         {
             HeroLead.Text = string.Join(" · ", new[] { "Last played", map is null ? null : MapCatalog.Region(map) }.OfType<string>());
@@ -44,10 +47,19 @@ public sealed partial class HomePage : Page
         }
 
         var settings = model.Settings;
-        LoadoutChoice.ItemsSource = new[] { model.Loadout is { } loadout
-            ? loadout.DisplayName + " · " + LauncherText.Resolution(settings.Resolution)
-            : "Loadout unavailable · " + LauncherText.Resolution(settings.Resolution) };
-        LoadoutChoice.SelectedIndex = 0;
+        settingLoadout = true;
+        string resolution = LauncherText.Resolution(settings.Resolution);
+        var loadouts = model.Loadouts.Select(profile => new ComboBoxItem
+        {
+            Content = profile.DisplayName + " · " + resolution, Tag = profile.Id
+        }).ToList();
+        var active = model.Loadouts.FirstOrDefault(profile => profile.IsActive);
+        if (active is null)
+            loadouts.Insert(0, new ComboBoxItem { Content = "Loadout unavailable · " + resolution });
+        LoadoutChoice.ItemsSource = loadouts;
+        LoadoutChoice.SelectedItem = active is null ? loadouts[0] :
+            loadouts.First(choice => Equals(choice.Tag, active.Id));
+        settingLoadout = false;
         settingDisplay = true;
         DisplayChoice.SelectedIndex = settings.Fullscreen switch { "exclusive" => 1, "windowed" => 2, _ => 0 };
         settingDisplay = false;
@@ -57,13 +69,14 @@ public sealed partial class HomePage : Page
         RenderMatch();
         RenderNews();
         if (map is not null && await model.ReadArtAsync(map) is { } art)
-            ApplyArtwork(art);
+            await ApplyArtworkAsync(art);
     }
 
     internal void RenderGame(GameSessionState game)
     {
         string? reason = model.LaunchProblem;
         LaunchButton.IsEnabled = reason is null;
+        LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
         OpenGameData.Visibility = IsVisible(reason == "Choose a complete game data folder before launching.");
         LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "Call of Duty 2 closed unexpectedly."
             : model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server");
@@ -135,25 +148,25 @@ public sealed partial class HomePage : Page
 
     private void RenderFallback()
     {
-        if (HeroArt.Source is WriteableBitmap)
+        if (HeroArt.Source is SoftwareBitmapSource)
             return;
         string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
         HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
     }
 
-    private void ApplyArtwork(MapPixels art)
+    private async Task ApplyArtworkAsync(MapPixels art)
     {
-        var bitmap = new WriteableBitmap(art.Width, art.Height);
         var bgra = art.Rgba.ToArray();
         for (int i = 0; i < bgra.Length; i += 4)
         {
             (bgra[i], bgra[i + 2]) = (bgra[i + 2], bgra[i]);
             bgra[i + 3] = 255;
         }
-        using var output = bitmap.PixelBuffer.AsStream();
-        output.Write(bgra);
-        bitmap.Invalidate();
-        HeroArt.Source = bitmap;
+        using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(CryptographicBuffer.CreateFromByteArray(bgra),
+            BitmapPixelFormat.Bgra8, art.Width, art.Height, BitmapAlphaMode.Premultiplied);
+        var image = new SoftwareBitmapSource();
+        await image.SetBitmapAsync(bitmap);
+        HeroArt.Source = image;
     }
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args)
@@ -187,6 +200,18 @@ public sealed partial class HomePage : Page
     private async void OnRecent(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.Recent);
     private async void OnOpenGameData(object sender, RoutedEventArgs args) =>
         await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Settings));
+
+    private async void OnLoadoutChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (settingLoadout || LoadoutChoice.SelectedItem is not ComboBoxItem { Tag: string id })
+            return;
+        await shell.RunAsync(async () =>
+        {
+            try { await model.SetLoadoutAsync(id); }
+            finally { await RefreshAsync(); }
+            await shell.RefreshPlayerAsync();
+        });
+    }
 
     private async void OnDisplayChanged(object sender, SelectionChangedEventArgs args)
     {

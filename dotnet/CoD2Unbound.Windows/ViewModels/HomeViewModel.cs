@@ -18,14 +18,14 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         ? session.ServerForAddress(address) : null;
     internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext);
-    internal ConfigProfile? Loadout { get; private set; }
+    internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
     internal MatchSummary? LastMatch { get; private set; }
     internal bool UnreadableMatches { get; private set; }
 
     internal async Task RefreshAsync()
     {
         session.Setup.ChooseData(session.Setup.DataPath);
-        Loadout = await session.ReadLoadoutAsync();
+        Loadouts = await session.ReadLoadoutChoicesAsync();
         await session.Game.ReconcileAsync();
         if (Settings.MatchSummariesEnabled)
         {
@@ -36,6 +36,8 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
 
     internal Task LaunchAsync(string? address = null) => address is null
         ? session.LaunchAsync() : session.JoinAsync(new(address, null));
+
+    internal Task SetLoadoutAsync(string id) => session.SelectLoadoutAsync(id);
 
     internal Task SetDisplayAsync(string mode) => session.UpdateSettingsAsync(Settings with { Fullscreen = mode });
 
