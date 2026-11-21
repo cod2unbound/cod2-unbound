@@ -50,7 +50,7 @@ Coverage is 117 rows, with 49 ported, 0 planned, 4 partly ported, 48 UI and 16 A
 | ConfigStudioBinds.swift | UI | Binding editor display models and keyboard diagram |
 | ConfigStudioBlocks.swift | UI | Studio controls, banners and feedback |
 | ConfigStudioCheckup.swift | UI | Findings copy, severity and accessibility |
-| ConfigStudioModel.swift · model rules | Ported in part | `ConfigStudioModel`, `ConfigSettingSpec`, `ConfigValues` and `ConfigTextCheck` project typed settings, search, locks, comparison eligibility and diagnostics. Studio session guards publication. The current branch still needs the composed snapshot diff and user-visible undo/retry actions modelled against the Windows editor. |
+| ConfigStudioModel.swift · model rules | Ported in part | `ConfigStudioModel`, `ConfigSettingSpec`, `ConfigValues` and `ConfigTextCheck` project typed settings, search, locks, comparison eligibility and diagnostics. `ConfigDiff` supplies History differences and `ConfigStudioSession` guards publication. The Windows editor still needs to bind undo and retry presentation and supply live resolution choices. |
 | ConfigStudioModel.swift · view state | UI | Tabs, detail levels and focus state |
 | ConfigStudioSession.swift | Ported | `ConfigStudioSession`, `ConfigProfileStore` and `ConfigEngineLimits` preserve drafts, revisions, launch reservations, per-connection isolation, engine handoff and durable exit reconciliation. The native host holds the launch lease. |
 | ConfigStudioStyle.swift | UI | Studio appearance and spacing |
