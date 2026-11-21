@@ -131,8 +131,9 @@ def verify_installer(artifacts, work, previous, run):
     old_version = previous.name.split("-")[2]
     version = setup.name.split("-")[2]
     helper = run / "check-key.exe"
-    subprocess.run(["x86_64-w64-mingw32-gcc", "-I/src/src", WINDOWS / "path-test-key.c",
-                    "/src/src/win32/win_key.c", "-ladvapi32", "-o", helper], check=True)
+    subprocess.run(["x86_64-w64-mingw32-gcc", "-DCOD2_WINDOWS_NATIVE=1", "-I/src/src",
+                    "-I/src/src/headers", WINDOWS / "path-test-key.c", "/src/src/win32/win_key.c",
+                    "-ladvapi32", "-o", helper], check=True)
     signer = Signer(None, None, work / "test-code.pem", work / "test-tsa.pem",
                     run / "signature-verification.log")
     signer.verify(setup)
