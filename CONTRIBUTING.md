@@ -16,14 +16,22 @@ layouts to make arm64 compile.
 - Use `COD2_X64` for pointer-width/layout changes. Existing source frequently
   tests `defined(COD2_X64)`, so CMake OFF must omit the definition, not define
   `COD2_X64=0` as a substitute.
-- `COD2_APPLE_SDK` selects real Darwin SDK types only with Apple + `COD2_X64`.
-  It prevents the reconstructed STABS declarations from shadowing SDK types.
+- `COD2_APPLE_SDK` selects SDK-backed declarations for native Apple and Linux
+  builds with `COD2_X64`, and for native Windows. Legacy builds use the
+  reconstructed STABS declarations.
 - Use `__APPLE__` and `__aarch64__` / `__arm64__` where a change depends on the
   platform or instruction set. Architecture-neutral fixes must still pass the
   legacy comparison. CoD2x hooks need both native and `COD2_CODX` gates.
 - Keep `-ffp-contract=off`: the Mac i386 reference used SSE scalar semantics,
   not x87 extended precision. Preserve fixed-width disk/wire records and
   handle/bytecode offsets; widening every integer is not an LP64 fix.
+
+Use a value test such as `#if COD2_APPLE_SDK` for a switch that is defined
+as either 0 or 1. Reserve a presence test for a switch whose build contract
+omits the definition when disabled. Run `python3 tests/fixes13/legacy.py
+--base main` to check for new inactive-branch differences. This comparison
+also reports edits that exactly restore upstream source. Run the same
+command with `--base 410342a` to see all remaining inactive-branch differences.
 
 Verify behavior against actual commands, code and the original reference.
 Compare other projects to understand intent, then independently implement;
@@ -73,7 +81,7 @@ and say in the pull request what you ran.
 The x86 byte-for-byte comparison (`tools/ci/compare-x86.sh`) is not a
 required check. It defines `__cdecl` and `__stdcall` away for both builds,
 but upstream `410342a` still fails to compile in seven files with GCC 14 on
-Linux, so it never links, and this tree's 32-bit objects still differ from it.
+Linux, so it never links.
 To run it on a Mac, use Docker with `--platform linux/amd64`, an `ubuntu:24.04`
 image with the packages from the `x86-reference` job in
 `.github/workflows/ci.yml`, and `bash tools/ci/compare-x86.sh` inside it; see

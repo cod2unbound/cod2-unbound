@@ -137,6 +137,14 @@ build IDs are retained. Debug line-number changes from added source guards also
 fail this strict check, even when instruction bytes agree. A future difference fails and must be explained, not
 silenced by excluding crash_handler or removing arbitrary sections.
 
+To diagnose a failure, configure both archives separately with the flags in
+`tools/ci/compare-x86.sh`. In the same amd64 multilib image, build each with
+`cmake --build <build-directory> --parallel 3 --target cod2_lnxded cod2_linux -- -k`.
+Compare the engine object paths present in both builds and report extra or
+missing paths separately. For each byte difference, compare copies made with
+`objcopy --strip-debug` and use `readelf` or `objdump` to account for any
+remaining section, symbol or relocation differences.
+
 This proves equality under the normalized build conditions, not that an old
 release artifact from another toolchain has identical bytes. The workflow's
 macOS build is an explicitly advisory expected-failure probe until WS1/WS2
