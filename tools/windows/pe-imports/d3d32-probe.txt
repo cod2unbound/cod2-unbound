@@ -1,0 +1,16 @@
+advapi32.dll
+bcrypt.dll
+crypt32.dll
+dbghelp.dll
+gdi32.dll
+imm32.dll
+kernel32.dll
+msvcrt.dll
+ole32.dll
+oleaut32.dll
+setupapi.dll
+shell32.dll
+user32.dll
+version.dll
+winmm.dll
+ws2_32.dll
