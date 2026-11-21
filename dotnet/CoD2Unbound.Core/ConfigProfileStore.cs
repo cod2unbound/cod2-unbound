@@ -113,6 +113,20 @@ public sealed partial class ConfigProfileStore(
         return Selection();
     }
 
+    // For read-only launcher surfaces. Launch and edit operations still take the profile lease.
+    public static async ValueTask<ConfigProfile?> ReadActiveForDisplayAsync(ISettingsFolder home,
+        CancellationToken cancellationToken = default)
+    {
+        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
+        if (selected.ProfileId is not { } id)
+            return null;
+        string directory = DirectoryName(id);
+        if (await home.ReadAsync(directory + ConfigName, cancellationToken).ConfigureAwait(false) is null)
+            return null;
+        var metadata = await home.ReadAsync(directory + MetadataName, cancellationToken).ConfigureAwait(false);
+        return ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), id);
+    }
+
     public void Select(string id, ImmutableArray<byte>? expectedActive)
     {
         using var lease = files.Acquire(default);
@@ -274,9 +288,10 @@ public sealed partial class ConfigProfileStore(
         new(files.Read(directory + ConfigName) ?? throw new ConfigProfileException(ConfigProfileFailure.MissingProfile),
             files.Read(directory + MetadataName), files.Read(ChainPath(id)));
 
-    private ConfigActiveSelection Selection()
+    private ConfigActiveSelection Selection() => ParseSelection(files.Read(Active));
+
+    private static ConfigActiveSelection ParseSelection(ImmutableArray<byte>? bytes)
     {
-        var bytes = files.Read(Active);
         var tokens = ConfigDocument.Tokenize(bytes.GetValueOrDefault().AsSpan(), ConfigDialect.Stock).Tokens;
         string? name = tokens.IsEmpty ? null : tokens[0].Text;
         return new(name is not null && ValidIdentifier(name) ? name : null, bytes);
