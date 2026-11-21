@@ -14,6 +14,7 @@
 #     cmake --build build/win32 -j
 #       -> build/win32/cod2_win32_ded.exe          (headless, default)
 #     add -DCOD2_WIN32_CLIENT=ON for the SDL2/GL client (fetches SDL2 at configure).
+#     also add -DCOD2_WIN32_D3D9=ON to use system Direct3D 9.
 #     cmake/toolchain-mingw64.cmake gives the same targets on x86_64.
 #
 # compile_commands.json is emitted for IDE/clangd use.
@@ -56,8 +57,15 @@ set(CMAKE_C_STANDARD 99)
 # engine paths, and pointer-width code keys off the real pointer size. The plain
 # ILP32 path below stays selectable but compiles stale logic.
 option(COD2_WIN32_LEGACY "MinGW: build the plain non-COD2_X64 path instead" OFF)
+if(WIN32 AND DEFINED COD2_WIN32_REAL_D3D9)
+  message(FATAL_ERROR
+    "COD2_WIN32_REAL_D3D9 was removed. Drop it from the CMake cache and use "
+    "-DCOD2_WIN32_CLIENT=ON -DCOD2_WIN32_D3D9=ON with the native MinGW build.")
+endif()
 if(WIN32 AND NOT MSVC AND NOT COD2_WIN32_LEGACY)
   set(COD2_X64 ON)
+elseif(WIN32 AND COD2_WIN32_D3D9)
+  message(FATAL_ERROR "COD2_WIN32_D3D9 requires the native MinGW build")
 endif()
 
 # git short hash for the crash-reporter build stamp.
@@ -220,7 +228,6 @@ elseif(WIN32)
 # WINDOWS (MinGW cross-compile: cod2_win32_ded.exe / cod2_win32.exe)
 # ----------------------------------------------------------------------------
 option(COD2_WIN32_CLIENT "SDL2/GL client (needs static SDL2 libs) instead of the headless server" OFF)
-option(COD2_WIN32_REAL_D3D9 "Real IDirect3DDevice9 renderer path (Wine d3d9.dll)" OFF)
 
 # -Wreturn-mismatch is GCC 14; older MinGW compilers reject the -Wno-error form.
 include(CheckCCompilerFlag)
@@ -274,10 +281,6 @@ else()
   add_compile_definitions(DEDICATED)
   set(W32_EXE cod2_win32_ded)
 endif()
-if(COD2_WIN32_REAL_D3D9)
-  add_compile_definitions(GFX_REAL_D3D9)
-endif()
-
 # source set (mirror WIN_C_SRCS): src/PC, src/Mac, src/stubs, src/win32, and
 # src-root files, minus the native-asm
 # data .c, cpp_trampoline, agl_stubs, and the bundled-zlib inflate split (use -lz).
