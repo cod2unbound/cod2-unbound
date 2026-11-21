@@ -66,17 +66,20 @@ def run_server(exe, cfg, edition, env, run):
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                     sock.settimeout(0.5)
                     sock.connect(("127.0.0.1", port))
-                    helpers["query_server"](sock, process, b"getstatus", b"statusResponse",
-                                            b"g_gametype", b"118" if edition == "original" else b"120")
+                    status = helpers["query_server"](
+                        sock, process, b"getstatus", b"statusResponse", b"g_gametype",
+                        b"118" if edition == "original" else b"120",
+                    )
+                    hostname = status.get(b"sv_hostname")
+                    if hostname != b"CoD2 Unbound LAN":
+                        raise ValueError(f"Expected the sample server hostname, got {hostname!r}")
                 if process.wait(timeout=90):
                     raise ValueError(f"Server exited with {process.returncode}")
             finally:
                 if process.poll() is None:
                     process.kill()
                     process.wait()
-    if "execing server.cfg" not in (run / "console.log").read_text(errors="replace"):
-        raise ValueError("The dedicated server did not read the sample config")
-    print(f"PASS {edition} started from {exe.parent} and exited cleanly", flush=True)
+    print(f"PASS {edition} used the sample config from {exe.parent} and exited cleanly", flush=True)
 
 
 def verify_portable(artifacts, work, sample):
