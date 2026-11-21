@@ -803,7 +803,8 @@ static OSStatus Render(void *refcon, AudioUnitRenderActionFlags *flags, const Au
 static void SDLCALL Render(void *userdata, Uint8 *stream, int bytes)
 {
     (void)userdata;
-    size_t frames = (size_t)bytes / (2 * sizeof(float));
+    const int channels = driver_channels;
+    size_t frames = (size_t)bytes / (channels * sizeof(float));
     float *pcm = (float *)stream;
     atomic_fetch_add_explicit(&output_callbacks, 1, memory_order_relaxed);
     atomic_fetch_add_explicit(&output_frames, frames, memory_order_relaxed);
@@ -812,12 +813,14 @@ static void SDLCALL Render(void *userdata, Uint8 *stream, int bytes)
         memset(stream, 0, (size_t)bytes);
         return;
     }
-    MixLocked(pcm, frames, 2);
+    MixLocked(pcm, frames, channels);
     pthread_mutex_unlock(&audio_mutex);
     float peak = 0;
     uint64_t audible = 0;
     for (size_t i = 0; i < frames; ++i) {
-        float value = fmaxf(fabsf(pcm[i * 2]), fabsf(pcm[i * 2 + 1]));
+        float value = fabsf(pcm[i * channels]);
+        if (channels == 2)
+            value = fmaxf(value, fabsf(pcm[i * channels + 1]));
         peak = fmaxf(peak, value);
         audible += value > 0.00001f;
     }
@@ -893,16 +896,24 @@ void *AIL_open_digital_driver(int frequency, int bits, int channels, int flags)
     }
     return AUDIO_DRIVER;
 #else
-    /* SDL takes stereo here whatever the game asked for. */
     if (output_device)
         return AUDIO_DRIVER;
     driver_rate = frequency;
-    driver_channels = 2;
+    driver_channels = channels;
     memset(&room_reverb, 0, sizeof(room_reverb));
     ConfigureReverb(0);
-    SDL_AudioSpec want = { .freq = AUDIO_RATE, .format = AUDIO_F32SYS, .channels = 2, .samples = 1024, .callback = Render };
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) || !(output_device = SDL_OpenAudioDevice(NULL, 0, &want, NULL, 0))) {
+    /* Retail MSS_Init opens the requested mix rate and speaker count. Keep
+     * SDL's callback in the same format as the mixer clock and channel math. */
+    SDL_AudioSpec want = { .freq = frequency, .format = AUDIO_F32SYS, .channels = channels,
+                          .samples = 1024, .callback = Render };
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
         snprintf(last_error, sizeof(last_error), "SDL audio: %s", SDL_GetError());
+        return NULL;
+    }
+    output_device = SDL_OpenAudioDevice(NULL, 0, &want, NULL, 0);
+    if (!output_device) {
+        snprintf(last_error, sizeof(last_error), "SDL audio: %s", SDL_GetError());
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
         return NULL;
     }
     SDL_PauseAudioDevice(output_device, 0);
