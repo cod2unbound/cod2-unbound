@@ -29,14 +29,5 @@ internal sealed class SettingsViewModel(WindowsLauncherSession session)
         }
     }
 
-    internal async Task SaveSettingsAsync(GameSettings choice)
-    {
-        Settings.Replace(choice);
-        try { await Settings.FlushAsync(); }
-        catch
-        {
-            Settings.Replace(Settings.Saved);
-            throw;
-        }
-    }
+    internal Task SaveSettingsAsync(GameSettings choice) => session.UpdateSettingsAsync(choice);
 }

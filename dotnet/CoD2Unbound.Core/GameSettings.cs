@@ -80,6 +80,9 @@ public sealed partial record GameSettings
         ("sc_enable", "1"), ("r_dlightLimit", "4"), ("fx_sort", "1"), ("r_depthPrepassModels", "0")
     ];
 
+    internal static IEnumerable<string> LoadoutDefaultNames =>
+        FirstRunPicture.Select(pair => pair.Name).Concat(["com_maxfps", "m_rinput", "r_mode", "r_swapInterval", "in_rawmouse"]);
+
     internal List<(string Name, string Value)> Dvars()
     {
         if (!DisplayResolution.TryParse(Resolution, out _) || Fullscreen is not ("exclusive" or "borderless" or "spaces" or "windowed") ||

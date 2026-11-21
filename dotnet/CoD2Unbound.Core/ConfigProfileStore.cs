@@ -127,6 +127,25 @@ public sealed partial class ConfigProfileStore(
         return ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), id);
     }
 
+    // The native host holds the same profile lease used by an editor until spawn completes.
+    public static async ValueTask<(ConfigStudioLaunch Studio, ImmutableDictionary<string, string> Values)?> ReadActiveForLaunchAsync(
+        ISettingsFolder home, ConfigDialect dialect, CancellationToken cancellationToken = default)
+    {
+        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
+        if (selected.ProfileId is not { } id)
+            return null;
+        string directory = DirectoryName(id);
+        if (await home.ReadAsync(directory + ConfigName, cancellationToken).ConfigureAwait(false) is not { } config)
+            return null;
+        if (await home.ReadAsync(directory + JournalName, cancellationToken).ConfigureAwait(false) is not null)
+            throw new ConfigProfileException(ConfigProfileFailure.Conflict);
+
+        var document = new ConfigDocument(config.AsSpan(), dialect);
+        var values = GameSettings.LoadoutDefaultNames.Select(name => (Name: name, Value: document.EffectiveSetting(name))).Where(entry => entry.Value is not null)
+            .ToImmutableDictionary(entry => entry.Name, entry => entry.Value!, StringComparer.OrdinalIgnoreCase);
+        return (new(id, ConfigStudioLaunch.ChainBasename(id)), values);
+    }
+
     public void Select(string id, ImmutableArray<byte>? expectedActive)
     {
         using var lease = files.Acquire(default);

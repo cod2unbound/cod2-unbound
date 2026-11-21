@@ -86,7 +86,7 @@ public static class GameSettingsJson
 
 public sealed class GameSettingsStorage(ISettingsFolder folder)
 {
-    private const string FileName = "launcher-settings.json";
+    public const string FileName = "launcher-settings.json";
 
     public async ValueTask<GameSettings> ReadAsync(CancellationToken cancellationToken = default)
     {

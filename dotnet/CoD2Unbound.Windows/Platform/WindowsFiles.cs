@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using CoD2Unbound.Core;
 using Microsoft.Win32.SafeHandles;
@@ -90,6 +89,26 @@ internal sealed class WindowsFiles : IGameFiles
         }
     }
 
+    internal static FileStream OpenExclusiveLock(string path)
+    {
+        var handle = CreateFile(@"\\?\" + path, 0xC0000000, FileShare.None, 0, 4, 0x00200000, 0);
+        try
+        {
+            if (handle.IsInvalid)
+                throw FileError(Marshal.GetLastPInvokeError());
+            if (!GetFileInformationByHandleEx(handle, 9, out var info, 8))
+                throw FileError(Marshal.GetLastPInvokeError());
+            if ((info.Attributes & (FileAttributes.ReparsePoint | FileAttributes.Directory)) != 0)
+                throw new IOException("The launcher lock is not a regular file.");
+            return new FileStream(handle, FileAccess.ReadWrite);
+        }
+        catch
+        {
+            handle.Dispose();
+            throw;
+        }
+    }
+
     private static SafeFileHandle OpenHandle(string path, bool directory)
     {
         const uint genericRead = 0x80000000;
@@ -125,7 +144,7 @@ internal sealed class WindowsFiles : IGameFiles
         2 => new FileNotFoundException(),
         3 => new DirectoryNotFoundException(),
         5 => new UnauthorizedAccessException(),
-        _ => new IOException("Windows could not open a file in the selected folder.", new Win32Exception(error))
+        _ => new IOException("Windows could not open a file in the selected folder.", unchecked((int)0x80070000) | error)
     };
 
     [StructLayout(LayoutKind.Sequential)]

@@ -76,7 +76,7 @@ public sealed partial class SettingsPage : Page
         if (updatingSettings || ThemeChoice.SelectedIndex < 0 || EditionChoice.SelectedIndex < 0)
             return;
         var settings = model.Settings;
-        if (busy)
+        if (shell.IsBusy)
         {
             SyncChoices(settings.Working);
             return;
@@ -86,7 +86,7 @@ public sealed partial class SettingsPage : Page
             Engine = EditionChoice.SelectedIndex == 1 ? GameEdition.Original : GameEdition.Cod2x,
             Appearance = (LauncherAppearance)ThemeChoice.SelectedIndex
         };
-        await RunAsync(async () =>
+        await shell.RunAsync(async () =>
         {
             try { await model.SaveSettingsAsync(choice); }
             catch

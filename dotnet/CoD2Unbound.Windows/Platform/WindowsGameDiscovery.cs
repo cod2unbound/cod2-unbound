@@ -6,7 +6,7 @@ using Microsoft.Win32;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed partial class WindowsGameDiscovery : IGameDiscovery
+internal sealed partial class WindowsGameDiscovery(WindowsEngineInventory inventory) : IGameDiscovery
 {
     private const string RetailKey = @"SOFTWARE\Activision\Call of Duty 2";
     private const string SteamKey = @"SOFTWARE\Valve\Steam";
@@ -23,8 +23,9 @@ internal sealed partial class WindowsGameDiscovery : IGameDiscovery
             AddSteam(paths, RegistryPath(RegistryHive.LocalMachine, view, SteamKey, "InstallPath"));
         }
 
+        var binaries = inventory.Installed;
         return ValueTask.FromResult<ImmutableArray<GameInstallation>>(
-            [.. paths.Distinct(StringComparer.OrdinalIgnoreCase).Select(path => new GameInstallation(path, []))]);
+            [.. paths.Distinct(StringComparer.OrdinalIgnoreCase).Select(path => new GameInstallation(path, binaries))]);
     }
 
     private static string? RegistryPath(RegistryHive hive, RegistryView view, string key, string name)
