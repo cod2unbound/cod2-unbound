@@ -6,7 +6,6 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -140,17 +139,10 @@ public sealed partial class ConfigsPage : Page
 
     private async Task DeleteAsync(ConfigProfile profile)
     {
-        var dialog = Dialog($"Delete the loadout “{profile.DisplayName}”?",
-            Caption("Its settings, binds and history go with it. Your other loadouts aren’t affected."), "Delete loadout");
-        dialog.DefaultButton = ContentDialogButton.None;
-        dialog.PrimaryButtonStyle = StyleFor("NegativeButton");
-        // Keep Cancel as the only available action during ContentDialog's initial focus pass.
-        dialog.IsPrimaryButtonEnabled = false;
-        dialog.Opened += (sender, _) => sender.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        var dialog = new DeleteLoadoutDialog(profile.DisplayName)
         {
-            dialog.IsPrimaryButtonEnabled = true;
-            FindButton(sender, "Cancel")?.Focus(FocusState.Keyboard);
-        });
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
+        };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;
         removed = (profile.Id, model.Delete(profile.Id));
@@ -164,16 +156,6 @@ public sealed partial class ConfigsPage : Page
             await RefreshStudioAsync();
             Feedback("Loadout restored.");
         }));
-    }
-
-    private static Button? FindButton(DependencyObject root, string content)
-    {
-        if (root is Button button && Equals(button.Content, content))
-            return button;
-        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
-            if (FindButton(VisualTreeHelper.GetChild(root, index), content) is { } match)
-                return match;
-        return null;
     }
 
     private void RenderStudioBody()
