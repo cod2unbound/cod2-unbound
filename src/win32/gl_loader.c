@@ -94,6 +94,12 @@ GLW_RET(GLenum, glGetError, (void), ())
 GLW_VOID(glGetFloatv, (GLenum pname, GLfloat *params), (pname, params))
 GLW_VOID(glGetIntegerv, (GLenum pname, GLint *params), (pname, params))
 GLW_RET(const GLubyte *, glGetString, (GLenum name), (name))
+#if defined(COD2_X64) && COD2_WINDOWS_NATIVE && defined(__i386__)
+/* Shared renderer code calls these as cdecl; opengl32 exports them as stdcall. */
+GLW_VOID(glFlush, (void), ())
+GLW_VOID(glGetPointerv, (GLenum pname, GLvoid **params), (pname, params))
+GLW_VOID(glGetTexEnviv, (GLenum target, GLenum pname, GLint *params), (target, pname, params))
+#endif
 GLW_VOID(glHint, (GLenum target, GLenum mode), (target, mode))
 GLW_VOID(glLightModelfv, (GLenum pname, const GLfloat *params), (pname, params))
 GLW_VOID(glLightModeli, (GLenum pname, GLint param), (pname, param))

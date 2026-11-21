@@ -8,4 +8,7 @@ for arg in "$@"; do
     arg="${arg#\"}"
     args+=("${arg%\"}")
 done
+if [[ ${COD2_WINE_HEADLESS_CHECK:-0} == 1 ]]; then
+    args=(+set developer 0 "${args[@]}")
+fi
 exec wine "$COD2_EXE" "${args[@]}"

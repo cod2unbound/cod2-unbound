@@ -1,77 +1,77 @@
 # Building for Windows
 
-MinGW builds the same engine as the macOS and Linux targets (`cmake/windows-native.cmake`),
-for x86_64 or i686. Pick x86_64 unless you have a reason not to: it runs the same pointer-width
-paths as those targets, and its replay matches macOS bit for bit.
+MinGW builds the reconciled engine for Windows from `cmake/windows-native.cmake`.
+The Windows release targets x86_64. The i686 build is a link and import probe.
 
 | Output | Option | What it is |
 | --- | --- | --- |
 | `cod2_win32_ded.exe` | default | Dedicated server |
-| `cod2_win32.exe` | `-DCOD2_WIN32_CLIENT=ON` | SDL2/OpenGL client |
+| `cod2_win32.exe` | `-DCOD2_WIN32_CLIENT=ON` | SDL2/OpenGL diagnostic client |
 | `cod2_win32.exe` | `-DCOD2_WIN32_CLIENT=ON -DCOD2_WIN32_D3D9=ON` | Client that renders through the system `d3d9.dll` |
 
-## Cross-compiling with Docker (tested)
+Add `-DCOD2_FEATURE_CFLAGS=-DCOD2_CODX=1` for CoD2x. `COD2_WIN32_D3D9` is the system
+Direct3D 9 option for the native MinGW client and defaults to OFF.
 
-These commands were run as written, on macOS arm64 with Docker emulating `linux/amd64`. Run them
-from the repository root. The builds go in a Docker volume, not the repository.
+## Local build and server checks
+
+Run from the repository root with Docker running. Build the tools image once.
 
 ```sh
 docker build --platform linux/amd64 -t cod2-build-win tools/windows
-docker volume create cod2-win-build
-
-# Dedicated server
-docker run --rm --platform linux/amd64 -v "$PWD":/src:ro -v cod2-win-build:/w cod2-build-win bash -c '
-  cmake -S /src -B /w/ded64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-mingw64.cmake &&
-  cmake --build /w/ded64 --parallel 8'
-
-# Client. Configure downloads SDL2 2.30.9 from libsdl-org and the curl 8.14.1 source from curl.se,
-# each checked against a pinned SHA-256, and builds libcurl.
-docker run --rm --platform linux/amd64 -v "$PWD":/src:ro -v cod2-win-build:/w cod2-build-win bash -c '
-  cmake -S /src -B /w/cli64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-mingw64.cmake -DCOD2_WIN32_CLIENT=ON &&
-  cmake --build /w/cli64 --parallel 8'
+tools/windows/build-matrix.sh
+tools/windows/check-servers.sh "/path/to/CoD2"
 ```
 
-For 32-bit, use `cmake/toolchain-mingw32.cmake`. To copy a result out:
+On Apple silicon, allow about 10–15 minutes for a clean matrix and 2–3 minutes
+for the headless checks. Incremental matrix runs reuse the build directories.
 
-```sh
-docker run --rm --platform linux/amd64 -v cod2-win-build:/w -v "$PWD/out-win":/out cod2-build-win \
-  cp /w/cli64/cod2_win32.exe /out/
-```
+**Build matrix.** The script builds x64 Original 1.3 and CoD2x dedicated, Direct3D 9,
+and diagnostic OpenGL binaries, plus the i686 Original 1.3 Direct3D 9 probe.
+The first build downloads checksummed SDL2 2.30.9 and curl 8.14.1, and builds static
+libcurl once per architecture. Set `COD2_WINDOWS_JOBS` to change Ninja's parallelism
+from the default of three. Both scripts accept a locally built image name via
+`COD2_WINDOWS_IMAGE`.
 
-The executables link SDL2, zlib and the C++ runtime statically, so they need only system DLLs.
-Put one in the game folder, next to `main/`, and start it there. Game data is never part of this
-repository.
+Each target directory under `output/r05/builds/matrix/` contains the executable,
+`configure.log`, `build.log`, `pe-header.txt` and `imports.txt`. The build checks
+the PE architecture and looks for the system Direct3D 9 entry point on the
+selected renderer path. It fails on a DLL import outside
+[`pe-imports/`](pe-imports/). Review the reason for a new dependency before
+updating its list. Direct3D 9 and its shader compiler are loaded dynamically.
 
-## Running under Wine (tested)
+**Headless Wine checks.** Pass a clean licensed game folder containing `main/*.iwd`.
+Omit the path to use `~/Games/CoD2`. The check mounts those files read-only, boots
+a fresh Wine prefix in a container with loopback networking only, and uses a
+private home for each server start. Every start sets `developer 0` and points
+the three `COD2X_TEST_*` service settings at `127.0.0.1:9`. Logs, traces and the
+prefix stay in a new directory under `output/r05/builds/wine/`.
 
-Wine is in the same image. Game data goes in read-only. The client needs a display and software
-OpenGL, which these commands do not install; see the note below.
+Each edition loads `mp_toujane` in DM, answers local `getinfo` and `getstatus`
+queries, and then replays the same two synthetic clients for 600 simulation
+ticks. `tools/parity/compare.py --raw --require-clients 2` checks the result
+against the saved Windows x64 reference traces in
+[`fixtures/two-bot/`](fixtures/two-bot/README.md). The original edition uses
+the public 0.4.0 engine's Original 1.3 replay. CoD2x uses the scope run's
+CoD2x replay. These traces cover the tracked entity hashes and player fields
+for this fixture. Retail parity and rendering require separate acceptance checks.
 
-```sh
-docker run --rm --platform linux/amd64 -v "$PWD":/src:ro -v cod2-win-build:/w \
-  -v "$HOME/Games/CoD2":/data:ro cod2-build-win bash -c '
-  export WINEPREFIX=/w/wine64 WINEARCH=win64 WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml="
-  wineboot -i
-  mkdir -p /w/run/home/main
-  cd /w/run && wine /w/ded64/cod2_win32_ded.exe +set fs_basepath /data +set fs_homepath /w/run/home \
-    +set dedicated 2 +set sv_punkbuster 0 +set net_ip 127.0.0.1 +set net_port 28960 +set g_gametype dm +map mp_toujane'
-```
+## Direct3D 9
 
-For a 32-bit build, use a separate prefix with `WINEARCH=win32`.
+`-DCOD2_WIN32_D3D9=ON` makes the client create a real Direct3D 9 device on its SDL window, as
+Windows 1.3 does, with no OpenGL context. It compiles the game's own HLSL from `main/` at material
+load with `D3DCompile` from `d3dcompiler_47.dll` (then `_46`, `_43`), which Windows 10 and 11 ship.
 
-The replay in `tools/parity/record.py` runs a Windows build through `tools/windows/wine-binary.sh`:
+Previous x86_64 runtime checks covered these configurations.
 
-```sh
-docker run --rm --platform linux/amd64 -v "$PWD":/src:ro -v cod2-win-build:/w \
-  -v "$HOME/Games/CoD2":/data:ro -v /path/to/recording:/evidence:ro cod2-build-win bash -c '
-  export WINEPREFIX=/w/wine64 WINEARCH=win64 COD2_EXE=/w/ded64/cod2_win32_ded.exe
-  python3 /src/tools/parity/record.py --binary /src/tools/windows/wine-binary.sh --data /data \
-    --output /w/run/replay --port 29673 --dedicated --players --clients 2 --frames 2000 \
-    --timeout 550 --replay /evidence/usercmds.txt'
-```
+- **Windows 11 in a virtual machine**, with Microsoft's `d3d9.dll` and compiler and software
+  rendering: the menu, a map, `vid_restart`, a mode change and exclusive fullscreen. Every shader
+  the menu and `mp_toujane` need compiled. No machine with a graphics card has run it.
+- **Wine with DXVK:** four maps in the default and Direct3D 7 paths. Wine's own HLSL compiler
+  rejects a few of the game's shaders (which ones depends on the Wine version), so those runs used
+  bytecode compiled from the same HLSL with vkd3d-shader. Expect missing materials under Wine
+  without that.
 
-Compare its `players.txt` with another build's line by line after normalising line endings. A byte
-comparison will report a difference, because Windows writes CRLF line endings.
+### Previous Wine client diagnostics
 
 To see the client without a monitor, also install `xvfb libgl1-mesa-dri libgl1-mesa-dri:i386
 libgl1:i386 libglx-mesa0:i386` and the i386 X11 libraries in the container, start `Xvfb`, and set
@@ -83,35 +83,9 @@ On an arm64 Mac, `rosetta error: invalid gdt selector index 5` from an x86_64 bu
 faulted, or was killed by `timeout`, and Rosetta hid the crash report. Reproduce on i686, whose crash
 handler works there.
 
-## Direct3D 9 (optional)
-
-`-DCOD2_WIN32_D3D9=ON` makes the client create a real Direct3D 9 device on its SDL window, as
-Windows 1.3 does, with no OpenGL context. It compiles the game's own HLSL from `main/` at material
-load with `D3DCompile` from `d3dcompiler_47.dll` (then `_46`, `_43`), which Windows 10 and 11 ship.
-The option is off by default, and the OpenGL client is unchanged with it off.
-
-```sh
-docker run --rm --platform linux/amd64 -v "$PWD":/src:ro -v cod2-win-build:/w cod2-build-win bash -c '
-  cmake -S /src -B /w/d3d64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-mingw64.cmake \
-    -DCOD2_WIN32_CLIENT=ON -DCOD2_WIN32_D3D9=ON &&
-  cmake --build /w/d3d64 --parallel 8'
-```
-
-What was run, x86_64 only:
-
-- **Windows 11 in a virtual machine**, with Microsoft's `d3d9.dll` and compiler and software
-  rendering: the menu, a map, `vid_restart`, a mode change and exclusive fullscreen. Every shader
-  the menu and `mp_toujane` need compiled. No machine with a graphics card has run it.
-- **Wine with DXVK:** four maps in the default and Direct3D 7 paths. Wine's own HLSL compiler
-  rejects a few of the game's shaders (which ones depends on the Wine version), so those runs used
-  bytecode compiled from the same HLSL with vkd3d-shader. Expect missing materials under Wine
-  without that.
-
-The i686 build of this option has not been run.
-
 ## Building on Windows (not tested)
 
-Nobody has run these steps. The project has only been built by cross-compiling and run under Wine.
+The Docker checks above cover cross-compilation and headless Wine.
 
 **MSYS2.** In the UCRT64 shell (MINGW32 for a 32-bit build, with the matching package prefix):
 
@@ -120,7 +94,7 @@ pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake \
   mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-python
 cmake -S . -B out -G Ninja
 cmake --build out
-cmake -S . -B out-client -G Ninja -DCOD2_WIN32_CLIENT=ON
+cmake -S . -B out-client -G Ninja -DCOD2_WIN32_CLIENT=ON -DCOD2_WIN32_D3D9=ON
 cmake --build out-client
 ```
 
