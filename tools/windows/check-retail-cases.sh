@@ -10,7 +10,7 @@ data=$(cd "$1" && pwd)
 retail=$(cd "$2" && pwd)
 only=${3:-}
 fixture="$root/tools/windows/fixtures/retail-extra"
-matrix=${COD2_REPLAY_MATRIX:-$root/output/r05/builds/matrix}
+matrix=${COD2_REPLAY_MATRIX:-${COD2_WINDOWS_OUTPUT:-$root/output/r05/builds}/matrix}
 if [[ ! -f "$matrix/ded64-original/cod2_win32_ded.exe" ]]; then
     echo 'Build the Windows matrix before running the extra retail cases.' >&2
     exit 2
@@ -41,12 +41,18 @@ export COD2X_TEST_UPDATER_URL=http://127.0.0.1:9/api/updater/check
 mkdir -p "$HOME"
 wineboot -i > /run/wineboot.log 2>&1
 trap "wineserver -k; wineserver -w" EXIT
+localdata=$(find "$WINEPREFIX/drive_c/users" -path "*/AppData/Local" -type d -print -quit)
+test -n "$localdata"
+game_home="$localdata/CoD2 Unbound/replay"
 stream=/src/tools/windows/fixtures/retail-extra/$1
 script=()
 if [[ -f $stream.gsc ]]; then script=(--fixture-script "$stream.gsc"); fi
 python3 -B /src/tools/parity/record.py --binary /src/tools/windows/wine-binary.sh \
-    --data /data --output /run/replay --map "$2" --gametype "$3" --seed "$4" --frames "$5" \
+    --data /data --output /run/replay --home "$game_home" --map "$2" --gametype "$3" --seed "$4" --frames "$5" \
     --dedicated --players --clients "$6" --replay "$stream.txt" "${script[@]}"
+if [[ -f "$game_home/main/games_mp.log" ]]; then
+    cp "$game_home/main/games_mp.log" /run/replay/games_mp.log
+fi
 ' bash "$name" "$map" "$gametype" "$seed" "$ticks" "$clients"; then
         failed=1
         continue

@@ -50,6 +50,7 @@ enum {
 #define READ_I32(addr) (*(const int32_t *)(uintptr_t)(addr))
 #define READ_PTR(addr) (*(unsigned char *const *)(uintptr_t)(addr))
 #define LEVEL_ENTITIES READ_I32(0x193a78c)
+#define LEVEL_LOG_FILE READ_I32(0x193a798)
 #define LEVEL_CLIENTS  READ_I32(0x193a964)
 #define LEVEL_FRAME    READ_I32(0x193a968)
 #define LEVEL_TIME     READ_I32(0x193a96c)
@@ -194,6 +195,12 @@ static void __attribute__((used)) snapshot_tick(void)
         snprintf(message, sizeof message, "Retail recorder wrote %d ticks and injected %d commands for %d clients\n",
                  captured, injected, header[3]);
         log_message(message);
+        /* ExitProcess bypasses the game's buffered log shutdown. G_LogPrintf
+           reads this handle at 0x4fcb50 and FS_FCloseFile takes it on the stack. */
+        if (LEVEL_LOG_FILE) {
+            void (__cdecl *close_game_file)(int) = (void *)0x421fd0;
+            close_game_file(LEVEL_LOG_FILE);
+        }
         ExitProcess(0);
     }
 }
