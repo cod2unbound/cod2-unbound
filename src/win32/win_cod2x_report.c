@@ -33,6 +33,7 @@
 #include "PC/qcommon/cod2x.h"
 #include "PC/qcommon/cod2x_features.h"
 #include "PC/qcommon/crash_handler.h"
+#include "win32/win_paths.h"
 #include "win32/win_cod2x.h"
 
 #define WR_MAX_FRAMES 64
@@ -1272,7 +1273,7 @@ static void WR_MainFolderText(Cod2xReportText *text, Cod2xReportText *json)
     DIR *directory;
     struct dirent *entry;
     int first = 1;
-    snprintf(folder, sizeof(folder), "%s\\main", Win_Cod2xExeDirectory());
+    snprintf(folder, sizeof(folder), "%s/main", WIN_DATA_ROOT);
     Cod2x_ReportTextAdd(json, "\"mainFolderFiles\":[");
     directory = opendir(folder);
     if (!directory) {
@@ -1716,15 +1717,10 @@ static void WR_Fill(WRReport *report, const char *kind, EXCEPTION_POINTERS *exce
 
 static int WR_WriteFile(const char *path, const char *data, size_t length, int append)
 {
-    HANDLE file = CreateFileA(path, append ? FILE_APPEND_DATA : GENERIC_WRITE, FILE_SHARE_READ, NULL,
-                              append ? OPEN_ALWAYS : CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    DWORD written = 0;
-    BOOL ok;
-    if (file == INVALID_HANDLE_VALUE)
-        return 0;
-    ok = WriteFile(file, data, (DWORD)length, &written, NULL);
-    CloseHandle(file);
-    return ok && written == length;
+    FILE *file = fopen(path, append ? "ab" : "wb");
+    if (!file) return 0;
+    int ok = fwrite(data, 1, length, file) == length;
+    return fclose(file) == 0 && ok;
 }
 
 /* The report as saved and shown: CRLF line ends. */
@@ -1755,20 +1751,15 @@ typedef struct {
     int ok;
 } WRDump;
 
-static wchar_t exeWide[MAX_PATH];
-
-/* A small dump keeps the data segments of this executable only. */
+/* Keep thread metadata and module mappings, without process memory containing keys. */
 static BOOL CALLBACK WR_DumpFilter(PVOID unused, const PMINIDUMP_CALLBACK_INPUT input, PMINIDUMP_CALLBACK_OUTPUT output)
 {
-    const wchar_t *path, *name;
     (void)unused;
-    if (!input || !output || input->CallbackType != ModuleCallback || !(output->ModuleWriteFlags & ModuleWriteDataSeg))
-        return TRUE;
-    path = input->Module.FullPath;
-    name = path ? wcsrchr(path, L'\\') : NULL;
-    name = name ? name + 1 : (path ? path : L"");
-    if (_wcsicmp(name, exeWide) != 0)
-        output->ModuleWriteFlags &= ~ModuleWriteDataSeg;
+    if (!input || !output) return TRUE;
+    if (input->CallbackType == ThreadCallback || input->CallbackType == ThreadExCallback)
+        output->ThreadWriteFlags &= ~(ThreadWriteStack | ThreadWriteBackingStore | ThreadWriteContext);
+    if (input->CallbackType == ModuleCallback)
+        output->ModuleWriteFlags &= ~(ModuleWriteDataSeg | ModuleWriteTlsData);
     return TRUE;
 }
 
@@ -1791,33 +1782,25 @@ static DWORD WINAPI WR_DumpThread(LPVOID data)
     information.ClientPointers = FALSE;
     callback.CallbackRoutine = WR_DumpFilter;
     callback.CallbackParam = NULL;
-    if (dump->full) {
-        types[0] = (MINIDUMP_TYPE)(MiniDumpWithFullMemory | MiniDumpWithHandleData | MiniDumpWithThreadInfo |
-                                   MiniDumpWithUnloadedModules);
-        types[1] = MiniDumpWithFullMemory;
-    } else {
-        types[0] = (MINIDUMP_TYPE)(MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithDataSegs |
-                                   MiniDumpWithHandleData | MiniDumpWithThreadInfo | MiniDumpWithUnloadedModules |
-                                   MiniDumpWithProcessThreadData);
-        types[1] = MiniDumpNormal;
-    }
+    types[0] = (MINIDUMP_TYPE)(MiniDumpWithoutOptionalData | MiniDumpWithThreadInfo | MiniDumpWithUnloadedModules |
+        (dump->full ? MiniDumpWithHandleData : 0));
+    types[1] = MiniDumpNormal;
     for (i = 0; i < 2 && !dump->ok; ++i) {
-        HANDLE file = CreateFileA(dump->path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-        if (file == INVALID_HANDLE_VALUE)
-            return 0;
+        FILE *stream = fopen(dump->path, "wb");
+        if (!stream) return 0;
+        HANDLE file = (HANDLE)_get_osfhandle(_fileno(stream));
         dump->ok = write(GetCurrentProcess(), GetCurrentProcessId(), file, types[i],
-                         dump->exception ? &information : NULL, NULL, dump->full ? NULL : &callback) != FALSE;
-        CloseHandle(file);
+                         dump->exception ? &information : NULL, NULL, &callback) != FALSE;
+        fclose(stream);
     }
     if (!dump->ok)
-        DeleteFileA(dump->path);
+        remove(dump->path);
     return 0;
 }
 
 static SYSTEMTIME crashTime;
 
-/* "<exe>.<kind>.<time>.dmp", or ".full.dmp" with all memory, written on a fresh
-   thread that may take 30 seconds (3 minutes for a full one). */
+/* Allow up to three minutes when collecting extra handle metadata. */
 int Win_Cod2xDump(EXCEPTION_POINTERS *exception, DWORD thread, int full, const char *kind, char *path, size_t size)
 {
     char name[MAX_PATH * 2];
@@ -1828,8 +1811,7 @@ int Win_Cod2xDump(EXCEPTION_POINTERS *exception, DWORD thread, int full, const c
         now = crashTime;
     else
         GetLocalTime(&now);
-    Win_Cod2xDiagnosticPath(name, sizeof(name), kind, &now, full ? ".full.dmp" : ".dmp");
-    MultiByteToWideChar(CP_ACP, 0, Win_Cod2xExeName(), -1, exeWide, MAX_PATH);
+    Win_Cod2xDiagnosticPath(name, sizeof(name), kind, &now, full ? ".diagnostic.dmp" : ".dmp");
     dump.exception = exception;
     dump.thread = thread ? thread : GetCurrentThreadId();
     dump.full = full;

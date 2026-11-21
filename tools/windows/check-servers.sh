@@ -8,7 +8,7 @@ if [[ $# -gt 1 ]]; then
 fi
 root=$(cd "$(dirname "$0")/../.." && pwd)
 data=$(cd "${1:-$HOME/Games/CoD2}" && pwd)
-output="$root/output/r05/builds"
+output="${COD2_WINDOWS_OUTPUT:-$root/output/r05/builds}"
 for edition in original cod2x; do
     if [[ ! -f "$output/matrix/ded64-$edition/cod2_win32_ded.exe" ]]; then
         echo "Missing $edition dedicated server. Run tools/windows/build-matrix.sh first." >&2
@@ -17,6 +17,7 @@ for edition in original cod2x; do
 done
 mkdir -p "$output/wine"
 run=$(mktemp -d "$output/wine/headless-XXXXXXXX")
+echo "Evidence in $run"
 
 docker run --rm --init --pull=never --platform linux/amd64 --network none \
     --label cod2.windows.check=wine \

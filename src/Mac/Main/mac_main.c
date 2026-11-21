@@ -24,6 +24,9 @@ extern void MacServer_CheckQuit(void);
 #include <strings.h>
 #endif
 /* The Windows CoD2x client has the same hooks, in src/win32/win_cod2x.c. */
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#endif
 #if defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE && defined(COD2_X64) && COD2_X64 && \
     defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)
 #define COD2_WIN_CODX_CLIENT 1
@@ -505,6 +508,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #endif
     char cwd[256];
 
+#if COD2_WINDOWS_NATIVE
+    lpCmdLine = Win_CommandLine();
+    if (!lpCmdLine || !Win_ConfigurePaths(lpCmdLine)) return 1;
+#endif
+
 #ifdef _WIN32
 
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -531,9 +539,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #endif
 #else
     Sys_InstallCrashHandler("CoD2 MP " COD2_VERSION_SHORT, COD2_VERSION_SHORT,
+#if COD2_WINDOWS_NATIVE
+                            COD2_VERSION_DATE, "native launch (command line omitted)");
+#else
                             COD2_VERSION_DATE, lpCmdLine);
+#endif
 #if COD2_WIN_CODX_CLIENT
-    /* CoD2x's checks of the game folder, its registry values and cod2x:// links. */
+    /* Set up Unbound’s CoD2x state and handle links. */
     lpCmdLine = Win_Cod2xStartup(lpCmdLine);
 #endif
 #endif

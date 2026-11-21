@@ -85,6 +85,7 @@ def main():
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--data', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='new directory; never reused')
+    parser.add_argument('--home', type=Path, help='override the new writable game folder')
     parser.add_argument('--frames', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=12345)
     parser.add_argument('--map', default='mp_toujane')
@@ -117,13 +118,13 @@ def main():
     iwds = sorted((data / 'main').glob('*.iwd'))
     if not binary.is_file() or not os.access(binary, os.X_OK) or not iwds:
         parser.error('need an executable binary and data/main/*.iwd')
-    if any(c in str(data) + str(out) for c in '";+\n\r'):
+    home = args.home.resolve() if args.home else out / 'home'
+    if any(c in str(data) + str(out) + str(home) for c in '";+\n\r'):
         parser.error('paths cannot contain quotes, semicolons, + or newlines')
     fixture_script = args.fixture_script.read_bytes() if args.fixture_script is not None else None
     bootstrap = testclients_bootstrap(iwds, args.gametype, fixture_script) if args.clients is not None else None
     out.mkdir(parents=True, exist_ok=False)
-    home = out / 'home'
-    home.mkdir()
+    home.mkdir(parents=True)
     # A client's map commands require a selected profile; a dedicated server ignores it.
     profile = home / 'main' / 'players' / 'default'
     profile.mkdir(parents=True)
@@ -168,7 +169,8 @@ def main():
         metadata['players'] = 'players.txt'
     if args.clients is not None:
         metadata['clients'] = args.clients
-        metadata['testclients_bootstrap'] = [str(Path('home/main') / member) for member, _ in bootstrap]
+        bootstrap_root = home if args.home else Path('home')
+        metadata['testclients_bootstrap'] = [str(bootstrap_root / 'main' / member) for member, _ in bootstrap]
     if args.fixture_script is not None:
         metadata['fixture_script_sha256'] = sha256(args.fixture_script)
     if args.commands_record:

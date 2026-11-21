@@ -1,0 +1,28 @@
+CoD2 Unbound Windows components
+===============================
+
+The game executables link to the following third-party components. The build
+uses static libraries for SDL2, curl, zlib and the MinGW runtime. The package
+contains no runtime DLLs. Windows provides Direct3D 9, d3dcompiler_47, OpenGL,
+Schannel, Winsock, and the other system libraries. Shader compilation uses
+the player's licensed archives.
+
+- SDL 2.30.9, zlib license. Official SDL2-devel-2.30.9-mingw.tar.gz by SDL.
+  https://github.com/libsdl-org/SDL/releases/tag/release-2.30.9
+  Source archive SHA-256 b188d165dc4a0372042bff3d0c18e9bb90772581e92a7b8b47b521b47714f75c
+- curl 8.14.1, curl license. Static build from curl-8.14.1.tar.gz with Schannel.
+  https://curl.se/download/curl-8.14.1.tar.gz
+  Source archive SHA-256 6766ada7101d292b42b8b15681120acd68effa4a9660935853cf6d61f0d984d4
+- zlib 1.3.1, zlib license. From the build image's libz-mingw-w64-dev package.
+  https://zlib.net/
+- MinGW-w64 runtime, including winpthreads, from the pinned build image.
+  See licenses/mingw-w64.txt for the component notices.
+  https://www.mingw-w64.org/
+- GCC runtime and C++ runtime are linked under the GCC Runtime Library Exception.
+  https://www.gnu.org/licenses/gcc-exception-3.1.html
+- minimp3 at ea99364, CC0-1.0, from third_party/minimp3 in the source tree.
+  https://github.com/lieff/minimp3
+
+See LICENSE, NOTICE.md and CREDITS.md for source provenance and other
+inherited components, including Speex. The Mac-specific libraries in those
+notices are part of the Mac distribution.

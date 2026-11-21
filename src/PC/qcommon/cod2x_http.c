@@ -13,6 +13,9 @@
 #include <windows.h>
 #include <process.h>
 #include <bcrypt.h>
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#endif
 #define strncasecmp _strnicmp
 #else
 #include <strings.h>
@@ -140,12 +143,22 @@ intptr_t Cod2x_LockFolder(const char *folder, const char *name)
     char mutexName[96];
     HANDLE mutex;
     DWORD wait;
+#if COD2_WINDOWS_NATIVE
+    wchar_t *physical = Win_OSPath(folder, 0);
+    char *utf8 = physical ? Win_UTF8(physical) : NULL;
+    free(physical);
+    if (!utf8) return -1;
+    folder = utf8;
+#endif
     for (const char *p = folder; *p; ++p) {
         unsigned char c = (unsigned char)*p;
         if (c >= 'A' && c <= 'Z')
             c = (unsigned char)(c - 'A' + 'a');
         hash = (hash ^ c) * 16777619u;
     }
+#if COD2_WINDOWS_NATIVE
+    free(utf8);
+#endif
     snprintf(mutexName, sizeof(mutexName), "Global\\CoD2x_%s_%08x", name, (unsigned int)hash);
     mutex = CreateMutexA(NULL, FALSE, mutexName);
     if (!mutex)
@@ -166,7 +179,11 @@ void Cod2x_UnlockFolder(intptr_t lock)
 
 int Cod2x_ReplaceFile(const char *from, const char *to)
 {
+#if COD2_WINDOWS_NATIVE
+    return Win_Move(from, to, MOVEFILE_REPLACE_EXISTING);
+#else
     return MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING) != 0;
+#endif
 }
 #else
 intptr_t Cod2x_LockFolder(const char *folder, const char *name)

@@ -1,0 +1,32 @@
+# Windows game data and user files
+
+Both editions and both engine executables use the same Windows paths. They run as the invoking user. The install location can be read-only.
+
+## Game discovery
+
+Pass a selected folder as `+set fs_basepath "D:/Games/Call of Duty 2"`. Supply the directory containing `main`. The engine checks for all 16 readable archives, `main/iw_00.iwd` through `main/iw_15.iwd`, then loads the localization archives from that installation. A bad explicit selection fails with a message to check the folder. Forward slashes in the quoted value work with the engine's command-line grammar, including when the folder name contains `+` or when the value ends with a separator.
+
+When no explicit folder is supplied, the first valid location wins.
+
+1. Steam app 2630. Read `HKCU\Software\Valve\Steam` value `SteamPath`, then `HKLM\Software\Valve\Steam` value `InstallPath` in its 32-bit and 64-bit views. For each Steam root, check its own `steamapps` and then the libraries listed in `steamapps/libraryfolders.vdf` in file order. The older `config/libraryfolders.vdf` is a fallback if the first list is absent or unreadable. Support the `path` field in current records and numbered string entries in older lists. In each library, check `steamapps/appmanifest_2630.acf` for app ID `2630` and its `installdir` under `steamapps/common`.
+2. Retail. Read `InstallPath` in `HKLM\Software\Activision\Call of Duty 2`, first the 32-bit view and then the 64-bit view. Open each view explicitly through the registry API. Expand `REG_EXPAND_SZ` values.
+3. Check the directory containing the engine executable. If discovery fails, select the data folder in the launcher or supply `fs_basepath` directly.
+
+The engine resolves native paths through Unicode Windows APIs, follows install-directory junctions and uses extended paths for file I/O. The console has separate `Game data` and `User data` startup lines. The filesystem's search path lists those roots as `@data` and `@user` to keep physical paths out of the engine's fixed-size archive, download and game-path fields.
+
+## Writable files
+
+The default is `CoD2 Unbound` under the `FOLDERID_LocalAppData` known folder. The client and server share that default. `+set fs_homepath "<absolute path>"` can select a dedicated server instance or an alternate game home within this directory. Pass the default as the working directory when a caller needs one. The engine uses its selected game home even when the working directory is unrelated. Existing junctions or other reparse points below LocalAppData cannot redirect the app directory, a game home, or game-file writes. The game and writable trees must be separate.
+
+Profiles live under `main/players`, with the selected name in `main/players/active.txt`. Dedicated configs, mods, downloads, demos, screenshots and logs go in the corresponding user directories. CoD2x's version and identity history use the per-user app registry key `HKCU\Software\CoD2 Unbound\CoD2x`. The installer or launcher owns any optional `cod2x://` association.
+
+## Launcher core contract
+
+- `IGameDiscovery` should return validated roots and the installed executables by edition and role. Offer every valid candidate, including when Steam and retail coexist. Use the order above for the default. Validate a manual selection with the same archive names. If a user selects `main`, the adapter may normalize it to its parent before validation.
+- Pass the selected root and optional game home with `CreateProcessW`. Use the full executable path as `lpApplicationName`. Preserve the engine's double quotes around path values in the raw command tail. Use the full Windows path, including Unicode, without an ANSI round trip. Keep game-file paths in the core as physical paths. The search-path aliases are internal to the engine.
+- Resolve the same LocalAppData known folder for `ISettingsFolder` and `IGameFiles`. Place launcher settings in their own subdirectory. For dedicated instances, assign a subdirectory such as `servers/<stable-id>` and pass it as the game home. Retain the selected writable directory and per-user credential across updates.
+- `ISecretStore` uses a Windows Credential Manager generic credential with target `CoD2 Unbound/CD Key` and persistence `CRED_PERSIST_LOCAL_MACHINE`. Its blob is exactly 20 ASCII bytes with no terminator, consisting of 16 key characters and four hexadecimal checksum characters. Validate the usual Call of Duty 2 CRC-16 before saving. Write it successfully before starting the child under the same Windows user. Both editions read the same credential directly. A malformed explicit value calls for re-entry. Removing the credential restores legacy lookup. Keep secrets out of process arguments, launch-only files, environment, stdout and stderr. No authentication or entitlement check is implied by the checksum.
+- If no explicit credential exists, the engine validates each legacy `codkey` candidate in order. It tries HKCU `Software\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\Activision\Call of Duty 2`, its equivalent without `WOW6432Node`, then the 32-bit and 64-bit views of the retail HKLM key. Legacy values are read only. The launcher can offer to store a preview-free copy of a valid legacy value in Credential Manager on explicit acceptance. Use the same order and stop at the first format-valid value.
+- Profile discovery is a launcher operation. Enumerate `main/players/<name>/config_mp.cfg`, the `config_mp*.cfg` and `.cfg.bak` variants, and the recognized `backup`, `backups` and `Raptr` subfolders in retail and Steam candidates and user-selected folders. Include loose `main/config_mp.cfg` and `main/config_mp_server.cfg` if present. Read bounded `main/players/active.txt` to mark the active profile. For legacy installs in protected folders, also examine the corresponding drive-relative install path under `LocalAppData\VirtualStore`. Deduplicate paths, identify the source and active or backup status, and reject links that leave the selected source. Feed the candidates into the core's config import and review. Copy only the selected files after the user confirms. Create or activate a profile in the Unbound home only if requested. The engine excludes old loose configs, profiles and demos from its licensed data search.
+
+Use `tools/windows/check-paths.sh` after `tools/windows/build-matrix.sh` to exercise disposable offline Wine discovery and credential fixtures.

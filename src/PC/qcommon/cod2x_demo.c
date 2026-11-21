@@ -348,7 +348,9 @@ static void Cod2x_DemoStart(const char *directory, int timeoutSeconds)
 {
     char url[1024];
     FILE *marker;
+#if !COD2_WINDOWS_NATIVE
     int fd;
+#endif
     long fileSize;
     if (!Cod2x_DemoFind(directory, demo_marker, demo_path))
         return;
@@ -357,11 +359,14 @@ static void Cod2x_DemoStart(const char *directory, int timeoutSeconds)
         Cod2x_DemoRemoveMarker();
         return;
     }
+#if COD2_WINDOWS_NATIVE
+    demo_file = fopen(demo_path, "rb");
+#else
     fd = open(demo_path, COD2X_DEMO_OPEN_FLAGS);
     demo_file = fd >= 0 ? fdopen(fd, "rb") : NULL;
+    if (!demo_file && fd >= 0) close(fd);
+#endif
     if (!demo_file) {
-        if (fd >= 0)
-            close(fd);
         Com_Error(COD2X_DEMO_ERR_FATAL, "Failed to open demo file: %s\n", demo_path);
         return;
     }

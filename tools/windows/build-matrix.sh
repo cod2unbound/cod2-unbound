@@ -3,7 +3,7 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-output="$root/output/r05/builds/matrix"
+output="${COD2_WINDOWS_OUTPUT:-$root/output/r05/builds}/matrix"
 mkdir -p "$output"
 
 exec docker run --rm --init -i --pull=never --platform linux/amd64 \

@@ -6,6 +6,9 @@
 
 #include "common_types.h"
 #include "imports.h"
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#endif
 
 #define PREFS_DIR ".cod2"
 #define PREFS_FILE ".cod2/preferences"
@@ -18,9 +21,13 @@ static void ensure_prefs_path(void)
     const char *home;
     if (prefs_path[0])
         return;
+#if COD2_WINDOWS_NATIVE
+    home = WIN_USER_ROOT;
+#else
     home = getenv("HOME");
     if (!home)
         home = ".";
+#endif
     snprintf(prefs_path, sizeof(prefs_path), "%s/%s", home, PREFS_FILE);
 
     {
@@ -116,9 +123,6 @@ void MacPreferences_PutString(const char *inKey, const char *inString)
         fclose(out);
     }
 
-#if COD2_WINDOWS_NATIVE
-    remove(prefs_path); /* rename() does not replace a file on Windows. */
-#endif
     rename(tmppath, prefs_path);
     return 1;
 }

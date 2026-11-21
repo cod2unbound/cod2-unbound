@@ -69,9 +69,11 @@ elseif(WIN32 AND COD2_WIN32_D3D9)
 endif()
 
 # git short hash for the crash-reporter build stamp.
-execute_process(COMMAND git -C ${CMAKE_SOURCE_DIR} rev-parse --short HEAD
-                OUTPUT_VARIABLE COD2_GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE
-                ERROR_QUIET)
+if(NOT DEFINED COD2_GIT_HASH)
+  execute_process(COMMAND git -C ${CMAKE_SOURCE_DIR} rev-parse --short HEAD
+                  OUTPUT_VARIABLE COD2_GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE
+                  ERROR_QUIET)
+endif()
 if(NOT COD2_GIT_HASH)
   set(COD2_GIT_HASH "unknown")
 endif()

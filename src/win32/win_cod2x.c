@@ -1,14 +1,10 @@
 /* What CoD2x 1.4.6.8 adds to the Windows client outside the engine, reimplemented
- * for this executable: the start-up checks of the game folder (CoD2x
- * src/mss32/main.cpp, admin.cpp), its registry values (registry.cpp, hwid.cpp),
+ * for this executable: its registry values (registry.cpp, hwid.cpp),
  * cod2x:// links (url_protocol.cpp), the freeze watchdog (freeze.cpp) and the
  * crash dialog (exception_dialog.cpp). The crash and freeze reports themselves are
  * in win_cod2x_report.c.
  *
- * CoD2MP_s.exe is a 32-bit program without a manifest, so Windows virtualizes its
- * writes to HKLM into the user's VirtualStore and lets it see the 32-bit view of
- * the registry. A 64-bit program gets neither, so the same keys are opened here
- * explicitly, as the game's CD key is read in win_system.c. */
+ */
 #include "headers/cod2_platform.h"
 #if COD2_WINDOWS_NATIVE && COD2_CODX && !defined(DEDICATED)
 #ifndef _WIN32_WINNT
@@ -27,19 +23,16 @@
 #include "PC/qcommon/cod2x.h"
 #include "PC/qcommon/cod2x_url.h"
 #include "win32/win_cod2x.h"
+#include "win32/win_paths.h"
 
 #define COD2X_APP_VERSION "1.4.6.8"
-#define COD2X_GAME_KEY "SOFTWARE\\Activision\\Call of Duty 2"
-#define COD2X_STORE_KEY "Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Activision\\Call of Duty 2"
-#define COD2X_STORE_KEY_WOW64 \
-    "Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\WOW6432Node\\Activision\\Call of Duty 2"
+#define COD2X_STATE_KEY "Software\\CoD2 Unbound\\CoD2x"
 
 extern const void *Dvar_RegisterBool(const char *name, unsigned char value, unsigned short flags);
 extern unsigned char Dvar_GetBool(const char *name);
 extern void Cbuf_AddText(const char *text);
 extern int com_errorEntered;
 
-static char exePath[MAX_PATH], exeDirectory[MAX_PATH], commandLine[1024];
 static char previousVersion[64];
 static int versionChanged, versionWritten;
 static int testIsolateRegistry;
@@ -61,7 +54,7 @@ static void Win_Cod2xMessage(const char *title, const char *format, ...)
 static void Win_Cod2xErrorAt(const char *function, int line, int withLastError, const char *format, ...)
 {
     char message[512], system[256], text[1536];
-    const char *name = strrchr(exePath, '\\') ? strrchr(exePath, '\\') + 1 : "the game";
+    const char *name = Win_Cod2xExeName();
     DWORD error = GetLastError();
     va_list args;
     va_start(args, format);
@@ -110,94 +103,22 @@ int Sys_Cod2xHwidRetry(unsigned int code, const char *error)
 
 /* ---- The executable and its folder (CoD2x main.cpp) ---------------------- */
 
-static int Win_Cod2xExecutable(const char *arguments)
-{
-    WCHAR wide[MAX_PATH];
-    char converted[MAX_PATH];
-    char *slash;
-    DWORD wideLength;
-    int length, unusual;
-    if (!GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
-        WIN_COD2X_ERROR_LAST("Failed to get the executable path.");
-        return 0;
-    }
-    wideLength = GetModuleFileNameW(NULL, wide, MAX_PATH);
-    if (!wideLength) {
-        WIN_COD2X_ERROR_LAST("Failed to get the executable path in Unicode.");
-        return 0;
-    }
-    /* CoD2x keeps 30 characters spare for the files it builds from this path. */
-    if (wideLength >= MAX_PATH - 30) {
-        Win_Cod2xMessage("Path too long",
-                         "Call of Duty 2 directory path is too long.\n\nPlease move the game to a directory with a "
-                         "shorter path.\n\nCurrent path: \n%s\n\n",
-                         exePath);
-        return 0;
-    }
-    /* A character the ANSI code page cannot hold becomes '?'. */
-    length = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, wide, -1, converted, MAX_PATH, NULL, NULL);
-    unusual = length == 0 || length >= MAX_PATH || memchr(converted, '?', (size_t)length) != NULL;
-    if (unusual) {
-        if (length == 0)
-            converted[0] = '\0';
-        Win_Cod2xMessage("Non-standard characters in path",
-                         "Call of Duty 2 directory path contains non-standard characters.\n\nPlease move the game "
-                         "folder or rename the directory path to a path that contains only standard characters "
-                         "(A-Z, a-z, 0-9, and symbols like _).\n\nPath: \n%s\n\n'?' - question mark represents "
-                         "the invalid character",
-                         converted);
-        return 0;
-    }
-    memcpy(exeDirectory, exePath, sizeof(exeDirectory));
-    slash = strrchr(exeDirectory, '\\');
-    if (!slash) {
-        WIN_COD2X_ERROR_LAST("Failed to determine executable directory.");
-        return 0;
-    }
-    *slash = '\0';
-    snprintf(commandLine, sizeof(commandLine), "%s", arguments ? arguments : "");
-    /* A link opened from a browser starts the game in some other folder. */
-    if (!SetCurrentDirectoryA(exeDirectory)) {
-        WIN_COD2X_ERROR_LAST("Failed to set current directory");
-        return 0;
-    }
-    return 1;
-}
-
 const char *Win_Cod2xExeName(void)
 {
-    const char *slash;
-    if (!exePath[0])
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-    slash = strrchr(exePath, '\\');
-    return slash ? slash + 1 : exePath;
+    const char *path = Win_ExecutablePath();
+    const char *slash = strrchr(path, '\\');
+    return slash ? slash + 1 : path;
 }
 
 const char *Win_Cod2xExePath(void)
 {
-    if (!exePath[0])
-        GetModuleFileNameA(NULL, exePath, MAX_PATH);
-    return exePath;
-}
-
-const char *Win_Cod2xExeDirectory(void)
-{
-    if (!exeDirectory[0]) {
-        char *slash;
-        memcpy(exeDirectory, Win_Cod2xExePath(), sizeof(exeDirectory));
-        slash = strrchr(exeDirectory, '\\');
-        if (slash)
-            *slash = '\0';
-    }
-    return exeDirectory;
+    return Win_ExecutablePath();
 }
 
 const char *Win_Cod2xCommandLine(void)
 {
-    return commandLine;
+    return "native launch (command line omitted)";
 }
-
-/* ---- Administrator rights and write access (CoD2x admin.cpp) ------------- */
 
 int Win_Cod2xElevated(void)
 {
@@ -225,117 +146,21 @@ int Win_Cod2xElevated(void)
     return member != FALSE;
 }
 
-static int Win_Cod2xUnderVirtualStore(const char *path)
-{
-    char local[MAX_PATH], store[MAX_PATH];
-    if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, local) != S_OK)
-        return 0;
-    snprintf(store, sizeof(store), "%s\\VirtualStore", local);
-    return _strnicmp(path, store, strlen(store)) == 0;
-}
-
-static int Win_Cod2xFolderWritable(const char *path)
-{
-    char test[MAX_PATH], resolved[MAX_PATH] = {0};
-    HANDLE file;
-    DWORD length;
-    snprintf(test, sizeof(test), "%s\\__test__.tmp", path);
-    file = CreateFileA(test, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                       FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
-    if (file == INVALID_HANDLE_VALUE)
-        return 0;
-    length = GetFinalPathNameByHandleA(file, resolved, MAX_PATH, 0);
-    CloseHandle(file);
-    if (!strncmp(resolved, "\\\\?\\", 4))
-        memmove(resolved, resolved + 4, strlen(resolved + 4) + 1);
-    return !(length > 0 && Win_Cod2xUnderVirtualStore(resolved));
-}
-
-static int Win_Cod2xUnderWine(void)
-{
-    HMODULE ntdll = GetModuleHandleA("ntdll.dll");
-    return ntdll && GetProcAddress(ntdll, "wine_get_build_id") != NULL;
-}
-
-static void Win_Cod2xWriteAccess(void)
-{
-    char text[1024];
-    SHELLEXECUTEINFOA run;
-    if (Win_Cod2xElevated() || Win_Cod2xFolderWritable(exeDirectory) || Win_Cod2xUnderWine())
-        return;
-    snprintf(text, sizeof(text),
-             "Call of Duty 2 requires write access to the game directory.\n\nPlease do one of the following:\n"
-             "- Move the game directory to a location with write access.\n"
-             "- Run the game with elevated administrator permissions.\n"
-             "- Run the game with compatibility mode set to Windows XP.\n\n"
-             "This is needed because the game needs to write files to the game installation directory, which is "
-             "not allowed by default on newer Windows versions.\n\n"
-             "Its recommended to move the game directory to a location with write access (e.g. C:\\Games\\Call of "
-             "Duty 2) and uncheck administrator and compatibility mode for maximum security, if possible.\n\n"
-             "Current game directory: \n%s\n",
-             exeDirectory);
-    MessageBoxA(NULL, text, "Error", MB_ICONERROR);
-    if (MessageBoxA(NULL,
-                    "Would you like to restart the game with administrator privileges?\n\nWarning:\nFor security "
-                    "reasons, this is not recommended.\nThe recommended way is to move the game directory to a "
-                    "location with write access (e.g. C:\\Games\\Call of Duty 2) and uncheck administrator and "
-                    "compatibility mode for maximum security, if possible.\n\n",
-                    "Run as administrator", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-        memset(&run, 0, sizeof(run));
-        run.cbSize = sizeof(run);
-        run.lpVerb = "runas";
-        run.lpFile = exePath;
-        run.lpParameters = commandLine;
-        run.nShow = SW_SHOWNORMAL;
-        if (!ShellExecuteExA(&run))
-            MessageBoxA(NULL, "Failed to restart as administrator.", "Error", MB_ICONERROR);
-    }
-    ExitProcess(0);
-}
-
-/* ---- The game's registry key (CoD2x registry.cpp) ------------------------ */
-
-static const char *Win_Cod2xStoreKey(void)
-{
-    BOOL wow64 = FALSE;
-    if (sizeof(void *) == 8 || (IsWow64Process(GetCurrentProcess(), &wow64) && wow64))
-        return COD2X_STORE_KEY_WOW64;
-    return COD2X_STORE_KEY;
-}
-
-/* The key the 32-bit game writes to: HKLM when it may, else its VirtualStore copy. */
-static int Win_Cod2xGameKey(HKEY *key)
-{
-    if (RegCreateKeyExA(HKEY_LOCAL_MACHINE, COD2X_GAME_KEY, 0, NULL, REG_OPTION_NON_VOLATILE,
-                        KEY_READ | KEY_WRITE | KEY_WOW64_32KEY, NULL, key, NULL) == ERROR_SUCCESS)
-        return 1;
-    if (Win_Cod2xElevated())
-        return 0;
-    return RegCreateKeyExA(HKEY_CURRENT_USER, Win_Cod2xStoreKey(), 0, NULL, REG_OPTION_NON_VOLATILE,
-                           KEY_READ | KEY_WRITE, NULL, key, NULL) == ERROR_SUCCESS;
-}
-
-/* Reads see the VirtualStore copy first, as the 32-bit game does. */
+/* Store Unbound’s CoD2x identity history independently of retail and upstream. */
 int Win_Cod2xRegRead(const char *name, DWORD *type, void *data, DWORD *size)
 {
     HKEY key;
-    DWORD capacity = *size;
-    LONG result = ERROR_FILE_NOT_FOUND;
-    if (testIsolateRegistry)
-        return 0;
-    if (!Win_Cod2xElevated() && RegOpenKeyExA(HKEY_CURRENT_USER, Win_Cod2xStoreKey(), 0, KEY_READ, &key) ==
-                                    ERROR_SUCCESS) {
-        result = RegQueryValueExA(key, name, NULL, type, data, size);
-        RegCloseKey(key);
-        if (result == ERROR_SUCCESS)
-            return 1;
-        *size = capacity;
-    }
-    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, COD2X_GAME_KEY, 0, KEY_READ | KEY_WOW64_32KEY, &key) == ERROR_SUCCESS) {
-        result = RegQueryValueExA(key, name, NULL, type, data, size);
-        RegCloseKey(key);
-    }
-    return result == ERROR_SUCCESS;
+    if (testIsolateRegistry || RegOpenKeyExA(HKEY_CURRENT_USER, COD2X_STATE_KEY,
+        0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS) return 0;
+    LONG status = RegQueryValueExA(key, name, NULL, type, data, size);
+    RegCloseKey(key);
+    return status == ERROR_SUCCESS;
+}
+
+static int Win_Cod2xGameKey(HKEY *key)
+{
+    return RegCreateKeyExA(HKEY_CURRENT_USER, COD2X_STATE_KEY, 0, NULL, 0,
+                           KEY_SET_VALUE, NULL, key, NULL) == ERROR_SUCCESS;
 }
 
 int Win_Cod2xRegWrite(const char *name, DWORD type, const void *data, DWORD size)
@@ -417,9 +242,7 @@ void Win_Cod2xSystem(Win_Cod2xSystemText *out)
     if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers",
                       0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
         length = sizeof(out->compatibility) - 1;
-        if (!exePath[0])
-            GetModuleFileNameA(NULL, exePath, MAX_PATH);
-        RegQueryValueExA(key, exePath, NULL, NULL, (LPBYTE)compatibility, &length);
+        RegQueryValueExA(key, Win_ExecutablePath(), NULL, NULL, (LPBYTE)compatibility, &length);
         RegCloseKey(key);
     }
     out->elevated = Win_Cod2xElevated();
@@ -462,51 +285,6 @@ void Sys_Cod2xMachineHistoryClear(void)
 
 /* Settings written without administrator rights went to the VirtualStore. Once the
    game runs elevated it uses the real key, so CoD2x moves them there. */
-static void Win_Cod2xMigrateVirtualStore(void)
-{
-    static const char *const stores[2] = {COD2X_STORE_KEY, COD2X_STORE_KEY_WOW64};
-    HKEY store = NULL, game;
-    char name[256];
-    BYTE data[1024];
-    DWORD index, nameLength, dataLength, type, count = 0, longest = 0;
-    int i;
-    if (!Win_Cod2xElevated())
-        return;
-    for (i = 0; i < 2 && !store; ++i)
-        if (RegOpenKeyExA(HKEY_CURRENT_USER, stores[i], 0, KEY_READ | KEY_WRITE, &store) != ERROR_SUCCESS)
-            store = NULL;
-    if (!store)
-        return;
-    if (RegCreateKeyExA(HKEY_LOCAL_MACHINE, COD2X_GAME_KEY, 0, NULL, 0, KEY_WRITE | KEY_WOW64_32KEY, NULL, &game,
-                        NULL) != ERROR_SUCCESS) {
-        RegCloseKey(store);
-        return;
-    }
-    for (index = 0;; ++index) {
-        nameLength = sizeof(name);
-        dataLength = sizeof(data);
-        if (RegEnumValueA(store, index, name, &nameLength, NULL, &type, data, &dataLength) != ERROR_SUCCESS)
-            break;
-        RegSetValueExA(game, name, 0, type, data, dataLength);
-    }
-    RegCloseKey(game);
-    /* Remove the copied values from the last, then the keys. */
-    if (RegQueryInfoKeyA(store, NULL, NULL, NULL, NULL, NULL, NULL, &count, &longest, NULL, NULL, NULL) ==
-            ERROR_SUCCESS &&
-        longest < sizeof(name)) {
-        while (count--) {
-            nameLength = sizeof(name);
-            if (RegEnumValueA(store, count, name, &nameLength, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
-                RegDeleteValueA(store, name);
-        }
-    }
-    RegCloseKey(store);
-    RegDeleteKeyA(HKEY_CURRENT_USER, stores[0]);
-    RegDeleteKeyA(HKEY_CURRENT_USER, stores[1]);
-}
-
-/* CoD2x's ordering: numbers first, then a version without a pre-release part
-   ("-test.1") above one with it, then the pre-release parts token by token. */
 int Win_Cod2xCompareVersions(const char *a, const char *b)
 {
     const char *ta, *tb;
@@ -568,7 +346,6 @@ static void Win_Cod2xRegistryInit(void)
     HKEY key;
     char version[64] = {0};
     DWORD size = sizeof(version) - 1, type = 0;
-    Win_Cod2xMigrateVirtualStore();
     if (!Win_Cod2xGameKey(&key)) {
         WIN_COD2X_ERROR("Failed to create registry key for Call of Duty 2.");
         exit(1);
@@ -617,39 +394,6 @@ static void Win_Cod2xRegistryFrame(void)
 }
 
 /* ---- cod2x:// links (CoD2x url_protocol.cpp) ------------------------------ */
-
-static void Win_Cod2xRegisterLinks(void)
-{
-    const char *path = "Software\\Classes\\CoD2x";
-    const char *description = "URL:Call of Duty 2 Protocol";
-    char command[1024], current[MAX_PATH * 2];
-    DWORD size = sizeof(current) - 1, type = 0;
-    HKEY key, commandKey;
-    snprintf(command, sizeof(command), "\"%s\" \"%%1\"", exePath);
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Classes\\CoD2x\\shell\\open\\command", 0, KEY_READ,
-                      &commandKey) == ERROR_SUCCESS) {
-        memset(current, 0, sizeof(current));
-        if (RegQueryValueExA(commandKey, NULL, NULL, &type, (BYTE *)current, &size) == ERROR_SUCCESS &&
-            !_stricmp(current, command)) {
-            RegCloseKey(commandKey);
-            return;
-        }
-        RegCloseKey(commandKey);
-    }
-    if (RegCreateKeyExA(HKEY_CURRENT_USER, path, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &key, NULL) !=
-        ERROR_SUCCESS) {
-        Win_Cod2xMessage("CoD2x Error", "Failed to register cod2x:// protocol in user registry.\n\n");
-        return;
-    }
-    RegSetValueExA(key, NULL, 0, REG_SZ, (const BYTE *)description, (DWORD)strlen(description) + 1);
-    RegSetValueExA(key, "URL Protocol", 0, REG_SZ, (const BYTE *)"", 1);
-    if (RegCreateKeyExA(key, "shell\\open\\command", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL,
-                        &commandKey, NULL) == ERROR_SUCCESS) {
-        RegSetValueExA(commandKey, NULL, 0, REG_SZ, (const BYTE *)command, (DWORD)strlen(command) + 1);
-        RegCloseKey(commandKey);
-    }
-    RegCloseKey(key);
-}
 
 int Cod2xNativeURL_Queue(const char *url)
 {
@@ -708,17 +452,9 @@ char *Win_Cod2xStartup(char *arguments)
 {
     const char *isolateRegistry = getenv("COD2X_TEST_ISOLATE_REGISTRY");
 
-    if (!Win_Cod2xExecutable(arguments))
-        ExitProcess(EXIT_FAILURE);
-    Win_Cod2xWriteAccess();
-    /* An offline acceptance run uses a disposable profile. Keep the installed
-       game's identity history, version and URL handler out of that run. */
     testIsolateRegistry = isolateRegistry && !strcmp(isolateRegistry, "1");
-    if (testIsolateRegistry)
-        return arguments;
-    Win_Cod2xRegistryInit();
+    if (!testIsolateRegistry) Win_Cod2xRegistryInit();
     arguments = Win_Cod2xLink(arguments);
-    Win_Cod2xRegisterLinks();
     return arguments;
 }
 
@@ -742,13 +478,11 @@ int Win_Cod2xHasCrashed(void)
     return InterlockedCompareExchange(&crashed, 0, 0) != 0;
 }
 
-/* "<game folder>\<exe>.<kind>.YYYYMMDD_HHMMSS<suffix>", as CoD2x names them after CoD2MP_s.exe. */
+/* The file adapter places diagnostics in Unbound’s per-user game home. */
 void Win_Cod2xDiagnosticPath(char *path, size_t size, const char *kind, const SYSTEMTIME *time,
                                     const char *suffix)
 {
-    char directory[MAX_PATH] = {0};
-    GetCurrentDirectoryA(sizeof(directory), directory);
-    snprintf(path, size, "%s%s%s.%s.%04d%02d%02d_%02d%02d%02d%s", directory, directory[0] ? "\\" : "",
+    snprintf(path, size, "%s.%s.%04d%02d%02d_%02d%02d%02d%s",
              Win_Cod2xExeName(), kind, time->wYear, time->wMonth, time->wDay, time->wHour, time->wMinute,
              time->wSecond, suffix);
 }
@@ -761,28 +495,28 @@ static int Win_Cod2xNameOrder(const void *a, const void *b)
 /* CoD2x exception.cpp: only the newest diagnostic files of each kind are kept. */
 static void Win_Cod2xKeepNewest(const char *kind, const char *extension, int keep)
 {
-    char pattern[MAX_PATH * 2], directory[MAX_PATH] = {0}, path[MAX_PATH * 2];
+    char prefix[MAX_PATH], suffix[16];
     char *names[512];
-    WIN32_FIND_DATAA data;
-    HANDLE find;
-    int count = 0, i;
-    GetCurrentDirectoryA(sizeof(directory), directory);
-    snprintf(pattern, sizeof(pattern), "%s\\%s.%s.*.%s", directory, Win_Cod2xExeName(), kind, extension);
-    find = FindFirstFileA(pattern, &data);
-    if (find == INVALID_HANDLE_VALUE)
-        return;
-    do {
-        if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && count < 512)
-            names[count++] = _strdup(data.cFileName);
-    } while (FindNextFileA(find, &data));
-    FindClose(find);
+    int count = 0;
+    snprintf(prefix, sizeof(prefix), "%s.%s.", Win_Cod2xExeName(), kind);
+    snprintf(suffix, sizeof(suffix), ".%s", extension);
+    DIR *directory = opendir(".");
+    if (!directory) return;
+    struct dirent *entry;
+    while (count < 512 && (entry = readdir(directory)) != NULL) {
+        const char *name = entry->d_name;
+        size_t length = strlen(name), tail = strlen(suffix);
+        if (length > strlen(prefix) + tail && !strncmp(name, prefix, strlen(prefix)) &&
+            !strcmp(name + length - tail, suffix)) {
+            char *copy = strdup(name);
+            if (copy) names[count++] = copy;
+        }
+    }
+    closedir(directory);
     /* The timestamp in the name sorts them oldest first. */
     qsort(names, (size_t)count, sizeof(names[0]), Win_Cod2xNameOrder);
-    for (i = 0; i < count; ++i) {
-        if (names[i] && i + keep < count) {
-            snprintf(path, sizeof(path), "%s\\%s", directory, names[i]);
-            DeleteFileA(path);
-        }
+    for (int i = 0; i < count; ++i) {
+        if (i + keep < count) remove(names[i]);
         free(names[i]);
     }
 }
@@ -916,7 +650,7 @@ static DWORD WINAPI Win_Cod2xWatch(LPVOID argument)
             char name[MAX_PATH * 2], text[MAX_PATH * 2 + 128];
             if (Win_Cod2xDump(NULL, 0, 1, "freeze", name, sizeof(name))) {
                 snprintf(text, sizeof(text),
-                         "Diagnostic file was saved to:\n%s\n\nPlease send this file to the developers.", name);
+                         "Diagnostic file was saved in your Unbound game folder:\n%s\n\nPlease send this file to the developers.", name);
                 MessageBoxA(NULL, text, "Application frozen", MB_OK | MB_ICONINFORMATION | MB_TOPMOST);
             } else {
                 MessageBoxA(NULL, "Failed to create the diagnostic file.", "Application frozen",
@@ -1178,7 +912,7 @@ static LRESULT CALLBACK Win_Cod2xCrashWindow(HWND window, UINT message, WPARAM w
         SendMessageA(edit, EM_SETSEL, (WPARAM)-1, (LPARAM)-1);
         SendMessageA(edit, EM_SCROLLCARET, 0, 0);
         Win_Cod2xCrashControl(window, "BUTTON", "Restart Game", BS_OWNERDRAW, CRASH_RESTART, NULL);
-        Win_Cod2xCrashControl(window, "BUTTON", "Generate Full Dump", BS_OWNERDRAW, CRASH_DUMP, NULL);
+        Win_Cod2xCrashControl(window, "BUTTON", "Save Diagnostic Dump", BS_OWNERDRAW, CRASH_DUMP, NULL);
         Win_Cod2xCrashControl(window, "BUTTON", "Exit", BS_OWNERDRAW, CRASH_EXIT, NULL);
         GetClientRect(window, &client);
         Win_Cod2xCrashLayout(window, client.right, client.bottom);
@@ -1289,7 +1023,7 @@ static LRESULT CALLBACK Win_Cod2xCrashWindow(HWND window, UINT message, WPARAM w
             SetCursor(cursor);
             if (saved) {
                 snprintf(text, sizeof(text),
-                         "Full diagnostic file was saved to:\n%s\n"
+                         "Diagnostic file was saved in your Unbound game folder:\n%s\n"
                          "\n"
                          "Please send this file to the developers.\n"
                          "You can reach them on the Discord - more info at https://cod2x.me/.\n"
@@ -1388,17 +1122,17 @@ int Win_Cod2xCrashDialog(const char *reportPath, EXCEPTION_POINTERS *exception)
     UnregisterClassA("CoD2x_CrashDialog", windowClass.hInstance);
     Win_Cod2xSendWait();
     if (dialog.restart) {
-        char line[MAX_PATH * 2 + 1024];
-        STARTUPINFOA start;
+        wchar_t *line = _wcsdup(GetCommandLineW());
+        wchar_t *exe = Win_UTF16(Win_ExecutablePath());
+        STARTUPINFOW start = {0};
         PROCESS_INFORMATION process;
-        snprintf(line, sizeof(line), "\"%s\" %s", exePath, commandLine);
-        memset(&start, 0, sizeof(start));
         start.cb = sizeof(start);
-        if (CreateProcessA(NULL, line, NULL, NULL, FALSE, 0, NULL, exeDirectory[0] ? exeDirectory : NULL, &start,
-                           &process)) {
+        if (line && exe && CreateProcessW(exe, line, NULL, NULL, FALSE, 0, NULL, NULL, &start, &process)) {
             CloseHandle(process.hProcess);
             CloseHandle(process.hThread);
         }
+        free(line);
+        free(exe);
     }
     return 1;
 }

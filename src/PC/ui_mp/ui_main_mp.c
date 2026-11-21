@@ -3827,7 +3827,12 @@ void UI_RunMenuScript(const char **args)
     }
 
     if (I_stricmp(name, "getCDKey") == 0) {
+#if COD2_WINDOWS_NATIVE
+        /* A saved Windows credential is never copied into the menu dvars. */
+        buff[0] = buff2[0] = '\0';
+#else
         CLUI_GetCDKey(buff, 0x11, buff2, 5);
+#endif
         Dvar_SetStringByName("cdkey1", "");
         Dvar_SetStringByName("cdkey2", "");
         Dvar_SetStringByName("cdkey3", "");
@@ -3873,6 +3878,13 @@ void UI_RunMenuScript(const char **args)
         if (CL_CDKeyValidate(buff, buff2)) {
             Dvar_SetStringByName("ui_cdkeyvalid", UI_SafeTranslateString("EXE_CDKEYVALID"));
             CLUI_SetCDKey(buff, buff2);
+#if COD2_WINDOWS_NATIVE
+            Dvar_SetStringByName("cdkey1", "");
+            Dvar_SetStringByName("cdkey2", "");
+            Dvar_SetStringByName("cdkey3", "");
+            Dvar_SetStringByName("cdkey4", "");
+            Dvar_SetStringByName("cdkey5", "");
+#endif
         } else {
             Dvar_SetStringByName("ui_cdkeyvalid", UI_SafeTranslateString("EXE_CDKEYINVALID"));
         }
