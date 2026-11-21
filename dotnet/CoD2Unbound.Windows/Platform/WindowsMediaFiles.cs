@@ -138,32 +138,34 @@ internal static class WindowsRecycleBin
 
     internal static void Recycle(string path, nint owner)
     {
-        const uint flags = 0x00080000 | 0x00000400 | 0x00000040 | 0x00000010 | 0x00000004;
+        const uint recycleOnDelete = 0x00080000, noErrorUi = 0x00000400, allowUndo = 0x00000040;
+        const uint noConfirmation = 0x00000010, silent = 0x00000004;
         var operation = (IFileOperation)Activator.CreateInstance(Type.GetTypeFromCLSID(FileOperationClass, throwOnError: true)!)!;
-        object? item = null;
+        nint item = 0;
         try
         {
             int result = SHCreateItemFromParsingName(path, 0, ShellItemInterface, out item);
             Marshal.ThrowExceptionForHR(result);
             operation.SetOwnerWindow(owner);
-            operation.SetOperationFlags(flags);
-            operation.DeleteItem(item!, 0);
-            operation.PerformOperations();
+            operation.SetOperationFlags(recycleOnDelete | noErrorUi | allowUndo | noConfirmation | silent);
+            // DeleteItem requires the IShellItem interface pointer returned for the explicit IID.
+            operation.DeleteItem(item, 0);
+            result = operation.PerformOperations();
             operation.GetAnyOperationsAborted(out bool aborted);
+            Marshal.ThrowExceptionForHR(result);
             if (aborted || File.Exists(path))
                 throw new IOException("Windows couldn’t move this file to the Recycle Bin.");
         }
         finally
         {
-            if (item is not null)
-                Marshal.ReleaseComObject(item);
+            if (item != 0)
+                Marshal.Release(item);
             Marshal.ReleaseComObject(operation);
         }
     }
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
-    private static extern int SHCreateItemFromParsingName(string path, nint binding, in Guid iid,
-        [MarshalAs(UnmanagedType.Interface)] out object? item);
+    private static extern int SHCreateItemFromParsingName(string path, nint binding, in Guid iid, out nint item);
 
     [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("947AAB5F-0A5C-4C13-B4D6-4BF7836FC9F8")]
     private interface IFileOperation
@@ -183,10 +185,10 @@ internal static class WindowsRecycleBin
         void MoveItems();
         void CopyItem();
         void CopyItems();
-        void DeleteItem([MarshalAs(UnmanagedType.Interface)] object item, nint progressSink);
+        void DeleteItem(nint item, nint progressSink);
         void DeleteItems();
         void NewItem();
-        void PerformOperations();
+        [PreserveSig] int PerformOperations();
         void GetAnyOperationsAborted([MarshalAs(UnmanagedType.Bool)] out bool aborted);
     }
 }
