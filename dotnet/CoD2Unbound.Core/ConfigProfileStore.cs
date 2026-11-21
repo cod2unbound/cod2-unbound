@@ -25,6 +25,32 @@ public interface IConfigProfileFiles
 
 public static class LoadoutName
 {
+    public static string Identifier(string name, IEnumerable<string> existing)
+    {
+        var result = new StringBuilder();
+        foreach (char character in name.Normalize(NormalizationForm.FormKD))
+        {
+            if (char.IsAsciiLetterOrDigit(character))
+                result.Append(character);
+            else if ((character is '.' or '-' or '_' || char.IsWhiteSpace(character)) &&
+                result.Length > 0 && result[^1] != '_')
+                result.Append(character is '.' or '-' ? character : '_');
+        }
+        string stem = result.ToString().TrimEnd('.', '-', '_');
+        if (stem.Length == 0)
+            stem = "Loadout";
+        if (stem.Length > 36)
+            stem = stem[..36];
+        var reserved = existing.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        string candidate = stem;
+        for (int suffix = 2; reserved.Contains(candidate) || !MediaName.SafeComponent(candidate); suffix++)
+        {
+            string tail = FormattableString.Invariant($"_{suffix}");
+            candidate = stem[..Math.Min(stem.Length, 41 - tail.Length)] + tail;
+        }
+        return candidate;
+    }
+
     public static string? Problem(string name, IEnumerable<string> existing, bool readOnly)
     {
         if (readOnly)
