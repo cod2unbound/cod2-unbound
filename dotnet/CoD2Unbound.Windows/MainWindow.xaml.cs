@@ -167,6 +167,8 @@ public sealed partial class MainWindow : Window
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
         else if (ReferenceEquals(args.InvokedItemContainer, ServersItem))
             await OpenServersAsync(ServerScope.All);
+        else if (ReferenceEquals(args.InvokedItemContainer, LibraryItem))
+            await RunAsync(() => NavigateAsync(LauncherPlace.Library));
         else if (ReferenceEquals(args.InvokedItemContainer, ConfigsItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
         else if (args.InvokedItemContainer?.Tag is string address)
@@ -181,6 +183,9 @@ public sealed partial class MainWindow : Window
 
     private async void OnServersInvoked(object sender, RoutedEventArgs args) =>
         await OpenServersAsync(ServerScope.All);
+
+    private async void OnLibraryInvoked(object sender, RoutedEventArgs args) =>
+        await RunAsync(() => NavigateAsync(LauncherPlace.Library));
 
     private async void OnConfigsInvoked(object sender, RoutedEventArgs args) =>
         await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
@@ -217,6 +222,11 @@ public sealed partial class MainWindow : Window
             if (session.Settings.Working.RefreshServersOnOpen)
                 page.Loaded += OnServersLoaded;
             ContentFrame.Content = page;
+        }
+        else if (place == LauncherPlace.Library)
+        {
+            Nav.SelectedItem = LibraryItem;
+            ContentFrame.Content = new LibraryPage(this, session);
         }
         else if (place == LauncherPlace.Configs)
         {
@@ -365,4 +375,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, Servers, Configs }
+internal enum LauncherPlace { Setup, Home, Settings, Servers, Library, Configs }

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace CoD2Unbound.Core;
 
-public enum MediaKind { Demo, Screenshot }
+public enum MediaKind { Demo, Screenshot, Config }
 public enum DemoPublishResult { Created, Identical, Occupied }
 public sealed record MediaFile(string Name, DateTimeOffset? Modified, long? Bytes);
 
@@ -43,7 +43,13 @@ public interface IMediaFiles
 
 public sealed class MediaLibrary(IMediaFiles files)
 {
-    public static string Folder(MediaKind kind) => kind == MediaKind.Demo ? "main/demos" : "main/screenshots";
+    public static string Folder(MediaKind kind) => kind switch
+    {
+        MediaKind.Demo => "main/demos",
+        MediaKind.Screenshot => "main/screenshots",
+        MediaKind.Config => "main",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
 
     public ImmutableArray<MediaFile> List(MediaKind kind, string? search = null) =>
         [.. files.List(kind).Where(file => Accepts(file.Name, kind) &&
@@ -57,7 +63,13 @@ public sealed class MediaLibrary(IMediaFiles files)
         if (!MediaName.SafeComponent(name) || dot <= 0)
             return false;
         string extension = name[(dot + 1)..].ToLowerInvariant();
-        return kind == MediaKind.Demo ? extension == "dm_1" : extension is "jpg" or "jpeg" or "png" or "tga";
+        return kind switch
+        {
+            MediaKind.Demo => extension == "dm_1",
+            MediaKind.Screenshot => extension is "jpg" or "jpeg" or "png" or "tga",
+            MediaKind.Config => extension == "cfg" && !ManagedConfig(name[..dot]),
+            _ => false
+        };
     }
 
     public static (string? FileName, string? Problem) Rename(MediaFile file, string value)
@@ -73,8 +85,18 @@ public sealed class MediaLibrary(IMediaFiles files)
         string suffix = file.Name[extension..];
         if (suffix.Equals(".dm_1", StringComparison.OrdinalIgnoreCase) && !MediaName.Playable(name))
             return (null, "Use only letters, numbers, dots, underscores or hyphens, so the game can play it.");
+        if (suffix.Equals(".cfg", StringComparison.OrdinalIgnoreCase) && ManagedConfig(name))
+            return (null, "Choose a name that isn’t used by the launcher.");
         string target = name + suffix;
         return MediaName.SafeComponent(target) ? (target, null) : (null, "Enter a name without slashes or colons.");
+    }
+
+    private static bool ManagedConfig(string stem)
+    {
+        string name = stem.ToLowerInvariant();
+        return name is "launcher" or "config_mp" ||
+            (name.StartsWith("join_", StringComparison.Ordinal) && name.Length == 37 && name.AsSpan(5).IndexOfAnyExcept("0123456789abcdef") < 0) ||
+            (name.StartsWith("cs_", StringComparison.Ordinal) && name.Length == 43 && name.AsSpan(3).IndexOfAnyExcept("0123456789abcdef") < 0);
     }
 
     public async ValueTask<string> PrepareDemoAsync(Uri source, string fileName, CancellationToken cancellationToken = default)

@@ -8,6 +8,18 @@ internal static partial class Program
 {
     private static void LibraryCases()
     {
+        Check("library lists player configs without exposing launcher-owned config files", () =>
+        {
+            Equal("main", MediaLibrary.Folder(MediaKind.Config));
+            Equal(true, MediaLibrary.Accepts("My practice.CFG", MediaKind.Config));
+            Equal(false, MediaLibrary.Accepts("config_mp.cfg", MediaKind.Config));
+            Equal(false, MediaLibrary.Accepts("launcher.cfg", MediaKind.Config));
+            Equal(false, MediaLibrary.Accepts("join_" + new string('a', 32) + ".cfg", MediaKind.Config));
+            Equal(false, MediaLibrary.Accepts(ConfigStudioLaunch.ChainBasename("main"), MediaKind.Config));
+            var config = new MediaFile("practice.cfg", null, null);
+            Equal("backup.cfg", MediaLibrary.Rename(config, "backup").FileName);
+            Equal<string?>(null, MediaLibrary.Rename(config, "launcher").FileName);
+        });
         using var fixture = Fixtures("library");
         var root = fixture.RootElement;
         foreach (var row in root.GetProperty("demos").EnumerateArray())
