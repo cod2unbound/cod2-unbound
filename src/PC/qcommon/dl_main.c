@@ -4,7 +4,9 @@
 #if COD2_FEATURE_WWW_DOWNLOAD
 
 #    include <string.h>
+#if defined(COD2_X64)
 #    include <ctype.h>
+#endif
 #    include <stdio.h>
 #if defined(COD2_X64)
 #    include "common_types.h"
@@ -14,7 +16,9 @@ int Com_sprintf(char *dest, int size, const char *fmt, ...);
 
 void Com_Printf(const char *fmt, ...);
 void Com_DPrintf(const char *fmt, ...);
+#if defined(COD2_X64)
 FILE *FS_FileOpen(const char *filename, const char *mode);
+#endif
 #if defined(COD2_X64)
 int FS_CreatePath(char *path);
 #else
@@ -305,7 +309,11 @@ int DL_BeginDownload(const char *localName, const char *remoteName, int debug)
         dl_localName[n] = '\0';
     }
 
+#if defined(COD2_X64)
     dl_fp = FS_FileOpen(localName, "wb");
+#else
+    dl_fp = fopen(localName, "wb");
+#endif
     if (!dl_fp) {
         Com_DPrintf("DL_BeginDownload: could not open '%s' for writing\n", localName);
         return 0;

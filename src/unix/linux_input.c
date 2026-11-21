@@ -317,6 +317,7 @@ static int sdl_to_keynum(SDL_Keycode sym)
     }
 }
 
+#if defined(COD2_X64)
 static int sdl_event_keynum(const SDL_Keysym *key)
 {
 #if defined(__APPLE__) && defined(COD2_X64)
@@ -325,6 +326,7 @@ static int sdl_event_keynum(const SDL_Keysym *key)
 #endif
     return sdl_to_keynum(key->sym);
 }
+#endif
 
 static int sdl_button_to_keynum(Uint8 button)
 {
@@ -391,11 +393,13 @@ int SDL_PumpInputEvents(void)
 #else
     for (eventCount = 0; eventCount < 256 && SDL_PollEvent(&ev); ++eventCount) {
 #endif
+#if defined(COD2_X64)
         int eventTime = 0;
 #if defined(__APPLE__) && defined(COD2_X64)
         eventTime = (int)(ev.common.timestamp + eventTimeOffset);
         /* Zero means "now" to Sys_QueEvent, rather than the clock's origin. */
         if (!eventTime) eventTime = 1;
+#endif
 #endif
         switch (ev.type) {
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64)
@@ -456,7 +460,11 @@ int SDL_PumpInputEvents(void)
         case SDL_MOUSEBUTTONDOWN: {
             int k = sdl_button_to_keynum(ev.button.button);
             if (k) {
+#if defined(COD2_X64)
                 Sys_QueEvent(eventTime, SE_KEY, k, 1, 0, 0);
+#else
+                Sys_QueEvent(0, SE_KEY, k, 1, 0, 0);
+#endif
                 ++inputEventCount;
             }
             break;
@@ -464,7 +472,11 @@ int SDL_PumpInputEvents(void)
         case SDL_MOUSEBUTTONUP: {
             int k = sdl_button_to_keynum(ev.button.button);
             if (k) {
+#if defined(COD2_X64)
                 Sys_QueEvent(eventTime, SE_KEY, k, 0, 0, 0);
+#else
+                Sys_QueEvent(0, SE_KEY, k, 0, 0, 0);
+#endif
                 ++inputEventCount;
             }
             break;
@@ -491,12 +503,21 @@ int SDL_PumpInputEvents(void)
             break;
         }
         case SDL_KEYDOWN: {
+#if defined(COD2_X64)
             int k = sdl_event_keynum(&ev.key.keysym);
+#else
+            int k = sdl_to_keynum(ev.key.keysym.sym);
+#endif
             if (k) {
+#if defined(COD2_X64)
                 Sys_QueEvent(eventTime, SE_KEY, k, 1, 0, 0);
+#else
+                Sys_QueEvent(0, SE_KEY, k, 1, 0, 0);
+#endif
                 ++inputEventCount;
             }
 
+#if defined(COD2_X64)
             int control = ev.key.keysym.sym == SDLK_BACKSPACE ? 8 : 0;
 #if defined(__APPLE__) && defined(COD2_X64)
             if ((ev.key.keysym.mod & KMOD_CTRL) && !(ev.key.keysym.mod & KMOD_ALT) &&
@@ -509,14 +530,26 @@ int SDL_PumpInputEvents(void)
 #else
                 CCallOfDutyEngine_DoTextInput(get_engine(), 8);
 #endif
+#else
+            if (ev.key.keysym.sym == SDLK_BACKSPACE) {
+                CCallOfDutyEngine_DoTextInput(get_engine(), 8);
+#endif
                 ++inputEventCount;
             }
             break;
         }
         case SDL_KEYUP: {
+#if defined(COD2_X64)
             int k = sdl_event_keynum(&ev.key.keysym);
+#else
+            int k = sdl_to_keynum(ev.key.keysym.sym);
+#endif
             if (k) {
+#if defined(COD2_X64)
                 Sys_QueEvent(eventTime, SE_KEY, k, 0, 0, 0);
+#else
+                Sys_QueEvent(0, SE_KEY, k, 0, 0, 0);
+#endif
                 ++inputEventCount;
             }
             break;

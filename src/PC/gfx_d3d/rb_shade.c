@@ -2463,6 +2463,87 @@ void RB_EndSurface(void)
     args.u.buf.baseVertex = 0;
 
 
+#if !defined(COD2_X64)
+    {
+#define RB_GL_TEXTURE_2D 0x0DE1
+#define RB_GL_TEXTURE_CUBE_MAP 0x8513
+        const Material *mat = ((materialCommands_t *)tess)->material;
+
+        if (mat) {
+            int texCount = (*(unsigned short *)&((Material *)mat)->textureCount);
+            byte *textures = (*(byte **)&((Material *)mat)->textures);
+            if (texCount > 0 && textures) {
+
+                void *image = NULL;
+                int textureIndex;
+
+                for (textureIndex = 0; textureIndex < texCount; ++textureIndex) {
+                    /* was x86 stride 0xc + offsets 5/8; MaterialTextureDef is bigger on x64 */
+                    MaterialTextureDef *texEntry = &((MaterialTextureDef *)textures)[textureIndex];
+                    byte semantic = (byte)texEntry->semantic;
+                    void *candidate;
+
+                    if (semantic == 5)
+                        continue;
+
+                    candidate = (void *)texEntry->u.image;
+                    if (!candidate)
+                        continue;
+
+                    if (semantic == 2) {
+                        image = candidate;
+                        break;
+                    }
+
+                    if (!image)
+                        image = candidate;
+                }
+
+                if (image) {
+
+                    void *d3dTexture = (void *)((GfxImage *)image)->texture.basemap;
+                    if (d3dTexture) {
+
+                        void *device = ((DxGlobals *)imp_dx)->device;
+                        void **vtable = *(void ***)device;
+                        ((void(D3DVTCC *)(void *, int, void *))vtable[0x104 / 4])(device, 0, d3dTexture);
+
+                        {
+                            unsigned int texID = *(unsigned int *)((byte *)d3dTexture + 0x54);
+                            unsigned int texTarget = (*(int *)image == 5)
+                                                         ? RB_GL_TEXTURE_CUBE_MAP
+                                                         : RB_GL_TEXTURE_2D;
+
+                            extern unsigned int g_prebind_texID;
+                            extern unsigned int g_prebind_texTarget;
+                            g_prebind_texID = texID;
+                            g_prebind_texTarget = texTarget;
+                            if (texID) {
+                                if (texTarget == RB_GL_TEXTURE_CUBE_MAP) {
+                                    glDisable(RB_GL_TEXTURE_2D);
+                                    glBindTexture(RB_GL_TEXTURE_CUBE_MAP, texID);
+                                    glEnable(RB_GL_TEXTURE_CUBE_MAP);
+                                } else {
+                                    glDisable(RB_GL_TEXTURE_CUBE_MAP);
+                                    glBindTexture(RB_GL_TEXTURE_2D, texID);
+                                    glEnable(RB_GL_TEXTURE_2D);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    extern unsigned int g_prebind_texID;
+                    extern unsigned int g_prebind_texTarget;
+                    g_prebind_texID = 0;
+                    g_prebind_texTarget = RB_GL_TEXTURE_2D;
+                }
+            }
+        }
+#undef RB_GL_TEXTURE_2D
+#undef RB_GL_TEXTURE_CUBE_MAP
+    }
+#endif
+
     COD2_DEBUG_ONLY(g_rb_endsurface_draw++;)
     COD2_DEBUG_ONLY(RB_X64TraceEndSurface("draw", material, technique, (const materialCommands_t *)tess);)
     RB_DrawTechnique((*(MaterialVertexDeclType *)&((materialCommands_t *)tess)->declType), &args);

@@ -125,8 +125,10 @@ enum {
     K_PGUP = 0xa4,
     K_HOME = 0xa5,
     K_END = 0xa6,
+#if defined(COD2_X64)
     K_KP_UPARROW = 0xb7,
     K_KP_DOWNARROW = 0xbd,
+#endif
     K_KP_ENTER = 0xbf,
     K_KP_INS = 0xc0,
     K_MWHEELDOWN = 0xcd,
@@ -1165,13 +1167,21 @@ void Console_Key(int key)
         return;
     }
 
+#if defined(COD2_X64)
     if (key == K_UPARROW || key == K_KP_UPARROW || (tolower(key) == 0x70 && Key_IsDown(K_CTRL)) ||
+#else
+    if (key == K_UPARROW || (tolower(key) == 0x70 && Key_IsDown(K_CTRL)) ||
+#endif
         (key == K_MWHEELUP && Key_IsDown(K_SHIFT))) {
         Console_HistoryUp();
         return;
     }
 
+#if defined(COD2_X64)
     if (key == K_DOWNARROW || key == K_KP_DOWNARROW || (tolower(key) == 0x6e && Key_IsDown(K_CTRL)) ||
+#else
+    if (key == K_DOWNARROW || (tolower(key) == 0x6e && Key_IsDown(K_CTRL)) ||
+#endif
         (key == K_MWHEELDOWN && Key_IsDown(K_SHIFT))) {
         Console_HistoryDown();
         return;

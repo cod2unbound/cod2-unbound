@@ -506,10 +506,12 @@ void Com_Error(errorParm_t code, const char *fmt, ...)
     longjmp(*(jmp_buf *)Sys_GetValue(2), -1);
 }
 
+#if defined(COD2_X64)
 void Com_SetSafeMode(void)
 {
     com_safemode = 1;
 }
+#endif
 
 qboolean Com_SafeMode(void)
 {

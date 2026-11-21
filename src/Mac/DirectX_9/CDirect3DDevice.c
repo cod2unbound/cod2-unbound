@@ -293,12 +293,20 @@ static HRESULT Q_GetDevice(const void *t, void **d)
 static int Q_GetType(const void *t)
 {
     (void)t;
+#if COD2_APPLE_SDK
     return 9; /* D3DQUERYTYPE_OCCLUSION */
+#else
+    return 0;
+#endif
 }
 static UINT Q_GetDataSize(const void *t)
 {
     (void)t;
+#if COD2_APPLE_SDK
     return sizeof(DWORD);
+#else
+    return 0;
+#endif
 }
 static HRESULT Q_Issue(const void *t, DWORD f)
 {
@@ -2486,7 +2494,11 @@ HRESULT CDirect3DDevice_GetDeviceCaps(const CDirect3DDevice *_this, D3DCAPS9 *pC
 #endif
 
     DeviceImpl *dev = (DeviceImpl *)_this;
+#if COD2_APPLE_SDK
     int maxStages;
+#else
+    int maxTexUnits, maxTexImageUnits, maxStages;
+#endif
     (void)dev;
 
     memset(pCaps, 0, sizeof(D3DCAPS9));
@@ -2565,10 +2577,16 @@ HRESULT CDirect3DDevice_GetDeviceCaps(const CDirect3DDevice *_this, D3DCAPS9 *pC
     pCaps->MaxVertexShaderConst = 0x100;
     pCaps->PixelShader1xMaxValue = 8.0f;
 
+#if COD2_APPLE_SDK
     /* These D3D9 caps describe fixed-function stages, not shader samplers. */
     maxStages = MacDisplay_GetMaxTextureUnits();
     if (maxStages > 8)
         maxStages = 8;
+#else
+    maxTexImageUnits = MacDisplay_GetMaxTextureImageUnits();
+    maxTexUnits = MacDisplay_GetMaxTextureUnits();
+    maxStages = (maxTexUnits < maxTexImageUnits) ? maxTexImageUnits : maxTexUnits;
+#endif
     pCaps->MaxSimultaneousTextures = maxStages;
     pCaps->MaxTextureBlendStages = maxStages;
 

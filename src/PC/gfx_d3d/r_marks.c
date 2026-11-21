@@ -316,8 +316,12 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
             Vec3Cross(edge01, (vec_t *)axis, normals[pointIndex]);
             Vec3Normalize(normals[pointIndex]);
 
+#if defined(COD2_X64)
             /* Windows' accumulation order matters at the +/-0.5 clip tolerance. */
             planeDists[pointIndex + 1] = (normals[pointIndex][1] * from[1] + normals[pointIndex][2] * from[2]) + normals[pointIndex][0] * from[0];
+#else
+            planeDists[pointIndex + 1] = normals[pointIndex][0] * from[0] + normals[pointIndex][1] * from[1] + normals[pointIndex][2] * from[2];
+#endif
         }
     }
 
@@ -327,7 +331,11 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
 
     {
         float *firstPt = (float *)points;
+#if defined(COD2_X64)
         planeDists[5] = (normals[4][1] * firstPt[1] + normals[4][2] * firstPt[2]) + normals[4][0] * firstPt[0] - radius;
+#else
+        planeDists[5] = normals[4][0] * firstPt[0] + normals[4][1] * firstPt[1] + normals[4][2] * firstPt[2] - radius;
+#endif
     }
 
     normals[5][0] = -normals[4][0];
@@ -336,7 +344,11 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
 
     {
         float *firstPt = (float *)points;
+#if defined(COD2_X64)
         planeDists[6] = (normals[5][2] * firstPt[2] + normals[5][1] * firstPt[1]) + normals[5][0] * firstPt[0] - radius;
+#else
+        planeDists[6] = normals[5][0] * firstPt[0] + normals[5][1] * firstPt[1] + normals[5][2] * firstPt[2] - radius;
+#endif
     }
 
     texCoordScale = 0.5f / radius;
@@ -394,12 +406,20 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
 
             Vec3Cross(edge01, edge21, scaledNormal);
 
+#if defined(COD2_X64)
             dot = (scaledNormal[2] * (*axis)[2] + scaledNormal[1] * (*axis)[1]) + scaledNormal[0] * (*axis)[0];
+#else
+            dot = scaledNormal[0] * (*axis)[0] + scaledNormal[1] * (*axis)[1] + scaledNormal[2] * (*axis)[2];
+#endif
 
             if (dot < 0.0f)
                 continue;
 
+#if defined(COD2_X64)
             lenSq = (scaledNormal[2] * scaledNormal[2] + scaledNormal[1] * scaledNormal[1]) + scaledNormal[0] * scaledNormal[0];
+#else
+            lenSq = scaledNormal[0] * scaledNormal[0] + scaledNormal[1] * scaledNormal[1] + scaledNormal[2] * scaledNormal[2];
+#endif
             if (dot * dot < 0.25f * lenSq)
                 continue;
 
@@ -441,7 +461,11 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
                 sideCount[2] = 0;
 
                 for (j = 0; j < numClipPoints; j++) {
+#if defined(COD2_X64)
                     float d = (planeNorm[0] * inPts[j].xyz[0] + planeNorm[2] * inPts[j].xyz[2]) + planeNorm[1] * inPts[j].xyz[1] - planeDist;
+#else
+                    float d = planeNorm[0] * inPts[j].xyz[0] + planeNorm[1] * inPts[j].xyz[1] + planeNorm[2] * inPts[j].xyz[2] - planeDist;
+#endif
                     dists[j] = d;
                     if (d > 0.5f) {
                         sides[j] = 0;
@@ -544,13 +568,25 @@ int R_MarkFragments(vec3_t *points, const vec_t *origin, vec3_t *axis, float rad
                     dy = outV->xyz[1] - origin[1];
                     dz = outV->xyz[2] - origin[2];
 
+#if defined(COD2_X64)
                     u = ((dz * axis[1][2] + dy * axis[1][1]) + dx * axis[1][0]) * texCoordScale + 0.5f;
+#else
+                    u = (dx * (*axis)[3] + dy * (*axis)[4] + dz * (*axis)[5]) * texCoordScale + 0.5f;
+#endif
                     outV->texCoord[0] = u;
 
+#if defined(COD2_X64)
                     t = ((dx * axis[2][0] + dz * axis[2][2]) + dy * axis[2][1]) * texCoordScale + 0.5f;
+#else
+                    t = (dx * (*axis)[6] + dy * (*axis)[7] + dz * (*axis)[8]) * texCoordScale + 0.5f;
+#endif
                     outV->texCoord[1] = t;
 
+#if defined(COD2_X64)
                     Vec3Cross(outV->normal, axis[1], outV->binormal);
+#else
+                    Vec3Cross(outV->normal, &(*axis)[3], outV->binormal);
+#endif
 
                     Vec3Cross(outV->binormal, outV->normal, outV->tangent);
                 }

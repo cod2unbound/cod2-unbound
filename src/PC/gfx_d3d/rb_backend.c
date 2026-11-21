@@ -681,7 +681,11 @@ static void RB_Cod2xHeadCmd(GfxRenderCommandExecState *state)
 #endif
 
 /* Mac table 0x36ace0: only slot 0 is the command-list terminator. */
+#if defined(COD2_X64)
 void (*const RB_RenderCommandTable[])(GfxRenderCommandExecState *execState) = {
+#else
+void (*const RB_RenderCommandTable[34])(GfxRenderCommandExecState *execState) = {
+#endif
     NULL,
     RB_GotoCmd,
     RB_CallCmd,
@@ -5310,9 +5314,17 @@ static void RB_ApplyLatePostEffectsCmd(GfxRenderCommandExecState *execState)
         const Material *colorMtl = rgp.frameColorDebugMaterial;
 
         RB_DrawStretchPic(colorMtl, halfW * 0.5f, 0.5f * halfH, halfW * 0.5f, 0.5f * halfH,
+#if defined(COD2_X64)
                           0, 0, 1.0f, 1.0f, 0x0000ffff, (GfxPrimStatsTarget)10);
+#else
+                          0, 0, 1.0f, 1.0f, 0xff000000, (GfxPrimStatsTarget)10);
+#endif
         RB_DrawStretchPic(colorMtl, halfW, 0.5f * halfH, halfW * 0.5f, 0.5f * halfH,
+#if defined(COD2_X64)
                           0, 0, 1.0f, 1.0f, 0x00ff00ff, (GfxPrimStatsTarget)10);
+#else
+                          0, 0, 1.0f, 1.0f, 0xff000000, (GfxPrimStatsTarget)10);
+#endif
         RB_DrawStretchPic(colorMtl, halfW * 0.5f, halfH, halfW * 0.5f, 0.5f * halfH,
                           0, 0, 1.0f, 1.0f, 0xff0000ff, (GfxPrimStatsTarget)10);
         RB_DrawStretchPic(rgp.frameAlphaDebugMaterial,
@@ -5393,8 +5405,12 @@ static void RB_ApplyLatePostEffectsCmd(GfxRenderCommandExecState *execState)
         int halfH = (int)((float)dxState.renderTargetHeight * 0.5f);
         int halfW = (int)((float)dxState.renderTargetWidth * 0.5f);
         const Material *mixMtl = rgp.colorChannelMixerMaterial;
+#if defined(COD2_X64)
         float savedColor[4];
         memcpy(savedColor, backEnd.codeConsts[27], sizeof(savedColor));
+#else
+        float save3 = backEnd.codeConsts[27][3];
+#endif
 
         RB_SetRenderTarget(0);
         backEnd.currentFeedbackImage = dxg->renderTargets[3].image;
@@ -5407,7 +5423,11 @@ static void RB_ApplyLatePostEffectsCmd(GfxRenderCommandExecState *execState)
                           0.25f, 0.25f, 0.75f, 0.75f, 0xffffffff, (GfxPrimStatsTarget)10);
         RB_EndSurface();
 
+#if defined(COD2_X64)
         memcpy(backEnd.codeConsts[27], savedColor, sizeof(savedColor));
+#else
+        backEnd.codeConsts[27][3] = save3;
+#endif
 
         {
             const byte *c = (const byte *)execState->cmd;
@@ -5976,7 +5996,9 @@ static void RB_DrawPointsCmd(GfxRenderCommandExecState *execState)
             cy = xyz[0] * row0[1] + xyz[1] * row1[1] + xyz[2] * row2[1] + row3[1];
             cz = xyz[0] * row0[2] + xyz[1] * row1[2] + xyz[2] * row2[2] + row3[2];
             cw = xyz[0] * row0[3] + xyz[1] * row1[3] + xyz[2] * row2[3] + row3[3];
+#if defined(COD2_X64)
             cz -= 0.001f * cw;
+#endif
             ox = cw * invWidth;
             oy = cw * invHeight;
 

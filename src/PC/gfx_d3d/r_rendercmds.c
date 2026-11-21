@@ -259,6 +259,7 @@ static void R_DumpCommandListForMenu(const GfxCmdArray *cl)
     }
 }
 
+#if defined(COD2_X64)
 static void R_ResetCmdArray(GfxCmdArray *cl)
 {
     if (!cl) return;
@@ -268,10 +269,21 @@ static void R_ResetCmdArray(GfxCmdArray *cl)
     cl->logicalUsedTotal = cl->logicalUsedCritical = 0;
 #endif
 }
+#endif
 
 static void R_ResetCmdListState(void)
 {
+#if defined(COD2_X64)
     R_ResetCmdArray(s_cmdList);
+#else
+    if (s_cmdList == NULL) {
+        return;
+    }
+
+    s_cmdList->usedTotal = 0;
+    s_cmdList->usedCritical = 0;
+    s_cmdList->lastCmd = NULL;
+#endif
 }
 
 static inline __attribute__((always_inline)) Bool R_ClearModifiedDvar(const dvar_t *dvar)
@@ -578,7 +590,13 @@ void R_AbortRenderCommands(void)
 
     R_UnlockSkinnedCache();
     cl = &frontEndDataOut->commands;
+#if defined(COD2_X64)
     R_ResetCmdArray(cl);
+#else
+    cl->usedTotal = 0;
+    cl->usedCritical = 0;
+    cl->lastCmd = NULL;
+#endif
 
 #if !defined(COD2_X64)
     dx = (DxGlobals *)imp_dx;
@@ -707,7 +725,13 @@ void R_InitBackendData(void)
 
     if (frontEndDataOut != NULL) {
         GfxCmdArray *cl = &frontEndDataOut->commands;
+#if defined(COD2_X64)
         R_ResetCmdArray(cl);
+#else
+        cl->usedTotal = 0;
+        cl->usedCritical = 0;
+        cl->lastCmd = NULL;
+#endif
         return;
     }
 
@@ -752,7 +776,13 @@ static void R_EndFrame_impl(void)
 
     cl = &frontEndDataOut->commands;
     R_DumpCommandListForMenu(cl);
+#if defined(COD2_X64)
     R_ResetCmdArray(cl);
+#else
+    cl->usedTotal = 0;
+    cl->usedCritical = 0;
+    cl->lastCmd = NULL;
+#endif
 
     RB_ExecuteRenderCommands(frontEndDataOut);
     RB_EndFrame();
@@ -1212,7 +1242,13 @@ void R_EndDebugFrame(void)
     R_AllocCriticalCmd(4, 0);
 
     cl = &frontEndDataOut->commands;
+#if defined(COD2_X64)
     R_ResetCmdArray(cl);
+#else
+    cl->usedTotal = 0;
+    cl->usedCritical = 0;
+    cl->lastCmd = NULL;
+#endif
 
     RB_ExecuteRenderCommands(frontEndDataOut);
     RB_EndFrame();

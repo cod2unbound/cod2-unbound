@@ -208,7 +208,11 @@ Bool R_ValidXModelName(const char *name)
         return 0;
     if (strnicmp(name, "xmodel", 6) != 0)
         return 0;
+#if defined(COD2_X64)
     if (name[6] != '/' && name[6] != '\\')
+#else
+    if (name[6] != '/')
+#endif
         return 0;
     return 1;
 }

@@ -7,11 +7,12 @@ extern void GaussianRandom(float *real, float *imag);
 extern GfxImage * R_CreateWaterMap(char *name, int imageWidth, int imageHeight);
 extern const char *va(const char *fmt, ...);
 extern double exp(double x);
-extern double log(double x);
 extern float fabsf(float x);
 extern float sqrtf(float x);
 
 #if defined(COD2_X64)
+extern double log(double x);
+
 /* Windows' renderer DLL owns its CRT random stream independently of the game.
  * Its per-thread seed starts at 1 (100fb56c), and no renderer code calls srand.
  * Cloud construction and water setup are the only reachable consumers. */

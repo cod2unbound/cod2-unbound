@@ -216,7 +216,11 @@ normalmap_path:
                 float real = ptr->real;
                 float imag = ptr->imag;
                 float mag = real * real + imag * imag;
+#if defined(COD2_X64)
                 ptr->real = sqrtf(mag);
+#else
+                ptr->real = MacOpenGLUtils_SquareRootLowPrecision(mag);
+#endif
                 ptr++;
             }
         }
@@ -257,7 +261,11 @@ normalmap_path:
                         float dy = h_ixm1y - waterData[ixy_idx].real;
 
                         float lenSq = dx * dx + dy * dy + dz_sqrd_val;
+#if defined(COD2_X64)
                         float len = sqrtf(lenSq);
+#else
+                        float len = MacOpenGLUtils_SquareRootLowPrecision(lenSq);
+#endif
                         float invLen = 127.5f / len;
 
 #if defined(COD2_X64)

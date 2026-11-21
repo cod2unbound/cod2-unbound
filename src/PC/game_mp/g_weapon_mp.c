@@ -19,8 +19,10 @@ extern const dvar_t *sv_fps;
 extern int rand(void);
 #endif
 extern double tan(double x);
+#if defined(COD2_X64)
 extern double sin(double x);
 extern double cos(double x);
+#endif
 extern float sinf(float x);
 extern float cosf(float x);
 extern float sqrtf(float x);
