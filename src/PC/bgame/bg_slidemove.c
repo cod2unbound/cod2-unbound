@@ -147,7 +147,17 @@ static qboolean PM_SLIDEMOVE_ABI PM_SlideMove(pmove_t *pm, pml_t *pml, qboolean 
                     trace.normal[1] * planes[i][1] +
                     trace.normal[2] * planes[i][2] >
                 0.999f) {
-#if defined(COD2_X64)
+#if COD2_WINDOWS_NATIVE
+                /* Retail 0x530592 adds Y and Z before X for a repeated plane. */
+                float dot = (ps->velocity[1] * trace.normal[1] +
+                             ps->velocity[2] * trace.normal[2]) +
+                            ps->velocity[0] * trace.normal[0];
+                float overbounce = -(dot - __builtin_fabsf(dot) * 0.001f);
+
+                ps->velocity[0] += trace.normal[0] * overbounce;
+                ps->velocity[1] += trace.normal[1] * overbounce;
+                ps->velocity[2] += trace.normal[2] * overbounce;
+#elif defined(COD2_X64)
                 PM_ClipVelocity(ps->velocity, trace.normal, ps->velocity);
 #endif
                 ps->velocity[0] = trace.normal[0] + ps->velocity[0];
@@ -230,9 +240,15 @@ static qboolean PM_SLIDEMOVE_ABI PM_SlideMove(pmove_t *pm, pml_t *pml, qboolean 
             Vec3Cross(planes[permutation[0]], planes[permutation[j]], dir);
             Vec3Normalize(dir);
 
+#if COD2_WINDOWS_NATIVE
+            /* Retail 0x530915 adds Y and Z before X for the crease velocity. */
+            d = (dir[2] * ps->velocity[2] + dir[1] * ps->velocity[1]) +
+                dir[0] * ps->velocity[0];
+#else
             d = dir[0] * ps->velocity[0] +
                 dir[1] * ps->velocity[1] +
                 dir[2] * ps->velocity[2];
+#endif
 
             clipVelocity[0] = dir[0] * d;
             clipVelocity[1] = dir[1] * d;
