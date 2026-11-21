@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 114 rows, with 12 ported, 38 planned, 48 UI and 16 Apple-only.
+Coverage is 114 rows, with 16 ported, 34 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Coverage is 114 rows, with 12 ported, 38 planned, 48 UI and 16 Apple-only.
 | ConfigCheckerView.swift | UI | Check a Config workflow, selection and findings |
 | ConfigCheckup.swift | Planned | Recommendations from the configuration and match measurements |
 | ConfigCheckupView.swift | UI | Check-up results and tune-for controls |
-| ConfigClean.swift | Planned | Import review projection used by the catalogue and sharing |
+| ConfigClean.swift | Ported | `ConfigClean` reviews both engine dialects and preserves approved bytes and omission reasons |
 | ConfigDirectory.swift · trust and metadata | Ported | `ConfigDirectory` verifies exact Ed25519-signed bytes, closed metadata, revisions and downloaded profile digests. Review of the signed profile is tracked with the import rows below. |
 | ConfigDirectory.swift · transport and cache | Ported | `IConfigTextFetcher`, `IConfigDirectoryStorage`, core cache re-verification and saved entries. The platform supplies bounded HTTP and private transactional storage. |
 | ConfigDiscoverModel.swift · state rules | Planned | Directory states, retry, and saving selected entries |
@@ -29,9 +29,9 @@ Coverage is 114 rows, with 12 ported, 38 planned, 48 UI and 16 Apple-only.
 | ConfigDocument.swift | Ported | `ConfigDocument`, `ConfigDialect`, `ConfigTokenization`, `ConfigCommand`, `ConfigDiagnostic`, `ByteSpan`, `ConfigEditException` |
 | ConfigHistory.swift | Planned | Persistent revisions, timestamps, comparison and recovery |
 | ConfigHistoryView.swift | UI | Revision history and restore actions |
-| ConfigImport.swift | Planned | Source, byte and file containment rules, placed behind file and fetch seams |
-| ConfigImportCatalogAdapter.swift | Planned | Adapt the existing `ConfigCatalog` to import metadata |
-| ConfigImportSafety.swift | Planned | Command and dependency review, reason codes, and edition differences |
+| ConfigImport.swift | Ported | `ConfigImportLoader`, `ConfigImportScript` and `IConfigImportFiles` implement source rules and bounded dependency discovery |
+| ConfigImportCatalogAdapter.swift | Ported | `ConfigImportCatalogAdapter` and `IConfigImportCatalog` use conservative edition-specific registration flags |
+| ConfigImportSafety.swift | Ported | `ConfigImportSafety` reviews saved command shapes, secret redaction, dependency graphs and engine limits |
 | ConfigImportSession.swift | Planned | Candidate projection, reviewed apply, import ownership and error recovery |
 | ConfigImportView.swift | UI | Import source, review and apply dialogs |
 | ConfigLauncherModel.swift · workflows | Planned | Config Studio import and launch coordination |

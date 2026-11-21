@@ -25,6 +25,9 @@ import Foundation
         var directory = try await DirectoryParity.build(scratch: scratch, recorded: signatures)
         directory["swiftRevision"] = revision
         try fixture("directory", payload: directory, mode: mode, output: output)
+        var imports = try await ImportParity.build(catalogURL: root.appendingPathComponent("launcher/Resources/ConfigCatalog.json"))
+        imports["swiftRevision"] = revision
+        try fixture("import", payload: imports, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

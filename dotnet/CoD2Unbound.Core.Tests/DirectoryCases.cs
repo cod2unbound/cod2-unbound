@@ -52,13 +52,13 @@ internal static partial class Program
             Sync(directory.SetSavedAsync(entry.Id, true, snapshot));
             Equal(entry.Id, Sync(directory.SavedAsync(snapshot)).Single().Entry!.Id);
             source.Responses[entry.ConfigUrl] = new(ImmutableArray.Create(root.Bytes("profile")), entry.ConfigUrl, "text/plain");
-            Sequence(root.Bytes("profile"), Sync(directory.FetchProfileAsync(entry.Id, snapshot)).Bytes);
+            Sequence(root.Bytes("profile"), Sync(directory.LoadProfileAsync(entry.Id, snapshot, ConfigDialect.Stock, ImportCatalog)).Files.Single().Document.Serialized);
             source.Responses[entry.ConfigUrl] = new(ImmutableArray.Create(root.Bytes("profile")), new Uri(index, "other.cfg"), null);
-            DirectoryRejects(ConfigDirectoryFailure.IdentityMismatch, () => Sync(directory.FetchProfileAsync(entry.Id, snapshot)));
+            DirectoryRejects(ConfigDirectoryFailure.IdentityMismatch, () => Sync(directory.LoadProfileAsync(entry.Id, snapshot, ConfigDialect.Stock, ImportCatalog)));
             var altered = root.Bytes("profile");
             altered[0] ^= 1;
             source.Responses[entry.ConfigUrl] = new(ImmutableArray.Create(altered), entry.ConfigUrl, null);
-            DirectoryRejects(ConfigDirectoryFailure.ProfileMismatch, () => Sync(directory.FetchProfileAsync(entry.Id, snapshot)));
+            DirectoryRejects(ConfigDirectoryFailure.ProfileMismatch, () => Sync(directory.LoadProfileAsync(entry.Id, snapshot, ConfigDialect.Stock, ImportCatalog)));
             source.Responses.Clear();
             var offline = Load(directory);
             Equal(ConfigDirectoryOrigin.Cache, offline.Snapshot!.Origin);

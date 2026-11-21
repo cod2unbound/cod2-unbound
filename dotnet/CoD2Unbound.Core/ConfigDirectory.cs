@@ -95,7 +95,6 @@ public sealed class ConfigDirectorySnapshot
 
 public sealed record ConfigDirectoryLoad(ConfigDirectorySnapshot? Snapshot, string? UnavailableReason = null, string? RefreshError = null);
 public sealed record ConfigDirectorySavedEntry(string Id, ConfigDirectoryEntry? Entry);
-public sealed record ConfigDirectoryProfile(ConfigDirectoryEntry Entry, ImmutableArray<byte> Bytes);
 
 public sealed class ConfigDirectory(ConfigDirectoryConfiguration? configuration, IConfigDirectoryStorage storage, IConfigTextFetcher fetcher)
 {
@@ -158,8 +157,8 @@ public sealed class ConfigDirectory(ConfigDirectoryConfiguration? configuration,
         return await storage.ModifiedAsync(ConfigDirectoryFile.Cache, cancellationToken).ConfigureAwait(false);
     }
 
-    public async ValueTask<ConfigDirectoryProfile> FetchProfileAsync(string entryId, ConfigDirectorySnapshot snapshot,
-        CancellationToken cancellationToken = default)
+    public async ValueTask<ConfigImportBundle> LoadProfileAsync(string entryId, ConfigDirectorySnapshot snapshot,
+        ConfigDialect dialect, IConfigImportCatalog catalog, CancellationToken cancellationToken = default)
     {
         var verified = VerifySnapshot(snapshot);
         var entry = verified.Index.Entries.FirstOrDefault(entry => entry.Id == entryId) ??
@@ -170,7 +169,11 @@ public sealed class ConfigDirectory(ConfigDirectoryConfiguration? configuration,
             Convert.ToHexStringLower(SHA256.HashData(response.Data.AsSpan())) != entry.Sha256)
             throw new ConfigDirectoryException(ConfigDirectoryFailure.ProfileMismatch);
 
-        return new(entry, response.Data);
+        // No unsigned exec targets are fetched. Review sees the same unresolved dependencies as pasted input.
+        var bundle = await new ConfigImportLoader(catalog)
+            .LoadAsync(new ConfigImportInput.Paste(response.Data), dialect, cancellationToken).ConfigureAwait(false);
+        return bundle with { Source = new(ConfigImportSourceKind.Https, entry.SourceUrl,
+            ConfigFetchRequest.Parent(entry.ConfigUrl), entry.ConfigUrl) };
     }
 
     public async ValueTask<ImmutableArray<ConfigDirectorySavedEntry>> SavedAsync(ConfigDirectorySnapshot snapshot,

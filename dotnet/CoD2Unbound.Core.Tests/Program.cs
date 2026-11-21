@@ -14,6 +14,7 @@ internal static partial class Program
         LaunchCases();
         SettingsCases();
         DirectoryCases();
+        ImportCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }

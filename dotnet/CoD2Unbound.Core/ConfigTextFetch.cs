@@ -46,15 +46,17 @@ public sealed record ConfigFetchRequest(Uri Url, int MaximumBytes, Uri Root)
             path = path[..pathEnd];
         string rawPath = path.ToString();
         return !UnsafeEscapes.Any(escape => rawPath.Contains(escape, StringComparison.OrdinalIgnoreCase)) &&
-            !rawPath.Split('/').Any(segment => segment is "." or "..") &&
-            !uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
-                .Any(item => CredentialParameter(Uri.UnescapeDataString(item.Split('=', 2)[0])));
+            !rawPath.Split('/').Any(segment => segment is "." or "..") && !HasCredentialQuery(uri);
     }
 
     internal static Uri Parent(Uri uri) => new(uri, ".");
 
     internal static bool SameResource(Uri expected, Uri actual) =>
         IsPermitted(actual) && expected.AbsoluteUri.Equals(actual.AbsoluteUri, StringComparison.Ordinal);
+
+    internal static bool HasCredentialQuery(Uri uri) =>
+        uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Any(item => CredentialParameter(Uri.UnescapeDataString(item.Split('=', 2)[0])));
 
     internal static bool CredentialName(string name) =>
         name.Contains("password", StringComparison.Ordinal) || name.Contains("passwd", StringComparison.Ordinal) ||
