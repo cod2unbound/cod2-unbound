@@ -23,6 +23,19 @@
     <Style x:Key="NegativeButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>
+    <Style x:Key="ColumnHeading" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="0,0,8,0" />
+    </Style>
+    <Style x:Key="Eyebrow" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="CharacterSpacing" Value="160" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />

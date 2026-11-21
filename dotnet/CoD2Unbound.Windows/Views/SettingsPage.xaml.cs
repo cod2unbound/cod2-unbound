@@ -309,7 +309,7 @@ public sealed partial class SettingsPage : Page
         Row($"CoD2 Unbound {session.Version}",
             "Call of Duty 2 multiplayer, on every platform. Free and open source. You bring your own copy of the game.");
         Row("Release notes", null, Action("Release notes for every version", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases")));
-        Row("Support", null, Buttons(Action("Website", () => OpenAsync("https://cod2unbound.com/")),
+        Row("Support", null, Buttons(Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound")),
             Action("Report a problem…", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/issues"))));
         Row("Updates", null, Action("Check for updates…", () =>
         {

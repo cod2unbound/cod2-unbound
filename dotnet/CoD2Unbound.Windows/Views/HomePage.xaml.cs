@@ -7,9 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.Graphics.Imaging;
 using Color = global::Windows.UI.Color;
-using Windows.Security.Cryptography;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -38,7 +36,7 @@ public sealed partial class HomePage : Page
         string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
         if (last is not null)
         {
-            HeroLead.Text = string.Join(" · ", new[] { "Last played", map is null ? null : MapCatalog.Region(map) }.OfType<string>());
+            HeroLead.Text = string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
             if (map is not null)
                 HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
             HeroDetail.Text = string.Join(" · ", new[] { QuakeColors.Plain(last.Name),
@@ -223,26 +221,16 @@ public sealed partial class HomePage : Page
     private async Task ApplyArtworkAsync(MapPixels art)
     {
         artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0, 1);
-        var bgra = art.Rgba.ToArray();
-        for (int i = 0; i < bgra.Length; i += 4)
-        {
-            (bgra[i], bgra[i + 2]) = (bgra[i + 2], bgra[i]);
-            bgra[i + 3] = 255;
-        }
-        using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(CryptographicBuffer.CreateFromByteArray(bgra),
-            BitmapPixelFormat.Bgra8, art.Width, art.Height, BitmapAlphaMode.Premultiplied);
-        var image = new SoftwareBitmapSource();
-        await image.SetBitmapAsync(bitmap);
-        HeroArt.Source = image;
+        HeroArt.Source = await MapBitmapAsync(art);
         RenderArtScrim();
     }
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args)
     {
         bool wide = args.NewSize.Width >= 1000;
-        ContentLayout.Padding = wide ? new Thickness(48, 64, 48, 32) : new Thickness(28, 28, 28, 24);
-        HeroTitle.FontSize = wide ? 112 : 84;
-        ArtLayer.Height = wide ? 520 : 360;
+        ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(28, 28, 28, 24);
+        HeroTitle.FontSize = wide ? 132 : 84;
+        ArtLayer.Height = wide ? 560 : 360;
         ContentLayout.MinHeight = args.NewSize.Height;
     }
 

@@ -21,11 +21,10 @@
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="4">
                 <TextBlock Text="Servers" Style="{StaticResource PageTitle}" />
-                <TextBlock Text="Original 1.3 and CoD2x servers from the public master lists. Nothing is contacted until you refresh."
+                <TextBlock x:Name="ServerIntro" FontSize="12"
                            Style="{StaticResource SecondaryText}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-                <Button Content="Host" AccessKey="T" Click="OnHost" />
                 <Button x:Name="RefreshButton" Content="Refresh" AccessKey="R" Click="OnRefresh"
                         AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list" />
                 <Button Content="Connect to address…" AccessKey="C" Click="OnConnect"
@@ -38,12 +37,13 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <RadioButtons x:Name="Scopes" MaxColumns="3" AutomationProperties.Name="Server lists"
-                          SelectionChanged="OnScopeChanged">
-                <RadioButton Content="All" AccessKey="A" />
-                <RadioButton Content="Favorites" AccessKey="V" />
-                <RadioButton Content="Recent" AccessKey="N" />
-            </RadioButtons>
+            <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists"
+                         SelectionChanged="OnScopeChanged">
+                <SelectorBarItem Text="All" AccessKey="A" />
+                <SelectorBarItem Text="Favorites" AccessKey="V" />
+                <SelectorBarItem Text="Recent" AccessKey="N" />
+                <SelectorBarItem Text="Hosting" AccessKey="T" />
+            </SelectorBar>
             <TextBox x:Name="SearchBox" Grid.Column="1" PlaceholderText="Search servers, maps or mods"
                      AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                      TextChanged="OnSearch" VerticalAlignment="Center" MaxLength="256" />
@@ -86,9 +86,9 @@
                         <ColumnDefinition Width="68" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Map" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Content="Server" Tag="Name" Click="OnSort" />
-                    <Button Grid.Column="2" Content="Players" Tag="Players" Click="OnSort" />
-                    <Button Grid.Column="3" Content="Ping" Tag="Ping" Click="OnSort" />
+                    <Button Grid.Column="1" Content="Server" Style="{StaticResource ColumnHeading}" Tag="Name" Click="OnSort" />
+                    <Button Grid.Column="2" Content="Players" Style="{StaticResource ColumnHeading}" Tag="Players" Click="OnSort" />
+                    <Button Grid.Column="3" Content="Ping" Style="{StaticResource ColumnHeading}" Tag="Ping" Click="OnSort" />
                 </Grid>
                 <ListView x:Name="ServerList" Grid.Row="1" SelectionChanged="OnSelectionChanged"
                           AutomationProperties.Name="Servers">
@@ -120,18 +120,54 @@
                 </ListView>
             </Grid>
             <Border x:Name="Details" Grid.Column="1" Width="300" Style="{StaticResource FieldCard}" Visibility="Collapsed">
-                <ScrollViewer>
-                    <StackPanel Spacing="8">
-                        <TextBlock x:Name="DetailMap" Style="{StaticResource SecondaryText}" />
-                        <TextBlock x:Name="DetailName" Style="{StaticResource SectionTitle}" TextWrapping="Wrap" />
-                        <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
-                        <TextBlock x:Name="DetailFacts" Style="{StaticResource SecondaryText}" />
-                        <TextBlock x:Name="DetailRoster" Style="{StaticResource SecondaryText}" />
-                        <StackPanel x:Name="Roster" Spacing="4" />
-                        <Button x:Name="JoinButton" Content="Launch" Style="{StaticResource AccentButtonStyle}" AccessKey="L" Click="OnJoin" />
-                        <Button x:Name="FavoriteButton" AccessKey="E" Click="OnFavorite" />
-                    </StackPanel>
-                </ScrollViewer>
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="8">
+                            <Border Height="120" CornerRadius="4">
+                                <Image x:Name="DetailArt" Stretch="UniformToFill" />
+                            </Border>
+                            <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" />
+                            <TextBlock x:Name="DetailName" Style="{StaticResource CardTitle}" TextWrapping="Wrap" />
+                            <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" TextWrapping="Wrap"
+                                       FontFamily="Consolas" FontSize="12" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Version" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    <TextBlock x:Name="DetailVersion" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Mod" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    <TextBlock x:Name="DetailMod" TextTrimming="CharacterEllipsis" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Access" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    <TextBlock x:Name="DetailAccess" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="{ThemeResource SeparatorBrush}" />
+                            <TextBlock x:Name="DetailRoster" Style="{StaticResource SecondaryText}" />
+                            <StackPanel x:Name="Roster" Spacing="4" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="JoinButton" Content="Launch" HorizontalAlignment="Stretch"
+                                Style="{StaticResource AccentButtonStyle}" AccessKey="L" Click="OnJoin" />
+                        <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" />
+                    </Grid>
+                </Grid>
             </Border>
         </Grid>
     </Grid>

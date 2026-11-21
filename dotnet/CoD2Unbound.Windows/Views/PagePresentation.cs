@@ -1,6 +1,9 @@
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Graphics.Imaging;
+using Windows.Security.Cryptography;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -54,6 +57,21 @@ internal static class PagePresentation
             layout.Children.Add(action);
         }
         return new Border { Style = StyleFor("FieldCard"), Child = layout };
+    }
+
+    internal static async Task<SoftwareBitmapSource> MapBitmapAsync(MapPixels art)
+    {
+        var bgra = art.Rgba.ToArray();
+        for (int i = 0; i < bgra.Length; i += 4)
+        {
+            (bgra[i], bgra[i + 2]) = (bgra[i + 2], bgra[i]);
+            bgra[i + 3] = 255;
+        }
+        using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(CryptographicBuffer.CreateFromByteArray(bgra),
+            BitmapPixelFormat.Bgra8, art.Width, art.Height, BitmapAlphaMode.Premultiplied);
+        var image = new SoftwareBitmapSource();
+        await image.SetBitmapAsync(bitmap);
+        return image;
     }
 
     internal static Task OpenAsync(string target)

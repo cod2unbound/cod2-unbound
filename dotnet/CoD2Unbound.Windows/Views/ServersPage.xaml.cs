@@ -5,6 +5,8 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -13,6 +15,8 @@ public sealed partial class ServersPage : Page
 {
     private readonly MainWindow shell;
     private readonly ServersViewModel model;
+    private readonly WindowsLauncherSession session;
+    private string? currentMap;
     private CancellationTokenSource? refreshing;
     private bool dialogOpen;
     private bool ready;
@@ -20,9 +24,12 @@ public sealed partial class ServersPage : Page
     internal ServersPage(MainWindow shell, WindowsLauncherSession session, ServerScope scope, string? address)
     {
         this.shell = shell;
+        this.session = session;
         model = new(session, scope);
         InitializeComponent();
-        Scopes.SelectedIndex = (int)scope;
+        Scopes.SelectedItem = Scopes.Items[(int)scope];
+        ServerIntro.Text = "Original 1.3 and CoD2x servers from the public master lists. " +
+            (session.Settings.Working.RefreshServersOnOpen ? "The list refreshes when Servers opens." : "Nothing is contacted until you refresh.");
         ready = true;
         Render(address);
     }
@@ -52,11 +59,17 @@ public sealed partial class ServersPage : Page
         };
     }
 
-    private void OnScopeChanged(object sender, SelectionChangedEventArgs args)
+    private async void OnScopeChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (!ready || Scopes.SelectedIndex < 0)
+        int index = sender.Items.IndexOf(sender.SelectedItem);
+        if (!ready || index < 0)
             return;
-        model.Scope = (ServerScope)Scopes.SelectedIndex;
+        if (index == sender.Items.Count - 1)
+        {
+            await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Hosting));
+            return;
+        }
+        model.Scope = (ServerScope)index;
         Render();
     }
 
@@ -90,16 +103,41 @@ public sealed partial class ServersPage : Page
         var server = row.Server;
         var facts = ServerFacts.From(server);
         DetailName.Text = row.Name;
-        DetailMap.Text = row.Map + " · " + GameModes.Long(server.GameType);
+        DetailMap.Text = (row.Map + " · " + GameModes.Long(server.GameType)).ToUpperInvariant();
+        RenderMapArtwork(server.Map);
         DetailAddress.Text = server.Address;
-        DetailFacts.Text = string.Join(" · ", new[] { facts.VersionLabel, server.Mod, facts.Access }.Where(value => value.Length > 0));
+        DetailVersion.Text = facts.VersionLabel;
+        DetailMod.Text = string.IsNullOrWhiteSpace(server.Mod) ? "None" : server.Mod;
+        DetailAccess.Text = facts.Access;
         DetailRoster.Text = "Roster · " + row.Players;
         Roster.Children.Clear();
         foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
             Roster.Children.Add(new TextBlock { Text = $"{QuakeColors.Plain(player.Name)} · {player.Score} · {player.Ping} ms",
                 TextTrimming = TextTrimming.CharacterEllipsis });
-        FavoriteButton.Content = model.IsFavorite(server.Address) ? "Remove from Favorites" : "Add to Favorites";
+        bool saved = model.IsFavorite(server.Address);
+        string favoriteAction = saved ? "Remove from Favorites" : "Add to Favorites";
+        FavoriteButton.Content = new FontIcon { Glyph = saved ? "\uE735" : "\uE734", FontSize = 16 };
+        AutomationProperties.SetName(FavoriteButton, favoriteAction);
+        ToolTipService.SetToolTip(FavoriteButton, favoriteAction);
         JoinButton.IsEnabled = !model.GameRunning;
+    }
+
+    private async void RenderMapArtwork(string map)
+    {
+        if (currentMap == map)
+            return;
+        currentMap = map;
+        string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
+        DetailArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
+        await shell.ShowProblemAsync(async () =>
+        {
+            if (map.Length != 0 && await Task.Run(() => session.ReadMapArtwork(map)) is { } pixels && currentMap == map)
+            {
+                var bitmap = await MapBitmapAsync(pixels);
+                if (currentMap == map)
+                    DetailArt.Source = bitmap;
+            }
+        });
     }
 
     private void OnFiltersOpening(object sender, object args)
@@ -138,9 +176,6 @@ public sealed partial class ServersPage : Page
         shell.RefreshFavorites();
         Render();
     });
-
-    private async void OnHost(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Hosting));
 
     private async void OnRefresh(object sender, RoutedEventArgs args) => await RefreshAsync();
 

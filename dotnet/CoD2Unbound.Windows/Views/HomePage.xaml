@@ -21,11 +21,11 @@
                 </Grid.RowDefinitions>
                 <StackPanel x:Name="Hero" HorizontalAlignment="Left" MaxWidth="768" Spacing="12" Padding="0,0,0,20"
                             Background="{ThemeResource HeroBackplateBrush}">
-                    <TextBlock x:Name="HeroLead" Text="Ready to play" Foreground="{ThemeResource HeroAccentBrush}"
-                               FontSize="15" FontWeight="SemiBold" CharacterSpacing="180" />
+                    <TextBlock x:Name="HeroLead" Text="READY TO PLAY" Foreground="{ThemeResource HeroAccentBrush}"
+                               FontSize="15" FontWeight="SemiBold" CharacterSpacing="340" />
                     <TextBlock x:Name="HeroTitle" Text="COD2 UNBOUND" Foreground="{ThemeResource HeroInkBrush}"
                                FontFamily="ms-appx:///Assets/BigShouldersStencilDisplay.ttf#Big Shoulders Stencil Display"
-                               FontSize="112" FontWeight="SemiBold" TextWrapping="Wrap"
+                               FontSize="132" FontWeight="SemiBold" TextWrapping="Wrap"
                                AutomationProperties.HeadingLevel="Level1" />
                     <TextBlock x:Name="HeroDetail" MaxWidth="540" HorizontalAlignment="Left" FontSize="16"
                                TextWrapping="Wrap" Foreground="{ThemeResource HeroInkBrush}" />
