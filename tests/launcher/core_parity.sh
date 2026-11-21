@@ -8,8 +8,11 @@ case "$mode" in
     --write) revision=${2:-$(git -C "$root" rev-parse HEAD)};;
     *) echo 'Usage: core_parity.sh [--check | --write [swift-revision]]' >&2; exit 2;;
 esac
-if ! git -C "$root" diff --quiet "$revision" -- launcher src/PC/qcommon/cod2x_url.c src/PC/qcommon/cod2x_url.h src/platform/cod2x_native_setup.h src/platform/cod2x_native_shaders.m; then
-    echo "Swift sources or resources differ from $revision." >&2
+if ! git -C "$root" diff --quiet "$revision" -- launcher \
+    src/PC/qcommon/cod2x_url.c src/PC/qcommon/cod2x_url.h \
+    src/platform/cod2x_native_setup.h src/platform/cod2x_native_shaders.m \
+    ':(glob)tests/launcher/fixtures/*.bin' tests/launcher/fixtures/releases.json; then
+    echo "Swift sources, resources or input fixtures differ from $revision." >&2
     exit 1
 fi
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/cod2-core-parity.XXXXXX")
@@ -30,6 +33,6 @@ target=arm64-apple-macos26
     "$root/launcher/ConfigDocument.swift" "$root/launcher/ConfigCatalog.swift" \
     "$root/launcher/Core.swift" "$root/launcher/Presentation.swift" "$root/launcher/Hosting.swift" \
     "$root/tests/launcher/CoreParity.swift" "$root/tests/launcher/CoreParityConfig.swift" "$root/tests/launcher/CoreParityWire.swift" \
-    "$root/tests/launcher/CoreParityLaunch.swift" \
+    "$root/tests/launcher/CoreParityLaunch.swift" "$root/tests/launcher/CoreParitySettings.swift" \
     "$scratch/setup.o" "$scratch/shaders.o" "$scratch/url.o" -framework AppKit -lz -o "$scratch/parity"
 "$scratch/parity" "$mode" "$output" "$revision" "$root"

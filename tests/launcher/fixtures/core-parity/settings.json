@@ -1,0 +1,810 @@
+{
+  "checksums" : [
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "input" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "input" : "AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12AB12 *CoD2-Unbound-0.4.0-macos-arm64.zip\r\n"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : null,
+      "input" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\nab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  CoD2-Unbound-0.4.0-macos-arm64.zip\n"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : null,
+      "input" : "ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12  other.zip"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "hash" : null,
+      "input" : "not a checksum"
+    }
+  ],
+  "displays" : [
+    {
+      "fitting" : "3008x1692",
+      "initial" : "2560x1440",
+      "invalid" : "640x480",
+      "modes" : [
+        "3000x1024",
+        "512x288",
+        "640x480",
+        "1024x768"
+      ],
+      "native" : "5120x2880",
+      "offered" : [
+        "640x480",
+        "800x600",
+        "1024x768",
+        "1280x720",
+        "1920x1080",
+        "2560x1440",
+        "3000x1024",
+        "3008x1692",
+        "3840x2160",
+        "5120x2880"
+      ]
+    },
+    {
+      "fitting" : "3000x1024",
+      "initial" : "3440x1440",
+      "invalid" : "640x480",
+      "modes" : [
+        "3000x1024",
+        "512x288",
+        "640x480",
+        "1024x768"
+      ],
+      "native" : "3440x1440",
+      "offered" : [
+        "640x480",
+        "800x600",
+        "1024x768",
+        "1280x720",
+        "1920x1080",
+        "2560x1440",
+        "3000x1024",
+        "3440x1440"
+      ]
+    },
+    {
+      "fitting" : "2560x1600",
+      "initial" : "2560x1600",
+      "invalid" : "640x480",
+      "modes" : [
+        "3000x1024",
+        "512x288",
+        "640x480",
+        "1024x768"
+      ],
+      "native" : "2560x1600",
+      "offered" : [
+        "640x480",
+        "800x600",
+        "1024x768",
+        "1280x720",
+        "1920x1080",
+        "2560x1440",
+        "2560x1600"
+      ]
+    },
+    {
+      "fitting" : "640x480",
+      "initial" : "640x480",
+      "invalid" : "640x480",
+      "modes" : [
+        "3000x1024",
+        "512x288",
+        "640x480",
+        "1024x768"
+      ],
+      "native" : "640x480",
+      "offered" : [
+        "640x480"
+      ]
+    }
+  ],
+  "fresh" : {
+    "advanced" : "",
+    "anisotropy" : 8,
+    "appearance" : "system",
+    "checkUpdatesAutomatically" : true,
+    "crashReportsAsked" : false,
+    "dismissedWarnings" : [
+
+    ],
+    "dpi" : 800,
+    "engine" : "cod2x",
+    "fps" : 250,
+    "fullscreen" : "borderless",
+    "hideWhilePlaying" : true,
+    "introFilmsPlayed" : false,
+    "matchSummariesEnabled" : true,
+    "rawMouse" : true,
+    "refreshServersOnOpen" : false,
+    "renderer" : "metal",
+    "renderScale" : 100,
+    "resolution" : "1920x1080",
+    "sendCoD2xReports" : false,
+    "sendCrashReports" : false,
+    "sensitivity" : 5,
+    "volume" : 0.80000000000000004,
+    "vsync" : false
+  },
+  "joins" : [
+    {
+      "engine" : "cod2x",
+      "fields" : null,
+      "lookedUp" : false,
+      "result" : "go"
+    },
+    {
+      "engine" : "cod2x",
+      "fields" : null,
+      "lookedUp" : true,
+      "result" : "go"
+    },
+    {
+      "engine" : "cod2x",
+      "fields" : {
+        "protocol" : "118"
+      },
+      "lookedUp" : true,
+      "result" : "go"
+    },
+    {
+      "engine" : "cod2x",
+      "fields" : {
+        "protocol" : "120"
+      },
+      "lookedUp" : false,
+      "result" : "go"
+    },
+    {
+      "engine" : "cod2x",
+      "fields" : {
+        "protocol" : "118",
+        "shortversion" : "1.4.6.8"
+      },
+      "lookedUp" : true,
+      "result" : "go"
+    },
+    {
+      "engine" : "original",
+      "fields" : null,
+      "lookedUp" : false,
+      "result" : "lookUp"
+    },
+    {
+      "engine" : "original",
+      "fields" : null,
+      "lookedUp" : true,
+      "result" : "go"
+    },
+    {
+      "engine" : "original",
+      "fields" : {
+        "protocol" : "118"
+      },
+      "lookedUp" : true,
+      "result" : "go"
+    },
+    {
+      "engine" : "original",
+      "fields" : {
+        "protocol" : "120"
+      },
+      "lookedUp" : false,
+      "result" : "needsCoD2x"
+    },
+    {
+      "engine" : "original",
+      "fields" : {
+        "protocol" : "118",
+        "shortversion" : "1.4.6.8"
+      },
+      "lookedUp" : true,
+      "result" : "needsCoD2x"
+    }
+  ],
+  "offers" : [
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "id" : "normal",
+      "offered" : true,
+      "version" : "0.4.0"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        },
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        }
+      ],
+      "id" : "duplicate",
+      "offered" : false,
+      "version" : "0.4.0"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        }
+      ],
+      "id" : "missing-sums",
+      "offered" : false,
+      "version" : "0.4.0"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-beta-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "id" : "version",
+      "offered" : false,
+      "version" : "0.4.0-beta"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.1-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "id" : "wrong-name",
+      "offered" : false,
+      "version" : "0.4.1"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/other/CoD2/releases/download/asset"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "id" : "bad-root",
+      "offered" : false,
+      "version" : "0.4.0"
+    },
+    {
+      "archive" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 1073741825,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "id" : "oversized",
+      "offered" : false,
+      "version" : "0.4.0"
+    }
+  ],
+  "release" : [
+    {
+      "assets" : [
+
+      ],
+      "dispatches" : [
+        {
+          "date" : 1793644800,
+          "link" : "https://github.com/cod2unbound/cod2-unbound/releases/tag/v0.2.0-beta.1",
+          "stamp" : "02 NOV",
+          "summary" : "Launcher redesign with Liquid Glass navigation. Server browser favourites.",
+          "title" : "CoD2 Unbound 0.2 beta",
+          "version" : "0.2.0-beta.1"
+        },
+        {
+          "date" : 1792486800,
+          "link" : null,
+          "stamp" : "20 OCT",
+          "summary" : "Fixes r_mode on 6K displays and keeps raw mouse input on after alt-tab. This sentence is long enough to need trimming because it keeps going with more and…",
+          "title" : "CoD2 Unbound 0.1.1",
+          "version" : "0.1.1"
+        },
+        {
+          "date" : 1791119604,
+          "link" : "https://github.com/cod2unbound/cod2-unbound/releases/tag/v0.1.0",
+          "stamp" : "04 OCT",
+          "summary" : "Call of Duty 2 multiplayer, native on Apple silicon. CoD2x 1.4 compatible.",
+          "title" : "CoD2 Unbound 0.1.0",
+          "version" : "0.1.0"
+        }
+      ],
+      "id" : 0,
+      "json" : "[\n  {\n    \"tag_name\": \"v0.3.0\",\n    \"name\": \"\",\n    \"draft\": true,\n    \"prerelease\": false,\n    \"published_at\": null,\n    \"html_url\": \"https://github.com/cod2unbound/cod2-unbound/releases/tag/untagged-1\",\n    \"body\": \"Draft notes must never be shown.\"\n  },\n  {\n    \"tag_name\": \"v0.2.0-beta.1\",\n    \"name\": \"CoD2 Unbound 0.2 beta\",\n    \"draft\": false,\n    \"prerelease\": true,\n    \"published_at\": \"2026-11-02T18:40:00Z\",\n    \"html_url\": \"https://github.com/cod2unbound/cod2-unbound/releases/tag/v0.2.0-beta.1\",\n    \"body\": \"## Highlights\\r\\n\\r\\n- **Launcher redesign** with [Liquid Glass](https://developer.apple.com/design/) navigation.\\r\\n- Server browser favourites.\\r\\n\\r\\n## Install\\r\\nUnzip it.\"\n  },\n  {\n    \"tag_name\": \"v0.1.1\",\n    \"name\": null,\n    \"draft\": false,\n    \"prerelease\": false,\n    \"published_at\": \"2026-10-20T09:00:00Z\",\n    \"html_url\": \"https://example.com/not-github\",\n    \"body\": \"Fixes `r_mode` on 6K displays and keeps raw mouse input on after alt-tab. This sentence is long enough to need trimming because it keeps going with more and more detail about every small change in the release, far beyond the dispatch length.\"\n  },\n  {\n    \"tag_name\": \"v0.1.0\",\n    \"name\": \"CoD2 Unbound 0.1.0\",\n    \"draft\": false,\n    \"prerelease\": false,\n    \"published_at\": \"2026-10-04T13:13:24Z\",\n    \"html_url\": \"https://github.com/cod2unbound/cod2-unbound/releases/tag/v0.1.0\",\n    \"body\": \"**Call of Duty 2 multiplayer, native on Apple silicon. CoD2x 1.4 compatible.**\\n\\nFirst public release. Bring your own licensed copy of Call of Duty 2; no game content is included.\\n\\n### Install\\n\\n1. Download the zip.\"\n  }\n]\n",
+      "latestVersion" : "0.1.1",
+      "notes" : [
+
+      ]
+    },
+    {
+      "assets" : [
+        {
+          "name" : "CoD2-Unbound-0.4.0-macos-arm64.zip",
+          "size" : 210,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip"
+        },
+        {
+          "name" : "SHA256SUMS",
+          "size" : 100,
+          "url" : "https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS"
+        }
+      ],
+      "dispatches" : [
+        {
+          "date" : 1795284000,
+          "link" : "https://github.com/example/release",
+          "stamp" : "21 NOV",
+          "summary" : "",
+          "title" : "Preview",
+          "version" : "0.5.0-rc.2"
+        },
+        {
+          "date" : null,
+          "link" : null,
+          "stamp" : "NEW",
+          "summary" : "Menu. See details. A continuation.",
+          "title" : "CoD2 Unbound 0.4.0",
+          "version" : "0.4.0"
+        }
+      ],
+      "id" : 1,
+      "json" : "[\n  {\"draft\":true,\"tag_name\":\"v0.6.0\"},\n  {\"prerelease\":true,\"tag_name\":\" Vv0.5.0-rc.2 \",\"name\":\" Preview \",\"published_at\":\"2026-11-21T18:00:00Z\",\"html_url\":\"https://github.com/example/release\"},\n  {\"tag_name\":\"v0.4.0\",\"body\":\"### Added\\n- **Menu.** See [details](https://example.invalid).\\n  A continuation.\\n\\n### Changed\\n* Other thing: a note.\\n\\n### Removed\\n- Omitted.\",\n    \"assets\":[{\"name\":\"CoD2-Unbound-0.4.0-macos-arm64.zip\",\"size\":210,\"browser_download_url\":\"https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/CoD2-Unbound-0.4.0-macos-arm64.zip\"},\n              {\"name\":\"SHA256SUMS\",\"size\":100,\"browser_download_url\":\"https://github.com/cod2unbound/cod2-unbound/releases/download/v0.4.0/SHA256SUMS\"},\n              {\"name\":\"missing-size\",\"browser_download_url\":\"https://example.invalid\"}]}\n]",
+      "latestVersion" : "0.4.0",
+      "notes" : [
+        {
+          "detail" : "See details. A continuation.",
+          "tag" : "New",
+          "title" : "Menu"
+        },
+        {
+          "detail" : "a note.",
+          "tag" : "Changed",
+          "title" : "Other thing"
+        }
+      ]
+    },
+    {
+      "assets" : [
+
+      ],
+      "dispatches" : [
+
+      ],
+      "id" : 2,
+      "json" : "[]",
+      "latestVersion" : null,
+      "notes" : [
+
+      ]
+    }
+  ],
+  "settings" : [
+    {
+      "centimetres" : 10.390909090909091,
+      "decoded" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 125,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : true
+      },
+      "id" : "old",
+      "json" : "{\"fps\":125,\"vsync\":true}",
+      "reset" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      }
+    },
+    {
+      "centimetres" : 10.390909090909091,
+      "decoded" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      },
+      "id" : "missing",
+      "json" : "{}",
+      "reset" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      }
+    },
+    {
+      "centimetres" : 5.1954545454545453,
+      "decoded" : {
+        "advanced" : "rate 20000",
+        "anisotropy" : 8,
+        "appearance" : "dark",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : true,
+        "dismissedWarnings" : [
+          "one",
+          "two"
+        ],
+        "dpi" : 1600,
+        "engine" : "original",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : false,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "openGL",
+        "renderScale" : 75,
+        "resolution" : "1024x768",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : true,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      },
+      "id" : "partial",
+      "json" : "{\"advanced\":\"rate 20000\",\"resolution\":\"1024x768\",\"engine\":\"original\",\"renderer\":\"openGL\",\"renderScale\":75,\"appearance\":\"dark\",\"darkMode\":false,\"dpi\":1600,\"sendCrashReports\":true,\"crashReportsAsked\":true,\"introFilmsPlayed\":false,\"dismissedWarnings\":[\"one\",\"two\",\"one\"]}",
+      "reset" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : true,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : false,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      }
+    },
+    {
+      "centimetres" : 10.390909090909091,
+      "decoded" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      },
+      "id" : "future",
+      "json" : "{\"engine\":\"unrecognized\",\"renderer\":\"vulkan\",\"renderScale\":420,\"appearance\":\"blue\",\"hideWhilePlaying\":\"false\",\"refreshServersOnOpen\":8,\"dismissedWarnings\":[\"one\",4],\"sendCoD2xReports\":{},\"checkUpdatesAutomatically\":null,\"introFilmsPlayed\":\"yes\",\"vsync\":null}",
+      "reset" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      }
+    },
+    {
+      "id" : "wrong-core-type",
+      "json" : "{\"sensitivity\":\"five\"}"
+    },
+    {
+      "centimetres" : 10.390909090909091,
+      "decoded" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      },
+      "id" : "integer-valued-number",
+      "json" : "{\"fps\":250.0,\"anisotropy\":8e0}",
+      "reset" : {
+        "advanced" : "",
+        "anisotropy" : 8,
+        "appearance" : "system",
+        "checkUpdatesAutomatically" : true,
+        "crashReportsAsked" : false,
+        "dismissedWarnings" : [
+
+        ],
+        "dpi" : 800,
+        "engine" : "cod2x",
+        "fps" : 250,
+        "fullscreen" : "borderless",
+        "hideWhilePlaying" : true,
+        "introFilmsPlayed" : true,
+        "matchSummariesEnabled" : true,
+        "rawMouse" : true,
+        "refreshServersOnOpen" : false,
+        "renderer" : "metal",
+        "renderScale" : 100,
+        "resolution" : "1920x1080",
+        "sendCoD2xReports" : false,
+        "sendCrashReports" : false,
+        "sensitivity" : 5,
+        "volume" : 0.80000000000000004,
+        "vsync" : false
+      }
+    },
+    {
+      "id" : "invalid-shape",
+      "json" : "[{}]"
+    },
+    {
+      "id" : "null-root",
+      "json" : "null"
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c",
+  "tags" : [
+    {
+      "input" : " Vv0.5.0 \t",
+      "version" : "0.5.0"
+    },
+    {
+      "input" : "  v0.5.0-beta.12  ",
+      "version" : "0.5.0-beta.12"
+    },
+    {
+      "input" : "v",
+      "version" : ""
+    },
+    {
+      "input" : "VVV123456789012345678901234567890123456",
+      "version" : "12345678901234567890123456789012"
+    }
+  ],
+  "versions" : [
+    {
+      "candidate" : "0.1.10",
+      "current" : "0.1.9",
+      "newer" : true
+    },
+    {
+      "candidate" : "0.1.01",
+      "current" : "0.1.1",
+      "newer" : false
+    },
+    {
+      "candidate" : "0.5",
+      "current" : "0.5.0",
+      "newer" : false
+    },
+    {
+      "candidate" : "0.5.0-beta.11",
+      "current" : "0.5.0-beta.2",
+      "newer" : true
+    },
+    {
+      "candidate" : "0.5.0-beta",
+      "current" : "0.5.0",
+      "newer" : true
+    },
+    {
+      "candidate" : "0.5.0",
+      "current" : "0.5.0",
+      "newer" : false
+    },
+    {
+      "candidate" : "1.4.6.8",
+      "current" : "1.3",
+      "newer" : true
+    }
+  ]
+}

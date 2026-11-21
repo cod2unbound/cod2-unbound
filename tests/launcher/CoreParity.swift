@@ -15,6 +15,9 @@ import Foundation
         var launch = try LaunchParity.build()
         launch["swiftRevision"] = revision
         try fixture("launch", payload: launch, mode: mode, output: output)
+        var settings = try SettingsParity.build(root: root)
+        settings["swiftRevision"] = revision
+        try fixture("settings", payload: settings, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

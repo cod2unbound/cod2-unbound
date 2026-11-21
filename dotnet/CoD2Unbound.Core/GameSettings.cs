@@ -1,25 +1,65 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Text.Json.Serialization;
 
 namespace CoD2Unbound.Core;
 
-public enum GameEdition { Cod2x, Original }
+public enum GameEdition
+{
+    [JsonStringEnumMemberName("cod2x")] Cod2x,
+    [JsonStringEnumMemberName("original")] Original
+}
+
+public enum LegacyMacRenderer
+{
+    [JsonStringEnumMemberName("metal")] Metal,
+    [JsonStringEnumMemberName("openGL")] OpenGL
+}
+
+public enum LauncherAppearance
+{
+    [JsonStringEnumMemberName("system")] System,
+    [JsonStringEnumMemberName("light")] Light,
+    [JsonStringEnumMemberName("dark")] Dark
+}
 
 public sealed partial record GameSettings
 {
     public string Resolution { get; init; } = "1920x1080";
     public string Fullscreen { get; init; } = "borderless";
-    public int Fps { get; init; } = 250;
+    public long Fps { get; init; } = 250;
     public bool Vsync { get; init; }
     public bool RawMouse { get; init; } = true;
     public double Sensitivity { get; init; } = 5.0;
+    public double Dpi { get; init; } = 800.0;
     public double Volume { get; init; } = 0.8;
-    public int Anisotropy { get; init; } = 8;
+    public long Anisotropy { get; init; } = 8;
     public string Advanced { get; init; } = "";
     public bool MatchSummariesEnabled { get; init; } = true;
+    public GameEdition Engine { get; init; } = GameEdition.Cod2x;
+    public LegacyMacRenderer Renderer { get; init; } = LegacyMacRenderer.Metal;
+    public int RenderScale { get; init; } = 100;
+    public bool SendCrashReports { get; init; }
+    public bool SendCoD2xReports { get; init; }
+    public bool CrashReportsAsked { get; init; }
+    public bool HideWhilePlaying { get; init; } = true;
+    public LauncherAppearance Appearance { get; init; } = LauncherAppearance.System;
+    public bool RefreshServersOnOpen { get; init; }
+    public bool CheckUpdatesAutomatically { get; init; } = true;
+    public ImmutableHashSet<string> DismissedWarnings { get; init; } = [];
     public bool IntroFilmsPlayed { get; init; }
+
+    [JsonIgnore]
+    public double? CentimetresPer360 => MouseDistance.Centimetres(Dpi, Sensitivity);
+
+    public GameSettings Reset(GameSettings defaults) => defaults with
+    {
+        IntroFilmsPlayed = IntroFilmsPlayed,
+        CrashReportsAsked = CrashReportsAsked
+    };
 
     public static FrozenSet<string> MachineDvarNames { get; } = new[]
     {
@@ -42,7 +82,7 @@ public sealed partial record GameSettings
 
     internal List<(string Name, string Value)> Dvars()
     {
-        if (!ValidResolution(Resolution) || Fullscreen is not ("exclusive" or "borderless" or "spaces" or "windowed") ||
+        if (!DisplayResolution.TryParse(Resolution, out _) || Fullscreen is not ("exclusive" or "borderless" or "spaces" or "windowed") ||
             Fps is < 0 or > 1000 || !(Sensitivity is >= 0.01 and <= 100) || !(Volume is >= 0 and <= 1) ||
             Anisotropy is not (2 or 4 or 8 or 16))
             throw new LaunchPlanException("Choose a valid resolution, frame cap (0–1000, where 0 is no cap), sensitivity, volume and filtering level.");
@@ -124,16 +164,8 @@ public sealed partial record GameSettings
     internal static bool SafeEngineText(string value) => Encoding.UTF8.GetByteCount(value) <= 512 &&
         !value.Any(character => character is < ' ' or '\x7f' or '"' or ';' or '+');
 
-    public static bool ValidResolution(string value)
-    {
-        var dimensions = value.Split('x');
-        return dimensions.Length == 2 && int.TryParse(dimensions[0], NumberStyles.None, CultureInfo.InvariantCulture, out int width) &&
-            int.TryParse(dimensions[1], NumberStyles.None, CultureInfo.InvariantCulture, out int height) &&
-            width is >= 640 and <= 32768 && height is >= 480 and <= 32768 && value == FormattableString.Invariant($"{width}x{height}");
-    }
-
     private static string Bit(bool value) => value ? "1" : "0";
-    private static string Invariant(int value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Invariant(long value) => value.ToString(CultureInfo.InvariantCulture);
 
     private static string Fraction(double value)
     {
@@ -141,7 +173,7 @@ public sealed partial record GameSettings
         return text.Contains('.') || text.Contains('e') ? text : text + ".0";
     }
 
-    private static string TrimHorizontal(string value)
+    internal static string TrimHorizontal(string value)
     {
         static bool Horizontal(char character) => character == '\t' ||
             char.GetUnicodeCategory(character) == UnicodeCategory.SpaceSeparator;
