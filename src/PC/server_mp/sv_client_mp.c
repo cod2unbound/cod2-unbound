@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #include "PC/qcommon/port_debug.h"
 #include "common_types.h"
 #include "imports.h"
@@ -87,6 +89,9 @@ extern qboolean NET_CompareAdr(netadr_t a, netadr_t b);
 extern qboolean NET_StringToAdr(const char *s, netadr_t *a);
 extern Bool NET_OutOfBandPrint(netsrc_t sock, netadr_t adr, const char *data);
 extern const netadr_t *SV_MasterAddress(void);
+#if !defined(COD2_X64)
+extern int rand(void);
+#endif
 extern const char *va(const char *fmt, ...);
 extern void SV_Heartbeat_f(void);
 extern int I_stricmp(const char *s1, const char *s2);
@@ -1356,7 +1361,7 @@ void SV_GetChallenge(netadr_t from)
         memcpy(&challenge->challenge, &bits, sizeof(bits));
     }
 #else
-    challenge->challenge = ((Com_CrtRand() << 16) ^ Com_CrtRand()) ^ svsLocal->time;
+    challenge->challenge = ((rand() << 16) ^ rand()) ^ svsLocal->time;
 #endif
     challenge->adr = from;
     challenge->firstTime = svsLocal->time;

@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #include "common_types.h"
 #include "imports.h"
 #include "bytematch.h"
@@ -13,6 +15,9 @@ extern const dvar_t *player_meleeRange;
 extern const dvar_t *player_meleeWidth;
 extern const dvar_t *sv_fps;
 
+#if !defined(COD2_X64)
+extern int rand(void);
+#endif
 extern double tan(double x);
 extern double sin(double x);
 extern double cos(double x);
@@ -179,10 +184,18 @@ void Weapon_Melee(gentity_s (*ent)[16], weaponParms *wp, float range, float widt
 
 #if defined(COD2_X64)
     G_Damage(traceEnt, (gentity_t *)ent, (gentity_t *)ent, wp->forward, endpos,
+#if defined(COD2_X64)
              damage + (Com_CrtRand() % 5), 0, 7, (hitLocation_t)tr.partGroup, 0);
 #else
+             damage + (rand() % 5), 0, 7, (hitLocation_t)tr.partGroup, 0);
+#endif
+#else
     G_Damage(traceEnt, (gentity_t *)ent, (gentity_t *)ent, wp->forward, endpos,
+#if defined(COD2_X64)
              damage + (Com_CrtRand() % 5), 7, 0, (hitLocation_t)tr.partGroup, 0);
+#else
+             damage + (rand() % 5), 7, 0, (hitLocation_t)tr.partGroup, 0);
+#endif
 #endif
 }
 

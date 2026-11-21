@@ -4,7 +4,9 @@ extern dvar_t *r_rendererInUse;
 extern Bool g_RenderToShadowCookie;
 extern Bool g_InhibitCopy;
 #include "imports.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 #if COD2_APPLE_SDK
 #include "platform/macos_display.h"
 #endif
@@ -151,18 +153,28 @@ void RB_UpdateViewport(void);
 void RB_SetInitialState(void);
 void RB_SetWorldMatrixForEntity(const GfxEntity *re);
 
+#if defined(COD2_X64)
 static void RB_SetTextureStageStateDx7(int samplerIndex, D3DTEXTURESTAGESTATETYPE state, DWORD value, const char *logCall)
+#else
+static void RB_SetTextureStageStateDx7(int samplerIndex, D3DTEXTURESTAGESTATETYPE state, DWORD value)
+#endif
 {
     void *device;
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         if (logCall) R_LOG("%s", logCall);
+#endif
         ((SetTextureStageStateFn)VTABLE(device)[0x10c / 4])(device, samplerIndex, state, value);
     } while (*(volatile int *)&alwaysfails != 0);
 }
 
+#if defined(COD2_X64)
 static void RB_SetRenderStateDx7(DWORD state, DWORD value, const char *logCall)
+#else
+static void RB_SetRenderStateDx7(DWORD state, DWORD value)
+#endif
 {
     void *device;
 
@@ -177,18 +189,26 @@ static void RB_SetRenderStateDx7(DWORD state, DWORD value, const char *logCall)
 #endif
     device = dx.device;
     do {
+#if defined(COD2_X64)
         if (logCall) R_LOG("%s", logCall);
+#endif
         ((SetRenderStateFn)VTABLE(device)[0xe4 / 4])(device, state, value);
     } while (*(volatile int *)&alwaysfails != 0);
 }
 
+#if defined(COD2_X64)
 static inline __attribute__((always_inline)) void RB_SetTransformDx7(D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix, const char *logCall)
+#else
+static inline __attribute__((always_inline)) void RB_SetTransformDx7(D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix)
+#endif
 {
     void *device;
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         if (logCall) R_LOG("%s", logCall);
+#endif
         ((SetTransformFn)VTABLE(device)[0xb0 / 4])(device, state, matrix);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -210,7 +230,9 @@ static inline __attribute__((always_inline)) void RB_SetViewportDx7(const D3DVIE
 #endif
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetViewport( &dxState.viewport )\n");
+#endif
         ((SetViewportFn)VTABLE(device)[0xbc / 4])(device, viewport);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -229,7 +251,9 @@ static void RB_SetRenderTargetSurfaceDx7(IDirect3DSurface9 *surface)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetRenderTarget( 0, dx.renderTargets[newTargetId].colorSurface )\n");
+#endif
         ((SetRenderTargetFn)VTABLE(device)[0x94 / 4])(device, 0, surface);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -240,34 +264,52 @@ static void RB_SetDepthStencilSurfaceDx7(IDirect3DSurface9 *surface)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetDepthStencilSurface( dx.renderTargets[newTargetId].depthStencilSurface )\n");
+#endif
         ((SetDepthStencilSurfaceFn)VTABLE(device)[0x9c / 4])(device, surface);
     } while (*(volatile int *)&alwaysfails != 0);
 }
 
+#if defined(COD2_X64)
 static void RB_SetTextureDx7(int samplerIndex, IDirect3DBaseTexture9 *texture, const char *logCall)
+#else
+static void RB_SetTextureDx7(int samplerIndex, IDirect3DBaseTexture9 *texture)
+#endif
 {
     void *device;
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         if (logCall) R_LOG("%s", logCall);
+#endif
         ((SetTextureFn)VTABLE(device)[0x104 / 4])(device, samplerIndex, texture);
     } while (*(volatile int *)&alwaysfails != 0);
 }
 
+#if defined(COD2_X64)
 static void RB_SetSamplerStateDx7(int samplerIndex, DWORD samplerState, DWORD value, const char *logCall)
+#else
+static void RB_SetSamplerStateDx7(int samplerIndex, DWORD samplerState, DWORD value)
+#endif
 {
     void *device;
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         if (logCall) R_LOG("%s", logCall);
+#endif
         ((SetSamplerStateFn)VTABLE(device)[0x114 / 4])(device, samplerIndex, samplerState, value);
     } while (*(volatile int *)&alwaysfails != 0);
 }
 
+#if defined(COD2_X64)
 static void RB_SetRenderStateFloatDx7(DWORD state, float value, const char *logCall)
+#else
+static void RB_SetRenderStateFloatDx7(DWORD state, float value)
+#endif
 {
     union {
         float value;
@@ -275,7 +317,11 @@ static void RB_SetRenderStateFloatDx7(DWORD state, float value, const char *logC
     } packedValue;
 
     packedValue.value = value;
+#if defined(COD2_X64)
     RB_SetRenderStateDx7(state, packedValue.bits, logCall);
+#else
+    RB_SetRenderStateDx7(state, packedValue.bits);
+#endif
 }
 
 static inline __attribute__((always_inline)) GfxCodeMatrices *RB_GetActiveCodeMatrices(void)
@@ -323,7 +369,11 @@ static inline __attribute__((always_inline)) void RB_FinalizeWorldMatrixChange(G
     RB_InvalidateCodeMatrix(&activeMatrices->OGLworldViewProjection);
 
     if (RB_UsingDx7Renderer()) {
+#if defined(COD2_X64)
         RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(0x100), &activeMatrices->world.matrix[0], "dx.device->SetTransform( (D3DTRANSFORMSTATETYPE)(0 + 256), &activeMatrices->world.matrix[0] )\n");
+#else
+        RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(0x100), &activeMatrices->world.matrix[0]);
+#endif
     }
 }
 
@@ -398,7 +448,9 @@ void RB_ChangeIndices(IDirect3DIndexBuffer9 *ib)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetIndices( ib )\n");
+#endif
         ((SetIndicesFn)VTABLE(device)[0x1a0 / 4])(device, ib);
     } while (*(volatile int *)&alwaysfails != 0);
 
@@ -418,7 +470,9 @@ void RB_ChangeStreamSource(int streamIndex, IDirect3DVertexBuffer9 *vb, int vert
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetStreamSource( streamIndex, vb, vertexOffset, vertexStride )\n");
+#endif
         ((SetStreamSourceFn)VTABLE(device)[0x190 / 4])(device, streamIndex, vb, vertexOffset, vertexStride);
     } while (*(volatile int *)&alwaysfails != 0);
 
@@ -473,7 +527,9 @@ static inline __attribute__((always_inline)) void RB_SetAnisotropy_core(void)
     device = dx->device;
     for (samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex) {
         do {
+#if defined(COD2_X64)
             R_LOG("dx.device->SetSamplerState( samplerIndex, D3DSAMP_MAXANISOTROPY, anisotropy )\n");
+#endif
             ((SetSamplerStateFn)VTABLE(device)[0x114 / 4])(device, samplerIndex, 0xa, anisotropy);
         } while (*(volatile int *)&alwaysfails != 0);
     }
@@ -504,7 +560,9 @@ void RB_SetAlphaAntiAliasingState(int stateBits0)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetRenderState( D3DRS_ADAPTIVETESS_Y, aaAlphaFormat )\n");
+#endif
         ((SetRenderStateFn)VTABLE(device)[0xe4 / 4])(device, 0xb5, aaAlphaFormat);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -523,7 +581,11 @@ static __attribute_regparm__(3) void RB_ChangeTextureStageState(int stageIndex, 
     texOp = &s_textureOpTable[texStageBits & 0x1f];
 
     if (changedBits & 0x1f) {
+#if defined(COD2_X64)
         RB_SetTextureStageStateDx7(stageIndex, texStageEnums->op, texOp->enumerant, "dx.device->SetTextureStageState( stageIndex, texStageEnums->op, texOp->enumerant )\n");
+#else
+        RB_SetTextureStageStateDx7(stageIndex, texStageEnums->op, texOp->enumerant);
+#endif
     }
 
     argShift = 10;
@@ -543,7 +605,11 @@ static __attribute_regparm__(3) void RB_ChangeTextureStageState(int stageIndex, 
                     texArg |= 0x20;
                 }
 
+#if defined(COD2_X64)
                 RB_SetTextureStageStateDx7(stageIndex, texStageEnums->arg[argIndex], texArg, "dx.device->SetTextureStageState( stageIndex, texStageEnums->arg[argIndex], texArg )\n");
+#else
+                RB_SetTextureStageStateDx7(stageIndex, texStageEnums->arg[argIndex], texArg);
+#endif
             } else {
                 texStageBits = (texStageBits & ~argMask) | (*activeTexStageState & argMask);
             }
@@ -578,7 +644,9 @@ void RB_SetSamplerConstantDx7(unsigned int color)
     dxState.textureFactor = color;
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetRenderState( D3DRS_TEXTUREFACTOR, color )\n");
+#endif
         ((SetRenderStateFn)VTABLE(device)[0xe4 / 4])(device, 0x3c, color);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -589,17 +657,28 @@ void RB_ChangeGenTexCoords(int samplerIndex, int genTexCoords)
 
     switch ((byte)genTexCoords) {
     case 0:
+#if defined(COD2_X64)
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, samplerIndex, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXCOORDINDEX, 0x00000000 | samplerIndex )\n");
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE )\n");
+#else
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, samplerIndex);
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+#endif
         break;
     case 1:
         MatrixInverse44((const float *)&backEnd.viewParms->viewMatrix, (float *)&transform);
         transform._41 = 0.0f;
         transform._42 = 0.0f;
         transform._43 = 0.0f;
+#if defined(COD2_X64)
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, 0x20000, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXCOORDINDEX, 0x00020000 )\n");
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3 )\n");
         RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0 + samplerIndex), &transform, "dx.device->SetTransform( static_cast< D3DTRANSFORMSTATETYPE >( D3DTS_TEXTURE0 + samplerIndex ), &transform )\n");
+#else
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, 0x20000);
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
+        RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0 + samplerIndex), &transform);
+#endif
         break;
     case 2:
         MatrixIdentity44(transform.m);
@@ -608,9 +687,15 @@ void RB_ChangeGenTexCoords(int samplerIndex, int genTexCoords)
 #else
         transform._32 = -backEnd.viewParms->depthHackNearClip;
 #endif
+#if defined(COD2_X64)
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, samplerIndex, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXCOORDINDEX, 0x00000000 | samplerIndex)\n");
         RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3, "dx.device->SetTextureStageState( samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3 )\n");
         RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0 + samplerIndex), &transform, "dx.device->SetTransform( static_cast< D3DTRANSFORMSTATETYPE >( D3DTS_TEXTURE0 + samplerIndex ), &transform )\n");
+#else
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXCOORDINDEX, samplerIndex);
+        RB_SetTextureStageStateDx7(samplerIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
+        RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0 + samplerIndex), &transform);
+#endif
         break;
     default:
         break;
@@ -646,7 +731,11 @@ void RB_SetViewMatrix(const D3DMATRIX *matrix)
     RB_InvalidateCodeMatrix(&activeMatrices->OGLworldViewProjection);
 
     if (RB_UsingDx7Renderer()) {
+#if defined(COD2_X64)
         RB_SetTransformDx7(D3DTS_VIEW, matrix, "dx.device->SetTransform( D3DTS_VIEW, matrix )\n");
+#else
+        RB_SetTransformDx7(D3DTS_VIEW, matrix);
+#endif
     }
 }
 
@@ -656,7 +745,11 @@ void RB_SetViewMatrixForWDx7(float w)
 
     transform = backEnd.viewParms->viewMatrix;
     transform._44 = w;
+#if defined(COD2_X64)
     RB_SetTransformDx7(D3DTS_VIEW, &transform, "dx.device->SetTransform( D3DTS_VIEW, &transform )\n");
+#else
+    RB_SetTransformDx7(D3DTS_VIEW, &transform);
+#endif
 }
 
 void RB_SetDepthHackNearClip(float nearClip)
@@ -672,7 +765,11 @@ void RB_SetDepthHackNearClip(float nearClip)
     RB_InvalidateCodeMatrix(&activeMatrices->OGLworldViewProjection);
 
     if (RB_UsingDx7Renderer()) {
+#if defined(COD2_X64)
         RB_SetTransformDx7(D3DTS_PROJECTION, &activeMatrices->projection.matrix[0], "dx.device->SetTransform( D3DTS_PROJECTION, &activeMatrices->projection.matrix[0] )\n");
+#else
+        RB_SetTransformDx7(D3DTS_PROJECTION, &activeMatrices->projection.matrix[0]);
+#endif
     }
 }
 
@@ -702,8 +799,13 @@ void RB_SetMatricesForView(const GfxViewParms *viewParms)
     RB_InvalidateCodeMatrix(&activeMatrices->OGLworldViewProjection);
 
     if (RB_UsingDx7Renderer()) {
+#if defined(COD2_X64)
         RB_SetTransformDx7(D3DTS_VIEW, &viewParms->viewMatrix, "dx.device->SetTransform( D3DTS_VIEW, &viewParms->viewMatrix )\n");
         RB_SetTransformDx7(D3DTS_PROJECTION, &viewParms->projectionMatrix, "dx.device->SetTransform( D3DTS_PROJECTION, &viewParms->projectionMatrix )\n");
+#else
+        RB_SetTransformDx7(D3DTS_VIEW, &viewParms->viewMatrix);
+        RB_SetTransformDx7(D3DTS_PROJECTION, &viewParms->projectionMatrix);
+#endif
     }
 }
 
@@ -722,9 +824,15 @@ void RB_PopMatrixStack(void)
         return;
     }
 
+#if defined(COD2_X64)
     RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(0x100), &RB_GetActiveCodeMatrices()->world.matrix[0], "dx.device->SetTransform( (D3DTRANSFORMSTATETYPE)(0 + 256), &backEnd.codeMatrixStack[backEnd.codeMatrixStackLevel].world.matrix[0] )\n");
     RB_SetTransformDx7(D3DTS_VIEW, &RB_GetActiveCodeMatrices()->view.matrix[0], "dx.device->SetTransform( D3DTS_VIEW, &backEnd.codeMatrixStack[backEnd.codeMatrixStackLevel].view.matrix[0] )\n");
     RB_SetTransformDx7(D3DTS_PROJECTION, &RB_GetActiveCodeMatrices()->projection.matrix[0], "dx.device->SetTransform( D3DTS_PROJECTION, &backEnd.codeMatrixStack[backEnd.codeMatrixStackLevel].projection.matrix[0] )\n");
+#else
+    RB_SetTransformDx7( (D3DTRANSFORMSTATETYPE)(0x100), &RB_GetActiveCodeMatrices()->world.matrix[0]);
+    RB_SetTransformDx7(D3DTS_VIEW, &RB_GetActiveCodeMatrices()->view.matrix[0]);
+    RB_SetTransformDx7(D3DTS_PROJECTION, &RB_GetActiveCodeMatrices()->projection.matrix[0]);
+#endif
 }
 
 void RB_InitSceneViewport(void)
@@ -799,7 +907,9 @@ void RB_SetDepthRange(float nearValue, float farValue)
 
 void RB_SetViewport(const GfxViewport *viewport)
 {
+#if defined(COD2_X64)
     R_LOG("Viewport at (%i, %i) with size %i x %i\n", viewport->x, viewport->y, viewport->width, viewport->height);
+#endif
     if ((DWORD)viewport->x == dxState.viewport.X &&
         (DWORD)viewport->y == dxState.viewport.Y &&
         (DWORD)viewport->width == dxState.viewport.Width &&
@@ -824,7 +934,9 @@ void RB_ReleaseVertexDecl(void)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetFVF( fvf )\n");
+#endif
         ((SetVertexDeclarationFn)VTABLE(device)[0x164 / 4])(device, NULL);
     } while (*(volatile int *)&alwaysfails != 0);
 
@@ -842,14 +954,24 @@ void RB_ChangeState_1(int stateBits1)
         return;
     }
 
+#if defined(COD2_X64)
     R_LOG_STATE(stateBits1, changedBits, 1);
+#endif
 
     if (changedBits & RB_STATE1_DEPTH_WRITE) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_ZWRITEENABLE, stateBits1 & RB_STATE1_DEPTH_WRITE, "dx.device->SetRenderState( D3DRS_ZWRITEENABLE, (stateBits1 & DXS1_DEPTHWRITE) ? 1 : 0 )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_ZWRITEENABLE, stateBits1 & RB_STATE1_DEPTH_WRITE);
+#endif
     }
 
     if (changedBits & RB_STATE1_DEPTH_TEST_DISABLE) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_ZENABLE, (((unsigned int)stateBits1 >> 1) & 1) ^ 1, "dx.device->SetRenderState( D3DRS_ZENABLE, (stateBits1 & DXS1_DEPTHTEST_DISABLE) ? D3DZB_FALSE : D3DZB_TRUE )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_ZENABLE, (((unsigned int)stateBits1 >> 1) & 1) ^ 1);
+#endif
     }
 
     if (stateBits1 & RB_STATE1_DEPTH_TEST_DISABLE) {
@@ -872,7 +994,11 @@ void RB_ChangeState_1(int stateBits1)
             break;
         }
 
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_ZFUNC, depthFunc, "dx.device->SetRenderState( D3DRS_ZFUNC, function )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_ZFUNC, depthFunc);
+#endif
     }
 
     if (changedBits & RB_STATE1_POLYGON_OFFSET_MASK) {
@@ -887,21 +1013,37 @@ void RB_ChangeState_1(int stateBits1)
             const dvar_t *polygonOffsetScale;
 
             polygonOffsetScale = r_polygonOffsetScale;
+#if defined(COD2_X64)
             RB_SetRenderStateFloatDx7(D3DRS_SLOPESCALEDEPTHBIAS, offsetUnits * polygonOffsetScale->current.value, "dx.device->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, FloatAsInt( &scale ) )\n");
+#else
+            RB_SetRenderStateFloatDx7(D3DRS_SLOPESCALEDEPTHBIAS, offsetUnits * polygonOffsetScale->current.value);
+#endif
         } else {
             depthBias *= 2.0f;
         }
 
+#if defined(COD2_X64)
         RB_SetRenderStateFloatDx7(D3DRS_DEPTHBIAS, depthBias, "dx.device->SetRenderState( D3DRS_DEPTHBIAS, FloatAsInt( &bias ) )\n");
+#else
+        RB_SetRenderStateFloatDx7(D3DRS_DEPTHBIAS, depthBias);
+#endif
     }
 
     if (stateBits1 & RB_STATE1_STENCIL_ENABLE) {
         if (changedBits & RB_STATE1_STENCIL_ENABLE) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_STENCILENABLE, 1, "dx.device->SetRenderState( D3DRS_STENCILENABLE, 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_STENCILENABLE, 1);
+#endif
         }
     } else {
         if (changedBits & RB_STATE1_STENCIL_ENABLE) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_STENCILENABLE, 0, "dx.device->SetRenderState( D3DRS_STENCILENABLE, 0 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_STENCILENABLE, 0);
+#endif
         }
 
         stateBits1 |= dxState.activeStateBits[1] & ~RB_STATE1_STENCIL_DISABLED_MASK;
@@ -910,11 +1052,19 @@ void RB_ChangeState_1(int stateBits1)
 
     if (stateBits1 & RB_STATE1_STENCIL_TWO_SIDED) {
         if (changedBits & RB_STATE1_STENCIL_TWO_SIDED) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_TWOSIDEDSTENCILMODE, 1, "dx.device->SetRenderState( D3DRS_TWOSIDEDSTENCILMODE, 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_TWOSIDEDSTENCILMODE, 1);
+#endif
         }
     } else {
         if (changedBits & RB_STATE1_STENCIL_TWO_SIDED) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_TWOSIDEDSTENCILMODE, 0, "dx.device->SetRenderState( D3DRS_TWOSIDEDSTENCILMODE, 0 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_TWOSIDEDSTENCILMODE, 0);
+#endif
         }
 
         stateBits1 |= dxState.activeStateBits[1] & ~RB_STATE1_FRONT_STENCIL_MASK;
@@ -927,7 +1077,11 @@ void RB_ChangeState_1(int stateBits1)
 
             decode = &s_stencilOpDecode[decodeIndex];
             if (((changedBits >> decode->shift) & 7) != 0) {
+#if defined(COD2_X64)
                 RB_SetRenderStateDx7(decode->renderState, s_stencilOpTable[(stateBits1 >> decode->shift) & 7], "dx.device->SetRenderState( s_stencilOpDecode[decodeIndex].renderState, s_stencilOpTable[stateNibble] )\n");
+#else
+                RB_SetRenderStateDx7(decode->renderState, s_stencilOpTable[(stateBits1 >> decode->shift) & 7]);
+#endif
             }
         }
     }
@@ -938,7 +1092,11 @@ void RB_ChangeState_1(int stateBits1)
 
             decode = &s_stencilFuncDecode[decodeIndex];
             if (((changedBits >> decode->shift) & 7) != 0) {
+#if defined(COD2_X64)
                 RB_SetRenderStateDx7(decode->renderState, s_stencilFuncTable[(stateBits1 >> decode->shift) & 7], "dx.device->SetRenderState( s_stencilFuncDecode[decodeIndex].renderState, s_stencilFuncTable[stateNibble] )\n");
+#else
+                RB_SetRenderStateDx7(decode->renderState, s_stencilFuncTable[(stateBits1 >> decode->shift) & 7]);
+#endif
             }
         }
     }
@@ -958,8 +1116,14 @@ void RB_SetSampler(int samplerIndex, int samplerState, GfxImage *image)
 
     desiredSamplerState = (byte)samplerState;
     if (dxState.samplerImage[samplerIndex] != image) {
+#if defined(COD2_X64)
         if (image) R_LOG("---------- texture %i: %s\n", samplerIndex, image->name);
+#endif
+#if defined(COD2_X64)
         RB_SetTextureDx7(samplerIndex, image ? image->texture.basemap : NULL, image ? "dx.device->SetTexture( samplerIndex, image->texture.basemap )\n" : "dx.device->SetTexture( samplerIndex, 0 )\n");
+#else
+        RB_SetTextureDx7(samplerIndex, image ? image->texture.basemap : NULL);
+#endif
         dxState.samplerImage[samplerIndex] = image;
     }
 
@@ -981,27 +1145,51 @@ void RB_SetSampler(int samplerIndex, int samplerState, GfxImage *image)
         RB_GetSamplerFilterModes(desiredSamplerState, &minFilter, &magFilter);
         RB_GetSamplerFilterModes(currentSamplerState, &prevMinFilter, &prevMagFilter);
         if (minFilter != prevMinFilter) {
+#if defined(COD2_X64)
             RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MINFILTER, minFilter, "dx.device->SetSamplerState( samplerIndex, D3DSAMP_MINFILTER, minFilter )\n");
+#else
+            RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MINFILTER, minFilter);
+#endif
         }
         if (magFilter != prevMagFilter) {
+#if defined(COD2_X64)
             RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MAGFILTER, magFilter, "dx.device->SetSamplerState( samplerIndex, D3DSAMP_MAGFILTER, magFilter )\n");
+#else
+            RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MAGFILTER, magFilter);
+#endif
         }
     }
 
     if (diffSamplerState & 0xc) {
+#if defined(COD2_X64)
         RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MIPFILTER, RB_GetFilterTableValue((desiredSamplerState >> 2) & 3), "dx.device->SetSamplerState( samplerIndex, D3DSAMP_MIPFILTER, mipFilter )\n");
+#else
+        RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_MIPFILTER, RB_GetFilterTableValue((desiredSamplerState >> 2) & 3));
+#endif
     }
 
     if (diffSamplerState & 0x10) {
+#if defined(COD2_X64)
         RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSU, (desiredSamplerState & 0x10) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP, "dx.device->SetSamplerState( samplerIndex, D3DSAMP_ADDRESSU, address )\n");
+#else
+        RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSU, (desiredSamplerState & 0x10) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP);
+#endif
     }
 
     if (diffSamplerState & 0x20) {
+#if defined(COD2_X64)
         RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSV, (desiredSamplerState & 0x20) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP, "dx.device->SetSamplerState( samplerIndex, D3DSAMP_ADDRESSV, address )\n");
+#else
+        RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSV, (desiredSamplerState & 0x20) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP);
+#endif
     }
 
     if (diffSamplerState & 0x40) {
+#if defined(COD2_X64)
         RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSW, (desiredSamplerState & 0x40) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP, "dx.device->SetSamplerState( samplerIndex, D3DSAMP_ADDRESSW, address )\n");
+#else
+        RB_SetSamplerStateDx7(samplerIndex, D3DSAMP_ADDRESSW, (desiredSamplerState & 0x40) ? D3DTADDRESS_CLAMP : D3DTADDRESS_WRAP);
+#endif
     }
 
     dxState.samplerState[samplerIndex] = desiredSamplerState;
@@ -1141,7 +1329,9 @@ void RB_SetRenderTarget(GfxRenderTargetId newTargetId)
         return;
     }
 
+#if defined(COD2_X64)
     R_LOG("\n========== RB_SetRenderTarget( %i ) ==========\n\n", newTargetId);
+#endif
 
     g_InhibitCopy = (newTargetId == R_RENDERTARGET_SHADOWCOOKIE && dxState.renderTargetId == R_RENDERTARGET_DYNAMICSHADOWS);
     dxState.renderTargetId = newTargetId;
@@ -1227,7 +1417,9 @@ void RB_ClearAllStreamSources(void)
 
     device = dx.device;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->SetStreamSource( streamIndex, vb, vertexOffset, vertexStride )\n");
+#endif
         ((SetStreamSourceFn)VTABLE(device)[0x190 / 4])(device, 0, NULL, 0, 0);
     } while (*(volatile int *)&alwaysfails != 0);
 
@@ -1243,10 +1435,16 @@ void RB_ChangeState_0(int stateBits0)
         return;
     }
 
+#if defined(COD2_X64)
     R_LOG_STATE(stateBits0, changedBits, 0);
+#endif
 
     if (changedBits & RB_STATE0_ALPHA_TEST_DISABLE) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_ALPHATESTENABLE, (((unsigned int)stateBits0 >> 11) & 1) ^ 1, "dx.device->SetRenderState( D3DRS_ALPHATESTENABLE, (stateBits0 & DXS0_ATEST_DISABLE) ? 0 : 1 )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_ALPHATESTENABLE, (((unsigned int)stateBits0 >> 11) & 1) ^ 1);
+#endif
     }
 
     if (stateBits0 & RB_STATE0_ALPHA_TEST_DISABLE) {
@@ -1281,16 +1479,28 @@ void RB_ChangeState_0(int stateBits0)
         }
 
         if (changedBits & RB_STATE0_ALPHA_TEST_FUNC_MASK)
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_ALPHAFUNC, alphaFunc, "dx.device->SetRenderState( D3DRS_ALPHAFUNC, function )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_ALPHAFUNC, alphaFunc);
+#endif
 
 #if defined(COD2_X64)
         if (dxState.alphaRef != alphaRef) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_ALPHAREF, alphaRef, "dx.device->SetRenderState( D3DRS_ALPHAREF, ref )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_ALPHAREF, alphaRef);
+#endif
             dxState.alphaRef = alphaRef;
         }
 #else
         dxState.alphaRef = alphaRef;
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_ALPHAREF, alphaRef, "dx.device->SetRenderState( D3DRS_ALPHAREF, ref )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_ALPHAREF, alphaRef);
+#endif
 #endif
     }
 
@@ -1302,11 +1512,19 @@ void RB_ChangeState_0(int stateBits0)
             colorWriteMask |= 8;
         }
 
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_COLORWRITEENABLE, colorWriteMask, "dx.device->SetRenderState( D3DRS_COLORWRITEENABLE, mask )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_COLORWRITEENABLE, colorWriteMask);
+#endif
     }
 
     if (changedBits & RB_STATE0_FOG_ENABLE) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_FOGENABLE, ((unsigned int)stateBits0 >> 29) & 1, "dx.device->SetRenderState( D3DRS_FOGENABLE, (stateBits0 & DXS0_FOG) ? 1 : 0 )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_FOGENABLE, ((unsigned int)stateBits0 >> 29) & 1);
+#endif
     }
 
     if (changedBits & RB_STATE0_CULL_MASK) {
@@ -1322,65 +1540,117 @@ void RB_ChangeState_0(int stateBits0)
                 cullVal = 2;
         }
 #endif
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_CULLMODE, cullVal, "dx.device->SetRenderState( D3DRS_CULLMODE, s_cullTable[(stateBits0 & DXS0_CULL_MASK) >> DXS0_CULL_SHIFT] )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_CULLMODE, cullVal);
+#endif
     }
 
     if (changedBits & RB_STATE0_WIREFRAME) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_FILLMODE, (stateBits0 & RB_STATE0_WIREFRAME) ? 2 : 3, "dx.device->SetRenderState( D3DRS_FILLMODE, (stateBits0 & DXS0_POLYMODE_LINE) ? D3DFILL_WIREFRAME : D3DFILL_SOLID )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_FILLMODE, (stateBits0 & RB_STATE0_WIREFRAME) ? 2 : 3);
+#endif
     }
 
     if ((stateBits0 & RB_STATE0_BLEND_OP_RGB_MASK) == 0) {
         if ((dxState.refStateBits[0] & RB_STATE0_BLEND_OP_RGB_MASK) != 0) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_ALPHABLENDENABLE, 0, "dx.device->SetRenderState( D3DRS_ALPHABLENDENABLE, disableBlendOpRgb ? 0 : 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_ALPHABLENDENABLE, 0);
+#endif
         }
 
         stateBits0 = (stateBits0 & ~RB_STATE0_RGB_BLEND_BITS) | (dxState.activeStateBits[0] & RB_STATE0_RGB_BLEND_BITS);
         changedBits &= ~RB_STATE0_RGB_BLEND_BITS;
     } else {
         if ((dxState.refStateBits[0] & RB_STATE0_BLEND_OP_RGB_MASK) == 0) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_ALPHABLENDENABLE, 1, "dx.device->SetRenderState( D3DRS_ALPHABLENDENABLE, disableBlendOpRgb ? 0 : 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_ALPHABLENDENABLE, 1);
+#endif
         }
 
         if (changedBits & RB_STATE0_BLEND_OP_RGB_MASK) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_BLENDOP, s_blendOpTable[((unsigned int)stateBits0 >> 8) & 7], "dx.device->SetRenderState( D3DRS_BLENDOP, s_blendOpTable[(stateBits0 >> DXS0_BLENDOP_RGB_SHIFT) & DXS_BLENDOP_MASK] )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_BLENDOP, s_blendOpTable[((unsigned int)stateBits0 >> 8) & 7]);
+#endif
         }
     }
 
     if (changedBits & RB_STATE0_SRC_BLEND_RGB_MASK) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_SRCBLEND, s_blendTable[stateBits0 & RB_STATE0_SRC_BLEND_RGB_MASK], "dx.device->SetRenderState( D3DRS_SRCBLEND, s_blendTable[blend] )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_SRCBLEND, s_blendTable[stateBits0 & RB_STATE0_SRC_BLEND_RGB_MASK]);
+#endif
     }
 
     if (changedBits & RB_STATE0_DST_BLEND_RGB_MASK) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_DESTBLEND, s_blendTable[((unsigned int)stateBits0 >> 4) & 0xf], "dx.device->SetRenderState( D3DRS_DESTBLEND, s_blendTable[blend] )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_DESTBLEND, s_blendTable[((unsigned int)stateBits0 >> 4) & 0xf]);
+#endif
     }
 
     if ((stateBits0 & RB_STATE0_BLEND_OP_ALPHA_MASK) == 0) {
         if ((dxState.refStateBits[0] & RB_STATE0_BLEND_OP_ALPHA_MASK) != 0) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_SEPARATEALPHABLENDENABLE, 0, "dx.device->SetRenderState( D3DRS_SEPARATEALPHABLENDENABLE, disableSeparateAlphaBlend ? 0 : 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_SEPARATEALPHABLENDENABLE, 0);
+#endif
         }
 
         stateBits0 = (stateBits0 & ~RB_STATE0_ALPHA_BLEND_BITS) | (dxState.activeStateBits[0] & RB_STATE0_ALPHA_BLEND_BITS);
         changedBits &= ~RB_STATE0_ALPHA_BLEND_BITS;
     } else {
         if ((dxState.refStateBits[0] & RB_STATE0_BLEND_OP_ALPHA_MASK) == 0) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_SEPARATEALPHABLENDENABLE, 1, "dx.device->SetRenderState( D3DRS_SEPARATEALPHABLENDENABLE, disableSeparateAlphaBlend ? 0 : 1 )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_SEPARATEALPHABLENDENABLE, 1);
+#endif
         }
 
         if (changedBits & RB_STATE0_BLEND_OP_ALPHA_MASK) {
+#if defined(COD2_X64)
             RB_SetRenderStateDx7(D3DRS_BLENDOPALPHA, s_blendOpTable[((unsigned int)stateBits0 >> 24) & 7], "dx.device->SetRenderState( D3DRS_BLENDOPALPHA, s_blendOpTable[(stateBits0 >> DXS0_BLENDOP_ALPHA_SHIFT) & DXS_BLENDOP_MASK] )\n");
+#else
+            RB_SetRenderStateDx7(D3DRS_BLENDOPALPHA, s_blendOpTable[((unsigned int)stateBits0 >> 24) & 7]);
+#endif
         }
     }
 
     if (changedBits & RB_STATE0_SRC_BLEND_ALPHA_MASK) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_SRCBLENDALPHA, s_blendTable[((unsigned int)stateBits0 >> 16) & 0xf], "dx.device->SetRenderState( D3DRS_SRCBLENDALPHA, s_blendTable[blend] )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_SRCBLENDALPHA, s_blendTable[((unsigned int)stateBits0 >> 16) & 0xf]);
+#endif
     }
 
     if (changedBits & RB_STATE0_DST_BLEND_ALPHA_MASK) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_DESTBLENDALPHA, s_blendTable[((unsigned int)stateBits0 >> 20) & 0xf], "dx.device->SetRenderState( D3DRS_DESTBLENDALPHA, s_blendTable[blend] )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_DESTBLENDALPHA, s_blendTable[((unsigned int)stateBits0 >> 20) & 0xf]);
+#endif
     }
 
     if (changedBits & RB_STATE0_NORMALIZE_NORMALS) {
+#if defined(COD2_X64)
         RB_SetRenderStateDx7(D3DRS_NORMALIZENORMALS, ((unsigned int)stateBits0 >> 30) & 1, "dx.device->SetRenderState( D3DRS_NORMALIZENORMALS, (stateBits0 & DXS0_RENORMALIZE) ? 1 : 0 )\n");
+#else
+        RB_SetRenderStateDx7(D3DRS_NORMALIZENORMALS, ((unsigned int)stateBits0 >> 30) & 1);
+#endif
     }
 
     if (RB_SupportsAlphaToCoverage()) {
@@ -1407,7 +1677,11 @@ void RB_SetProjectionMatrix(const D3DMATRIX *matrix)
     RB_InvalidateCodeMatrix(&activeMatrices->OGLworldViewProjection);
 
     if (RB_UsingDx7Renderer()) {
+#if defined(COD2_X64)
         RB_SetTransformDx7(D3DTS_PROJECTION, &activeMatrices->projection.matrix[0], "dx.device->SetTransform( D3DTS_PROJECTION, &activeMatrices->projection.matrix[0] )\n");
+#else
+        RB_SetTransformDx7(D3DTS_PROJECTION, &activeMatrices->projection.matrix[0]);
+#endif
     }
 }
 
@@ -1521,8 +1795,13 @@ void COD2_FORCE_ALIGN_ARG_POINTER RB_SetInitialState(void)
     ((SetRenderStateFn)VTABLE(dx.device)[0xe4 / 4])(dx.device, 0x89, 0);
     ((SetRenderStateFn)VTABLE(dx.device)[0xe4 / 4])(dx.device, 0x93, 1);
 #else
+#if defined(COD2_X64)
     RB_SetRenderStateDx7(0x89, 0, NULL);
     RB_SetRenderStateDx7(0x93, 1, NULL);
+#else
+    RB_SetRenderStateDx7(0x89, 0);
+    RB_SetRenderStateDx7(0x93, 1);
+#endif
 #endif
 
     material.Diffuse.r = 1.0f;

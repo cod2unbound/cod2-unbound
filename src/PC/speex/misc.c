@@ -31,7 +31,9 @@
 */
 
 #include "misc.h"
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -141,7 +143,7 @@ void speex_rand_vec(float std, float *data, int len)
    }
 #else
    for (i=0;i<len;i++)
-      data[i]+=3*std*((((float)Com_CrtRand())/COM_CRT_RAND_MAX)-.5);
+      data[i]+=3*std*((((float)rand())/RAND_MAX)-.5);
 #endif
 }
 
@@ -151,7 +153,7 @@ float speex_rand(float std)
    /* 4e2660 uses the same float reciprocal, with 3*std evaluated first. */
    return (3.0f * std) * ((float)Com_CrtRand() * 0x1.0002p-15f - .5f);
 #else
-   return 3*std*((((float)Com_CrtRand())/COM_CRT_RAND_MAX)-.5);
+   return 3*std*((((float)rand())/RAND_MAX)-.5);
 #endif
 }
 

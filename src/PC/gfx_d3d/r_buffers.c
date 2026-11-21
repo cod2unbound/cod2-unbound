@@ -1,5 +1,7 @@
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 #include "imports.h"
 extern struct DxGlobals dx;
 /* File-scope alias: bound where no local can shadow `dx`, so uses below
@@ -55,7 +57,9 @@ void R_FinishStaticVertexBuffer(IDirect3DVertexBuffer9 *vb)
 {
 
     do {
+#if defined(COD2_X64)
         R_LOG("vb->Unlock()\n");
+#endif
         ((BufferUnlockFn)VTABLE(vb)[0x30 / 4])((void *)vb);
     } while (*(volatile int *)&alwaysfails != 0);
 }
@@ -100,7 +104,9 @@ void R_FinishStaticIndexBuffer(IDirect3DIndexBuffer9 *ib)
 {
 
     do {
+#if defined(COD2_X64)
         R_LOG("ib->Unlock()\n");
+#endif
         ((BufferUnlockFn)VTABLE(ib)[0x30 / 4])((void *)ib);
     } while (*(volatile int *)&alwaysfails != 0);
 }

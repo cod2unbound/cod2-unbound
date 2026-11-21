@@ -1,5 +1,7 @@
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 extern dvar_t *r_rendererInUse;
 #include "imports.h"
 /* dvar globals */
@@ -293,7 +295,9 @@ IDirect3DSurface9 *Image_GetSurface(GfxImage *image)
     do {
         texture = image->texture.map;
         vtable = *(void ***)texture;
+#if defined(COD2_X64)
         R_LOG("image->texture.map->GetSurfaceLevel( 0, &surface )\n");
+#endif
         ((HRESULT(D3DVTCC *)(void *, UINT, IDirect3DSurface9 **))vtable[0x48 / 4])(texture, 0, &surface);
     } while (*fails);
 

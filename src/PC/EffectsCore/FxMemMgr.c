@@ -1,6 +1,8 @@
 #include "common_types.h"
 #include "imports.h"
+#if COD2_APPLE_SDK
 #include "PC/EffectsCore/fx_memory.h"
+#endif
 
 #if COD2_APPLE_SDK
 #include <assert.h>

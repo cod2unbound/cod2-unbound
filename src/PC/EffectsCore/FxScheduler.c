@@ -1,6 +1,8 @@
 #include "common_types.h"
 #include "imports.h"
+#if defined(COD2_X64) || COD2_APPLE_SDK
 #include "PC/EffectsCore/fx_memory.h"
+#endif
 
 #if defined(COD2_X64)
 /* Scheduled effects are 0x50 bytes with a 32-bit link at 0x4c on i386. The
@@ -508,7 +510,7 @@ void FxScheduler_PlayEffect(const FxScheduler *_this, const EffectTemplate *fx, 
 #if defined(COD2_X64)
                 ScheduledEffect *sfx = (ScheduledEffect *)FX_MEMORY_ALLOC(ScheduledEffect, sizeof(ScheduledEffect));
 #else
-                ScheduledEffect *sfx = (ScheduledEffect *)FX_MEMORY_ALLOC(ScheduledEffect, 0x50);
+                ScheduledEffect *sfx = (ScheduledEffect *)__Znam(0x50);
 #endif
                 if (!sfx)
                     continue;
@@ -586,7 +588,11 @@ void FxScheduler_Clean(const FxScheduler *_this, unsigned char bRemoveTemplates,
 #else
         ((FxScheduler *)_this)->mScheduledHead = (ScheduledEffect *)(size_t)sfx->mScheduledNext;
 #endif
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(sfx);
+#else
+        __ZdaPv(sfx);
+#endif
     }
     ((FxScheduler *)_this)->mScheduledCount = 0;
 
@@ -956,7 +962,7 @@ void FxScheduler_Archive(const FxScheduler *_this, FxArchive *arch)
 #if defined(COD2_X64)
             ScheduledEffect *newSfx = (ScheduledEffect *)FX_MEMORY_ALLOC(ScheduledEffect, sizeof(ScheduledEffect));
 #else
-            ScheduledEffect *newSfx = (ScheduledEffect *)FX_MEMORY_ALLOC(ScheduledEffect, 0x50);
+            ScheduledEffect *newSfx = (ScheduledEffect *)__Znam(0x50);
 #endif
             if (newSfx) {
                 memset(newSfx, 0, sizeof(ScheduledEffect));
@@ -980,7 +986,11 @@ void FxScheduler_Archive(const FxScheduler *_this, FxArchive *arch)
                 } else {
 
                     if (newSfx)
+#if COD2_APPLE_SDK
                         FX_MEMORY_FREE(newSfx);
+#else
+                        __ZdaPv(newSfx);
+#endif
                 }
             }
         }

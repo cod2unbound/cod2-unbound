@@ -1,5 +1,7 @@
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 extern struct DxGlobals dx;
 /* File-scope alias: bound where no local can shadow `dx`, so uses below
    always reach the global even inside functions that declare their own `dx`. */
@@ -105,7 +107,9 @@ void RB_TessParticleCloud(const GfxEntity *re)
         RB_EndSurface();
     }
 
+#if defined(COD2_X64)
     R_LOG("--- RB_TessParticleCloud( %s ) ---\n", ((materialCommands_t *)RB_TessBase())->material->info.name);
+#endif
 
 #if defined(COD2_X64)
     args.vertexCount = 0x1000;
@@ -232,7 +236,9 @@ void RB_TessXModelRigid(const surfaceType_t *surfType)
         RB_EndSurface();
     }
 
+#if defined(COD2_X64)
     R_LOG("--- RB_TessXModelRigid( %s ) ---\n", ((materialCommands_t *)RB_TessBase())->material->info.name);
+#endif
 
     xsurf = ((const GfxModelSurface *)surfType)->xsurf;   /* was surfType+4 (x86 xsurf @4; x64 @8) */
 
@@ -1182,7 +1188,9 @@ void RB_TessStaticModelCached(const surfaceType_t *surfType)
     ((materialCommands_t *)tess)->firstOptimizedVertex = 0;
     ((materialCommands_t *)tess)->optimizedVertexCount = 0x10000;
 
+#if defined(COD2_X64)
     R_LOG("--- RB_TessStaticModelCached( %s ) ---\n", ((materialCommands_t *)RB_TessBase())->material->info.name);
+#endif
 
     baseVertIndex = ((materialCommands_t *)tess)->optimizedIndexCount;
     dest = (*(char **)&((materialCommands_t *)tess)->optimizedIndices) + baseVertIndex * 2;
@@ -1223,7 +1231,9 @@ void RB_TessXModelSkinned(const surfaceType_t *surfType)
             RB_EndSurface();
         }
 
+#if defined(COD2_X64)
         R_LOG("--- RB_TessXModelSkinnedCached( %s ) ---\n", ((materialCommands_t *)tess)->material->info.name);
+#endif
 
         isDx7 = (r_rendererInUse->current.integer == 2);
         vertexStride = isDx7 ? 0x24 : 0x40;
@@ -1250,7 +1260,9 @@ void RB_TessXModelSkinned(const surfaceType_t *surfType)
 
         RB_DrawTechnique( (MaterialVertexDeclType)(0), &args);
     } else {
+#if defined(COD2_X64)
         R_LOG("--- RB_TessXModelSkinnedUncached( %s ) ---\n", ((materialCommands_t *)RB_TessBase())->material->info.name);
+#endif
 
         vertexCount = XSurfaceGetNumVerts(xsurf);
         triIndexCount = XSurfaceGetNumTris(xsurf) * 3;

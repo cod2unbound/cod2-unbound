@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 
 #if defined(COD2_X64)
 #    include "common_types.h"
@@ -53,22 +55,30 @@ int RB_CalcSunSpriteSamples(void)
     void **deviceTable = *(void ***)device;
     void **queryTable = *(void ***)query;
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->BeginScene()\n");
+#endif
         ((DeviceSceneFn)deviceTable[41])(device);
     } while (alwaysfails);
     RB_ClearScreen(2, (const vec_t *)imp_colorWhite, 1.0f, 0);
     do {
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 1) )\n");
+#endif
         ((QueryIssueFn)queryTable[6])(query, 2);
     } while (alwaysfails);
     RB_DrawStretchPic(rgp.whiteMaterial, 0.0f, 0.0f, 16.0f, 16.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0xffffffff, (GfxPrimStatsTarget)10);
     RB_EndSurface();
     do {
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 0) )\n");
+#endif
         ((QueryIssueFn)queryTable[6])(query, 1);
     } while (alwaysfails);
     do {
+#if defined(COD2_X64)
         R_LOG("dx.device->EndScene()\n");
+#endif
         ((DeviceSceneFn)deviceTable[42])(device);
     } while (alwaysfails);
     int samples, result;
@@ -372,10 +382,14 @@ void RB_DrawSun(int viewIndex)
             state->sunQueryIssued[queryIndex] = 1;
         }
 #else
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 1) )\n");
+#endif
         ((QueryIssueFn)table[6])(query, 2);
         RB_EndSurface();
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 0) )\n");
+#endif
         ((QueryIssueFn)table[6])(query, 1);
         state->sunQueryIssued[queryIndex] = 1;
 #endif
@@ -496,7 +510,9 @@ int RB_CalcSunSpriteSamples(void)
         device = FIELD(&dx_device_ptr, 0, void *);
         device = FIELD(device, 8, void *);
         vtable = FIELD(device, 0, void **);
+#if defined(COD2_X64)
         R_LOG("dx.device->BeginScene()\n");
+#endif
         ((DeviceBeginSceneFn)vtable[0xa4 / 4])(device);
     } while (FIELD(dx_fence, 0, int) != 0);
 
@@ -504,7 +520,9 @@ int RB_CalcSunSpriteSamples(void)
 
     do {
         vtable = FIELD(occlusionQuery, 0, void **);
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 1) )\n");
+#endif
         ((QueryIssueFn)vtable[0x18 / 4])(occlusionQuery, 2);
     } while (FIELD(dx_fence, 0, int) != 0);
 
@@ -517,7 +535,9 @@ int RB_CalcSunSpriteSamples(void)
 
     do {
         vtable = FIELD(occlusionQuery, 0, void **);
+#if defined(COD2_X64)
         R_LOG("occlusionQuery->Issue( (1 << 0) )\n");
+#endif
         ((QueryIssueFn)vtable[0x18 / 4])(occlusionQuery, 1);
     } while (FIELD(dx_fence, 0, int) != 0);
 
@@ -525,7 +545,9 @@ int RB_CalcSunSpriteSamples(void)
         device = FIELD(&dx_device_ptr, 0, void *);
         device = FIELD(device, 8, void *);
         vtable = FIELD(device, 0, void **);
+#if defined(COD2_X64)
         R_LOG("dx.device->EndScene()\n");
+#endif
         ((DeviceEndSceneFn)vtable[0xa8 / 4])(device);
     } while (FIELD(dx_fence, 0, int) != 0);
 
@@ -1286,7 +1308,9 @@ void RB_DrawSun(int viewIndex)
             {
                 IDirect3DQuery9 *query = sunFlare->sunQuery[queryIndex];
                 void **qvt = FIELD(query, 0, void **);
+#if defined(COD2_X64)
                 R_LOG("occlusionQuery->Issue( (1 << 1) )\n");
+#endif
                 ((QueryIssueFn)qvt[0x18 / 4])(query, 2);
             }
             RB_EndSurface();
@@ -1294,7 +1318,9 @@ void RB_DrawSun(int viewIndex)
             {
                 IDirect3DQuery9 *query = sunFlare->sunQuery[queryIndex];
                 void **qvt = FIELD(query, 0, void **);
+#if defined(COD2_X64)
                 R_LOG("occlusionQuery->Issue( (1 << 0) )\n");
+#endif
                 ((QueryIssueFn)qvt[0x18 / 4])(query, 1);
             }
             sunFlare->sunQueryIssued[queryIndex] = 1;

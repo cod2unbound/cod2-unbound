@@ -3,7 +3,9 @@
 #endif
 #include "common_types.h"
 #include "r_cod2x_xray.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 #if defined(COD2_X64)
 #include <stdlib.h>
 #endif
@@ -795,7 +797,9 @@ void R_RenderScene(const refdef_t *refdef)
 
     if (!rg_p->registered)
         return;
+#if defined(COD2_X64)
     R_LOG("====== R_RenderScene ======\n");
+#endif
     if ((r_norefresh)->current.enabled)
         return;
 

@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #if COD2_APPLE_SDK
+#if COD2_APPLE_SDK
 #include "PC/universal/win_sort.h"
+#endif
 #endif
 
 extern float floorf(float x);
@@ -1007,7 +1009,11 @@ void CG_Draw2dHudElems(qboolean foreground)
     }
 
 #if COD2_APPLE_SDK
+#if COD2_APPLE_SDK
     Com_SortLikeWindows(elems, elemCount, sizeof(*elems), (int (*)(const void *, const void *))compare_hudelems);
+#else
+    qsort(elems, elemCount, sizeof(void *), (int (*)(const void *, const void *))compare_hudelems);
+#endif
 #else
     qsort(elems, elemCount, sizeof(void *), (int (*)(const void *, const void *))compare_hudelems);
 #endif
@@ -1237,7 +1243,11 @@ void CG_Draw3dHudElems(void)
     }
 
 #if COD2_APPLE_SDK
+#if COD2_APPLE_SDK
     Com_SortLikeWindows(elems, elemCount, sizeof(*elems), (int (*)(const void *, const void *))compare_hudelems);
+#else
+    qsort(elems, elemCount, sizeof(void *), (int (*)(const void *, const void *))compare_hudelems);
+#endif
 #else
     qsort(elems, elemCount, sizeof(void *), (int (*)(const void *, const void *))compare_hudelems);
 #endif

@@ -1,5 +1,7 @@
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 extern struct DxGlobals dx;
 /* File-scope alias: bound where no local can shadow `dx`, so uses below
    always reach the global even inside functions that declare their own `dx`. */
@@ -840,7 +842,9 @@ void Material_ReloadAll(void)
                 do {
                     void *device = (void *)((DxGlobals *)dx)->device;
                     void **vtable = *(void ***)device;
+#if defined(COD2_X64)
                     R_LOG("dx.device->CreateVertexDeclaration( elemTable, &decl )\n");
+#endif
                     ((int (*)(void *, const void *, void **))vtable[0x158 / 4])(
                         device, elemTable, &decl);
                 } while (*(int *)&alwaysfails);

@@ -1,6 +1,8 @@
 #include "PC/qcommon/port_debug.h"
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 extern struct DxGlobals dx;
 /* File-scope alias: bound where no local can shadow `dx`, so uses below
    always reach the global even inside functions that declare their own `dx`. */
@@ -99,7 +101,9 @@ void R_InitStaticModelCache(void)
         vtable = *(void ***)device;
 #if defined(COD2_X64) && (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && !COD2_WIN32_D3D9
         /* The Mac shim uses this private bit to allocate its dirty-block cache. */
+#if defined(COD2_X64)
         R_LOG("dx.device->CreateVertexBuffer( size, (0x00000200L) | (0x00000008L), 0, D3DPOOL_DEFAULT, &dx.smodelCacheVb, 0 )\n");
+#endif
         ((HRESULT(D3DVTCC *)(void *, int, int, int, int, void **, void *))vtable[0x68 / 4])(
             device, size, 0x400208, 0, 0, vbOut, NULL);
 #else
@@ -107,7 +111,9 @@ void R_InitStaticModelCache(void)
          * 0x400000 bit is not a valid D3DUSAGE, and real D3D9 fails the whole
          * CreateVertexBuffer on it (Wine ignores it) -> smodelCacheVb stays NULL
          * -> NULL-deref on the first static-model skin. */
+#if defined(COD2_X64)
         R_LOG("dx.device->CreateVertexBuffer( size, (0x00000200L) | (0x00000008L), 0, D3DPOOL_DEFAULT, &dx.smodelCacheVb, 0 )\n");
+#endif
         ((HRESULT(D3DVTCC *)(void *, int, int, int, int, void **, void *))vtable[0x68 / 4])(
             device, size, 0x208, 0, 0, vbOut, NULL);
 #endif
@@ -948,7 +954,9 @@ void R_SkinStaticModelCachedCmd(SkinStaticModelCachedCmd *skinCmd, SkinBuffers *
 
             do {
                 vtable = *(void ***)vb;
+#if defined(COD2_X64)
                 R_LOG("dx.smodelCacheVb->Unlock()\n");
+#endif
                 ((void(D3DVTCC *)(void *))vtable[0x30 / 4])(vb);
             } while (*(volatile int *)&alwaysfails != 0);
         }
@@ -1131,7 +1139,9 @@ void R_SkinStaticModelCachedCmd(SkinStaticModelCachedCmd *skinCmd, SkinBuffers *
 
             do {
                 vtable = *(void ***)vb;
+#if defined(COD2_X64)
                 R_LOG("dx.smodelCacheVb->Unlock()\n");
+#endif
                 ((void(D3DVTCC *)(void *))vtable[0x30 / 4])(vb);
             } while (*(volatile int *)&alwaysfails != 0);
         }

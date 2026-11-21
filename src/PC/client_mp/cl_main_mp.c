@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #if defined(COD2_X64) && !defined(DEDICATED)
 #include "PC/qcommon/frame_activity.h"
 #endif
@@ -202,6 +204,9 @@ extern Bool NET_OutOfBandData(netsrc_t sock, netadr_t adr, unsigned char *data, 
 extern int Sys_IsLANAddress(netadr_t adr);
 extern int Sys_Milliseconds(void);
 extern int Sys_MillisecondsRaw(void);
+#if !defined(COD2_X64)
+extern void srand(unsigned int seed);
+#endif
 extern int FS_FileExists(const char *path);
 extern fileHandle_t FS_FOpenFileWrite(const char *filename);
 extern int FS_FOpenFileRead(const char *path, int *file, int uniqueFILE);
@@ -1222,7 +1227,11 @@ void CL_OpenScriptMenu_f(void)
 
 void CL_InitOnceForAllClients(void)
 {
+#if defined(COD2_X64)
     Com_CrtSrand(Sys_MillisecondsRaw());
+#else
+    srand(Sys_MillisecondsRaw());
+#endif
     Con_Init();
     CL_InitInput();
 #if defined(COD2_X64)

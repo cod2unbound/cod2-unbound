@@ -12,11 +12,6 @@ void Com_CrtSrand(unsigned int seed);
 int Cod2x_CrtRand(void);
 float Cod2x_CrtRandomf(void);
 #endif
-#else
-#include <stdlib.h>
-#define COM_CRT_RAND_MAX RAND_MAX
-#define Com_CrtRand rand
-#define Com_CrtSrand srand
 #endif
 
 #endif

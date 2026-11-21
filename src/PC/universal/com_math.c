@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #include "common_types.h"
 #include "imports.h"
 #include "bytematch.h"
@@ -18,6 +20,9 @@ extern double cos(double);
 extern double tan(double);
 extern double log(double);
 extern double sqrt(double);
+#if !defined(COD2_X64)
+extern int rand(void);
+#endif
 
 #define qtrue 1
 #define qfalse 0
@@ -139,7 +144,11 @@ const qboolean VecNCompareCustomEpsilon(const vec_t *v0, const vec_t *v1, vec_t 
 
 float randomf(void)
 {
+#if defined(COD2_X64)
     return (float)Com_CrtRand() * (1.0f / (COM_CRT_RAND_MAX + 1.0f));
+#else
+    return (float)rand() * 4.656612873077393e-10f;
+#endif
 }
 
 float GraphGetValueFromFraction(const int knotCount, vec2_t *knots, const float fraction)
@@ -1279,7 +1288,11 @@ float DiffTrackAngle(float tgt, float cur, float rate, float deltaTime, float f,
 
 static inline __attribute__((always_inline)) float crandom_core(void)
 {
+#if defined(COD2_X64)
     return ((float)Com_CrtRand() * (1.0f / (COM_CRT_RAND_MAX + 1.0f))) * 2.0f - 1.0f;
+#else
+    return ((float)rand() * 4.656612873077393e-10f) * 2.0f - 1.0f;
+#endif
 }
 
 float crandom(void)

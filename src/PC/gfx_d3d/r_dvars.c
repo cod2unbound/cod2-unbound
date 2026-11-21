@@ -8,11 +8,13 @@
 
 #include "common_types.h"
 #include "imports.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
 #include <stdarg.h>
 #include <time.h>
 
 static void R_LogClose(void);
+#endif
 #if COD2_APPLE_SDK
 #include "platform/macos_display.h"
 #include "platform/macos_display_modes.h"
@@ -663,10 +665,13 @@ void R_RegisterDvars(void)
 
 void R_UnregisterDvars(void)
 {
+#if defined(COD2_X64)
     R_LogClose();
+#endif
     ri.Dvar_UnregisterSystem(0x2000);
 }
 
+#if defined(COD2_X64)
 /* Windows 1.3 10037c50--10038642. The first presentation opens dx.log;
  * subsequent presentations consume the requested number of logged frames. */
 static FILE *r_logStream;
@@ -833,3 +838,4 @@ void R_LogState(unsigned int state, unsigned int changed, int word)
     R_LogStateBool(state, changed, 0x20000000, "Fog");
     R_LogStateEnum(state, changed, 0xc000, "Cull Face", cull, 3);
 }
+#endif

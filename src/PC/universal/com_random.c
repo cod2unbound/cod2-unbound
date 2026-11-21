@@ -1,6 +1,6 @@
+#if defined(COD2_X64) && COD2_X64
 #include "com_random.h"
 
-#if defined(COD2_X64) && COD2_X64
 #include <stdint.h>
 
 /* CoD2MP_s.exe 57baa0/57baad; TLS initializer 58099c starts at one.

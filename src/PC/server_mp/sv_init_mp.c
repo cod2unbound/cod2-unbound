@@ -1,4 +1,6 @@
+#if defined(COD2_X64)
 #include "com_random.h"
+#endif
 #include "PC/qcommon/port_debug.h"
 #include "common_types.h"
 #if COD2_APPLE_SDK
@@ -1034,10 +1036,22 @@ void SV_SpawnServer(const char *server)
     I_strncpyz(svg->gametype,
                (sv_gametype)->current.string, 64);
 
+#if defined(COD2_X64)
     Com_CrtSrand(Sys_MillisecondsRaw());
+#else
+    srand(Sys_MillisecondsRaw());
+#endif
     {
+#if defined(COD2_X64)
         int r1 = Com_CrtRand();
+#else
+        int r1 = rand();
+#endif
+#if defined(COD2_X64)
         int r2 = Com_CrtRand();
+#else
+        int r2 = rand();
+#endif
         int ms = Sys_Milliseconds();
         int checksumFeed = (r1 << 16) ^ r2 ^ ms;
         svg->checksumFeed = checksumFeed;

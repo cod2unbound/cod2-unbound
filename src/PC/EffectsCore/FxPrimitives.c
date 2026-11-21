@@ -1,6 +1,8 @@
 #include "common_types.h"
 #include "imports.h"
+#if COD2_APPLE_SDK
 #include "PC/EffectsCore/fx_memory.h"
+#endif
 #include "bytematch.h"
 #include <math.h>
 
@@ -256,7 +258,11 @@ static inline __attribute__((always_inline)) void FxBoltFrame_ReleaseHelper(byte
         cur = *prevNext;
     }
     if (boltFrame)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(boltFrame);
+#else
+        __ZdaPv(boltFrame);
+#endif
 }
 
 void FxBoltFrame_Release(const FxBoltFrame *_this)
@@ -277,7 +283,11 @@ void FxBoltFrame_Release(const FxBoltFrame *_this)
         cur = *prevNext;
     }
     if (boltFrame)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(boltFrame);
+#else
+        __ZdaPv(boltFrame);
+#endif
 }
 
 extern int FX_GetBoneOrientation(int *boltInfo, orientation_t *orient);
@@ -1058,7 +1068,11 @@ static void FxBoltFrame_Acquire_impl(byte *retPtr, byte *bolt)
         frame = (*(byte **)&((FxBoltFrame *)(frame))->next);
     }
 
+#if COD2_APPLE_SDK
     byte *newFrame = (byte *)FX_MEMORY_ALLOC(FxBoltFrame, sizeof(FxBoltFrame));
+#else
+    byte *newFrame = (byte *)__Znam(sizeof(FxBoltFrame));
+#endif
     if (newFrame)
         memset(newFrame, 0, sizeof(FxBoltFrame));
     (((FxBoltFrame *)(newFrame))->refCount) = 0;
@@ -1385,7 +1399,11 @@ static inline __attribute__((always_inline)) void ZN6EffectD0Ev_impl(void *_this
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN6EffectD0Ev(void *_this)
 {
@@ -1418,7 +1436,11 @@ void Effect_SetBoltFrame(const Effect *_this, FxBoltFramePtr *boltFrame)
                 cur = *prevNext;
             }
             if (oldBf)
+#if COD2_APPLE_SDK
                 FX_MEMORY_FREE(oldBf);
+#else
+                __ZdaPv(oldBf);
+#endif
         }
         *bfSlot = NULL;
     }
@@ -1623,7 +1645,11 @@ static inline __attribute__((always_inline)) void ZN8ParticleD0Ev_impl(void *_th
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN8ParticleD0Ev(void *_this)
 {
@@ -1653,7 +1679,11 @@ static inline __attribute__((always_inline)) void ZN5LightD0Ev_impl(void *_this)
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN5LightD0Ev(void *_this)
 {
@@ -3613,7 +3643,11 @@ static inline __attribute__((always_inline)) void ZN8CylinderD0Ev_impl(void *_th
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN8CylinderD0Ev(void *_this)
 {
@@ -3660,7 +3694,11 @@ static inline __attribute__((always_inline)) void ZN16OrientedParticleD0Ev_impl(
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN16OrientedParticleD0Ev(void *_this)
 {
@@ -3722,7 +3760,11 @@ static inline __attribute__((always_inline)) void ZN5CloudD0Ev_impl(void *_this)
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN5CloudD0Ev(void *_this)
 {
@@ -3752,7 +3794,11 @@ static inline __attribute__((always_inline)) void ZN4LineD0Ev_impl(void *_this)
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN4LineD0Ev(void *_this)
 {
@@ -3782,7 +3828,11 @@ static inline __attribute__((always_inline)) void ZN4TailD0Ev_impl(void *_this)
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN4TailD0Ev(void *_this)
 {
@@ -3812,7 +3862,11 @@ static inline __attribute__((always_inline)) void ZN7EmitterD0Ev_impl(void *_thi
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN7EmitterD0Ev(void *_this)
 {
@@ -3839,7 +3893,11 @@ static inline __attribute__((always_inline)) void ZN5FlashD0Ev_impl(void *_this)
     *(void **)self = (byte *)__ZTV6Effect + (2 * (int)sizeof(void *));
     FxBoltFrame_ReleaseHelper((*(byte **)&((Effect *)(self))->mBolt.value));
     if (self)
+#if COD2_APPLE_SDK
         FX_MEMORY_FREE(self);
+#else
+        __ZdaPv(self);
+#endif
 }
 void ZN5FlashD0Ev(void *_this)
 {

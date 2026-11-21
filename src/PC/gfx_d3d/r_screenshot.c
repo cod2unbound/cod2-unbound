@@ -2,7 +2,9 @@
 #include "PC/qcommon/port_debug.h"
 #endif
 #include "common_types.h"
+#if defined(COD2_X64)
 #include "PC/gfx_d3d/r_log.h"
+#endif
 #include "imports.h"
 #include <stdlib.h>
 #include <string.h>
@@ -116,7 +118,9 @@ void R_BeginCubemapShot(const int pixelWidthHeight, const int pixelBorder)
         vtable = *(int **)device;
 #endif
 
+#if defined(COD2_X64)
         R_LOG("dx.device->Clear( 0, 0, 0x00000001l | 0x00000002l | 0x00000004l, ((D3DCOLOR)((((255)&0xff)<<24)|(((255)&0xff)<<16)|(((0)&0xff)<<8)|((255)&0xff))), 1, 0 )\n");
+#endif
 
         ((void(D3DVTCC *)(void *, int, int, int, int, float, int))vtable[0xAC / 4])(device, 0, 0, 7, 0xFFFF00FF, 1.0f, 0);
     } while (*(volatile int *)&alwaysfails != 0);
