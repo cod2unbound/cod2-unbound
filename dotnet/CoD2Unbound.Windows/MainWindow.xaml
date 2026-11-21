@@ -68,98 +68,14 @@
 
             <Border BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="1,1,0,0"
                     Background="{ThemeResource PanelBrush}" CornerRadius="8,0,0,0">
-                <ScrollViewer>
-                    <StackPanel Padding="32" Spacing="16">
-                        <InfoBar x:Name="Problem" Severity="Error" IsClosable="False" />
-                        <StackPanel x:Name="SetupPage" Visibility="Collapsed" MaxWidth="680"
-                                    HorizontalAlignment="Center" Spacing="16" Padding="0,36,0,16">
-                            <TextBlock x:Name="SetupTitle" Style="{StaticResource PageTitle}" TextWrapping="Wrap" />
-                            <TextBlock x:Name="SetupDescription" Style="{StaticResource SecondaryText}" />
-                            <Border x:Name="SetupDataCard" Style="{StaticResource FieldCard}" Visibility="Collapsed">
-                                <StackPanel Spacing="12">
-                                    <TextBlock x:Name="SetupDataStatus" Style="{StaticResource SectionTitle}" />
-                                    <TextBlock x:Name="SetupDataDetail" Style="{StaticResource SecondaryText}" />
-                                    <TextBlock x:Name="SetupDataPath" TextWrapping="Wrap"
-                                               Foreground="{ThemeResource BodyBrush}" />
-                                    <Button Content="Choose a folder…" Click="OnChooseSetupFolder" />
-                                </StackPanel>
-                            </Border>
-                            <StackPanel x:Name="SetupKeyCard" Visibility="Collapsed" Spacing="12">
-                                <TextBlock x:Name="StoredKey" Text="A CD key is stored in Windows Credential Manager."
-                                           Style="{StaticResource SecondaryText}" />
-                                <Button x:Name="ReplaceKey" Content="Replace key…" Click="OnReplaceKey" />
-                                <PasswordBox x:Name="KeyInput" Header="CD key" PasswordChanged="OnKeyChanged"
-                                             PasswordRevealMode="Hidden" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
-                                        Style="{StaticResource AccentButtonStyle}" />
-                                <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" />
-                                <Button x:Name="SkipKey" Content="Skip for now" Click="OnSkipKey" Visibility="Collapsed" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel x:Name="HomePage" Visibility="Collapsed" Spacing="16">
-                            <TextBlock Text="Home" Style="{StaticResource PageTitle}" />
-                            <Border Style="{StaticResource FieldCard}" Padding="24">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="Play" Style="{StaticResource SectionTitle}" />
-                                    <TextBlock x:Name="HomeEdition" Foreground="{ThemeResource BodyBrush}" />
-                                    <TextBlock x:Name="HomeDataStatus" Style="{StaticResource SecondaryText}" />
-                                    <TextBlock x:Name="HomeLoadout" Foreground="{ThemeResource BodyBrush}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button x:Name="LaunchButton" IsEnabled="False" MinWidth="140"
-                                                Style="{StaticResource AccentButtonStyle}" AutomationProperties.Name="Launch">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <SymbolIcon Symbol="Play" />
-                                                <TextBlock Text="Launch" />
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Content="Open Game Data" Click="OnSettingsInvoked" />
-                                    </StackPanel>
-                                    <TextBlock x:Name="LaunchReason" Style="{StaticResource SecondaryText}" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                        <StackPanel x:Name="SettingsPage" Visibility="Collapsed" Spacing="16">
-                            <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
-                            <TextBlock Text="Game Data" Style="{StaticResource SectionTitle}" />
-                            <Border Style="{StaticResource FieldCard}">
-                                <StackPanel Spacing="12">
-                                    <TextBlock x:Name="SettingsDataStatus" Foreground="{ThemeResource BodyBrush}" />
-                                    <TextBlock x:Name="SettingsDataDetail" Style="{StaticResource SecondaryText}" />
-                                    <TextBlock x:Name="SettingsDataPath" TextWrapping="Wrap"
-                                               Foreground="{ThemeResource BodyBrush}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Content="Choose a folder…" Click="OnChooseSettingsFolder" />
-                                        <StackPanel x:Name="SettingsDataActions" Visibility="Collapsed"
-                                                    Orientation="Horizontal" Spacing="8">
-                                            <Button x:Name="SaveFolder" Content="Use this folder" Click="OnSaveFolder"
-                                                    Style="{StaticResource AccentButtonStyle}" />
-                                            <Button Content="Cancel" Click="OnCancelFolder" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Text="Game" Style="{StaticResource SectionTitle}" />
-                            <Border Style="{StaticResource FieldCard}">
-                                <ComboBox x:Name="EditionChoice" Header="Game version" SelectionChanged="OnSettingsChanged">
-                                    <ComboBoxItem Content="CoD2x 1.4.6.8" />
-                                    <ComboBoxItem Content="Original 1.3" />
-                                </ComboBox>
-                            </Border>
-                            <TextBlock Text="Launcher" Style="{StaticResource SectionTitle}" />
-                            <Border Style="{StaticResource FieldCard}">
-                                <ComboBox x:Name="ThemeChoice" Header="Appearance" SelectionChanged="OnSettingsChanged">
-                                    <ComboBoxItem Content="Use system setting" />
-                                    <ComboBoxItem Content="Light" />
-                                    <ComboBoxItem Content="Dark" />
-                                </ComboBox>
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <InfoBar x:Name="Problem" Severity="Error" IsClosable="False" />
+                    <Frame x:Name="ContentFrame" Grid.Row="1" />
+                </Grid>
             </Border>
         </NavigationView>
     </Grid>

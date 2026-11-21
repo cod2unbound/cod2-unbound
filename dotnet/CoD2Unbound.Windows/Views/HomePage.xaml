@@ -1,0 +1,28 @@
+<Page x:Class="CoD2Unbound.Windows.Views.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Spacing="16" Padding="32">
+            <TextBlock Text="Home" Style="{StaticResource PageTitle}" />
+            <Border Style="{StaticResource FieldCard}" Padding="24">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Play" Style="{StaticResource SectionTitle}" />
+                    <TextBlock x:Name="HomeEdition" Foreground="{ThemeResource BodyBrush}" />
+                    <TextBlock x:Name="HomeDataStatus" Style="{StaticResource SecondaryText}" />
+                    <TextBlock x:Name="HomeLoadout" Foreground="{ThemeResource BodyBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="LaunchButton" IsEnabled="False" MinWidth="140"
+                                Style="{StaticResource AccentButtonStyle}" AutomationProperties.Name="Launch">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <SymbolIcon Symbol="Play" />
+                                <TextBlock Text="Launch" />
+                            </StackPanel>
+                        </Button>
+                        <Button Content="Open Game Data" Click="OnSettingsInvoked" />
+                    </StackPanel>
+                    <TextBlock x:Name="LaunchReason" Style="{StaticResource SecondaryText}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
