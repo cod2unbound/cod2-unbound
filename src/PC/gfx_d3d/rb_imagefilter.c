@@ -604,14 +604,18 @@ void RB_GaussianFilterImage(float radius, GfxRenderTargetId renderTargetId)
 {
     GfxImageFilter filter;
     int passCount;
+#if !COD2_WIN32_D3D9
     int passIndex;
+#endif
     r_backEndGlobals_t *be;
     int width, height;
     float scaledRadius;
 #if defined(COD2_X64)
     float scaledRadiusY;
 #endif
+#if !COD2_WIN32_D3D9
     int oddPassCount;
+#endif
 
     be = (r_backEndGlobals_t *)backEnd;
     {
@@ -656,6 +660,10 @@ void RB_GaussianFilterImage(float radius, GfxRenderTargetId renderTargetId)
     }
     filter.passCount = passCount;
 
+#if COD2_WIN32_D3D9
+    /* StretchRect and the Direct3D filter targets keep the top row first. */
+    RB_ApplyFilterPasses(&filter, 0);
+#else
     oddPassCount = passCount & 1;
 
     for (passIndex = 0; passIndex < passCount; passIndex++) {
@@ -717,6 +725,7 @@ void RB_GaussianFilterImage(float radius, GfxRenderTargetId renderTargetId)
 
         RB_EndSurface();
     }
+#endif
 
     return;
 }
