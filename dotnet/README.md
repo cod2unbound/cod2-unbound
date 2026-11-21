@@ -85,6 +85,12 @@ work. Windows adapters should supply the following services.
 | `IUdpTransport` | Use connected UDP, bound DNS and setup separately, start the response timer at send, and retain valid packets already received on timeout. Stop at the requested packet count and honor cancellation. |
 | `IExternalLinks` | Open validated external destinations with the Windows shell. |
 | `IFileAssociations` | Deliver ordered launch and forwarded activations for `.cfg`, `.dm_1`, and `cod2x://`. The installer owns registration. Coordinate the protocol handler with the CoD2x engine's existing self-registration in `Win_Cod2xRegisterLinks`. |
+| `IGameSessionHost` and `IGameLaunchReservation` | Use the same per-user launch/install interlock for reservation, process creation and recovery. Check installed executable identity and creation time before observing, reconnecting to, returning to, or quitting a client. Pass the ordered identities to `ConfigStudioSession`. Keep intro state and privacy flags on the intended launch only. |
+| `IHostingFiles` and `IZpamDownloadSource` | Publish each server's private home; stream bounded, verified downloads and expose byte progress. Bind status and admin to the owned local endpoint. Preserve unrelated server files and use atomic creation for exports. Share the install interlock with game launch and stop. |
+| `IMediaFiles` and `ICod2xFiles` | Resolve regular files under the verified game home. Compare or publish a replay alias in one operation. Refuse device paths, reparse points and alternate streams. Keep licensed base data read-only. Require the expected content identity before deleting or replacing a staged asset. |
+| `ICrashReportService` and `ICrashReportLease` | Read a verified, bounded log and sidecar. Serialize the ledger and transfer to the configured DSN with the supplied deadline and with redirects, cookie storage and ambient credentials disabled. Supply fixed release/edition and non-identifying OS/architecture fields. Route process output through `GameSessionLog` before writing it. |
+| `ILauncherReleaseSource` and `IWindowsLauncherUpdate` | Select the installer asset from the signed Windows release inventory. Check the hash and publisher during staging, then take the shared launch/install lease and recheck both game and server ownership. Handoff to the native installer and preserve user data. |
+
 
 The Windows build passes raw command text to `WinMain`. The planner quotes
 the executable and preserves the engine's own double quotes in the tail.
@@ -131,3 +137,35 @@ bounded regular files with `ZipArchive`, and publishes them through private stag
 The release offer takes an expected archive name from its caller. Windows
 packaging defines that name and verifies the installer publisher or server ZIP
 signature before deployment. The core checks release metadata and SHA-256.
+
+
+## First WinUI unit
+
+Keep `CoD2Unbound.sln` portable. Add the approved shell under
+`dotnet/CoD2Unbound.WinUI/`, put process, filesystem, credentials, activation,
+installer and network adapters in `dotnet/CoD2Unbound.Windows/`, and collect
+Windows-only tests in `dotnet/CoD2Unbound.Windows.Tests/`. A separate
+`dotnet/CoD2Unbound.Windows.sln` can include those projects and the shared
+core. Start with Setup and Game Data, then Home and Play including both
+editions and the already-running path. Follow with Servers and Hosting.
+Bind Config Studio, Library and Settings as their canvas flows are approved.
+Build against the [view model contracts](PORT-MAP.md#view-model-contracts).
+
+Use Windows 11 x64, the .NET 10 SDK, Windows SDK 10.0.26100 or a newer SDK
+supported by the pinned framework, and Windows App SDK 2.7.0. Set up Visual
+Studio 2026 with WinUI application development or Windows App Development CLI
+0.6+ with the C# WinUI template. Use a standard-user account plus explicitly
+licensed Steam and retail installations. Bring both editions' client and
+dedicated executables, the shared launch/install identity, and test package
+signing credentials for activation and update checks. Developer Mode applies
+to the local setup described in the quickstart. [Microsoft WinUI
+quickstart](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/get-started-winui3-for-desktop)
+[Windows App SDK stable channel](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/release-channels)
+[Windows target framework example](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here?pivots=winui3-packaged-csharp)
+
+The portable core, headless fixtures and portable view models compile and run
+under the pinned Linux SDK container. macOS can regenerate the Swift fixtures
+headlessly. WinUI XAML compilation, package identity and activation, native
+adapter behavior and UI Automation require Windows. A physical Windows PC is
+needed to accept the GPU, focus, keyboard, audio and display behavior of the
+running game and launcher.
