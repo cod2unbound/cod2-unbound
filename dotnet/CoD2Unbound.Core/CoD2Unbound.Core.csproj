@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="../../launcher/Resources/ConfigCatalog.json" LogicalName="ConfigCatalog.json" />
+  </ItemGroup>
+</Project>
