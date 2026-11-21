@@ -3,7 +3,7 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-out="$root/output/r05/winvm"
+out="${COD2_WINDOWS_VM_OUTPUT:-$root/output/r05/winvm}"
 mkdir -p "$out"
 
 bounded() {
