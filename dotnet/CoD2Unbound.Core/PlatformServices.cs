@@ -36,7 +36,13 @@ public interface IGameDiscovery
 public sealed record PrivateLaunchFile(string RelativePath, ImmutableArray<byte> Data);
 public sealed record EngineProcessStart(string Executable, string WorkingDirectory, string HomeDirectory,
     ImmutableArray<string> EngineArguments,
-    ImmutableArray<PrivateLaunchFile> PrivateFiles);
+    ImmutableArray<PrivateLaunchFile> PrivateFiles)
+{
+    public ImmutableArray<string> LogSecrets { get; init; } = [];
+    // Null removes an inherited value before the native process launches.
+    public ImmutableDictionary<string, string?> EnvironmentChanges { get; init; } = ImmutableDictionary<string, string?>.Empty;
+    public override string ToString() => "Engine process start";
+}
 
 public interface IProcessSupervisor
 {
@@ -50,6 +56,7 @@ public interface IEngineProcess : IAsyncDisposable
 {
     int Id { get; }
     Task<int> Exited { get; }
+    // Complete after the owned child exits. The adapter bounds graceful shutdown before forcing it.
     ValueTask StopAsync(CancellationToken cancellationToken);
 }
 
