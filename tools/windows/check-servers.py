@@ -1,4 +1,5 @@
 """Run isolated UDP and replay checks inside the Windows build container."""
+from contextlib import contextmanager
 import gzip
 import os
 from pathlib import Path
@@ -21,6 +22,21 @@ HEADER = b"\xff" * 4
 def private_home(env, home):
     home.mkdir(mode=0o700)
     return {**env, "HOME": str(home), "CFFIXED_USER_HOME": str(home)}
+
+
+@contextmanager
+def private_wine(env, run):
+    run.mkdir()
+    with tempfile.TemporaryDirectory(prefix="prefix-", dir=run) as prefix:
+        env = private_home({**env, "WINEPREFIX": prefix}, run / "home")
+        try:
+            with (run / "wineboot.log").open("w") as log:
+                subprocess.run(["wineboot", "-i"], env=env, stdout=log, stderr=subprocess.STDOUT,
+                               timeout=120, check=True)
+            yield env
+        finally:
+            subprocess.run(["wineserver", "-k"], env=env, timeout=15)
+            subprocess.run(["wineserver", "-w"], env=env, timeout=15, check=True)
 
 
 def query_server(sock, process, query, response, gametype_key, protocol):
@@ -103,40 +119,33 @@ def replay(run, env, port, edition):
 def main():
     output = Path(tempfile.mkdtemp(prefix="headless-", dir="/out"))
     print(f"Evidence in output/r05/builds/wine/{output.name}", flush=True)
-    env = private_home(os.environ, output / "bootstrap-home")
-    env.update(
-        WINEARCH="win64", WINEPREFIX=str(output / "prefix"),
+    env = dict(
+        os.environ, WINEARCH="win64",
         WINEDEBUG="-all", WINEDLLOVERRIDES="mscoree,mshtml=",
         COD2_WINE_HEADLESS_CHECK="1", PYTHONDONTWRITEBYTECODE="1",
         COD2X_TEST_SERVICE_URL="http://127.0.0.1:9",
         COD2X_TEST_UPDATER_ADDRESS="127.0.0.1:9",
         COD2X_TEST_UPDATER_URL="http://127.0.0.1:9/api/updater/check",
     )
-    try:
-        with (output / "wineboot.log").open("w") as log:
-            subprocess.run(["wineboot", "-i"], env=env, stdout=log, stderr=subprocess.STDOUT,
-                           timeout=120, check=True)
-        # Keep going after a failed check so both editions have evidence.
-        failed = False
-        for edition, protocol in (("original", b"118"), ("cod2x", b"120")):
-            run = output / edition
-            run.mkdir()
-            env["COD2_EXE"] = f"/matrix/ded64-{edition}/cod2_win32_ded.exe"
-            for check, port, expected in (
-                (smoke, 29676, protocol),
-                (replay, 29673, edition),
-            ):
-                label = check.__name__
-                print(f"Checking {edition} {label}", flush=True)
-                try:
-                    check(run / label, env, port, expected)
-                except (OSError, ValueError, subprocess.SubprocessError) as error:
-                    print(f"FAIL {edition} {label}: {error}", file=sys.stderr)
-                    failed = True
-        return failed
-    finally:
-        subprocess.run(["wineserver", "-k"], env=env, timeout=15)
-        subprocess.run(["wineserver", "-w"], env=env, timeout=15, check=True)
+    # Keep going after a failed check so both editions have evidence.
+    failed = False
+    for edition, protocol in (("original", b"118"), ("cod2x", b"120")):
+        run = output / edition
+        run.mkdir()
+        env["COD2_EXE"] = f"/matrix/ded64-{edition}/cod2_win32_ded.exe"
+        for check, port, expected in (
+            (smoke, 29676, protocol),
+            (replay, 29673, edition),
+        ):
+            label = check.__name__
+            print(f"Checking {edition} {label}", flush=True)
+            try:
+                with private_wine(env, run / f"{label}-wine") as private_env:
+                    check(run / label, private_env, port, expected)
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                print(f"FAIL {edition} {label}: {error}", file=sys.stderr)
+                failed = True
+    return failed
 
 
 if __name__ == "__main__":

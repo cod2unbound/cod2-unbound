@@ -41,19 +41,19 @@ updating its list. Direct3D 9 and its shader compiler are loaded dynamically.
 
 **Headless Wine checks.** Pass a clean licensed game folder containing `main/*.iwd`.
 Omit the path to use `~/Games/CoD2`. The check mounts those files read-only, boots
-a fresh Wine prefix in a container with loopback networking only, and uses a
-private home for each server start. Every start sets `developer 0` and points
-the three `COD2X_TEST_*` service settings at `127.0.0.1:9`. Logs, traces and the
-prefix stay in a new directory under `output/r05/builds/wine/`.
+a fresh Wine prefix and private home for each server start in a container with
+loopback networking only. Every start sets `developer 0` and points
+the three `COD2X_TEST_*` service settings at `127.0.0.1:9`. Logs and traces stay in
+a new directory under `output/r05/builds/wine/`. The temporary prefixes are
+removed after use.
 
 Each edition loads `mp_toujane` in DM, answers local `getinfo` and `getstatus`
 queries, and then replays the same two synthetic clients for 600 simulation
 ticks. `tools/parity/compare.py --raw --require-clients 2` checks the result
 against the saved Windows x64 reference traces in
-[`fixtures/two-bot/`](fixtures/two-bot/README.md). The original edition uses
-the public 0.4.0 engine's Original 1.3 replay. CoD2x uses the scope run's
-CoD2x replay. These traces cover the tracked entity hashes and player fields
-for this fixture. Retail parity and rendering require separate acceptance checks.
+[`fixtures/two-bot/`](fixtures/two-bot/README.md). These traces cover the
+tracked entity hashes and player fields for this fixture. Retail parity and
+rendering require separate acceptance checks.
 
 ## Direct3D 9
 
