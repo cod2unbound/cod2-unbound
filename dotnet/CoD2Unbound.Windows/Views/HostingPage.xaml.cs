@@ -163,7 +163,7 @@ public sealed partial class HostingPage : Page
         var scroll = new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 350, MinWidth = 368 };
         var dialog = new ContentDialog
         {
-            Title = isNew ? "New server" : "Edit server", Content = scroll, XamlRoot = XamlRoot,
+            Title = isNew ? "New server" : "Edit server", Content = scroll, XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme,
             PrimaryButtonText = isNew ? "Create server" : "Save changes", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
         };
         name.TextChanged += (_, _) => Validate();
@@ -243,7 +243,7 @@ public sealed partial class HostingPage : Page
         var text = new TextBox { Text = log, IsReadOnly = true, AcceptsReturn = true, MinWidth = 360, MaxHeight = 340,
             FontFamily = new("Consolas"), TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetName(text, "Server log");
-        await new ContentDialog { XamlRoot = XamlRoot, Title = "Server log", Content = text, CloseButtonText = "Close",
+        await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Server log", Content = text, CloseButtonText = "Close",
             DefaultButton = ContentDialogButton.Close }.ShowAsync();
     }
 
@@ -256,7 +256,7 @@ public sealed partial class HostingPage : Page
         foreach (var player in players)
             list.Children.Add(SettingRow(QuakeColors.Plain(player.Name), $"{player.Score} points · {player.Ping} ms"));
         var content = new ScrollViewer { MaxHeight = 340, Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        await new ContentDialog { XamlRoot = XamlRoot, Title = "Players", Content = content, CloseButtonText = "Close",
+        await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Players", Content = content, CloseButtonText = "Close",
             DefaultButton = ContentDialogButton.Close }.ShowAsync();
     }
 

@@ -128,7 +128,7 @@ public sealed partial class LibraryPage : Page
         content.Children.Add(problem);
         var dialog = new ContentDialog
         {
-            XamlRoot = XamlRoot, Title = "Rename file", Content = content, PrimaryButtonText = "Rename",
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Rename file", Content = content, PrimaryButtonText = "Rename",
             CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
         };
         name.TextChanged += (_, _) => Validate();
@@ -167,7 +167,7 @@ public sealed partial class LibraryPage : Page
     {
         var dialog = new ContentDialog
         {
-            XamlRoot = XamlRoot, Title = "Move this file to the Recycle Bin?", Content = Caption(row.File.Name),
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Move this file to the Recycle Bin?", Content = Caption(row.File.Name),
             PrimaryButtonText = "Move to Recycle Bin", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)

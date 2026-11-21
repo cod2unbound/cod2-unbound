@@ -106,6 +106,7 @@ public sealed partial class ConfigsPage : Page
             studioTab = index;
             RenderStudioBody();
         });
+        AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
         Detail.Children.Add(tabs);
         Detail.Children.Add(Heading(profile.Profile.DisplayName));
         var next = Action("Use for next game", async () =>
@@ -588,7 +589,7 @@ public sealed partial class ConfigsPage : Page
 
     private ContentDialog Dialog(string title, object content, string primary) => new()
     {
-        XamlRoot = XamlRoot, Title = title, Content = content, PrimaryButtonText = primary, CloseButtonText = "Cancel",
+        XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content, PrimaryButtonText = primary, CloseButtonText = "Cancel",
         DefaultButton = ContentDialogButton.Primary
     };
 

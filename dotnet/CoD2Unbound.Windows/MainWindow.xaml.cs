@@ -97,6 +97,7 @@ public sealed partial class MainWindow : Window
         });
 
     internal bool IsHighContrast => windowTheme.HighContrast;
+    internal ElementTheme DialogTheme => Root.RequestedTheme;
 
     private void UpdateCaptionColors()
     {

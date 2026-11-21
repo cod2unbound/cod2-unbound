@@ -75,7 +75,7 @@ public sealed partial class SettingsPage : Page
             IsOpen = true, IsClosable = false,
             ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
         };
-        hint.Margin = new Thickness(0, 20, 0, 0);
+        hint.Margin = new Thickness(0, 16, 0, 0);
         Fields.Children.Add(hint);
     }
 
@@ -177,7 +177,7 @@ public sealed partial class SettingsPage : Page
             Current.SendCrashReports, value => ChangeAsync(Current with { SendCrashReports = value, CrashReportsAsked = true }));
         Switch("Send CoD2x crash reports to the CoD2x project", "Record your choice for reports about faults in CoD2x’s code.",
             Current.SendCoD2xReports, value => ChangeAsync(Current with { SendCoD2xReports = value }));
-        Switch("Send usage data", "Record your choice for anonymous usage data.",
+        Switch("Send usage data to CoD2 Unbound", "Record your choice for anonymous usage data.",
             Current.SendUsageData, value => ChangeAsync(Current with { SendUsageData = value }));
         Group("On this PC");
         Switch("Match summaries", "Kept on this PC for Check-up.", Current.MatchSummariesEnabled,
@@ -338,7 +338,7 @@ public sealed partial class SettingsPage : Page
     private void Group(string name) => Fields.Children.Add(new TextBlock
     {
         Text = name, Style = StyleFor("BodyStrongTextBlockStyle"),
-        Margin = new Thickness(0, Fields.Children.Count == 0 ? 8 : 20, 0, 4)
+        Margin = new Thickness(0, Fields.Children.Count == 0 ? 4 : 16, 0, 4)
     });
 
     private void Row(string label, string? description = null, FrameworkElement? action = null) =>
@@ -386,7 +386,7 @@ public sealed partial class SettingsPage : Page
 
     private ContentDialog Dialog(string title, object content, string primary) => new()
     {
-        XamlRoot = XamlRoot, Title = title, Content = content, PrimaryButtonText = primary,
+        XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content, PrimaryButtonText = primary,
         CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
     };
 

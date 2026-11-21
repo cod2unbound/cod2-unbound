@@ -19,7 +19,7 @@ BRUSHES = {
     "BodyBrush": ("text", "WindowText"),
     "CaptionBrush": ("secondary", "WindowText"),
     "NegativeBrush": ("negative", "WindowText"),
-    "SelectorBarSelectionIndicatorForeground": ("control", "Highlight"),
+    "SelectorBarItemPillFill": ("control", "Highlight"),
     "ToggleSwitchFillOn": ("control", "Highlight"),
     "ToggleSwitchFillOnPointerOver": ("control", "Highlight"),
     "ToggleSwitchFillOnPressed": ("control", "Highlight"),

@@ -17,9 +17,9 @@
             <Button Grid.Column="1" Content="Show folder" Click="OnShowFolder" AccessKey="O" />
         </Grid>
         <SelectorBar x:Name="Sections" Grid.Row="1" SelectionChanged="OnSectionChanged" AutomationProperties.Name="Library sections">
-            <SelectorBarItem Text="Screenshots" AccessKey="S" />
+            <SelectorBarItem Text="Screenshots" AccessKey="T" />
             <SelectorBarItem Text="Demos" AccessKey="D" />
-            <SelectorBarItem Text="Configs" AccessKey="C" />
+            <SelectorBarItem x:Name="ConfigFilesSection" Text="Configs" AccessKey="K" />
         </SelectorBar>
         <TextBox x:Name="Search" Grid.Row="2" PlaceholderText="Find a file" TextChanged="OnSearch"
                  AutomationProperties.Name="Find a file" AccessKey="F" MaxLength="256" />

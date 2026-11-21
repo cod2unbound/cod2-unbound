@@ -188,7 +188,7 @@ public sealed partial class ServersPage : Page
         dialogOpen = true;
         try
         {
-            var dialog = new ConnectDialog(address) { XamlRoot = XamlRoot };
+            var dialog = new ConnectDialog(address) { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Target is { } target)
                 await JoinAsync(target);
         }
@@ -223,7 +223,7 @@ public sealed partial class ServersPage : Page
             string version = decision.Edition == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3";
             var switchEdition = new ContentDialog
             {
-                XamlRoot = XamlRoot, Title = "Switch game version?", Content = $"This server runs {version}.",
+                XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Switch game version?", Content = $"This server runs {version}.",
                 PrimaryButtonText = "Launch", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
             };
             if (await switchEdition.ShowAsync() != ContentDialogResult.Primary)
