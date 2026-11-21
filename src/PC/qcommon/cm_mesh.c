@@ -308,7 +308,7 @@ static void CM_MESH_REGPARM3_SSE_ABI CM_TraceCapsuleThroughTriangle(const traceW
     cullEndRadius = 0.125f + tw->radius;
     normalZ = triangle->plane[2];
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     /* Windows 1.3 adds the X and Z products before Y at 0x418df5. */
     endDist = (tw->extents.end[0] * triangle->plane[0] + fromZ * normalZ) +
               tw->extents.end[1] * triangle->plane[1] - triangle->plane[3];
@@ -325,7 +325,7 @@ static void CM_MESH_REGPARM3_SSE_ABI CM_TraceCapsuleThroughTriangle(const traceW
     startY = tw->extents.start[1];
     startZ = tw->extents.start[2] - offsetZ;
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     dist = (startX * triangle->plane[0] + startZ * normalZ) +
            startY * triangle->plane[1] - triangle->plane[3];
 #else
@@ -575,7 +575,7 @@ edge_trace_tests: {
                 float edgeBx1 = edge->axis[1][1];
                 float edgeBx2 = edge->axis[1][2];
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
                 /* Windows 1.3 adds Z and Y before X at 0x419175 and 0x4191ac. */
                 float projA = (ez * edgeAx2 + ey * edgeAx1) + ex * edgeAx0;
                 float projB = (ez * edgeBx2 + ey * edgeBx1) + ex * edgeBx0;
@@ -663,7 +663,7 @@ edge_trace_tests: {
                                     continue;
 
                                 {
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
                                     /* Windows 1.3 rounds the reciprocal at 0x4193bb. */
                                     float invRadius = 1.0f / cullEndRadius;
                                     float normA = (t_hit * dirA + projA) * invRadius;

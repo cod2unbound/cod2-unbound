@@ -583,7 +583,7 @@ void PM_UpdateLean(playerState_t *ps, float msec, usercmd_t *cmd, void (*capsule
     if (ps->eFlags & 0x300)
         leaning = 0;
     float limit = PM_GetEffectiveStance(ps) == 1 ? 0.25f : 0.5f;
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     /* Retail PM_UpdateLean multiplies by binary32 reciprocals at 0x519068
        and 0x5190d8 before applying the stance limit. */
     float release_step = msec * (1.0f / 280.0f) * limit;
@@ -989,7 +989,7 @@ static void PM_ACCELERATE_ABI PM_Accelerate(playerState_t *ps, pml_t *pml, const
         return;
     }
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     /* Windows 1.3 adds the vertical and lateral products before X at 0x5156fc. */
     addspeed = wishspeed - ((ps->velocity[2] * wishdir[2] + ps->velocity[1] * wishdir[1])
                             + ps->velocity[0] * wishdir[0]);
@@ -1098,7 +1098,7 @@ static void PM_REGPARM2_ABI PM_Friction(playerState_t *ps, pml_t *pml)
             control *= 0.3f;
 #endif
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
         /* Retail multiplies friction by frame time at 0x515545, then by control. */
         drop += control * (PM_DvarFloat(friction, 5.5f) * pml->frametime);
 #else
@@ -1106,7 +1106,7 @@ static void PM_REGPARM2_ABI PM_Friction(playerState_t *ps, pml_t *pml)
 #endif
     }
 
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     /* Retail Windows applies frame time before spectator drag. */
     if (ps->pm_type == 4)
         drop += (speed * pml->frametime) * 5.0f;
@@ -2774,7 +2774,7 @@ static void PM_FlyMove(pmove_t *pm, pml_t *pml)
     PM_Friction(ps, pml);
     float scale = PM_CmdScale(ps, &pm->cmd);
     vec3_t wishdir;
-#if COD2_WINDOWS_NATIVE && !COD2_CODX
+#if COD2_WINDOWS_NATIVE
     /* Retail Windows scales the sum of the two movement contributions. */
     for (int i = 0; i < 3; ++i)
         wishdir[i] = scale ? (pml->forward[i] * (float)pm->cmd.forwardmove
