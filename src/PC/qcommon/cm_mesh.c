@@ -308,9 +308,15 @@ static void CM_MESH_REGPARM3_SSE_ABI CM_TraceCapsuleThroughTriangle(const traceW
     cullEndRadius = 0.125f + tw->radius;
     normalZ = triangle->plane[2];
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    /* Windows 1.3 adds the X and Z products before Y at 0x418df5. */
+    endDist = (tw->extents.end[0] * triangle->plane[0] + fromZ * normalZ) +
+              tw->extents.end[1] * triangle->plane[1] - triangle->plane[3];
+#else
     endDist = tw->extents.end[0] * triangle->plane[0] +
               tw->extents.end[1] * triangle->plane[1] +
               fromZ * normalZ - triangle->plane[3];
+#endif
 
     if (endDist >= cullEndRadius)
         return;
@@ -319,8 +325,13 @@ static void CM_MESH_REGPARM3_SSE_ABI CM_TraceCapsuleThroughTriangle(const traceW
     startY = tw->extents.start[1];
     startZ = tw->extents.start[2] - offsetZ;
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+    dist = (startX * triangle->plane[0] + startZ * normalZ) +
+           startY * triangle->plane[1] - triangle->plane[3];
+#else
     dist = startX * triangle->plane[0] + startY * triangle->plane[1] +
            startZ * normalZ - triangle->plane[3];
+#endif
 
     enterDist = dist - endDist;
     if (enterDist <= 0.0001f)
