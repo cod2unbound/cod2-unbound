@@ -22,6 +22,21 @@ internal static class PagePresentation
         return panel;
     }
 
+    internal static SelectorBar Tabs(string[] labels, int selection, Action<int> change)
+    {
+        var bar = new SelectorBar();
+        foreach (string label in labels)
+            bar.Items.Add(new SelectorBarItem { Text = label });
+        bar.SelectedItem = bar.Items[selection];
+        bar.SelectionChanged += (_, _) =>
+        {
+            int index = bar.Items.IndexOf(bar.SelectedItem);
+            if (index >= 0)
+                change(index);
+        };
+        return bar;
+    }
+
     internal static Border SettingRow(string label, string? detail, FrameworkElement? action = null)
     {
         var lines = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };

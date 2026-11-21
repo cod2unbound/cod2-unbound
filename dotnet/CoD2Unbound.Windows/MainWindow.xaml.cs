@@ -2,6 +2,7 @@ using System.Text.Json;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
+using CoD2Unbound.Windows.ViewModels;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 using Microsoft.UI.System;
 using Microsoft.UI.Windowing;
@@ -166,6 +167,8 @@ public sealed partial class MainWindow : Window
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
         else if (ReferenceEquals(args.InvokedItemContainer, ServersItem))
             await OpenServersAsync(ServerScope.All);
+        else if (ReferenceEquals(args.InvokedItemContainer, ConfigsItem))
+            await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
         else if (args.InvokedItemContainer?.Tag is string address)
             await OpenServersAsync(ServerScope.Favorites, address);
     }
@@ -178,6 +181,9 @@ public sealed partial class MainWindow : Window
 
     private async void OnServersInvoked(object sender, RoutedEventArgs args) =>
         await OpenServersAsync(ServerScope.All);
+
+    private async void OnConfigsInvoked(object sender, RoutedEventArgs args) =>
+        await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
 
     internal Task OpenServersAsync(ServerScope scope, string? address = null) =>
         RunAsync(() => NavigateAsync(LauncherPlace.Servers, scope, address));
@@ -208,9 +214,15 @@ public sealed partial class MainWindow : Window
         {
             Nav.SelectedItem = ServersItem;
             var page = new ServersPage(this, session, scope, address);
-            ContentFrame.Content = page;
             if (session.Settings.Working.RefreshServersOnOpen)
                 page.Loaded += OnServersLoaded;
+            ContentFrame.Content = page;
+        }
+        else if (place == LauncherPlace.Configs)
+        {
+            var model = await Task.Run(() => new ConfigsViewModel(session));
+            Nav.SelectedItem = ConfigsItem;
+            ContentFrame.Content = new ConfigsPage(this, model);
         }
         else
         {
@@ -343,7 +355,8 @@ public sealed partial class MainWindow : Window
     {
         try { await action(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
-            or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException)
+            or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException
+            or ConfigDirectoryException or ConfigImportSessionException or ConfigBindingException)
         {
             Problem.Message = error.Message;
             Problem.IsOpen = true;
@@ -352,4 +365,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, Servers }
+internal enum LauncherPlace { Setup, Home, Settings, Servers, Configs }

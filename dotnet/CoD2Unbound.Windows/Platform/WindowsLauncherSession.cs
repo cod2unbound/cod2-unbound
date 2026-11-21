@@ -155,6 +155,8 @@ internal sealed class WindowsLauncherSession
             Setup.HasStoredKey ? "CD key verified" : "CD key needed");
     }
 
+    internal bool ClientIsRunning => Game.State.Running || !inventory.FindRunning(EngineRole.Client, default).IsEmpty;
+
     internal bool HasClient(GameEdition edition) =>
         inventory.Installed.Any(binary => binary is { Role: EngineRole.Client } && binary.Edition == edition);
 

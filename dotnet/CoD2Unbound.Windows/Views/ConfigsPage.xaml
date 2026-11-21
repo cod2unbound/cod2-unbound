@@ -1,0 +1,35 @@
+<Page x:Class="CoD2Unbound.Windows.Views.ConfigsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border BorderBrush="{ThemeResource SeparatorBrush}" BorderThickness="0,0,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Padding="20,24" Spacing="8">
+                    <TextBlock Text="Configs" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Discover" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                    <Button Content="Player Setups" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            AccessKey="P" Click="OnPlayerSetups" />
+                    <Button Content="Saved" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            AccessKey="V" Click="OnSaved" />
+                    <TextBlock Text="My loadouts" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                    <ListView x:Name="Loadouts" DisplayMemberPath="DisplayName" TabNavigation="Once"
+                              AutomationProperties.Name="My loadouts" SelectionChanged="OnSelectLoadout" />
+                    <Button x:Name="NewLoadout" Content="New loadout" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left" AccessKey="N" Click="OnNewLoadout" />
+                    <Button x:Name="AddConfig" Content="Add a config" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left" AccessKey="I" Click="OnAddConfig" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <ScrollViewer x:Name="DetailScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Padding="28,16,28,28" Spacing="12">
+                <InfoBar x:Name="Status" IsClosable="True" />
+                <StackPanel x:Name="Detail" Spacing="8" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

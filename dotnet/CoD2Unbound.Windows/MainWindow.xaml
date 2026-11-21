@@ -44,6 +44,7 @@
                             <MenuFlyout x:Name="JumpMenu">
                                 <MenuFlyoutItem Text="Home" Click="OnHomeInvoked" />
                                 <MenuFlyoutItem Text="Servers" Click="OnServersInvoked" />
+                                <MenuFlyoutItem Text="Configs" Click="OnConfigsInvoked" />
                                 <MenuFlyoutItem Text="Settings" Click="OnSettingsInvoked" />
                             </MenuFlyout>
                         </Button.Flyout>
@@ -60,7 +61,7 @@
                 <NavigationViewItem x:Name="HomeItem" Content="Home" Icon="Home" AccessKey="H" />
                 <NavigationViewItem x:Name="ServersItem" Content="Servers" Icon="Globe" AccessKey="S" />
                 <NavigationViewItem Content="Library" Icon="Library" IsEnabled="False" />
-                <NavigationViewItem Content="Configs" Icon="Document" IsEnabled="False" />
+                <NavigationViewItem x:Name="ConfigsItem" Content="Configs" Icon="Document" AccessKey="C" />
             </NavigationView.MenuItems>
             <NavigationView.PaneFooter>
                 <Button x:Name="PlayerPlate" Margin="8,8" HorizontalAlignment="Stretch"
