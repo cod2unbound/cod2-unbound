@@ -670,7 +670,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #if defined(DEDICATED)
         { extern void Win_SleepMs(unsigned int); Win_SleepMs(5); }
 #else
-        { extern void WinInput_WaitIfMinimized(void); WinInput_WaitIfMinimized(); }
+        {
+            extern dvar_t *com_dedicated;
+            extern void Win_SleepMs(unsigned int);
+            extern void WinInput_WaitIfMinimized(void);
+            if (com_dedicated && com_dedicated->current.integer)
+                Win_SleepMs(5);
+            else
+                WinInput_WaitIfMinimized();
+        }
 #endif
 #endif
         Com_Frame();
