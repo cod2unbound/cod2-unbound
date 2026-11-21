@@ -809,15 +809,29 @@ static void CM_MESH_REGPARM3_ABI CM_TraceThroughAabbTree_r(const traceWork_t *tw
                         float plane2 = tri[i].plane[2];
                         float planeD = tri[i].plane[3];
 
+#if COD2_WINDOWS_NATIVE
+                        /* Retail 0x41884f combines Y and Z before X on the end plane. */
+                        float endDist = (plane1 * tw->extents.end[1] +
+                                         plane2 * tw->extents.end[2]) +
+                                        plane0 * tw->extents.end[0] - planeD;
+#else
                         float endDist = plane0 * tw->extents.end[0] +
                                         plane1 * tw->extents.end[1] +
                                         plane2 * tw->extents.end[2] - planeD;
+#endif
                         if (endDist >= 0.0f)
                             continue;
 
+#if COD2_WINDOWS_NATIVE
+                        /* Retail 0x41887a combines X and Z before Y on the start plane. */
+                        float startDist = (plane0 * tw->extents.start[0] +
+                                           plane2 * tw->extents.start[2]) +
+                                          plane1 * tw->extents.start[1] - planeD;
+#else
                         float startDist = plane0 * tw->extents.start[0] +
                                           plane1 * tw->extents.start[1] +
                                           plane2 * tw->extents.start[2] - planeD;
+#endif
                         if (startDist <= 0.0f)
                             continue;
 
