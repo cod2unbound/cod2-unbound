@@ -9,7 +9,8 @@
  * writes to HKLM into the user's VirtualStore and lets it see the 32-bit view of
  * the registry. A 64-bit program gets neither, so the same keys are opened here
  * explicitly, as the game's CD key is read in win_system.c. */
-#if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)
+#include "headers/cod2_platform.h"
+#if COD2_WINDOWS_NATIVE && COD2_CODX && !defined(DEDICATED)
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
 #endif
@@ -41,6 +42,7 @@ extern int com_errorEntered;
 static char exePath[MAX_PATH], exeDirectory[MAX_PATH], commandLine[1024];
 static char previousVersion[64];
 static int versionChanged, versionWritten;
+static int testIsolateRegistry;
 static char pendingURL[512];
 
 /* ---- Messages ------------------------------------------------------------ */
@@ -319,6 +321,8 @@ int Win_Cod2xRegRead(const char *name, DWORD *type, void *data, DWORD *size)
     HKEY key;
     DWORD capacity = *size;
     LONG result = ERROR_FILE_NOT_FOUND;
+    if (testIsolateRegistry)
+        return 0;
     if (!Win_Cod2xElevated() && RegOpenKeyExA(HKEY_CURRENT_USER, Win_Cod2xStoreKey(), 0, KEY_READ, &key) ==
                                     ERROR_SUCCESS) {
         result = RegQueryValueExA(key, name, NULL, type, data, size);
@@ -338,6 +342,8 @@ int Win_Cod2xRegWrite(const char *name, DWORD type, const void *data, DWORD size
 {
     HKEY key;
     LONG result;
+    if (testIsolateRegistry)
+        return 1;
     if (!Win_Cod2xGameKey(&key))
         return 0;
     result = RegSetValueExA(key, name, 0, type, data, size);
@@ -348,6 +354,8 @@ int Win_Cod2xRegWrite(const char *name, DWORD type, const void *data, DWORD size
 int Win_Cod2xRegDelete(const char *name)
 {
     HKEY key;
+    if (testIsolateRegistry)
+        return 1;
     if (!Win_Cod2xGameKey(&key))
         return 0;
     RegDeleteValueA(key, name);
@@ -698,9 +706,16 @@ static char *Win_Cod2xLink(char *arguments)
 
 char *Win_Cod2xStartup(char *arguments)
 {
+    const char *isolateRegistry = getenv("COD2X_TEST_ISOLATE_REGISTRY");
+
     if (!Win_Cod2xExecutable(arguments))
         ExitProcess(EXIT_FAILURE);
     Win_Cod2xWriteAccess();
+    /* An offline acceptance run uses a disposable profile. Keep the installed
+       game's identity history, version and URL handler out of that run. */
+    testIsolateRegistry = isolateRegistry && !strcmp(isolateRegistry, "1");
+    if (testIsolateRegistry)
+        return arguments;
     Win_Cod2xRegistryInit();
     arguments = Win_Cod2xLink(arguments);
     Win_Cod2xRegisterLinks();
