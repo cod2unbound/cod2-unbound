@@ -386,8 +386,10 @@ of this. The words are in `UsageDataQuestion` (`ModelUsage.swift`), the sheets i
 Player Setups' grid has an Order pop-up: Featured First (the default), Most Imported and Most
 Viewed, over the publication's period (30 days). Ordered by use, the status line says so and each
 card with a figure shows “Imported 64 times in the last 30 days” instead of its source; a setup
-under 5 shows no figure and keeps the catalogue's order. Without a published figures file the
-setups keep the catalogue's order and the status line says no figures have been published yet.
+under 5 shows no figure and keeps the catalogue's order. The pop-up offers only the orders the
+published figures can honour, and none at all without a figures file: Player Setups then looks
+exactly as it does without the feature. All its words about figures are in `PopularityWording`
+(`ConfigDiscoverModel.swift`).
 
 ### Setup links from the website
 

@@ -1360,7 +1360,6 @@ extension Snapshots {
     /// units list theirs in their own harness files; `Snapshots.expectedLabels` gathers them all.
     static let expectedLabels: [String: [String]] = [
         "configs-home-sorted": ["Order"],
-        "configs-home-sorted-none": ["Order"],
         "configs-guided": ["Jump to Any Setting", "Frame rate cap"],
         "configs-binds-list": ["Primary key for Throw frag grenade", "Find an action or key", "Advanced binds"],
         "configs-binds-advanced": ["Key for this bind", "Save Bind", "Step 1"],

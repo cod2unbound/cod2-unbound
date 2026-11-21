@@ -85,7 +85,7 @@ struct ConfigsHomePage: View {
                     HStack(spacing: 12) {
                         if discover.filters.count > 1 { filters }
                         Spacer(minLength: 0)
-                        SetupOrderButton(discover: discover)
+                        if discover.offersOrder { SetupOrderButton(discover: discover) }
                     }
                     .padding(.top, -8)
                 }

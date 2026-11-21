@@ -146,14 +146,14 @@ struct SetupOrderButton: View {
             Text("Order").font(.system(size: 13)).foregroundStyle(palette.secondary).fixedSize().accessibilityHidden(true)
             Button { show() } label: {
                 HStack(spacing: 8) {
-                    Text(discover.setupOrder.title)
+                    Text(discover.activeOrder.title)
                     Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).accessibilityHidden(true)
                 }
             }
             .glassAction().controlSize(.large).fixedSize()
             .background(MenuAnchor(box: anchor))
             .accessibilityLabel("Order")
-            .accessibilityValue(discover.setupOrder.title)
+            .accessibilityValue(discover.activeOrder.title)
             .accessibilityHint("Shows the ways to order the setups")
             .help("Order the setups")
         }
@@ -161,8 +161,8 @@ struct SetupOrderButton: View {
     private func show() {
         guard let view = anchor.view else { return }
         let discover = discover
-        NativeMenu.popUp(ConfigSetupOrder.allCases.map { order in
-            NativeMenu.Item(title: order.title, checked: discover.setupOrder == order) { discover.setupOrder = order }
+        NativeMenu.popUp(discover.availableOrders.map { order in
+            NativeMenu.Item(title: order.title, checked: discover.activeOrder == order) { discover.setupOrder = order }
         }, below: view, footnote: discover.orderNote, footnoteWidth: 260)
     }
 }

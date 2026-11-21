@@ -661,36 +661,42 @@ extension ConfigImportPresentation {
     var setups: [ConfigDirectoryEntry] {
         let chosen = filters.contains(filter) ? filter : .all
         let shown = searching ? matches : entries.filter(chosen.keeps)
-        return ConfigDirectoryPopularity.ordered(shown, by: setupOrder, popularity: popularity)
+        return ConfigDirectoryPopularity.ordered(shown, by: activeOrder, popularity: popularity)
     }
     func popularityCount(for id: String, order: ConfigSetupOrder? = nil) -> Int? {
         guard entry(id) != nil else { return nil }
-        return popularity?.setups[id]?.figure(for: order ?? setupOrder)
+        return popularity?.setups[id]?.figure(for: order ?? activeOrder)
     }
-    /// The grid's status line (DiscoverSorted board): “59 setups, the most imported in the last 30 days
-    /// first”, “37 of 59 setups, …” for a filter. Nil for Featured First or a search, which keep their
-    /// own line. Without published figures the setups keep the catalogue's order, and the line says so.
+    /// The orders the published figures can honour: Featured First always, Most Imported or Most
+    /// Viewed only when at least one setup has that figure. Without figures there is nothing to choose.
+    var availableOrders: [ConfigSetupOrder] {
+        let figures = popularity.map { Array($0.setups.values) } ?? []
+        return ConfigSetupOrder.allCases.filter { order in
+            order == .featuredFirst || figures.contains { $0.figure(for: order) != nil }
+        }
+    }
+    /// Player Setups offers the Order pop-up only when there is more than one order to choose.
+    var offersOrder: Bool { availableOrders.count > 1 }
+    /// The order in effect: the chosen one while the figures can honour it, otherwise Featured First,
+    /// so a grid without figures looks exactly as it does without the feature.
+    var activeOrder: ConfigSetupOrder { availableOrders.contains(setupOrder) ? setupOrder : .featuredFirst }
+
+    /// The grid's status line when it is ordered by use (DiscoverSorted board), or nil to keep the
+    /// ordinary line (Featured First, a search, or no figures).
     func orderStatus(filtered: Bool) -> String? {
-        guard !searching, setupOrder != .featuredFirst else { return nil }
+        guard !searching, activeOrder != .featuredFirst, let popularity else { return nil }
         let total = entries.count, shown = setups.count
         let setups = total == 1 ? "1 setup" : "\(total) setups"
-        let count = filtered ? "\(shown) of \(setups)" : setups
-        guard let popularity else { return "\(count), in the catalogue’s order: no figures have been published yet" }
-        let most = setupOrder == .mostImported ? "the most imported" : "the most viewed"
-        return "\(count), \(most) in the last \(Self.period(popularity.periodDays)) first"
+        return PopularityWording.status(count: filtered ? "\(shown) of \(setups)" : setups, order: activeOrder, days: popularity.periodDays)
     }
-    /// A card's figure line when the grid is ordered by it and the setup has a figure (5 or more):
-    /// “Imported 64 times in the last 30 days”. Nil otherwise; the card then names its source.
+    /// A card's figure line when the grid is ordered by it and the setup has a figure (5 or more), or
+    /// nil; the card then names its source.
     func figureLine(for id: String) -> String? {
-        guard setupOrder != .featuredFirst, let popularity, let count = popularityCount(for: id) else { return nil }
-        let verb = setupOrder == .mostImported ? "Imported" : "Viewed"
-        return "\(verb) \(count) times in the last \(Self.period(popularity.periodDays))"
+        guard activeOrder != .featuredFirst, let popularity, let count = popularityCount(for: id) else { return nil }
+        return PopularityWording.figure(count, order: activeOrder, days: popularity.periodDays)
     }
     /// The Order menu's note.
-    var orderNote: String {
-        "In the last \(Self.period(popularity?.periodDays ?? 30)), from players who share usage data. A setup used fewer than 5 times shows no figure and keeps the catalogue’s order."
-    }
-    private static func period(_ days: Int) -> String { days == 1 ? "day" : "\(days) days" }
+    var orderNote: String { PopularityWording.note(days: popularity?.periodDays ?? 30) }
 
     /// The setups the front page's banner pages through: the first featured ones, in the index's order.
     var heroes: [ConfigDirectoryEntry] {
@@ -979,4 +985,26 @@ extension ConfigImportPresentation {
         let name = base.hasSuffix(".cfg") ? String(base.dropLast(4)) : base
         return name.isEmpty || name == "raw" ? "Imported config" : name
     }
+}
+
+/// Every word Player Setups shows about usage figures, in one place (DiscoverSorted board, approved
+/// 2026-11-21; the owner may still change how much is said here). Usage data itself is only explained
+/// in setup, its question sheet, See What’s Sent and Settings › Privacy.
+enum PopularityWording {
+    /// Set false to keep the ordering but show no figure on the cards (each keeps its source line).
+    static let figuresOnCards = true
+    /// “59 setups, the most imported in the last 30 days first”.
+    static func status(count: String, order: ConfigSetupOrder, days: Int) -> String {
+        "\(count), \(order == .mostImported ? "the most imported" : "the most viewed") in the last \(period(days)) first"
+    }
+    /// “Imported 64 times in the last 30 days”, or nil when figures are not shown on cards.
+    static func figure(_ count: Int, order: ConfigSetupOrder, days: Int) -> String? {
+        guard figuresOnCards else { return nil }
+        return "\(order == .mostImported ? "Imported" : "Viewed") \(count) times in the last \(period(days))"
+    }
+    /// The Order menu's closing note.
+    static func note(days: Int) -> String {
+        "In the last \(period(days)), from players who share usage data. A setup used fewer than 5 times shows no figure and keeps the catalogue’s order."
+    }
+    private static func period(_ days: Int) -> String { days == 1 ? "day" : "\(days) days" }
 }

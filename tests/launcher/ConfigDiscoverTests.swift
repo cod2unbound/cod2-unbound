@@ -277,9 +277,12 @@ import Darwin
         let bare = ConfigDiscoverModel(studio: home.studio, directory: try DirectoryFixture.directory(cacheURL: home.url.appendingPathComponent("bare/index.json")))
         await bare.reload()
         bare.showAll(.all); bare.setupOrder = .mostImported
-        require(bare.popularity == nil && bare.setups.map(\.id) == bare.entries.map(\.id), "without figures the catalogue's order stays")
-        require(bare.orderStatus(filtered: false) == "5 setups, in the catalogue’s order: no figures have been published yet" &&
-                bare.entries.allSatisfy { bare.figureLine(for: $0.id) == nil }, "without figures the status line says so and no card has one")
+        require(bare.popularity == nil && !bare.offersOrder && bare.availableOrders == [.featuredFirst] && bare.activeOrder == .featuredFirst,
+                "without figures there is no Order to choose, and a stored choice falls back to Featured First")
+        let plain = bare.setups.map(\.id)
+        bare.setupOrder = .featuredFirst
+        require(bare.setups.map(\.id) == plain && bare.orderStatus(filtered: false) == nil &&
+                bare.entries.allSatisfy { bare.figureLine(for: $0.id) == nil }, "without figures the grid looks exactly as without the feature")
 
         let fixtureCache = home.url.appendingPathComponent("fixture/index.json")
         let popularity = Data("""
@@ -298,6 +301,7 @@ import Darwin
         require(discover.teams == [ConfigDirectoryTeam(name: "Team Northwind", count: 4)], "teams with more than one setup")
         require(discover.entry("player-2")?.artMap == "mp_carentan", "a setup's picture is its favourite map when it names one")
         discover.showAll(.all)
+        require(discover.offersOrder && discover.availableOrders == ConfigSetupOrder.allCases, "published figures offer all three orders")
         discover.setupOrder = .mostImported
         require(discover.setups.map(\.id) == ["player-3", "player-5", "player-1", "player-2", "player-4"],
                 "imports rank visible figures first, with catalogue order for everything without a figure")
