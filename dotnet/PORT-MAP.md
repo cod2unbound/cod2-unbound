@@ -4,7 +4,7 @@ The table covers the 81 Swift files and the Objective-C setup bridge at
 `c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c`. Files with more than one destination
 have separate rows for their logical parts.
 
-Coverage is 115 rows, with 22 ported, 29 planned, 48 UI and 16 Apple-only.
+Coverage is 116 rows, with 24 ported, 28 planned, 48 UI and 16 Apple-only.
 
 | Swift source or part | Status | .NET type or Windows destination |
 | --- | --- | --- |
@@ -72,8 +72,9 @@ Coverage is 115 rows, with 22 ported, 29 planned, 48 UI and 16 Apple-only.
 | HomeLibraryMenus.swift | Apple-only | WinUI context menus and focus restoration |
 | HomeView.swift | UI | Home cards and commands |
 | Hosting.swift · dedicated start | Ported | `GameLaunchPlan.Dedicated`, `WindowsLaunchPlan.Dedicated` |
-| Hosting.swift · form, config, export and status | Planned | Hosted server inventory, config rendering, zPAM and admin workflows |
-| HostingModel.swift · lifecycle and administration | Planned | Owned server lifecycle, health polling, paced admin queue and release staging |
+| Hosting.swift · form, config, export and status | Ported | `HostedServerJson`, `HostingConfig`, `HostedStatus` and `ZpamRelease` cover saved configs, export, replies and release selection |
+| HostingModel.swift · lifecycle and publication | Planned | Starter and shutdown coordination, health polling, private server-home files and release download wiring |
+| HostingModel.swift · admin queue and zPAM package policy | Ported | `HostedAdminQueue` and `ZpamPackage` provide paced local commands and verified bounded staging |
 | HostingModel.swift · native services | Apple-only | Win32 process supervision and shell actions behind core seams |
 | HostingView.swift | UI | Hosted server form, list and state feedback |
 | InputDevices.swift · key layout model | Planned | Preserve data model for binding suggestions |

@@ -1,0 +1,172 @@
+{
+  "configs" : [
+    {
+      "config" : "// Friday Rifles quit / night: written by CoD2 Unbound. Lines starting with // are comments.\n// The name players see in the server list\nset sv_hostname \"Friday Rifles quit / night\"\n// How many players can be on the server at once\nset sv_maxclients \"64\"\n// Password to join; empty for an open server\nset g_password \"letmein\"\n// Admin password, for controlling the server from inside the game; empty turns that off\nset rcon_password \"adminquit\"\n// Game type: Team Deathmatch\nset g_gametype \"tdm\"\n// Friendly fire: 1 on, 0 off\nset scr_friendlyfire \"1\"\n// Players must have the same game files as the server\nset sv_pure \"1\"\n// The server doesn’t send files to players\nset sv_allowDownload \"0\"\n// Maps, in order\nset sv_maprotation \"gametype tdm map mp_toujane gametype tdm map mp_burgundy\"\n// The game’s own log of joins, kills and rounds\nset g_log \"games_mp.log\"\n// Start on the first map of the rotation\nmap_rotate\n",
+      "export" : {
+        "README.txt" : "Friday Rifles quit / night: server files written by CoD2 Unbound\n\n1. Copy server.cfg into the main folder of a Call of Duty 2 install on the server, patched to 1.3 with CoD2x installed (https://github.com/callofduty2x/CoD2x).\n2. Start the server with start-linux.sh or start-windows.bat from the game folder.\n3. Open UDP port 28960 to the server.\n\nGame files are not included: use your own licensed copy.\nWho can join is decided by the CoD2x on that machine: a CoD2x server takes players on its own version or a newer one.\n\nPasswords are not included. Replace every CHANGE_ME in server.cfg before starting.\n\nOn Windows this server stays unlisted: nothing is announced.\n\nOn Linux the game's server program ignores the dedicated setting and always reports to the public master server, so the server shows in everyone's server list. To keep a Linux server unlisted, add this line to /etc/hosts on that machine before you start it:\n\n127.0.0.1 cod2master.activision.com\n\nA CoD2x server also reports to CoD2x's own master, master.cod2x.me.\n",
+        "server.cfg" : "// Friday Rifles quit / night: written by CoD2 Unbound. Lines starting with // are comments.\n// The name players see in the server list\nset sv_hostname \"Friday Rifles quit / night\"\n// How many players can be on the server at once\nset sv_maxclients \"64\"\n// Password to join; empty for an open server\nset g_password \"CHANGE_ME\"\n// Admin password, for controlling the server from inside the game; empty turns that off\nset rcon_password \"CHANGE_ME\"\n// Game type: Team Deathmatch\nset g_gametype \"tdm\"\n// Friendly fire: 1 on, 0 off\nset scr_friendlyfire \"1\"\n// Players must have the same game files as the server\nset sv_pure \"1\"\n// The server doesn’t send files to players\nset sv_allowDownload \"0\"\n// Maps, in order\nset sv_maprotation \"gametype tdm map mp_toujane gametype tdm map mp_burgundy\"\n// The game’s own log of joins, kills and rounds\nset g_log \"games_mp.log\"\n// Start on the first map of the rotation\nmap_rotate\n",
+        "start-linux.sh" : "#!/bin/sh\n# Run from the game folder, beside main/. server.cfg goes into main/.\n# The Linux server lists itself on the public master servers whatever \"dedicated\" says. README.txt has the way round it.\n./cod2_lnxded +set net_port 28960 +set dedicated 1 +exec server.cfg\n",
+        "start-windows.bat" : "@echo off\r\nrem Run from the game folder, beside main\\. server.cfg goes into main\\.\r\nCoD2MP_s.exe +set net_port 28960 +set dedicated 1 +exec server.cfg\r\n"
+      },
+      "fileName" : "friday-rifles-quit-night",
+      "otherPort" : 28962,
+      "publicExport" : {
+        "README.txt" : "Friday Rifles quit / night: server files written by CoD2 Unbound\n\n1. Copy server.cfg into the main folder of a Call of Duty 2 install on the server, patched to 1.3 with CoD2x installed (https://github.com/callofduty2x/CoD2x).\n2. Start the server with start-linux.sh or start-windows.bat from the game folder.\n3. Open UDP port 28960 to the server.\n\nGame files are not included: use your own licensed copy.\nWho can join is decided by the CoD2x on that machine: a CoD2x server takes players on its own version or a newer one.\n\nOn Windows this server stays unlisted: nothing is announced.\n\nOn Linux the game's server program ignores the dedicated setting and always reports to the public master server, so the server shows in everyone's server list. To keep a Linux server unlisted, add this line to /etc/hosts on that machine before you start it:\n\n127.0.0.1 cod2master.activision.com\n\nA CoD2x server also reports to CoD2x's own master, master.cod2x.me.\n",
+        "server.cfg" : "// Friday Rifles quit / night: written by CoD2 Unbound. Lines starting with // are comments.\n// The name players see in the server list\nset sv_hostname \"Friday Rifles quit / night\"\n// How many players can be on the server at once\nset sv_maxclients \"64\"\n// Password to join; empty for an open server\nset g_password \"letmein\"\n// Admin password, for controlling the server from inside the game; empty turns that off\nset rcon_password \"adminquit\"\n// Game type: Team Deathmatch\nset g_gametype \"tdm\"\n// Friendly fire: 1 on, 0 off\nset scr_friendlyfire \"1\"\n// Players must have the same game files as the server\nset sv_pure \"1\"\n// The server doesn’t send files to players\nset sv_allowDownload \"0\"\n// Maps, in order\nset sv_maprotation \"gametype tdm map mp_toujane gametype tdm map mp_burgundy\"\n// The game’s own log of joins, kills and rounds\nset g_log \"games_mp.log\"\n// Start on the first map of the rotation\nmap_rotate\n",
+        "start-linux.sh" : "#!/bin/sh\n# Run from the game folder, beside main/. server.cfg goes into main/.\n# The Linux server lists itself on the public master servers whatever \"dedicated\" says. README.txt has the way round it.\n./cod2_lnxded +set net_port 28960 +set dedicated 1 +exec server.cfg\n",
+        "start-windows.bat" : "@echo off\r\nrem Run from the game folder, beside main\\. server.cfg goes into main\\.\r\nCoD2MP_s.exe +set net_port 28960 +set dedicated 1 +exec server.cfg\r\n"
+      },
+      "server" : {
+        "adminPassword" : "admin\";quit",
+        "engine" : "cod2x",
+        "friendlyFire" : true,
+        "gameType" : "tdm",
+        "id" : "one",
+        "joinPassword" : "let me in",
+        "maps" : [
+          "mp_toujane",
+          "../etc",
+          "mp_carentan; quit",
+          "mp_burgundy"
+        ],
+        "matchMode" : "sd:comp",
+        "name" : "Friday \"Rifles\"; quit // night",
+        "players" : 500,
+        "port" : 28960,
+        "reach" : "network",
+        "rules" : "public"
+      },
+      "template" : null
+    },
+    {
+      "config" : "// zPAM\nset g_gametype \"sd\"  // Game type: Search & Destroy\nseta sv_wwwBaseURL \"http://cod2x.me/zpam\"  // Where they fetch them from; zPAM’s own default\nset pam_mode \"comp_mr15\"  // zPAM’s match format: Search & Destroy · first to 16\nset scr_sd_timelimit 0\nset sv_hostname \"Scrim Room\"  // The name players see in the server list\nset sv_maxclients \"12\"  // How many players can be on the server at once\nset g_password \"scrimnight\"  // Password to join; empty for an open server\nset rcon_password \"secretword\"  // Admin password, for controlling the server from inside the game; empty turns that off\nset sv_wwwDownload \"1\"  // Players’ games fetch zPAM and its maps over the web\nset sv_maprotation \"map mp_dawnville map mp_matmata\"  // Maps, in order\nset g_log \"games_mp.log\"  // The game’s own log of joins, kills and rounds\nmap_rotate\n",
+      "export" : {
+        "README.txt" : "Scrim Room: server files written by CoD2 Unbound\n\n1. Copy server.cfg into the main folder of a Call of Duty 2 install on the server, patched to 1.3.\n2. Start the server with start-linux.sh or start-windows.bat from the game folder.\n3. Open UDP port 28962 to the server.\n\nGame files are not included: use your own licensed copy.\nPasswords are not included. Replace every CHANGE_ME in server.cfg before starting.\n\nThis server uses zPAM 3.36, which is not included. Download zpam336.zip from https://github.com/eyza-cod2/zpam3/releases and copy its .iwd files into main/ beside server.cfg.\nA zPAM server asks CoD2x’s update service for newer versions, and players’ games fetch zPAM’s maps from cod2x.me.\n\nThe server lists itself on the public master servers. On Windows, change dedicated to 1 in start-windows.bat to keep it unlisted. A Linux server always lists itself: see below.\n\nOn Linux the game's server program ignores the dedicated setting and always reports to the public master server, so the server shows in everyone's server list. To keep a Linux server unlisted, add this line to /etc/hosts on that machine before you start it:\n\n127.0.0.1 cod2master.activision.com\n\n",
+        "server.cfg" : "// zPAM\nset g_gametype \"sd\"  // Game type: Search & Destroy\nseta sv_wwwBaseURL \"http://cod2x.me/zpam\"  // Where they fetch them from; zPAM’s own default\nset pam_mode \"comp_mr15\"  // zPAM’s match format: Search & Destroy · first to 16\nset scr_sd_timelimit 0\nset sv_hostname \"Scrim Room\"  // The name players see in the server list\nset sv_maxclients \"12\"  // How many players can be on the server at once\nset g_password \"CHANGE_ME\"  // Password to join; empty for an open server\nset rcon_password \"CHANGE_ME\"  // Admin password, for controlling the server from inside the game; empty turns that off\nset sv_wwwDownload \"1\"  // Players’ games fetch zPAM and its maps over the web\nset sv_maprotation \"map mp_dawnville map mp_matmata\"  // Maps, in order\nset g_log \"games_mp.log\"  // The game’s own log of joins, kills and rounds\nmap_rotate\n",
+        "start-linux.sh" : "#!/bin/sh\n# Run from the game folder, beside main/. server.cfg goes into main/.\n./cod2_lnxded +set net_port 28962 +set dedicated 2 +exec server.cfg\n",
+        "start-windows.bat" : "@echo off\r\nrem Run from the game folder, beside main\\. server.cfg goes into main\\.\r\nCoD2MP_s.exe +set net_port 28962 +set dedicated 2 +exec server.cfg\r\n"
+      },
+      "fileName" : "scrim-room",
+      "otherPort" : 28960,
+      "publicExport" : {
+        "README.txt" : "Scrim Room: server files written by CoD2 Unbound\n\n1. Copy server.cfg into the main folder of a Call of Duty 2 install on the server, patched to 1.3.\n2. Start the server with start-linux.sh or start-windows.bat from the game folder.\n3. Open UDP port 28962 to the server.\n\nGame files are not included: use your own licensed copy.\nThe server lists itself on the public master servers. On Windows, change dedicated to 1 in start-windows.bat to keep it unlisted. A Linux server always lists itself: see below.\n\nOn Linux the game's server program ignores the dedicated setting and always reports to the public master server, so the server shows in everyone's server list. To keep a Linux server unlisted, add this line to /etc/hosts on that machine before you start it:\n\n127.0.0.1 cod2master.activision.com\n\n",
+        "server.cfg" : "// Scrim Room: written by CoD2 Unbound. Lines starting with // are comments.\n// The name players see in the server list\nset sv_hostname \"Scrim Room\"\n// How many players can be on the server at once\nset sv_maxclients \"12\"\n// Password to join; empty for an open server\nset g_password \"scrimnight\"\n// Admin password, for controlling the server from inside the game; empty turns that off\nset rcon_password \"secretword\"\n// Game type: Search & Destroy\nset g_gametype \"sd\"\n// Friendly fire: 1 on, 0 off\nset scr_friendlyfire \"0\"\n// Players must have the same game files as the server\nset sv_pure \"1\"\n// The server doesn’t send files to players\nset sv_allowDownload \"0\"\n// Maps, in order\nset sv_maprotation \"gametype sd map mp_dawnville gametype sd map mp_matmata\"\n// The game’s own log of joins, kills and rounds\nset g_log \"games_mp.log\"\n// Start on the first map of the rotation\nmap_rotate\n",
+        "start-linux.sh" : "#!/bin/sh\n# Run from the game folder, beside main/. server.cfg goes into main/.\n./cod2_lnxded +set net_port 28962 +set dedicated 2 +exec server.cfg\n",
+        "start-windows.bat" : "@echo off\r\nrem Run from the game folder, beside main\\. server.cfg goes into main\\.\r\nCoD2MP_s.exe +set net_port 28962 +set dedicated 2 +exec server.cfg\r\n"
+      },
+      "server" : {
+        "adminPassword" : "secretword",
+        "engine" : "original",
+        "friendlyFire" : false,
+        "gameType" : "tdm",
+        "id" : "two",
+        "joinPassword" : "scrimnight",
+        "maps" : [
+          "mp_dawnville",
+          "mp_matmata"
+        ],
+        "matchMode" : "sd:comp_mr15",
+        "name" : "Scrim Room",
+        "players" : 12,
+        "port" : 28962,
+        "reach" : "listed",
+        "rules" : "zpam"
+      },
+      "template" : "// zPAM\r\nset g_gametype \"sd\"\r\nseta sv_wwwBaseURL \"http://cod2x.me/zpam\"\r\nset pam_mode \"comp\"\r\nset scr_sd_timelimit 0\r\nmap mp_toujane_fix\r\n"
+    }
+  ],
+  "listing" : "W3siYXNzZXRzIjpbeyJicm93c2VyX2Rvd25sb2FkX3VybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9leXphLWNvZDIvenBhbTMvcmVsZWFzZXMvZG93bmxvYWQvNC45OS96cGFtNDk5LnppcCIsImRpZ2VzdCI6InNoYTI1NjphYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIiwibmFtZSI6InpwYW00OTkuemlwIiwic2l6ZSI6MTAwMH1dLCJkcmFmdCI6dHJ1ZX0seyJhc3NldHMiOlt7ImJyb3dzZXJfZG93bmxvYWRfdXJsIjoiaHR0cHM6Ly9naXRodWIuY29tL2V5emEtY29kMi96cGFtMy9yZWxlYXNlcy9kb3dubG9hZC80Ljk4L3pwYW00OTguemlwIiwiZGlnZXN0Ijoic2hhMjU2OmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJuYW1lIjoienBhbTQ5OC56aXAiLCJzaXplIjoxMDAwfV0sInByZXJlbGVhc2UiOnRydWV9LHsiYXNzZXRzIjpbeyJicm93c2VyX2Rvd25sb2FkX3VybCI6Imh0dHBzOi8vZXhhbXBsZS5pbnZhbGlkL3pwYW00MTMuemlwIiwiZGlnZXN0Ijoic2hhMjU2OmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJuYW1lIjoienBhbTQxMy56aXAiLCJzaXplIjoxMDAwfSx7ImJyb3dzZXJfZG93bmxvYWRfdXJsIjoiaHR0cHM6Ly9naXRodWIuY29tL2V5emEtY29kMi96cGFtMy9yZWxlYXNlcy9kb3dubG9hZC80LjEzL3pwYW00MTNfdGVzdC56aXAiLCJkaWdlc3QiOiJzaGEyNTY6YWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYiIsIm5hbWUiOiJ6cGFtNDEzX3Rlc3QuemlwIiwic2l6ZSI6MTAwMH1dfSx7ImFzc2V0cyI6W3siYnJvd3Nlcl9kb3dubG9hZF91cmwiOiJodHRwczovL2dpdGh1Yi5jb20vZXl6YS1jb2QyL3pwYW0zL3JlbGVhc2VzL2Rvd25sb2FkLzQuMTIvenBhbTQxMi56aXAiLCJuYW1lIjoienBhbTQxMi56aXAiLCJzaXplIjoxMDAwfV19LHsiYXNzZXRzIjpbeyJicm93c2VyX2Rvd25sb2FkX3VybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9leXphLWNvZDIvenBhbTMvcmVsZWFzZXMvZG93bmxvYWQvNC4xMS96cGFtNDExLnppcCIsImRpZ2VzdCI6InNoYTI1NjpBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCQUJBQkFCIiwibmFtZSI6InpwYW00MTEuemlwIiwic2l6ZSI6MTAwMH1dfSx7ImFzc2V0cyI6W3siYnJvd3Nlcl9kb3dubG9hZF91cmwiOiJodHRwczovL2dpdGh1Yi5jb20vZXl6YS1jb2QyL3pwYW0zL3JlbGVhc2VzL2Rvd25sb2FkLzMuMzYvenBhbTMzNi56aXAiLCJkaWdlc3QiOiJzaGEyNTY6YWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYiIsIm5hbWUiOiJ6cGFtMzM2LnppcCIsInNpemUiOjEwMDB9XX1d",
+  "releases" : [
+    {
+      "asset" : "zpam411.zip",
+      "bytes" : 1000,
+      "line" : "four",
+      "sha256" : "abababababababababababababababababababababababababababababababab",
+      "url" : "https://github.com/eyza-cod2/zpam3/releases/download/4.11/zpam411.zip",
+      "version" : "4.11"
+    },
+    {
+      "asset" : "zpam336.zip",
+      "bytes" : 1000,
+      "line" : "three",
+      "sha256" : "abababababababababababababababababababababababababababababababab",
+      "url" : "https://github.com/eyza-cod2/zpam3/releases/download/3.36/zpam336.zip",
+      "version" : "3.36"
+    }
+  ],
+  "status" : [
+    {
+      "input" : "statusResponse\n\\g_gametype\\tdm\\mapname\\mp_toujane\\sv_maxclients\\12\\sv_hostname\\Friday\n14 4 \"Sample Player\"\n9 21 \"Second \"Sample\"\n",
+      "status" : {
+        "gameType" : "tdm",
+        "map" : "mp_toujane",
+        "matchInfo" : null,
+        "maxPlayers" : 12,
+        "players" : [
+          {
+            "id" : 0,
+            "name" : "Sample Player",
+            "ping" : 4,
+            "score" : 14
+          },
+          {
+            "id" : 1,
+            "name" : "Second \"Sample",
+            "ping" : 21,
+            "score" : 9
+          }
+        ]
+      }
+    },
+    {
+      "input" : "statusResponse\n\\_match_info\\Round 0 | MR15 Ready-up\\mapname\\mp_toujane_fix\n",
+      "status" : {
+        "gameType" : "",
+        "map" : "mp_toujane_fix",
+        "matchInfo" : "Round 0 | MR15 Ready-up",
+        "maxPlayers" : 0,
+        "players" : [
+
+        ]
+      }
+    },
+    {
+      "input" : "statusResponse\n\\_match_round\\^2Ready-up\\mapname\\mp_toujane_fix\n",
+      "status" : {
+        "gameType" : "",
+        "map" : "mp_toujane_fix",
+        "matchInfo" : "Ready-up",
+        "maxPlayers" : 0,
+        "players" : [
+
+        ]
+      }
+    },
+    {
+      "input" : "statusResponse\n\\mapname\\first\\MAPNAME\\last\ninvalid\n1 2 \"After a bad row\"\n",
+      "status" : {
+        "gameType" : "",
+        "map" : "last",
+        "matchInfo" : null,
+        "maxPlayers" : 0,
+        "players" : [
+          {
+            "id" : 1,
+            "name" : "After a bad row",
+            "ping" : 2,
+            "score" : 1
+          }
+        ]
+      }
+    },
+    {
+      "input" : "print\nBad rcon",
+      "status" : null
+    },
+    {
+      "input" : "",
+      "status" : null
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

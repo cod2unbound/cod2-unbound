@@ -71,8 +71,9 @@ public static partial class ReleasePackage
         return checksum;
     }
 
-    public static bool VerifyArchive(Stream stream, long size, string sha256)
+    public static bool VerifyArchive(Stream stream, long size, string sha256, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (size is < 1 or > ArchiveLimit || sha256.Length != 64 || !IsHex(sha256))
             return false;
 
@@ -84,6 +85,7 @@ public static partial class ReleasePackage
             int read;
             while ((read = stream.Read(buffer, 0, (int)Math.Min(buffer.Length, size - bytes + 1))) > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 bytes += read;
                 if (bytes > size)
                     return false;

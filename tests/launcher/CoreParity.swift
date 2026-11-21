@@ -42,6 +42,9 @@ import Foundation
         var share = try await ShareParity.build(catalogURL: root.appendingPathComponent("launcher/Resources/ConfigCatalog.json"), scratch: scratch)
         share["swiftRevision"] = revision
         try fixture("share", payload: share, mode: mode, output: output)
+        var hosting = try HostingParity.build()
+        hosting["swiftRevision"] = revision
+        try fixture("hosting", payload: hosting, mode: mode, output: output)
     }
 
     static func fixture(_ name: String, payload: [String: Any], mode: String, output: URL) throws {

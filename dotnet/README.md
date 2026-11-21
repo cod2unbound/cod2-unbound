@@ -76,6 +76,7 @@ work. Windows adapters should supply the following services.
 | `IConfigImportStore` | Hold the launcher session's draft and engine ownership interlocks and the profile store lease during version comparison and transactional commit. Preserve `active.txt` and return the receipt of an already-published import. Test two launcher processes, a game save racing an import, an unsaved draft, and a failed write followed by retry. |
 | `IConfigShareStorage` | Use the user-only settings folder and an exclusive `LockFileEx` lease for `shared-setups.json`. Keep the file across settings reset or profile Trash. Preserve withdrawal tokens across restart and upgrades, refuse unsafe paths, and omit tokens from logs and diagnostics. |
 | `IConfigShareTransport` | Use the tested portable `HttpConfigShareTransport` with `SocketsHttpHandler`. On Windows, prove POST, validation, cancellation, whole-response deadlines and redirect refusal against a local service. |
+| `IZpamPackageStorage` | Accept one private staging directory per validated release. Create regular files exclusively and publish the complete directory on the same volume. Preserve a previous package if publish fails, and remove only the unpublished stage on cancellation. Test interrupted replacement, access denied and reparse-point substitution on NTFS. |
 | `ISecretStore` | Use user-scoped Credential Manager entries for the CD key and remembered server passwords. Route a key to the engine through its Windows key contract and keep credentials out of logs and process arguments. |
 | `IGameFiles` | Resolve validated relative paths under the selected engine home and verify regular files without traversing junctions or symlinks. |
 | `IGameDiscovery` | Read the installer inventory for client and dedicated executables by edition. Discover licensed retail data and Steam libraries using Windows registry views and Steam's library records, then validate the archive set. |
@@ -119,6 +120,13 @@ the matching receipt. The portable HTTP adapter uses a whole-request deadline
 and refuses redirects.
 [HttpClient completion and deadlines](https://learn.microsoft.com/dotnet/api/system.net.http.httpcompletionoption?view=net-10.0)
 [Redirect behavior](https://learn.microsoft.com/dotnet/api/system.net.http.socketshttphandler.allowautoredirect?view=net-10.0)
+
+Hosting uses `HostedServerJson` to import the existing settings list. The server
+process adapter uses `HostingConfig.Render` and the existing dedicated launch
+plan. Supply the owned-process check to `HostedAdminQueue` before dispatching
+commands over loopback. `ZpamPackage` checks archive size and SHA-256, selects
+bounded regular files with `ZipArchive`, and publishes them through private staging.
+[ZIP entry metadata](https://learn.microsoft.com/dotnet/api/system.io.compression.ziparchiveentry?view=net-10.0)
 
 The release offer takes an expected archive name from its caller. Windows
 packaging defines that name and verifies the installer publisher or server ZIP

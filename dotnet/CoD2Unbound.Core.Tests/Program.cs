@@ -19,6 +19,8 @@ internal static partial class Program
         ProfileCases();
         ProfileLifecycleCases();
         ShareCases();
+        HostingCases();
+        HostingPackageCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }
