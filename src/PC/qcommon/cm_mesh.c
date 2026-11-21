@@ -575,11 +575,20 @@ edge_trace_tests: {
                 float edgeBx1 = edge->axis[1][1];
                 float edgeBx2 = edge->axis[1][2];
 
+#if COD2_WINDOWS_NATIVE && !COD2_CODX
+                /* Windows 1.3 adds Z and Y before X at 0x419175 and 0x4191ac. */
+                float projA = (ez * edgeAx2 + ey * edgeAx1) + ex * edgeAx0;
+                float projB = (ez * edgeBx2 + ey * edgeBx1) + ex * edgeBx0;
+
+                float dirA = (tw->delta[2] * edgeAx2 + tw->delta[1] * edgeAx1) + tw->delta[0] * edgeAx0;
+                float dirB = (tw->delta[2] * edgeBx2 + tw->delta[1] * edgeBx1) + tw->delta[0] * edgeBx0;
+#else
                 float projA = ex * edgeAx0 + ey * edgeAx1 + ez * edgeAx2;
                 float projB = ex * edgeBx0 + ey * edgeBx1 + ez * edgeBx2;
 
                 float dirA = tw->delta[0] * edgeAx0 + tw->delta[1] * edgeAx1 + tw->delta[2] * edgeAx2;
                 float dirB = tw->delta[0] * edgeBx0 + tw->delta[1] * edgeBx1 + tw->delta[2] * edgeBx2;
+#endif
 
 #if defined(COD2_X64)
                 /* Mac 0x66f0f..0x66f27: motion projected onto the separation. */
