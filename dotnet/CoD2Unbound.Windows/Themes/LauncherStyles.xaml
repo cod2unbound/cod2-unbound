@@ -213,6 +213,12 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
     </Style>
+    <Style x:Key="SetupHeroFooter" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
+        <Setter Property="Padding" Value="12,8,12,10" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="CornerRadius" Value="0,0,4,4" />
+    </Style>
     <Style x:Key="CardDivider" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource SeparatorBrush}" />
     </Style>

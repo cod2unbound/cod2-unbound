@@ -261,12 +261,16 @@ public sealed partial class ConfigsPage
         Detail.Children.Add(SetupHero(entry, attempt, import, Bookmark(entry, () => ShowSetupAsync(entry, fromSaved))));
 
         var story = new StackPanel { Spacing = 8, Children = { PanelHeading("Story"), Body(entry.Story) } };
-        var facts = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal };
-        AddIdentityFact("Era", entry.Era);
-        AddIdentityFact("Team", entry.Team);
-        AddIdentityFact("Role", entry.Role);
-        AddIdentityFact("Favorite map", entry.FavoriteMap is { } map ? MapCatalog.DisplayName(map) : null);
+        var facts = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star),
+            new GridLength(1, GridUnitType.Star));
+        Put(facts, 0, IdentityFact("Era", entry.Era));
+        if (entry.Team is not null)
+            Put(facts, 1, IdentityFact("Team", entry.Team));
+        if (entry.Role is not null)
+            Put(facts, 2, IdentityFact("Role", entry.Role));
         story.Children.Add(facts);
+        if (entry.FavoriteMap is { } map)
+            story.Children.Add(IdentityFact("Favorite map", MapCatalog.DisplayName(map)));
         story.Children.Add(Caption($"As published by {entry.Provenance.PublishedBy} · Credit: {entry.Credit}"));
         story.Children.Add(new HyperlinkButton { Content = "Source", NavigateUri = entry.SourceUrl, Padding = new Thickness(0) });
 
@@ -298,13 +302,6 @@ public sealed partial class ConfigsPage
         {
             var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
             await ReviewAsync(review, entry.Player, newOnly);
-        }
-
-        void AddIdentityFact(string label, string? value)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-                facts.Children.Add(new StackPanel { Margin = new Thickness(0, 0, 16, 8), Children =
-                    { Caption(label), new TextBlock { Text = value, Style = StyleFor("BodyStrongTextBlockStyle") } } });
         }
 
         async Task ShowPreviewAsync()
@@ -398,8 +395,8 @@ public sealed partial class ConfigsPage
 
     private Border SetupHero(ConfigDirectoryEntry entry, params Button[] actions)
     {
-        var layout = new StackPanel { Spacing = 8 };
-        layout.Children.Add(Artwork(entry, height: 150));
+        var artwork = Artwork(entry, height: 200);
+        var layout = new Grid { Children = { artwork } };
         var text = new StackPanel { Spacing = 3 };
         text.Children.Add(new TextBlock { Text = Identity(entry).ToUpperInvariant(), Style = StyleFor("Eyebrow") });
         text.Children.Add(new TextBlock { Text = entry.Player.ToUpperInvariant(), Style = StyleFor("StencilText"),
@@ -410,9 +407,24 @@ public sealed partial class ConfigsPage
         var buttons = Buttons(actions);
         buttons.VerticalAlignment = VerticalAlignment.Bottom;
         Put(row, 1, buttons);
-        layout.Children.Add(row);
-        return Panel(layout);
+        layout.Children.Add(new Border { Style = StyleFor("SetupHeroFooter"), Child = row });
+        layout.SizeChanged += (_, args) =>
+        {
+            double height = args.NewSize.Width >= 900 ? 260 : 200;
+            if (artwork.Height != height)
+                artwork.Height = height;
+        };
+        var panel = Panel(layout);
+        panel.Padding = new Thickness(0);
+        return panel;
     }
+
+    private static StackPanel IdentityFact(string label, string value) => new()
+    {
+        Spacing = 2,
+        Children = { Caption(label), new TextBlock { Text = value, TextWrapping = TextWrapping.Wrap,
+            Style = StyleFor("BodyStrongTextBlockStyle") } }
+    };
 
     private Border Artwork(ConfigDirectoryEntry entry, double height)
     {
