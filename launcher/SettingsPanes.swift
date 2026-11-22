@@ -608,7 +608,7 @@ struct UpdateCard: View {
     private var subtitle: String {
         switch model.updateState {
         case .notChecked: checked
-        case .checking: "Asking GitHub for the latest release."
+        case .checking: "Asking for the latest release."
         case .upToDate: checked
         case .ready(_, let installable):
             installable ? "A \(SettingsText.bytes(Int64(model.updateOffer?.archiveSize ?? 0))) download. Installing takes a few seconds and reopens the launcher."

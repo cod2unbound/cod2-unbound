@@ -1,6 +1,6 @@
 import Foundation
 
-// Pure formatting and parsing shared by the views and the unit tests (Foundation only).
+// Formatting and feed parsing shared by the views and the unit tests (Foundation only).
 
 enum Scenery: Int, CaseIterable, Sendable { case desert, europe, winter }
 
@@ -122,7 +122,7 @@ struct Dispatch: Codable, Equatable, Sendable {
     /// A place in the app that a news entry opens instead of a link (NewsFeed.places).
     var open: String? = nil
     static let bundled = [
-        Dispatch(stamp: "PREVIEW", title: "CoD2 Unbound 0.4.2", summary: "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind.",
+        Dispatch(stamp: "PREVIEW", title: "CoD2 Unbound 0.4.3", summary: "Updates and the news on Home keep working when GitHub can’t be reached: the launcher asks cod2unbound.com instead.",
                  link: "https://github.com/cod2unbound/cod2-unbound/releases"),
         Dispatch(stamp: "AHEAD", title: "What’s next", summary: "CoD2 Unbound for Windows comes next, then Linux. These are plans, not promises.",
                  link: "https://github.com/cod2unbound/cod2-unbound/blob/main/docs/ROADMAP.md"),
@@ -139,10 +139,25 @@ struct Dispatch: Codable, Equatable, Sendable {
 /// An item dated in the future stays hidden until that day.
 enum NewsFeed {
     static let url = URL(string: "https://raw.githubusercontent.com/cod2unbound/cod2-unbound/main/docs/news.json")!
+    static let mirrorURL = URL(string: "https://cod2unbound.com/update/news.json")!
     static let places = ["configs", "servers", "library", "updates"]
     struct Feed: Equatable { var items: [Dispatch] = []; var next: Dispatch? = nil }
     private struct Item: Decodable { var date: String?; var title: String?; var summary: String?; var link: String?; var open: String? }
     private struct File: Decodable { var items: [Item]?; var next: Item? }
+
+    /// A 404 from the primary feed means there is no news. A failed check keeps the news already shown.
+    static func fetch(using fetch: AppUpdate.FeedFetch = AppUpdate.fetchFeed) async -> Feed? {
+        for source in [url, mirrorURL] {
+            guard !Task.isCancelled else { return nil }
+            var request = URLRequest(url: source)
+            request.timeoutInterval = 15; request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.setValue("CoD2-Unbound-Launcher", forHTTPHeaderField: "User-Agent")
+            guard let (data, response) = try? await fetch(request), let code = (response as? HTTPURLResponse)?.statusCode else { continue }
+            if code == 200 { return try? parse(data) }
+            if code == 404 && source == url { return Feed() }
+        }
+        return nil
+    }
 
     static func parse(_ data: Data, now: Date = Date(), calendar: Calendar = .current) throws -> Feed {
         guard data.count <= 65_536 else { throw LauncherError(message: "The news file is too large.") }
@@ -180,20 +195,21 @@ enum NewsFeed {
     }
 }
 
-/// Home’s What’s New card: releases from GitHub Releases and notes from the project’s news file, newest
+/// Home’s What’s New card: releases and notes from the project’s news file, newest
 /// first, with what comes next last. Both arrive with the update check; until one has answered the card
 /// holds one line about this version, with no date.
 enum HomeDispatches {
     static func builtIn(version: String) -> Dispatch {
         Dispatch(stamp: "NOW", title: "CoD2 Unbound \(version)",
-                 summary: version == "0.4.2" ? "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind."
+                 summary: version == "0.4.3" ? "Updates and the news on Home keep working when GitHub can’t be reached: the launcher asks cod2unbound.com instead."
+                        : version == "0.4.2" ? "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind."
                         : version == "0.4.1" ? "Share one of your loadouts with other players from Configs, and a round of fixes for Metal, voice chat and the launcher."
                         : version == "0.4.0" ? "The game now draws with Metal, the graphics system macOS uses today. OpenGL stays as a choice in Settings › Display."
                         : version == "0.3.7" ? "A tidier launcher: every page has the same titles, labels, buttons and switches. Nothing in the game changed."
                         : version == "0.3.6" ? "A new name and a new icon. Your settings, loadouts and game files are where you left them."
                         : version == "0.3.5" ? "Setup can download your copy of the game from Steam: scan a QR code with the Steam app, and nothing about your account is typed."
                         : version == "0.3.4" ? "A switch in Settings › Privacy sends crash reports to the project. It is off until you turn it on."
-                        : version == "0.3.3" ? "The project has a new home at github.com/cod2unbound, and the app updates from there."
+                        : version == "0.3.3" ? "The project has a new home at github.com/cod2unbound."
                         : version == "0.3.2" ? "A console you can read on 4K, 5K and 6K screens, and a launcher that shows your loadout where it showed frame rate."
                         : version == "0.3.1" ? "Friends on Windows and Linux can join a CoD2x server you host, and a log for each server start."
                         : version == "0.3.0" ? "CoD2x 1.4.6.8 beside the original 1.3, loadouts, and one-click updates."
@@ -213,8 +229,13 @@ enum HomeDispatches {
 }
 
 enum ReleaseNotes {
+    static let url = URL(string: "https://api.github.com/repos/cod2unbound/cod2-unbound/releases?per_page=10")!
+    static let mirrorURL = URL(string: "https://cod2unbound.com/update/releases.json")!
+
     struct Feed: Equatable {
         var dispatches: [Dispatch]; var latestVersion: String?; var latestAssets: [ReleaseAsset] = []
+        var latestURL: URL?
+        var listedByGitHub = true
         /// What's New for the newest release (ship-settings).
         var latestNotes: [ReleaseNoteItem] = []
     }
@@ -229,7 +250,26 @@ enum ReleaseNotes {
         var draft: Bool?
         var prerelease: Bool?
     }
-    /// Parses GitHub's `GET /repos/{owner}/{repo}/releases` response. Nothing is downloaded here; the
+    static func fetch(using fetch: AppUpdate.FeedFetch = AppUpdate.fetchFeed) async throws -> Feed {
+        func read(_ url: URL, github: Bool) async throws -> Feed {
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 15
+            request.setValue("CoD2-Unbound-Launcher", forHTTPHeaderField: "User-Agent")
+            if github { request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept") }
+            let (data, response) = try await fetch(request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw LauncherError(message: "Release service is unavailable. Try again later.") }
+            var feed = try parse(data)
+            feed.listedByGitHub = github
+            return feed
+        }
+        do { return try await read(url, github: true) }
+        catch {
+            try Task.checkCancellation()
+            return try await read(mirrorURL, github: false)
+        }
+    }
+
+    /// Parses the GitHub Releases format used by both sources. Nothing is downloaded here; the
     /// latest release's files are only listed, for Install Update (AppUpdate).
     static func parse(_ data: Data, limit: Int = 3, calendar: Calendar = .current) throws -> Feed {
         guard data.count <= 1_000_000 else { throw LauncherError(message: "The release feed is too large.") }
@@ -241,7 +281,7 @@ enum ReleaseNotes {
             var stamp = "NEW"
             let date = release.published_at.flatMap { ISO8601DateFormatter().date(from: $0) }
             if let date { stamp = StencilDate.day(date, calendar: calendar) }
-            let link = release.html_url.flatMap { $0.hasPrefix("https://github.com/") ? String($0.prefix(256)) : nil }
+            let link = releaseLink(release.html_url)
             dispatches.append(Dispatch(stamp: stamp, title: title.isEmpty ? "CoD2 Unbound \(version(tag))" : title,
                                        summary: summary(release.body ?? ""), link: link, date: date, version: tag.isEmpty ? nil : version(tag)))
         }
@@ -250,7 +290,12 @@ enum ReleaseNotes {
             guard let name = asset.name, let size = asset.size, let link = asset.browser_download_url, let url = URL(string: link) else { return nil }
             return ReleaseAsset(name: name, size: size, url: url)
         }
-        return Feed(dispatches: dispatches, latestVersion: newest?.tag_name.map(version), latestAssets: assets, latestNotes: items(newest?.body ?? ""))
+        return Feed(dispatches: dispatches, latestVersion: newest?.tag_name.map(version), latestAssets: assets,
+                    latestURL: releaseLink(newest?.html_url).flatMap(URL.init(string:)), latestNotes: items(newest?.body ?? ""))
+    }
+    private static func releaseLink(_ link: String?) -> String? {
+        guard let link, link.hasPrefix("https://github.com/") || link.hasPrefix("https://cod2unbound.com/") else { return nil }
+        return String(link.prefix(256))
     }
     static func version(_ tag: String) -> String {
         String(tag.trimmingCharacters(in: .whitespaces).drop { $0 == "v" || $0 == "V" }.prefix(32))
@@ -431,7 +476,7 @@ enum PrivacyContacts {
         ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers. A CoD2x server asks the CoD2x project about new versions."),
         ("Crash reports", "Only with a switch above on, once for each crash or freeze."),
         ("Config links", "Only a link you paste into Configs to import from it."),
-        ("cod2unbound.com", "Only when you choose Share Setup: the cleaned config, the name you type and the app’s version. It posts them publicly on GitHub and keeps no address."),
+        ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you. And when you choose Share Setup: the cleaned config, the name you type and the app’s version. It posts them publicly on GitHub and keeps no address."),
     ]
 }
 

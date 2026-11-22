@@ -546,33 +546,28 @@ extension KeyStore {
     }
 
     // MARK: Updates
-    /// HTTPS request to GitHub Releases for the release list. Nothing is downloaded or installed until Install.
+    /// Checks the release list. No update files are downloaded until Install.
     /// An automatic check is quiet when it fails: the pane keeps what it said before.
     func checkUpdates() { checkUpdates(automatic: false) }
     func checkUpdates(automatic: Bool) {
         guard !snapshot, !checkingUpdates, !installingUpdate else { return }
         let before = (message: updateMessage, error: updateError, stage: updateFailedStage)
         if !automatic { updateWasChecked = true; updateError = false; updateFailedStage = nil }
-        checkingUpdates = true; updateMessage = "Checking GitHub Releases…"
+        checkingUpdates = true; updateMessage = "Checking for updates…"
         if !automatic { studio.announce(updateMessage) }
         updateTask = Task {
             defer { checkingUpdates = false; if !automatic { studio.announce(updateMessage) } }
             do {
-                var request = URLRequest(url: URL(string: "https://api.github.com/repos/cod2unbound/cod2-unbound/releases?per_page=10")!)
-                request.timeoutInterval = 15; request.setValue("CoD2-Unbound-Launcher", forHTTPHeaderField: "User-Agent")
-                request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-                let (data, response) = try await URLSession.shared.data(for: request)
-                guard let response = response as? HTTPURLResponse, response.statusCode == 200 else { throw LauncherError(message: "Release service is unavailable. Try again later.") }
-                let feed = try ReleaseNotes.parse(data)
+                let feed = try await ReleaseNotes.fetch()
                 if !feed.dispatches.isEmpty { library.dispatches = feed.dispatches }
-                if let news = await Self.fetchNews() { library.news = news.items; library.newsNext = news.next }
+                if let news = await NewsFeed.fetch() { library.news = news.items; library.newsNext = news.next }
                 library.dispatchesCheckedAt = Date(); saveLibrary()
                 updateWasChecked = true; updateError = false; updateFailedStage = nil
                 if let latest = feed.latestVersion, ReleaseNotes.isNewer(latest, than: version) {
                     let announced = availableVersion
                     updateMessage = "Version \(latest) is available."
-                    releaseURL = feed.dispatches.first?.link.flatMap(URL.init(string:)) ?? AppUpdate.releases
-                    updateOffer = AppUpdate.offer(version: latest, assets: feed.latestAssets)
+                    releaseURL = feed.latestURL ?? AppUpdate.releases
+                    updateOffer = AppUpdate.offer(version: latest, assets: feed.latestAssets, listedByGitHub: feed.listedByGitHub)
                     availableVersion = latest
                     updateNotes = feed.latestNotes
                     // Integration hook (ship-shell's notifyUpdateReady): a version the automatic check finds, once per version.
@@ -587,16 +582,6 @@ extension KeyStore {
                 recordUsage(.errorShown(.updateCheck))
             }
         }
-    }
-    /// The project’s news file, asked for with every update check. A missing file means no news; any
-    /// other failure keeps what Home already shows.
-    nonisolated static func fetchNews() async -> NewsFeed.Feed? {
-        var request = URLRequest(url: NewsFeed.url)
-        request.timeoutInterval = 15; request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setValue("CoD2-Unbound-Launcher", forHTTPHeaderField: "User-Agent")
-        guard let (data, response) = try? await URLSession.shared.data(for: request), let code = (response as? HTTPURLResponse)?.statusCode else { return nil }
-        if code == 404 { return NewsFeed.Feed() }
-        return code == 200 ? try? NewsFeed.parse(data) : nil
     }
     /// Updates › Check for updates automatically: at most once a day while the launcher is open. Never in the
     /// review harness or the automated lifecycle tests (COD2_SETUP_NONINTERACTIVE).
@@ -668,7 +653,7 @@ extension KeyStore {
         updateError = true; updateFailedStage = .install
         updateMessage = AppUpdate.message(error)
         studio.announce(updateMessage)
-        if (error as? AppUpdate.Failure)?.opensReleases == true { NSWorkspace.shared.open(AppUpdate.releases) }
+        if (error as? AppUpdate.Failure)?.opensReleases == true { NSWorkspace.shared.open(releaseURL ?? AppUpdate.releases) }
     }
     /// Starts the new app once this one has quit.
     func relaunch(_ app: URL) {
@@ -794,7 +779,7 @@ extension KeyStore {
         case "settings-delete-summaries": settingsPane = .privacy; settingsConfirmation = deleteSummariesRequest(count: 37)
         case "settings-updates": settingsPane = .updates; updateWasChecked = true; updateMessage = "You’re up to date · \(version)"
         case "settings-updates-never": settingsPane = .updates; library.dispatchesCheckedAt = nil
-        case "settings-updates-checking": settingsPane = .updates; updateWasChecked = true; checkingUpdates = true; updateMessage = "Checking GitHub Releases…"
+        case "settings-updates-checking": settingsPane = .updates; updateWasChecked = true; checkingUpdates = true; updateMessage = "Checking for updates…"
         case "settings-updates-offline": settingsPane = .updates; updateWasChecked = true; updateError = true; updateFailedStage = .check
             library.dispatchesCheckedAt = Calendar.current.date(byAdding: .day, value: -1, to: Calendar.current.date(bySettingHour: 21, minute: 30, second: 0, of: now) ?? now)
             updateMessage = "The update server didn’t answer. Check your connection and try again. Your current version keeps working."
