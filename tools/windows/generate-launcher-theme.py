@@ -33,6 +33,7 @@ BRUSHES = {
     "ListViewItemSelectionIndicatorBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPointerOverBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPressedBrush": ("control", "HighlightText"),
+    "LauncherSelectionPillBrush": ("control", "HighlightText"),
     "TextControlSelectionHighlightColor": ("selection-stroke", "Highlight"),
     "SliderThumbBackground": ("prominent-bottom", "Highlight"),
     "SliderThumbBackgroundPointerOver": ("prominent-top", "Highlight"),

@@ -161,12 +161,12 @@
                                         </Grid>
                                         <Grid ColumnSpacing="4">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="RowMapMode" Text="{Binding MapMode}" FontSize="12"
-                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                       MaxWidth="176" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Left" Orientation="Horizontal" Spacing="4">
                                                 <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
                                                     <TextBlock x:Name="RowEditionText" Text="{Binding Edition}" FontSize="12"
                                                                VerticalAlignment="Center" />

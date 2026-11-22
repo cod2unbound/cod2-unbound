@@ -126,9 +126,9 @@ public sealed partial class HomePage : Page
             var stamp = MonoCaption(model.Played(server.Address, includeTime: false) ?? "");
             stamp.VerticalAlignment = VerticalAlignment.Center;
             Put(row, 2, stamp);
-            var launch = new Button { Style = StyleFor("SmallAction"), VerticalAlignment = VerticalAlignment.Center,
+            var launch = new Button { Style = StyleFor("SmallSubtleAction"), VerticalAlignment = VerticalAlignment.Center,
                 Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
-                    Children = { Fluent("Play", 16, filled: true), new TextBlock { Text = "Launch" } } } };
+                    Children = { Fluent("PlayOutline", 14), new TextBlock { Text = "Launch" } } } };
             AutomationProperties.SetName(launch, $"Launch {QuakeColors.Plain(server.Name)}");
             launch.Click += async (_, _) => await LaunchAsync(server.Address);
             recentButtons.Add(launch);
@@ -144,7 +144,8 @@ public sealed partial class HomePage : Page
         if (model.Matches.LastOrDefault() is { } match)
         {
             AddMatch(MatchRows, match);
-            var check = new Button { Content = "Open Check-up", HorizontalAlignment = HorizontalAlignment.Right };
+            var check = new Button { Content = "Open Check-up", HorizontalAlignment = HorizontalAlignment.Right,
+                Style = StyleFor("SubtleLinkAction") };
             check.Click += async (_, _) => await shell.OpenCheckupAsync();
             MatchRows.Children.Add(check);
         }

@@ -6,6 +6,7 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -53,7 +54,21 @@ public sealed partial class ConfigsPage : Page
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
-    private void OnLoadoutRowLoaded(object sender, RoutedEventArgs args) => ApplyLoadoutRowTheme((Grid)sender);
+    private void OnLoadoutRowLoaded(object sender, RoutedEventArgs args)
+    {
+        var row = (Grid)sender;
+        ApplyLoadoutRowTheme(row);
+        if (ContainingListItem(row) is not { } item)
+            return;
+        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => ApplyLoadoutRowTheme(row));
+        row.Unloaded += Unloaded;
+
+        void Unloaded(object sender, RoutedEventArgs args)
+        {
+            item.UnregisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, token);
+            row.Unloaded -= Unloaded;
+        }
+    }
 
     private void OnLoadoutRowThemeChanged(FrameworkElement sender, object args) => ApplyLoadoutRowTheme((Grid)sender);
 
@@ -62,7 +77,22 @@ public sealed partial class ConfigsPage : Page
         if (row.FindName("LoadoutTile") is not Border tile)
             return;
         bool contrast = shell.IsHighContrast;
-        tile.Visibility = IsVisible(!contrast);
+        var initial = (TextBlock)tile.Child;
+        if (contrast)
+        {
+            bool selected = ContainingListItem(row)?.IsSelected == true;
+            var ink = (SolidColorBrush)ThemeBrush(selected ? "LauncherSelectionPillBrush" : "HeadingBrush", ActualTheme, true);
+            var window = (SolidColorBrush)ThemeBrush("PanelBrush", ActualTheme, true);
+            tile.Background = selected && ink.Color == window.Color
+                ? ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, true) : window;
+            tile.BorderBrush = initial.Foreground = ink;
+        }
+        else
+        {
+            tile.ClearValue(Border.BackgroundProperty);
+            tile.ClearValue(Border.BorderBrushProperty);
+            initial.ClearValue(TextBlock.ForegroundProperty);
+        }
         SetRowTextBrush((TextBlock)row.FindName("LoadoutStatus")!, "CaptionBrush", contrast);
         var check = (FontIcon)row.FindName("LoadoutCheck")!;
         if (contrast)
@@ -366,8 +396,21 @@ public sealed partial class ConfigsPage : Page
             }
             else
                 fields.Children.Add(groupHeader);
+            if (expert)
+            {
+                foreach (var spec in specs)
+                    fields.Children.Add(Setting(state, profile.Profile.Id, spec));
+                return;
+            }
+
+            var rows = new StackPanel();
             foreach (var spec in specs)
-                fields.Children.Add(Setting(state, profile.Profile.Id, spec));
+            {
+                if (rows.Children.Count > 0)
+                    rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                rows.Children.Add(Setting(state, profile.Profile.Id, spec));
+            }
+            fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = rows });
         }
     }
 
@@ -376,7 +419,7 @@ public sealed partial class ConfigsPage : Page
         var item = ConfigStudioModel.State(spec, state.Current?.Document, state.Current?.Metadata);
         string? block = model.Model.TakeTheirsBlock(spec, state, null, [], "");
         if (block is not null)
-            return SettingRow(spec.Title, block, Caption(item.Display));
+            return SettingRow(spec.Title, block, Caption(item.Display), grouped: !expert);
 
         Control control;
         if (!expert && spec.Name.Equals("cl_mouseAccel", StringComparison.OrdinalIgnoreCase))
@@ -386,7 +429,7 @@ public sealed partial class ConfigsPage : Page
             var toggle = new ToggleSwitch { IsOn = current > 0, OnContent = "On", OffContent = "Off", MinWidth = 0 };
             AutomationProperties.SetName(toggle, "Speed up on fast movements");
             toggle.Toggled += async (_, _) => await Apply(toggle.IsOn ? on : "0");
-            return SettingRow("Speed up on fast movements", "Off keeps every turn the same size, however fast your hand moves.", toggle);
+            return SettingRow("Speed up on fast movements", "Off keeps every turn the same size, however fast your hand moves.", toggle, grouped: true);
         }
         if (!expert && spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
             spec.SliderRange is { Min: > 0 } range && MouseDistance.Centimetres(model.MouseDpi, 1) is { } reference &&
@@ -411,7 +454,7 @@ public sealed partial class ConfigsPage : Page
                 lastSaved = args.NewValue;
                 await Apply(ConfigValues.Clamped(reference / args.NewValue, spec));
             };
-            return SettingRow("Mouse speed", $"Worked out from {model.MouseDpi:G} DPI.", layout);
+            return SettingRow("Mouse speed", $"Worked out from {model.MouseDpi:G} DPI.", layout, grouped: true);
         }
         if (spec.Type == "bool")
         {
@@ -448,7 +491,7 @@ public sealed partial class ConfigsPage : Page
             control = text;
         }
         AutomationProperties.SetName(control, spec.Title);
-        return SettingRow(spec.Title, spec.Setting.Summary, control);
+        return SettingRow(spec.Title, spec.Setting.Summary, control, grouped: !expert);
 
         Task Apply(string value) => shell.RunAsync(() =>
         {

@@ -61,12 +61,17 @@ internal static class PagePresentation
         throw new InvalidOperationException($"Missing launcher theme brush {key}.");
     }
 
-    internal static void TrackSelectionPill(Border pill)
+    internal static ListViewItem? ContainingListItem(DependencyObject element)
     {
-        DependencyObject? parent = VisualTreeHelper.GetParent(pill);
+        DependencyObject? parent = VisualTreeHelper.GetParent(element);
         while (parent is not null && parent is not ListViewItem)
             parent = VisualTreeHelper.GetParent(parent);
-        if (parent is not ListViewItem item)
+        return (ListViewItem?)parent;
+    }
+
+    internal static void TrackSelectionPill(Border pill)
+    {
+        if (ContainingListItem(pill) is not { } item)
             return;
 
         void Update() => pill.Visibility = IsVisible(item.IsSelected);
@@ -141,13 +146,13 @@ internal static class PagePresentation
         return bar;
     }
 
-    internal static Border SettingRow(string label, string? detail, FrameworkElement? action = null)
+    internal static Border SettingRow(string label, string? detail, FrameworkElement? action = null, bool grouped = false)
     {
         var lines = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         lines.Children.Add(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap });
         if (!string.IsNullOrEmpty(detail))
             lines.Children.Add(Caption(detail));
-        var layout = new Grid { MinHeight = 34, ColumnSpacing = 12 };
+        var layout = new Grid { MinHeight = grouped ? 28 : 34, ColumnSpacing = 12 };
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         layout.Children.Add(lines);
         if (action is not null)
@@ -157,7 +162,9 @@ internal static class PagePresentation
             action.VerticalAlignment = VerticalAlignment.Center;
             layout.Children.Add(action);
         }
-        return new Border { Style = StyleFor("FieldCard"), Child = layout };
+        return grouped
+            ? new Border { Padding = new Thickness(16, 12, 16, 12), Child = layout }
+            : new Border { Style = StyleFor("FieldCard"), Child = layout };
     }
 
     internal static async Task<SoftwareBitmapSource> MapBitmapAsync(MapPixels art)

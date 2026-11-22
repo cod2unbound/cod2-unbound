@@ -20,7 +20,7 @@
                                   SelectionChanged="OnDiscoverPlaceChanged" ItemContainerStyle="{StaticResource SidebarItem}">
                             <ListViewItem AccessKey="P" AutomationProperties.Name="Player Setups" Style="{StaticResource SidebarItem}">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPerson}" FontSize="20" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPeopleCommunity}" FontSize="20" />
                                     <TextBlock Text="Player Setups" VerticalAlignment="Center" />
                                 </StackPanel>
                             </ListViewItem>
@@ -39,7 +39,7 @@
                             </ListViewItem>
                             <ListViewItem AutomationProperties.Name="Check a config" Style="{StaticResource SidebarItem}">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentClipboardCheck}" FontSize="20" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentShieldCheckmark}" FontSize="20" />
                                     <TextBlock Text="Check a config" VerticalAlignment="Center" />
                                 </StackPanel>
                             </ListViewItem>
@@ -82,7 +82,7 @@
                         </Button>
                         <Button x:Name="AddConfig" AccessKey="I" AutomationProperties.Name="Add a config" Style="{StaticResource SidebarAction}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDocumentAdd}" FontSize="16" />
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" FontSize="20" />
                                 <TextBlock Text="Add a config" VerticalAlignment="Center" />
                                 <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
                             </StackPanel>

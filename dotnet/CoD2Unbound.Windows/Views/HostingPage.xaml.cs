@@ -46,6 +46,8 @@ public sealed partial class HostingPage : Page
 
     private HostedServer? Selected => Servers.SelectedItem as HostedServer;
 
+    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
+
     private void OnServerChanged(object sender, SelectionChangedEventArgs args)
     {
         if (!syncing)

@@ -73,7 +73,7 @@ public sealed partial class SettingsPage : Page
             Title = "Looking for mouse, brightness, network, HUD or sound?",
             Message = "They live in your loadouts, so every loadout keeps its own.",
             IsOpen = true, IsClosable = false,
-            ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
+            ActionButton = OpenConfigs()
         };
         hint.Margin = new Thickness(0, 16, 0, 0);
         Fields.Children.Add(hint);
@@ -88,8 +88,7 @@ public sealed partial class SettingsPage : Page
             async value => await ChangeAsync(Current with { Fullscreen = modes[value] }));
         Choice("Graphics", "Choose how the game draws on Windows.", ["Direct3D 9", "DirectX 7"], (int)model.Renderer,
             async value => await ChangeAsync(Current with { WindowsRenderer = (WindowsRenderMode)value }));
-        Row("Resolution", "Every loadout keeps its own resolution.",
-            Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs)));
+        Row("Resolution", "Every loadout keeps its own resolution.", OpenConfigs());
         var restore = Action("Restore defaults", async () =>
         {
             previousDisplay = (Current.Fullscreen, Current.WindowsRenderer);
@@ -108,6 +107,13 @@ public sealed partial class SettingsPage : Page
             })));
         else
             Fields.Children.Add(restore);
+    }
+
+    private Button OpenConfigs()
+    {
+        var button = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs));
+        button.Style = StyleFor("SubtleLinkAction");
+        return button;
     }
 
     private void GameData()

@@ -24,11 +24,14 @@
     <x:String x:Key="FluentChevronDown">&#xF2A2;</x:String>
     <x:String x:Key="FluentChevronUp">&#xF2B5;</x:String>
     <x:String x:Key="FluentChevronRight">&#xF2AF;</x:String>
-    <x:String x:Key="FluentPerson">&#xF5BD;</x:String>
+    <x:String x:Key="FluentPeopleCommunity">&#xF5B0;</x:String>
+    <x:String x:Key="FluentShieldCheckmark">&#xEAC8;</x:String>
+    <x:String x:Key="FluentArrowDownload">&#xF150;</x:String>
+    <x:String x:Key="FluentPlayOutline">&#xE990;</x:String>
+    <x:String x:Key="FluentGauge">&#xF0B54;</x:String>
+    <x:String x:Key="FluentChevronLeft">&#xF2AA;</x:String>
     <x:String x:Key="FluentHistory">&#xE707;</x:String>
-    <x:String x:Key="FluentClipboardCheck">&#xE35E;</x:String>
     <x:String x:Key="FluentFolder">&#xF418;</x:String>
-    <x:String x:Key="FluentDocumentAdd">&#xE4DA;</x:String>
     <x:String x:Key="FluentDocument">&#xF378;</x:String>
     <x:String x:Key="FluentStar">&#xF70F;</x:String>
     <x:String x:Key="FluentLock">&#xE78E;</x:String>
@@ -37,6 +40,7 @@
     <x:String x:Key="FluentImage">&#xF489;</x:String>
     <x:String x:Key="FluentHeartPulse">&#xE701;</x:String>
     <FontFamily x:Key="FluentFilled">ms-appx:///Assets/FluentSystemIcons-Filled.ttf#FluentSystemIcons-Filled</FontFamily>
+    <x:String x:Key="FluentBookmarkFilled">&#xF1F5;</x:String>
     <x:String x:Key="FluentPlay">&#xE9A2;</x:String>
     <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
 
@@ -142,7 +146,8 @@
         <Setter Property="Width" Value="3" />
         <Setter Property="Height" Value="16" />
         <Setter Property="CornerRadius" Value="2" />
-        <Setter Property="Background" Value="{ThemeResource ListViewItemSelectionIndicatorBrush}" />
+        <Setter Property="Background" Value="{ThemeResource LauncherSelectionPillBrush}" />
+        <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="IsHitTestVisible" Value="False" />
@@ -182,6 +187,13 @@
     <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="MinHeight" Value="28" />
         <Setter Property="Padding" Value="10,3" />
+    </Style>
+    <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="8,3" />
+    </Style>
+    <Style x:Key="SubtleLinkAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
     </Style>
     <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
         <Setter Property="Width" Value="32" />
