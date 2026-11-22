@@ -8,9 +8,9 @@ internal sealed class ConfigsViewModel : IConfigImportStore
 {
     private readonly WindowsConfigProfiles files;
 
-    internal ConfigsViewModel(WindowsLauncherSession session)
+    internal ConfigsViewModel(WindowsLauncherSession session, nint owner)
     {
-        files = new(session.HomePath);
+        files = new(session.HomePath, owner);
         Studio = new(files, session.Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock,
             () => session.ClientIsRunning, TimeProvider.System);
         Studio.Refresh();
@@ -40,7 +40,14 @@ internal sealed class ConfigsViewModel : IConfigImportStore
         store => store.Update(loadout.Profile.Id, loadout.Document, loadout.Version,
             loadout.Metadata with { DisplayName = name }, "Renamed loadout"));
 
-    internal ConfigProfileTrashHandle Delete(string id) => Studio.Trash(id, files);
+    internal ConfigProfileTrashHandle Delete(string id)
+    {
+        try { return Studio.Trash(id, files); }
+        catch (ConfigProfileException error) when (error.Failure == ConfigProfileFailure.CannotTrash)
+        {
+            throw new IOException("The loadout couldn’t be moved to the Recycle Bin. Nothing was removed.", error);
+        }
+    }
 
     internal void Restore(string id, ConfigProfileTrashHandle handle) => Studio.RestoreTrash(id, handle, files);
 

@@ -17,6 +17,8 @@ internal static class PagePresentation
     internal static TextBlock Caption(string text) =>
         new() { Text = text, Style = StyleFor("SecondaryText"), FontSize = 12 };
 
+    internal static TextBlock Body(string text) => new() { Text = text, Style = StyleFor("SecondaryText") };
+
     internal static StackPanel Buttons(params Button[] buttons)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };

@@ -70,7 +70,6 @@ public sealed partial class HostingPage : Page
         Details.Children.Add(detailText);
 
         processButton = Action("Start server", () => ToggleAsync(server), "R");
-        processButton.Style = StyleFor("AccentButtonStyle");
         settingsButton = Action("Edit server…", () => EditAsync(server), "E");
         Details.Children.Add(Buttons(processButton, settingsButton));
         playersButton = Action("Players…", () => PlayersAsync(server), "P");
@@ -244,7 +243,7 @@ public sealed partial class HostingPage : Page
             Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetName(text, "Server log");
         await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Server log", Content = text, CloseButtonText = "Close",
-            DefaultButton = ContentDialogButton.Close }.ShowAsync();
+            DefaultButton = ContentDialogButton.None }.ShowAsync();
     }
 
     private async Task PlayersAsync(HostedServer server)
@@ -252,12 +251,12 @@ public sealed partial class HostingPage : Page
         var players = hosting.Running.GetValueOrDefault(server.Id)?.Status?.Players ?? [];
         var list = new StackPanel { Spacing = 8 };
         if (players.IsEmpty)
-            list.Children.Add(Caption("No players are connected."));
+            list.Children.Add(Body("No players are connected."));
         foreach (var player in players)
             list.Children.Add(SettingRow(QuakeColors.Plain(player.Name), $"{player.Score} points · {player.Ping} ms"));
         var content = new ScrollViewer { MaxHeight = 340, Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Players", Content = content, CloseButtonText = "Close",
-            DefaultButton = ContentDialogButton.Close }.ShowAsync();
+            DefaultButton = ContentDialogButton.None }.ShowAsync();
     }
 
     private Button Action(string title, Func<Task> action, string accessKey)

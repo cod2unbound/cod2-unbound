@@ -139,7 +139,9 @@ public sealed partial class ConfigsPage : Page
 
     private async Task DeleteAsync(ConfigProfile profile)
     {
-        var dialog = new DeleteLoadoutDialog(profile.DisplayName)
+        var dialog = new SafeRemovalDialog($"Delete the loadout “{profile.DisplayName}”?",
+            "Its settings, binds and history go with it. Your other loadouts aren’t affected. You can put it back from the Recycle Bin.",
+            "Delete loadout", "NegativeButton")
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };

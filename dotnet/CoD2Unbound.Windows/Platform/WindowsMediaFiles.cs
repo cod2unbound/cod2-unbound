@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
@@ -128,67 +127,5 @@ internal sealed class WindowsMediaFiles(string home) : IMediaFiles
         if (!MediaLibrary.Accepts(name, kind))
             throw new IOException("This file is unavailable.");
         return MediaLibrary.Folder(kind) + "/" + name;
-    }
-}
-
-internal static class WindowsRecycleBin
-{
-    private static readonly Guid FileOperationClass = new("3AD05575-8857-4850-9277-11B85BDB8E09");
-    private static readonly Guid ShellItemInterface = new("43826D1E-E718-42EE-BC55-A1E261C37BFE");
-
-    internal static void Recycle(string path, nint owner)
-    {
-        const uint recycleOnDelete = 0x00080000, noErrorUi = 0x00000400, allowUndo = 0x00000040;
-        const uint noConfirmation = 0x00000010, silent = 0x00000004;
-        var operation = (IFileOperation)Activator.CreateInstance(Type.GetTypeFromCLSID(FileOperationClass, throwOnError: true)!)!;
-        nint item = 0;
-        try
-        {
-            int result = SHCreateItemFromParsingName(path, 0, ShellItemInterface, out item);
-            Marshal.ThrowExceptionForHR(result);
-            operation.SetOwnerWindow(owner);
-            operation.SetOperationFlags(recycleOnDelete | noErrorUi | allowUndo | noConfirmation | silent);
-            // DeleteItem requires the IShellItem interface pointer returned for the explicit IID.
-            operation.DeleteItem(item, 0);
-            result = operation.PerformOperations();
-            operation.GetAnyOperationsAborted(out bool aborted);
-            Marshal.ThrowExceptionForHR(result);
-            if (aborted || File.Exists(path))
-                throw new IOException("Windows couldn’t move this file to the Recycle Bin.");
-        }
-        finally
-        {
-            if (item != 0)
-                Marshal.Release(item);
-            Marshal.ReleaseComObject(operation);
-        }
-    }
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
-    private static extern int SHCreateItemFromParsingName(string path, nint binding, in Guid iid, out nint item);
-
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("947AAB5F-0A5C-4C13-B4D6-4BF7836FC9F8")]
-    private interface IFileOperation
-    {
-        void Advise();
-        void Unadvise();
-        void SetOperationFlags(uint flags);
-        void SetProgressMessage();
-        void SetProgressDialog();
-        void SetProperties();
-        void SetOwnerWindow(nint owner);
-        void ApplyPropertiesToItem();
-        void ApplyPropertiesToItems();
-        void RenameItem();
-        void RenameItems();
-        void MoveItem();
-        void MoveItems();
-        void CopyItem();
-        void CopyItems();
-        void DeleteItem(nint item, nint progressSink);
-        void DeleteItems();
-        void NewItem();
-        [PreserveSig] int PerformOperations();
-        void GetAnyOperationsAborted([MarshalAs(UnmanagedType.Bool)] out bool aborted);
     }
 }

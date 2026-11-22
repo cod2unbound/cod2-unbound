@@ -3,10 +3,9 @@ using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsConfigProfiles(string home) : IConfigProfileFiles, IConfigProfileTrash
+internal sealed class WindowsConfigProfiles(string home, nint owner) : IConfigProfileFiles, IConfigProfileTrash
 {
     private readonly WindowsSettingsFolder storage = new(home, allowNestedWrites: true);
-    private const string TrashFolder = "launcher/removed-loadouts";
 
     public IDisposable Acquire(CancellationToken cancellationToken) =>
         WindowsGameSessionHost.OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken).AsTask().GetAwaiter().GetResult();
@@ -61,17 +60,17 @@ internal sealed class WindowsConfigProfiles(string home) : IConfigProfileFiles, 
 
     public ConfigProfileTrashHandle Move(string path)
     {
-        string token = Guid.NewGuid().ToString("N");
-        using var trash = new WindowsFiles.DirectoryHandles(Full(TrashFolder), create: true);
-        MoveDirectory(path, TrashFolder + "/" + token);
-        return new(token);
+        string source = Full(path);
+        using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(source)!);
+        using (new WindowsFiles.DirectoryHandles(source)) { }
+        return new(WindowsRecycleBin.Recycle(source, owner));
     }
 
     public void Restore(ConfigProfileTrashHandle handle, string target)
     {
-        if (!Guid.TryParseExact(handle.Token, "N", out _))
-            throw new ConfigProfileException(ConfigProfileFailure.UnsafePath);
-        MoveDirectory(TrashFolder + "/" + handle.Token, target);
+        string destination = Full(target);
+        using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(destination)!);
+        WindowsRecycleBin.Restore(handle.Token, destination, owner);
     }
 
     private void MoveDirectory(string from, string to)

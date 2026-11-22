@@ -6,15 +6,15 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
-internal sealed class DeleteLoadoutDialog : ContentDialog
+internal sealed class SafeRemovalDialog : ContentDialog
 {
-    internal DeleteLoadoutDialog(string name)
+    internal SafeRemovalDialog(string title, string message, string action, string actionStyle)
     {
-        Title = $"Delete the loadout “{name}”?";
-        Content = Caption("Its settings, binds and history go with it. Your other loadouts aren’t affected.");
-        PrimaryButtonText = "Delete loadout";
+        Title = title;
+        Content = Body(message);
+        PrimaryButtonText = action;
         CloseButtonText = "Cancel";
-        PrimaryButtonStyle = StyleFor("NegativeButton");
+        PrimaryButtonStyle = StyleFor(actionStyle);
         DefaultButton = ContentDialogButton.None;
         IsPrimaryButtonEnabled = false;
         Opened += (_, _) => DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, FocusCancel);

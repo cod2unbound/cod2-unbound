@@ -240,7 +240,8 @@ public sealed partial class MainWindow : Window
         }
         else if (place == LauncherPlace.Configs)
         {
-            var model = await Task.Run(() => new ConfigsViewModel(session));
+            nint owner = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var model = await Task.Run(() => new ConfigsViewModel(session, owner));
             Nav.SelectedItem = ConfigsItem;
             ContentFrame.Content = new ConfigsPage(this, model);
         }
