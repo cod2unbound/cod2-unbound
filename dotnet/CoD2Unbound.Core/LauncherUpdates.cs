@@ -3,13 +3,14 @@ using System.Text.Json;
 
 namespace CoD2Unbound.Core;
 
-public enum UpdatePhase { Idle, Checking, Downloading, Verifying, Installing, Installed }
+public enum UpdatePhase { Idle, Checking, Offered, Downloading, Verifying, Ready, Installing, Installed }
 public enum UpdateFailureStage { Check, Install }
 public sealed record LauncherUpdateState(UpdatePhase Phase = UpdatePhase.Idle, bool WasChecked = false, string? Message = null,
     UpdateFailureStage? FailedStage = null, string? AvailableVersion = null, ReleaseOffer? Offer = null, Uri? ReleaseUrl = null,
-    ImmutableArray<ReleaseNoteItem> Notes = default)
+    ImmutableArray<ReleaseNoteItem> Notes = default, int? ProgressPercent = null)
 {
-    public bool CanCancel => Phase is UpdatePhase.Checking or UpdatePhase.Downloading or UpdatePhase.Verifying;
+    public bool CanCancel => Phase is UpdatePhase.Checking or UpdatePhase.Downloading or UpdatePhase.Verifying or UpdatePhase.Ready;
+    public bool IsBusy => CanCancel || Phase == UpdatePhase.Installing;
 }
 public sealed record LauncherUpdateCheck(LauncherUpdateState State, LauncherLibrary Library, string? NotifyVersion);
 public sealed record LauncherActivity(bool GameRunning, bool ServersRunning);
@@ -26,7 +27,8 @@ public interface IWindowsLauncherUpdate
 {
     // Own private temporary files until disposal. Verify the expected checksum and the pinned
     // signing publisher before publication. Encapsulate staging, trust checks and installer handoff.
-    ValueTask<IStagedLauncherUpdate> DownloadAsync(ReleaseOffer offer, CancellationToken cancellationToken);
+    void CheckInstallLocation();
+    ValueTask<IStagedLauncherUpdate> DownloadAsync(ReleaseOffer offer, Action<long> progress, CancellationToken cancellationToken);
     // Takes the same cross-process interlock as game launch and Hosting start, then checks live processes.
     ValueTask<IUpdateInstallLease> AcquireInstallLeaseAsync(CancellationToken cancellationToken);
 }
@@ -41,12 +43,19 @@ public interface IUpdateInstallLease : IAsyncDisposable
 }
 
 public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider clock, string currentVersion,
-    Func<string, string> installerAssetName, TimeZoneInfo timeZone)
+    Func<string, IEnumerable<ReleaseAsset>, ReleaseOffer?> selectOffer, TimeZoneInfo timeZone,
+    Func<string, string, bool>? isNewer = null)
 {
     private static readonly Uri ReleasesPage = new("https://github.com/cod2unbound/cod2-unbound/releases");
     private LauncherUpdateState state = new(Notes: []);
     private int busy;
     public LauncherUpdateState State => Volatile.Read(ref state);
+    public event Action<LauncherUpdateState>? Changed;
+
+    public void RestoreInstallResult(bool installed) =>
+        Publish(new(Phase: installed ? UpdatePhase.Installed : UpdatePhase.Idle, WasChecked: true,
+            Message: installed ? $"Updated to version {currentVersion}." : "The update did not finish. Try again or open the update logs.",
+            FailedStage: installed ? null : UpdateFailureStage.Install, ReleaseUrl: installed ? null : ReleasesPage, Notes: []));
 
     public static bool AutoCheckDue(DateTimeOffset now, DateTimeOffset? attempted, DateTimeOffset? checkedAt, bool gameRunning) =>
         !gameRunning && now >= NextDue(attempted, checkedAt);
@@ -76,12 +85,17 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
             library = library with { Dispatches = release.Dispatches.IsEmpty ? library.Dispatches : release.Dispatches,
                 News = news?.Items ?? library.News, NewsNext = news is null ? library.NewsNext : news.Next,
                 DispatchesCheckedAt = clock.GetUtcNow() };
-            if (release.LatestVersion is { } version && ReleaseNotes.IsNewer(version, currentVersion))
+            if (release.LatestVersion is { } version && (isNewer ?? ReleaseNotes.IsNewer)(version, currentVersion))
             {
-                var uri = release.Dispatches.FirstOrDefault(item => item.Version == version)?.Link;
-                var offer = ReleasePackage.Offer(version, installerAssetName(version), release.LatestAssets);
-                Publish(new(WasChecked: true, Message: $"Version {version} is available.",
-                    AvailableVersion: version, ReleaseUrl: Uri.TryCreate(uri, UriKind.Absolute, out var link) ? link : ReleasesPage, Offer: offer, Notes: release.LatestNotes));
+                var offer = selectOffer(version, release.LatestAssets);
+                if (offer is null)
+                {
+                    Publish(new(WasChecked: true, Message: "This release did not provide a valid Windows Setup. Open the download page for details.",
+                        FailedStage: UpdateFailureStage.Check, ReleaseUrl: ReleasesPage, Notes: []));
+                    return new(State, library, null);
+                }
+                Publish(new(Phase: UpdatePhase.Offered, WasChecked: true, Message: $"Version {version} is available.",
+                    AvailableVersion: version, ReleaseUrl: ReleasesPage, Offer: offer, Notes: release.LatestNotes));
                 return new(State, library, automatic && before.AvailableVersion != version ? version : null);
             }
             Publish(new(WasChecked: true, Message: $"You’re up to date · {currentVersion}", Notes: []));
@@ -108,15 +122,22 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
             return State;
         try
         {
-            if (State.Offer is not { } offer)
+            if (State.Offer is not { } offer || !(isNewer ?? ReleaseNotes.IsNewer)(offer.Version, currentVersion))
                 return State;
             var use = observe();
             if (ReleasePackage.Block(use.GameRunning, use.ServersRunning) is { } blocked)
                 return Refuse(blocked);
-            Publish(State with { Phase = UpdatePhase.Downloading, FailedStage = null, Message = $"Downloading {offer.Version}…" });
-            await using var staged = await adapter.DownloadAsync(offer, cancellationToken).ConfigureAwait(false);
-            Publish(State with { Phase = UpdatePhase.Verifying, Message = "Checking the download…" });
+            adapter.CheckInstallLocation();
+            Publish(State with { Phase = UpdatePhase.Downloading, FailedStage = null, Message = $"Downloading version {offer.Version}…", ProgressPercent = 0 });
+            await using var staged = await adapter.DownloadAsync(offer, bytes =>
+            {
+                int percent = (int)(bytes * 100 / offer.Archive.Size);
+                if (percent != State.ProgressPercent)
+                    Publish(State with { ProgressPercent = percent });
+            }, cancellationToken).ConfigureAwait(false);
+            Publish(State with { Phase = UpdatePhase.Verifying, Message = "Verifying the download…", ProgressPercent = null });
             await staged.VerifyAsync(cancellationToken).ConfigureAwait(false);
+            Publish(State with { Phase = UpdatePhase.Ready, Message = $"Version {offer.Version} is ready to install." });
             await using var lease = await adapter.AcquireInstallLeaseAsync(cancellationToken).ConfigureAwait(false);
             if (ReleasePackage.Block(lease.Activity.GameRunning, lease.Activity.ServersRunning) is { } changed)
                 return Refuse(changed);
@@ -124,16 +145,15 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
             cancellationToken.ThrowIfCancellationRequested();
             Publish(State with { Phase = UpdatePhase.Installing, Message = $"Installing {offer.Version}…" });
             await staged.InstallAsync(CancellationToken.None).ConfigureAwait(false);
-            Publish(State with { Phase = UpdatePhase.Installed, Message = $"Version {offer.Version} is installed." });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            Publish(State with { Phase = UpdatePhase.Idle, Message = "Update cancelled. Nothing was changed." });
+            Publish(State with { Phase = UpdatePhase.Offered, Message = "Download cancelled. You can try again.", ProgressPercent = null });
         }
         catch (Exception error) when (IsFetchError(error, cancellationToken))
         {
-            Publish(State with { Phase = UpdatePhase.Idle, FailedStage = UpdateFailureStage.Install,
-                Message = "The update couldn’t be installed. Try again." });
+            Publish(State with { Phase = UpdatePhase.Idle, FailedStage = UpdateFailureStage.Install, ProgressPercent = null,
+                Message = error is LauncherUpdateException ? error.Message : "The update could not be completed. Try again." });
         }
         finally { Volatile.Write(ref busy, 0); }
         return State;
@@ -160,13 +180,17 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
 
     private LauncherUpdateState Refuse(UpdateBlock reason)
     {
-        string problem = reason == UpdateBlock.GameRunning ? "Quit Call of Duty 2 before installing the update." :
-            "Stop your hosted servers before installing the update.";
+        string problem = reason == UpdateBlock.GameRunning ? "Close the game to update." :
+            "Stop your hosted servers to update.";
         Publish(State with { Phase = UpdatePhase.Idle, FailedStage = UpdateFailureStage.Install, Message = problem });
         return State;
     }
 
-    private void Publish(LauncherUpdateState next) => Volatile.Write(ref state, next);
+    private void Publish(LauncherUpdateState next)
+    {
+        Volatile.Write(ref state, next);
+        Changed?.Invoke(next);
+    }
 
     private static DateTimeOffset NextDue(DateTimeOffset? attempt, DateTimeOffset? check)
     {

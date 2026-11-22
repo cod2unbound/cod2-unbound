@@ -16,7 +16,7 @@ internal static partial class Program
             var releases = new TestReleases([.. Encoding.UTF8.GetBytes(row.GetProperty("json").GetString()!)]);
             string version = row.GetProperty("latestVersion").GetString()!;
             var updates = new LauncherUpdates(releases, clock, "0.0.1",
-                item => $"CoD2-Unbound-{item}-macos-arm64.zip", TimeZoneInfo.Utc);
+                (item, assets) => ReleasePackage.Offer(item, $"CoD2-Unbound-{item}-macos-arm64.zip", assets), TimeZoneInfo.Utc);
             var result = updates.CheckAsync(new(), automatic: true).GetAwaiter().GetResult();
             Equal(version, result.NotifyVersion);
             Equal(version, result.State.AvailableVersion);
@@ -32,8 +32,12 @@ internal static partial class Program
             Equal(1, installer.Verified);
             Equal(0, installer.Installed);
             installer.Busy = new(false, false);
-            Equal(UpdatePhase.Installed, updates.InstallAsync(installer, () => installer.Busy).GetAwaiter().GetResult().Phase);
+            Equal(UpdatePhase.Installing, updates.InstallAsync(installer, () => installer.Busy).GetAwaiter().GetResult().Phase);
             Equal(1, installer.Installed);
+            updates.RestoreInstallResult(installed: true);
+            Equal(UpdatePhase.Installed, updates.State.Phase);
+            updates.RestoreInstallResult(installed: false);
+            Equal(UpdateFailureStage.Install, updates.State.FailedStage);
             Equal(false, LauncherUpdates.AutoCheckDue(clock.GetUtcNow(), null, result.Library.DispatchesCheckedAt, false));
             Equal(TimeSpan.FromHours(1), LauncherUpdates.WaitForAutomaticCheck(clock.GetUtcNow(), null, result.Library.DispatchesCheckedAt));
         });
@@ -175,7 +179,8 @@ internal static partial class Program
         public int Downloads { get; private set; }
         public int Verified { get; private set; }
         public int Installed { get; private set; }
-        public ValueTask<IStagedLauncherUpdate> DownloadAsync(ReleaseOffer offer, CancellationToken cancellationToken)
+        public void CheckInstallLocation() { }
+        public ValueTask<IStagedLauncherUpdate> DownloadAsync(ReleaseOffer offer, Action<long> progress, CancellationToken cancellationToken)
         {
             Downloads++;
             return ValueTask.FromResult<IStagedLauncherUpdate>(this);

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace CoD2Unbound.Core;
 
-public sealed record ReleaseOffer(string Version, ReleaseAsset Archive, Uri Checksums);
+public sealed record ReleaseOffer(string Version, ReleaseAsset Archive, Uri Checksums, long ChecksumsSize = 0);
 public enum UpdateBlock { GameRunning, ServersRunning }
 
 public static partial class ReleasePackage
