@@ -158,7 +158,8 @@ def verify_shortcut_working_directory(shortcut, expected):
             if flag == 0x10:
                 working_directory = data[offset:end].decode("utf-16-le" if unicode else "ascii")
             offset = end
-    if working_directory.rstrip("\\").casefold() != expected.rstrip("\\").casefold():
+    # Wine's shell includes a terminator in the counted string it writes.
+    if working_directory.rstrip("\x00").rstrip("\\").casefold() != expected.rstrip("\\").casefold():
         raise ValueError(f"{shortcut.name} starts in {working_directory!r}, expected {expected!r}")
 
 
