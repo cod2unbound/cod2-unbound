@@ -65,6 +65,7 @@
     <Style x:Key="Mono" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
         <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextLineBounds" Value="Tight" />
     </Style>
     <Style x:Key="MonoCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
@@ -76,6 +77,7 @@
     <Style x:Key="MonoField" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
         <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
         <Setter Property="FontSize" Value="13" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />

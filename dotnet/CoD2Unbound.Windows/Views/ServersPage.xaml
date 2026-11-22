@@ -253,7 +253,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="JoinButton" AutomationProperties.Name="Launch" HorizontalAlignment="Stretch"
+                        <Button x:Name="JoinButton" AutomationProperties.Name="Launch" HorizontalAlignment="Stretch" Height="40"
                                 Style="{StaticResource LauncherAccentButton}" AccessKey="L" Click="OnJoin">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />

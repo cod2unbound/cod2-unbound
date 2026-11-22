@@ -90,7 +90,7 @@ public sealed partial class HostingPage : Page
             var row = Columns(10, new GridLength(1, GridUnitType.Star), new GridLength(2, GridUnitType.Star));
             Put(row, 0, Body(label));
             Put(row, 1, new TextBlock { Text = value, TextAlignment = TextAlignment.Right, TextWrapping = TextWrapping.Wrap,
-                Style = StyleFor(mono ? "Mono" : "BodyStrongTextBlockStyle") });
+                VerticalAlignment = VerticalAlignment.Center, Style = StyleFor(mono ? "Mono" : "BodyStrongTextBlockStyle") });
             summary.Children.Add(row);
         }
         UpdateRunState();
@@ -166,7 +166,11 @@ public sealed partial class HostingPage : Page
             SelectedIndex = hosting.LoopbackOnly ? 0 : (int)server.Reach, IsEnabled = !hosting.LoopbackOnly };
         var players = new NumberBox { Header = "Player slots", Minimum = 2, Maximum = 64, Value = server.Players,
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
-        var port = new NumberBox { Header = "Port", FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CourierPrime"], Minimum = 1025, Maximum = 65535, Value = server.Port };
+        var port = new NumberBox { Minimum = 1025, Maximum = 65535, Value = server.Port,
+            TextBoxStyle = StyleFor("MonoField") };
+        var portLabel = new TextBlock { Text = "Port" };
+        AutomationProperties.SetLabeledBy(port, portLabel);
+        var portField = new StackPanel { Spacing = 4, Children = { portLabel, port } };
         var gameTypes = HostingCatalog.GameTypes;
         var type = new ComboBox { Header = "Game type", ItemsSource = gameTypes.Select(item => item.Title).ToArray(),
             SelectedItem = HostingCatalog.GameTypeTitle(server.GameType) };
@@ -185,7 +189,7 @@ public sealed partial class HostingPage : Page
         var earlier = new Button { Content = "Move earlier" };
         var problem = Caption("");
         var form = new StackPanel { Spacing = 12 };
-        foreach (var field in new UIElement[] { name, edition, reach, players, port, type, friendly, join, admin, rotation, mapsAvailable,
+        foreach (var field in new UIElement[] { name, edition, reach, players, portField, type, friendly, join, admin, rotation, mapsAvailable,
             Buttons(addMap, removeMap, earlier), problem })
             form.Children.Add(field);
         var scroll = new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 350, MinWidth = 368 };
