@@ -74,6 +74,10 @@ says what was tested for it.
 by use on Player Setups for when there are figures to order by. The [0.4.2 verification](macos-port/release-0.4.2-verification.md)
 says what was tested for it.
 
+0.4.3 lets the launcher get updates and news from cod2unbound.com when GitHub
+cannot be reached. The [0.4.3 verification](macos-port/release-0.4.3-verification.md)
+says what was tested for it.
+
 ## 0.3.7 — One look across the launcher (released 0.3.7)
 
 - **Every screen follows one set of design rules**: the same titles, labels,

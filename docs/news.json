@@ -2,6 +2,12 @@
   "items": [
     {
       "date": "2026-11-22",
+      "title": "A second place to get updates",
+      "summary": "From 0.4.3, updates and this news keep working when GitHub can’t be reached: the launcher asks cod2unbound.com instead.",
+      "open": "updates"
+    },
+    {
+      "date": "2026-11-22",
       "title": "Your say on usage data",
       "summary": "0.4.2 asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind.",
       "open": "updates"
