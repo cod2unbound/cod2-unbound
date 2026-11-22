@@ -16,6 +16,7 @@ namespace CoD2Unbound.Windows.Views;
 public sealed partial class HomePage : Page
 {
     private readonly MainWindow shell;
+    private readonly WindowsLauncherSession session;
     private readonly HomeViewModel model;
     private readonly MapPreviews previews;
     private readonly List<Button> recentButtons = [];
@@ -25,6 +26,7 @@ public sealed partial class HomePage : Page
     internal HomePage(MainWindow shell, WindowsLauncherSession session)
     {
         this.shell = shell;
+        this.session = session;
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
@@ -32,9 +34,45 @@ public sealed partial class HomePage : Page
         Loaded += (_, _) => UpdateTheme();
     }
 
+    internal void RefreshUpdate(LauncherUpdateState state)
+    {
+        bool visible = state.Offer is not null || state.Phase == UpdatePhase.Installed ||
+            state.FailedStage == UpdateFailureStage.Install || session.SetupUpdating;
+        if (state.Phase == UpdatePhase.Downloading && UpdateProgress.Visibility == Visibility.Visible &&
+            state.ProgressPercent is { } progress && !UpdateProgress.IsIndeterminate)
+        {
+            UpdateProgress.Value = progress;
+            return;
+        }
+
+        UpdateBanner.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        UpdateBanner.IsOpen = visible;
+        if (!visible)
+            return;
+        UpdateBanner.Title = session.SetupUpdating ? "Installing the update…" : state.Message ?? "";
+        UpdateBanner.Severity = state.FailedStage is not null ? InfoBarSeverity.Warning :
+            state.Phase == UpdatePhase.Installed ? InfoBarSeverity.Success : InfoBarSeverity.Informational;
+        UpdateDetails.Content = state.FailedStage is null && state.Offer is not null ? "What’s new" : "Update settings";
+        UpdateButton.Visibility = state.Phase is UpdatePhase.Installing or UpdatePhase.Installed || session.SetupUpdating
+            ? Visibility.Collapsed : Visibility.Visible;
+        UpdateButton.Content = state.CanCancel ? "Cancel" : state.FailedStage is null ? "Install update" : "Try again";
+        UpdateButton.Style = !state.IsBusy && state.Offer is not null ? StyleFor("LauncherAccentButton") : null;
+        UpdateProgress.Visibility = state.Offer is not null && state.IsBusy || session.SetupUpdating
+            ? Visibility.Visible : Visibility.Collapsed;
+        UpdateProgress.IsIndeterminate = state.ProgressPercent is null;
+        UpdateProgress.Value = state.ProgressPercent ?? 0;
+    }
+
+    private async void OnUpdateAction(object sender, RoutedEventArgs args) =>
+        await shell.RunUpdateAsync(install: true);
+
+    private async void OnUpdateDetails(object sender, RoutedEventArgs args) =>
+        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
+
     internal async Task RefreshAsync()
     {
         await model.RefreshAsync();
+        RefreshUpdate(session.Updates.State);
         var last = model.LastServer;
         string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
         if (last is not null)

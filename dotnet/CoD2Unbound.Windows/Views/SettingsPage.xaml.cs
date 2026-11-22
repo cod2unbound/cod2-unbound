@@ -16,19 +16,20 @@ public sealed partial class SettingsPage : Page
     private readonly WindowsLauncherSession session;
     private readonly SettingsViewModel model;
     private CancellationTokenSource? saveDelay;
-    private CancellationTokenSource? updateCheck;
+    private ProgressBar? updateProgress;
+    private LauncherUpdateState? renderedUpdate;
     private (string Mode, WindowsRenderMode? Renderer)? previousDisplay;
     private string? advancedDraft;
     private string? advancedProblem;
 
-    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false)
+    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false, bool openUpdates = false)
     {
         this.shell = shell;
         this.session = session;
         model = new(session);
         InitializeComponent();
         model.RefreshData();
-        Panes.SelectedItem = Panes.Items[openGameData ? 2 : 0];
+        Panes.SelectedItem = Panes.Items[openUpdates ? 4 : openGameData ? 2 : 0];
     }
 
     private GameSettings Current => model.Settings.Working;
@@ -213,43 +214,56 @@ public sealed partial class SettingsPage : Page
         Row("Saved match summaries", null, delete);
     }
 
-    private void Updates()
+    private void Updates(LauncherUpdateState? snapshot = null)
     {
-        var state = session.Updates.State;
-        var check = Action(updateCheck is not null ? "Cancel" : state.FailedStage is null ? "Check now" : "Try again", CheckUpdatesAsync, exclusive: false);
-        check.IsEnabled = session.CanCheckUpdates;
-        Row($"CoD2 Unbound {session.Version}", updateCheck is not null ? "Checking for updates…" : state.Message, check);
+        var state = snapshot ?? session.Updates.State;
+        renderedUpdate = state;
+        updateProgress = null;
+        bool canInstall = state.Offer is not null && state.FailedStage != UpdateFailureStage.Check;
+        bool retry = state.FailedStage is not null;
+        string label = state.CanCancel ? "Cancel" : retry ? "Try again" : canInstall ? "Install and relaunch" : "Check now";
+        var action = Action(label, () => shell.RunUpdateAsync(canInstall), exclusive: false);
+        action.IsEnabled = session.CanCheckUpdates && state.Phase != UpdatePhase.Installing;
+        if (canInstall && !state.IsBusy)
+            action.Style = StyleFor("LauncherAccentButton");
+        string? message = session.SetupUpdating ? "Installing the update…" : state.Message;
+        Row($"CoD2 Unbound {session.Version}", message, action);
+        if (state.Phase is UpdatePhase.Downloading or UpdatePhase.Verifying or UpdatePhase.Ready or UpdatePhase.Installing ||
+            session.SetupUpdating)
+        {
+            updateProgress = new ProgressBar { IsIndeterminate = state.ProgressPercent is null, Value = state.ProgressPercent ?? 0 };
+            AutomationProperties.SetName(updateProgress, "Update progress");
+            Fields.Children.Add(updateProgress);
+        }
+
         if (state.ReleaseUrl is { } release)
-            Row($"Version {state.AvailableVersion}", null, Action("Open release page", () => OpenAsync(release.AbsoluteUri)));
-        Switch("Check automatically", null, Current.CheckUpdatesAutomatically,
+        {
+            string linkText = state.FailedStage is null ? "What’s new" : "Open download page";
+            var link = Action(linkText, () => OpenAsync(release.AbsoluteUri));
+            link.Style = StyleFor("SubtleLinkAction");
+            Row(state.AvailableVersion is { } version ? $"Release {version}" : "Downloads", null, link);
+        }
+        if (Directory.Exists(session.UpdateInstaller.LogsPath))
+        {
+            var logs = Action("Show in File Explorer", () => OpenAsync(session.UpdateInstaller.LogsPath));
+            logs.Style = StyleFor("SubtleLinkAction");
+            Row("Update logs", null, logs);
+        }
+        Switch("Check for updates automatically", "Once a day, when the launcher is open.", Current.CheckUpdatesAutomatically,
             value => ChangeAsync(Current with { CheckUpdatesAutomatically = value }));
     }
 
-    internal void RefreshUpdates()
+    internal void RefreshUpdates(LauncherUpdateState state)
     {
-        if (ReferenceEquals(Panes.SelectedItem, Panes.Items[4]))
-            Render();
-    }
-
-    private async Task CheckUpdatesAsync()
-    {
-        if (updateCheck is { } running)
+        if (!ReferenceEquals(Panes.SelectedItem, Panes.Items[4]))
+            return;
+        if (state.Phase == UpdatePhase.Downloading && renderedUpdate?.Phase == UpdatePhase.Downloading && updateProgress is not null)
         {
-            running.Cancel();
+            updateProgress.Value = state.ProgressPercent ?? 0;
             return;
         }
-        await shell.RunAsync(async () =>
-        {
-            using var request = new CancellationTokenSource();
-            updateCheck = request;
-            Render();
-            try { await session.CheckUpdatesAsync(automatic: false, request.Token); }
-            finally
-            {
-                updateCheck = null;
-                Render();
-            }
-        });
+        Fields.Children.Clear();
+        Updates(state);
     }
 
     private void Advanced()
@@ -333,7 +347,7 @@ public sealed partial class SettingsPage : Page
         Row("Updates", null, Action("Check for updates…", () =>
         {
             Panes.SelectedItem = Panes.Items[4];
-            return CheckUpdatesAsync();
+            return shell.RunUpdateAsync(install: false);
         }, exclusive: false));
         Row("Call of Duty", "Call of Duty is a registered trademark of Activision Publishing, Inc. CoD2 Unbound is a community project. Bring your own game data to play.");
     }

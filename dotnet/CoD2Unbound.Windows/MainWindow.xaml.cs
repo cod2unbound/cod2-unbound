@@ -29,6 +29,7 @@ public sealed partial class MainWindow : Window
     private bool closing;
     private DateTimeOffset hostPolled;
     private DateTimeOffset? attemptedUpdate;
+    private CancellationTokenSource? updateRequest;
     private readonly DateTimeOffset firstUpdate = DateTimeOffset.UtcNow.AddSeconds(8);
 
     public MainWindow()
@@ -51,10 +52,12 @@ public sealed partial class MainWindow : Window
         gameWatcher.Interval = TimeSpan.FromSeconds(1);
         gameWatcher.Tick += OnWatchGame;
         session.ClientStarted += OnClientStarted;
+        session.Updates.Changed += OnUpdateChanged;
         AppWindow.Closing += OnClosing;
         Closed += (_, _) =>
         {
             gameWatcher.Stop();
+            session.Updates.Changed -= OnUpdateChanged;
             windowTheme.Changed -= OnSystemThemeChanged;
         };
     }
@@ -267,7 +270,8 @@ public sealed partial class MainWindow : Window
         else
         {
             Nav.SelectedItem = Nav.SettingsItem;
-            ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings);
+            ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings,
+                openUpdates: place == LauncherPlace.UpdateSettings);
         }
         object? content = ContentFrame.Content;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
@@ -353,7 +357,15 @@ public sealed partial class MainWindow : Window
 
     private async void OnWatchGame(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
     {
-        if (!session.SetupComplete || busy || closing)
+        if (busy || closing)
+            return;
+        if (session.SetupUpdating)
+        {
+            session.RefreshUpdateOutcome();
+            RefreshUpdateViews(session.Updates.State);
+            return;
+        }
+        if (!session.SetupComplete)
             return;
         await RunAsync(async () =>
         {
@@ -373,13 +385,15 @@ public sealed partial class MainWindow : Window
                 if (ContentFrame.Content is ServersPage hosting)
                     hosting.UpdateHostingState();
             }
-            if (session.TestMaster is null && session.Settings.Working.CheckUpdatesAutomatically && now >= firstUpdate &&
+            if (session.CanAutoCheckUpdates && session.SetupComplete && session.Settings.Working.CheckUpdatesAutomatically &&
+                session.Updates.State.Phase != UpdatePhase.Installed && now >= firstUpdate &&
                 LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
             {
                 attemptedUpdate = now;
-                await session.CheckUpdatesAsync(automatic: true);
-                if (ContentFrame.Content is SettingsPage settings)
-                    settings.RefreshUpdates();
+                using var request = new CancellationTokenSource();
+                updateRequest = request;
+                try { await session.CheckUpdatesAsync(automatic: true, request.Token); }
+                finally { updateRequest = null; }
             }
             if (lastGame?.Running == state.Running && lastGame.LastExit == state.LastExit)
                 return;
@@ -389,6 +403,48 @@ public sealed partial class MainWindow : Window
             if (ContentFrame.Content is ServersPage servers)
                 servers.UpdateGameState(state);
         }, clearProblem: false);
+    }
+
+    private void OnUpdateChanged(LauncherUpdateState state) =>
+        DispatcherQueue.TryEnqueue(() => RefreshUpdateViews(state));
+
+    private void RefreshUpdateViews(LauncherUpdateState state)
+    {
+        if (ContentFrame.Content is SettingsPage settings)
+            settings.RefreshUpdates(state);
+        else if (ContentFrame.Content is HomePage home)
+            home.RefreshUpdate(state);
+    }
+
+    internal async Task RunUpdateAsync(bool install)
+    {
+        if (session.Updates.State.CanCancel)
+        {
+            updateRequest?.Cancel();
+            return;
+        }
+        if (!session.CanCheckUpdates)
+            return;
+        await RunAsync(async () =>
+        {
+            using var request = new CancellationTokenSource();
+            updateRequest = request;
+            try
+            {
+                if (install && session.Updates.State.Offer is not null)
+                {
+                    var result = await session.Updates.InstallAsync(session.UpdateInstaller, session.UpdateInstaller.Observe, request.Token);
+                    if (result.Phase == UpdatePhase.Installing)
+                    {
+                        flushedForClose = true;
+                        Close();
+                    }
+                }
+                else
+                    await session.CheckUpdatesAsync(automatic: false, request.Token);
+            }
+            finally { updateRequest = null; }
+        });
     }
 
     internal void ApplyAppearance(LauncherAppearance appearance) => Root.RequestedTheme = appearance switch
@@ -436,4 +492,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, GameDataSettings, Servers, Library, Configs }
+internal enum LauncherPlace { Setup, Home, Settings, GameDataSettings, UpdateSettings, Servers, Library, Configs }
