@@ -27,6 +27,7 @@ tests/packaging/
 tests/matches/
 tools/export/
 tools/config-directory/
+tools/usage/
 tools/macos/
 tools/metal/
 tools/dmg/
