@@ -10,7 +10,8 @@ import sys
 import zipfile
 
 from package_installer import windows_path
-from release import EXE_NAMES, WINDOWS, files, sha256
+from release import (EXE_NAMES, LAUNCHER_CATALOG, LAUNCHER_NAME, WINDOWS, binary_files,
+                     files, sha256)
 from signing import Signer
 
 
@@ -21,6 +22,7 @@ ENV = dict(os.environ, WINEARCH="win64", WINEDEBUG="-all", WINEDLLOVERRIDES="msc
            COD2X_TEST_UPDATER_ADDRESS="127.0.0.1:9",
            COD2X_TEST_UPDATER_URL="http://127.0.0.1:9/api/updater/check")
 UNINSTALL = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1"
+USER_CLASSES = r"HKCU\Software\Classes"
 RETAIL = r"HKLM\Software\Activision\Call of Duty 2"
 SILENT = ("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART")
 
@@ -86,13 +88,13 @@ def verify_portable(artifacts, work, sample):
     archive = next(artifacts.glob("*-server.zip"))
     signer = Signer(None, None, work / "test-code.pem", work / "test-tsa.pem",
                     sample / "signature-verification.log")
-    signer.verify(archive.with_suffix(".cat"), archive)
-    tampered = sample / "tampered.zip"
+    signer.verify_catalog(archive.with_suffix(".cat"), [archive], artifacts)
+    tampered = sample / archive.name
     shutil.copyfile(archive, tampered)
     with tampered.open("ab") as stream:
         stream.write(b"changed byte sequence")
     try:
-        signer.verify(archive.with_suffix(".cat"), tampered)
+        signer.verify_catalog(archive.with_suffix(".cat"), [tampered], sample)
     except ValueError as error:
         if "does not bind" not in str(error):
             raise
@@ -104,6 +106,8 @@ def verify_portable(artifacts, work, sample):
     expanded = sample / "Portable Server Release"
     with zipfile.ZipFile(archive) as bundle:
         bundle.extractall(expanded)
+    if (expanded / "launcher").exists() or (expanded / LAUNCHER_CATALOG).exists():
+        raise ValueError("Launcher files are present in the dedicated server ZIP")
     verify_files(expanded)
     for edition in ("original", "cod2x"):
         exe = expanded / edition / EXE_NAMES[1]
@@ -113,9 +117,10 @@ def verify_portable(artifacts, work, sample):
 
 
 def install(env, installer, log, *args):
-    result = wine(env, installer, *SILENT, "/SP-", f"/LOG={windows_path(log)}", *args)
+    result = wine(env, installer, *SILENT, "/SP-", f"/LOG={windows_path(log)}", *args, check=False)
     print(f"{installer.name} with {' '.join(args) or 'default scope'} exited {result.returncode}",
           flush=True)
+    result.check_returncode()
 
 
 def assert_version(env, root, scope, version):
@@ -124,6 +129,27 @@ def assert_version(env, root, scope, version):
     if result.stdout.split()[-1] != version or (root / "RELEASE_VERSION").read_text().strip() != version:
         raise ValueError(f"Expected {version} in both installed version locations")
     verify_files(root)
+
+
+def verify_launcher(env, root, start, uninstaller, signer):
+    if {path.name for path in start.glob("*.lnk")} != {
+            "CoD2 Unbound.lnk", "Dedicated Server Guide.lnk"}:
+        raise ValueError("Expected a launcher shortcut and a dedicated server guide")
+    binaries = [path for path in binary_files(root) if path != uninstaller]
+    signer.verify_catalog(root / LAUNCHER_CATALOG, binaries, root)
+    for path in binaries:
+        signer.verify(path)
+
+    for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x"):
+        command = wine(env, "reg", "query", f"{USER_CLASSES}\\{key}\\shell\\open\\command",
+                       "/ve", "/reg:64").stdout
+        if f'\\launcher\\{LAUNCHER_NAME}" "%1"' not in command:
+            raise ValueError(f"{key} does not open the installed launcher")
+    for ext, handler in ((".cfg", "CoD2Unbound.Config"), (".dm_1", "CoD2Unbound.Demo")):
+        wine(env, "reg", "query", f"{USER_CLASSES}\\{ext}\\OpenWithProgids", "/v", handler,
+             "/reg:64")
+    print(f"PASS launcher shortcut, associations, signed payload catalog and {len(binaries)} PEs",
+          flush=True)
 
 
 def verify_installer(artifacts, work, previous, run):
@@ -163,25 +189,30 @@ def verify_installer(artifacts, work, previous, run):
 
         install(env, previous, run / "previous.log")
         assert_version(env, root, "HKCU", old_version)
-        if len(list(user_start.glob("*.lnk"))) != 3:
+        old_launcher = root / "launcher" / LAUNCHER_NAME
+        old_shortcuts = 2 if old_launcher.is_file() else 3
+        if len(list(user_start.glob("*.lnk"))) != old_shortcuts:
             raise ValueError("Missing per-user Start menu entries")
 
-        install(env, setup, run / "upgrade.log", "/CURRENTUSER")
+        existing_scheme = USER_CLASSES + r"\cod2\shell\open\command"
+        wine(env, "reg", "add", existing_scheme, "/ve", "/d", "Third-party link handler",
+             "/f", "/reg:64")
+        install(env, setup, run / "upgrade.log", "/CURRENTUSER", "/TASKS=links")
         assert_version(env, root, "HKCU", version)
         if len(list(root.glob("unins*.exe"))) != 1:
             raise ValueError("Upgrade did not reuse the single installed uninstaller")
         uninstaller = next(root.glob("unins*.exe"))
         signer.verify(uninstaller)
-        for ext in ("cod2", "cod2x", "CoD2Unbound.Demo", "CoD2Unbound.Config"):
-            if not wine(env, "reg", "query", "HKCR\\" + ext, check=False).returncode:
-                raise ValueError(f"Unexpected association {ext} without the launcher")
+        verify_launcher(env, root, user_start, uninstaller, signer)
+        if "Third-party link handler" not in wine(env, "reg", "query", existing_scheme, "/ve").stdout:
+            raise ValueError("Upgrade replaced an existing link handler")
 
         run_server(root / "cod2x" / EXE_NAMES[1], root / "server.cfg", "cod2x", env,
                    run / "installed-server")
-        removed = root / "cod2x" / EXE_NAMES[1]
+        removed = root / "launcher" / "CoD2Unbound.Windows.pri"
         expected_hash = sha256(removed)
         removed.unlink()
-        install(env, setup, run / "repair.log", "/CURRENTUSER")
+        install(env, setup, run / "repair.log", "/CURRENTUSER", "/TASKS=links")
         assert_version(env, root, "HKCU", version)
         if sha256(removed) != expected_hash:
             raise ValueError("Repair did not restore the signed file")
@@ -194,6 +225,12 @@ def verify_installer(artifacts, work, previous, run):
             raise ValueError("Uninstall left installed files or removed the user's own file")
         if not wine(env, "reg", "query", "HKCU\\" + UNINSTALL, check=False).returncode:
             raise ValueError("Uninstall key still exists")
+        for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x"):
+            if not wine(env, "reg", "query", USER_CLASSES + "\\" + key, "/reg:64",
+                        check=False).returncode:
+                raise ValueError(f"Uninstall left the {key} association")
+        if "Third-party link handler" not in wine(env, "reg", "query", existing_scheme, "/ve").stdout:
+            raise ValueError("Uninstall removed an existing link handler")
         retail_value = wine(env, "reg", "query", RETAIL, "/reg:32", "/v", "InstallPath").stdout
         if windows_path(retail) not in retail_value or before != {p: sha256(p) for p in preserved}:
             raise ValueError("An installer operation changed retail or player files")

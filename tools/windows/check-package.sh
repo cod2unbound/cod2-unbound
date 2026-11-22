@@ -12,8 +12,9 @@ previous=$(cd "$(dirname "$2")" && pwd)
 data=$(cd "${3:-$HOME/Games/CoD2}" && pwd)
 : "${COD2_WINDOWS_PACKAGE_IMAGE:?Specify the package build image by ID}"
 [[ $COD2_WINDOWS_PACKAGE_IMAGE =~ ^sha256:[0-9a-f]{64}$ ]]
-mkdir -p "$root/output/r05/package"
-run=$(mktemp -d "$root/output/r05/package/check-XXXXXXXX")
+output="${COD2_WINDOWS_RELEASE_OUTPUT:-$root/output/r05/package}"
+mkdir -p "$output"
+run=$(mktemp -d "$output/check-XXXXXXXX")
 echo "Package checks in $run"
 exec docker run --rm --init --pull=never --platform linux/amd64 --network none \
     --label cod2.windows.check=package-proof \

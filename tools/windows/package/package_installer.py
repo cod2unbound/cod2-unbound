@@ -8,7 +8,8 @@ import subprocess
 import tempfile
 
 from catalog import make_catalog
-from release import WINDOWS, check_pe, check_version, files, server_zip, sha256, write_checksums
+from release import (LAUNCHER_CATALOG, WINDOWS, binary_files, check_pe, check_version, files,
+                     server_zip, sha256, write_checksums)
 from signing import Signer, azure_options, test_authority
 
 
@@ -117,7 +118,12 @@ def release(mode, tree, work, version, company):
                         work / "signature-verification.log")
         signed_tree = tree.with_name("signed-layout")
         shutil.copytree(tree, signed_tree)
-        signer.sign([path for path in files(signed_tree) if path.suffix.lower() in (".exe", ".dll")])
+        binaries = binary_files(signed_tree)
+        signer.sign(binaries)
+        payload_catalog = signed_tree / LAUNCHER_CATALOG
+        make_catalog(binaries, signed_tree, payload_catalog, work)
+        signer.sign([payload_catalog])
+        signer.verify_catalog(payload_catalog, binaries, signed_tree)
         write_checksums(signed_tree, [p for p in files(signed_tree) if p.name != "SHA256SUMS"])
         artifacts = work.parent / "artifacts"
         artifacts.mkdir()
@@ -125,7 +131,7 @@ def release(mode, tree, work, version, company):
         archive = artifacts / f"CoD2-Unbound-{version}-windows-x64-server.zip"
         server_zip(signed_tree, archive)
         catalog = archive.with_suffix(".cat")
-        make_catalog(archive, catalog, work)
+        make_catalog([archive], artifacts, catalog, work)
         signer.sign([catalog])
-        signer.verify(catalog, archive)
+        signer.verify_catalog(catalog, [archive], artifacts)
         write_checksums(artifacts, files(artifacts))

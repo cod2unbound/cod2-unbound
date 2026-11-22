@@ -100,13 +100,16 @@ class Signer:
         self.report = report
 
     def sign(self, paths):
-        subprocess.run(["java", "-jar", self.jar, "sign", "--alg", "SHA-256",
-                        "--replace", "--name", "CoD2 Unbound", *self.options, *paths],
-                       check=True, timeout=600)
-        for path in paths:
-            self.verify(path)
+        # The launcher includes hundreds of runtime DLLs. Bound each signing invocation.
+        for start in range(0, len(paths), 48):
+            batch = paths[start:start + 48]
+            subprocess.run(["java", "-jar", self.jar, "sign", "--alg", "SHA-256",
+                            "--replace", "--name", "CoD2 Unbound", *self.options, *batch],
+                           check=True, timeout=600)
+            for path in batch:
+                self.verify(path)
 
-    def verify(self, path, archive=None):
+    def verify(self, path):
         result = subprocess.run(
             ["osslsigncode", "verify", "-verbose", "-CAfile", self.code_root,
              "-TSA-CAfile", self.tsa_root, "-in", path],
@@ -120,7 +123,17 @@ class Signer:
         if (not re.search(r"(?m)^Timestamp Server Signature verification: ok\s*$", result.stdout)
                 or "Timestamp verified using:" not in result.stdout):
             raise ValueError(f"{path}: missing verified timestamp, see {self.report}")
-        if archive and not re.search(
-            rf"(?mi)^\s*Message digest\s*:\s*{sha256(archive)}\s*$", result.stdout
-        ):
-            raise ValueError(f"{path}: the catalog does not bind {archive.name}")
+        return result.stdout
+
+    def verify_catalog(self, catalog, paths, root):
+        report = self.verify(catalog)
+        section = report.partition("Catalog members:\n")[2].partition("\nSignature Index:")[0]
+        actual = []
+        for block in re.split(r"\n[ \t]*\n", section.strip("\n")):
+            fields = dict(line.strip().split(": ", 1) for line in block.splitlines() if ": " in line)
+            if fields.get("Hash algorithm") != "SHA256":
+                raise ValueError(f"{catalog}: expected a SHA-256 catalog member")
+            actual.append((fields.get("File name", ""), fields.get("Message digest", "").lower()))
+        expected = sorted((path.relative_to(root).as_posix(), sha256(path)) for path in paths)
+        if sorted(actual) != expected:
+            raise ValueError(f"{catalog}: the catalog does not bind the expected files")

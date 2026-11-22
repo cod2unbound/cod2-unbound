@@ -3,7 +3,8 @@ CoD2 Unbound Windows components
 
 The game executables link to the following third-party components. The build
 uses static libraries for SDL2, curl, zlib and the MinGW runtime. The package
-contains no runtime DLLs. Windows provides Direct3D 9, d3dcompiler_47, OpenGL,
+keeps the engine executables independent of the launcher's runtime DLLs.
+Windows provides Direct3D 9, d3dcompiler_47, OpenGL,
 Schannel, Winsock, and the other system libraries. Shader compilation uses
 the player's licensed archives.
 

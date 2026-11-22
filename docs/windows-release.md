@@ -26,6 +26,15 @@ Use the following local package image for the compiler, signer and verifier.
 Check the base image ID before building and retain the resulting image ID for
 subsequent builds and tests.
 
+From the release checkout, run `sh tools/windows/vm-build.sh --export-x64`
+with the Windows build VM already running. It runs the portable core tests,
+publishes x64 and ARM64, and prints the path of `launcher-win-x64.zip` on the
+Mac. Give that ZIP directly to the Docker release command. The wrapper
+compares its SHA-256 before and after transfer. Docker verifies every file
+listed in the ZIP's `SHA256SUMS`, checks the x64 app host, and records the
+Windows publish's Git revision and input hashes under `work/`. Use a publish
+from the same release checkout.
+
 ```sh
 test "$(docker image inspect cod2-build-win --format '{{.Id}}')" = \
   sha256:eb9d795192ea5bf14d58d939dd76b2c3e4fe344f2a91b713093ba5a4d728b7e6
@@ -33,21 +42,23 @@ mkdir -p output/r05/package
 DOCKER_BUILDKIT=0 docker build --pull=false --platform linux/amd64 \
   --iidfile output/r05/package/image.id tools/windows/package
 export COD2_WINDOWS_PACKAGE_IMAGE="$(cat output/r05/package/image.id)"
-tools/windows/release.sh test
+tools/windows/release.sh test /path/to/launcher-win-x64.zip
 ```
 
 The test mode creates disposable self-signed code-signing and local RFC 3161
 timestamping certificates, then removes the private keys. The public
 certificates and verification output are under `work/`. The package includes
-an Authenticode-signed installer and embedded uninstaller, signed engine PEs
-and a dedicated-server ZIP with an adjacent signed catalog. The catalog
-contains the SHA-256 of the exact ZIP bytes. To verify a download on Windows,
+an Authenticode-signed installer and embedded uninstaller, plus signed engine
+and launcher EXEs and DLLs. Setup contains a signed `payload.cat` that lists
+their paths and raw hashes after signing. The dedicated-server ZIP has its
+own signed catalog that binds the exact ZIP bytes. To verify that download on Windows,
 verify the catalog's Authenticode signature with `signtool verify /pa /v archive.cat`
 (or the Digital Signatures tab), then match the member's SHA-256 shown by
 `certutil -dump archive.cat` to `Get-FileHash archive.zip -Algorithm SHA256`.
 The ZIP also contains per-file checksums for use after extraction.
 
-For production, use `tools/windows/release.sh azure` with these environment variables.
+For production, use `tools/windows/release.sh azure /path/to/launcher-win-x64.zip`
+with these environment variables.
 
 | Variable | Required value |
 | --- | --- |
@@ -95,17 +106,18 @@ exclusive write access before it starts replacing files. This also catches
 a second process that locks a managed engine image. A user can always
 resume a hosted server after the operation using its original writable home.
 
-The launcher integration point is `layout/launcher/CoD2Unbound.exe` and
-its publish output. When the launcher lands, add its publish directory to the
-release staging step and validate its PE imports and version resources there.
-Inno uses the launcher as the Start menu entry only when the executable exists.
-The same condition adds `.dm_1` and `.cfg` Open With entries and an opt-in
-for the `cod2x:` and `cod2:` handlers where available. Existing defaults
-and third-party URL handlers are preserved. The names match the Mac bundle.
-The launcher must validate incoming links and route configs to import review.
+Setup places the x64 publish under `layout/launcher` during packaging and
+installs it beside the `original` and `cod2x` engine folders. The **CoD2 Unbound**
+Start shortcut opens `launcher\CoD2Unbound.Windows.exe`. Setup adds
+`.dm_1` and `.cfg` Open With entries and an opt-in for available `cod2x:`
+and `cod2:` handlers. Existing defaults and third-party URL handlers are
+preserved. External activation reaches the launcher, which still needs a
+dispatcher for importing a config, playing a demo or joining from a link.
 
-WinUI 3 supports an unpackaged self-contained deployment from a custom
-installer. MSIX also supports App Installer updates and manifest associations.
+The WinUI 3 launcher uses unpackaged, app-local Windows App SDK 2.7.0 and
+self-contained .NET 10. Keep all the published libraries and resources next
+to the launcher. Rebuild Setup to deliver runtime security updates. MSIX
+also supports App Installer updates and manifest associations.
 Its package identity and default registry/file virtualization would need
 additional cross-process validation for the launcher and its separate engines.
 The conventional installer supplies one replaceable payload with direct Win32

@@ -1,7 +1,7 @@
 #include "release.iss"
 
-; Launcher integration point. Its future publish output belongs under layout/launcher.
-#if FileExists(Payload + "\launcher\CoD2Unbound.exe")
+#define Launcher "CoD2Unbound.Windows.exe"
+#if FileExists(Payload + "\launcher\" + Launcher)
   #define HasLauncher
 #endif
 
@@ -44,11 +44,11 @@ UninstallFilesDir={app}
 SetupLogging=yes
 #ifdef HasLauncher
 ChangesAssociations=yes
-UninstallDisplayIcon={app}\launcher\CoD2Unbound.exe
+UninstallDisplayIcon={app}\launcher\{#Launcher}
 #endif
 
 [Messages]
-ConfirmUninstall=Remove %1 and its installed files? Your configs, screenshots, demos and CD key will stay in place.
+ConfirmUninstall=Remove %1 and its installed files? Your loadouts, settings, screenshots, demos and CD key will stay in place.
 
 [Files]
 Source: "{#Payload}\original\cod2_win32.exe"; DestDir: "{app}\original"; Flags: ignoreversion
@@ -65,12 +65,13 @@ Source: "{#Payload}\README-server.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\server.cfg"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\licenses\*.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 #ifdef HasLauncher
+Source: "{#Payload}\payload.cat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\launcher\*"; DestDir: "{app}\launcher"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
 [Icons]
 #ifdef HasLauncher
-Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\CoD2Unbound.exe"; WorkingDir: "{app}"
+Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{app}"
 #else
 Name: "{group}\CoD2 Unbound (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{app}"
 Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{app}"
@@ -78,22 +79,26 @@ Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; Wo
 Name: "{group}\Dedicated Server Guide"; Filename: "{app}\README-server.txt"; WorkingDir: "{app}"
 
 #ifdef HasLauncher
+[InstallDelete]
+Type: files; Name: "{group}\CoD2 Unbound (Original 1.3).lnk"
+Type: files; Name: "{group}\CoD2 Unbound (CoD2x).lnk"
+
 [Tasks]
 Name: "links"; Description: "Handle cod2x and cod2 links when no other app handles them"; Flags: unchecked
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo"; ValueType: string; ValueData: "Call of Duty 2 demo"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\CoD2Unbound.exe"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\.dm_1\OpenWithProgids"; ValueType: none; ValueName: "CoD2Unbound.Demo"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\.dm_1\OpenWithProgids"; ValueType: string; ValueName: "CoD2Unbound.Demo"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Config"; ValueType: string; ValueData: "Call of Duty 2 config"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Config\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\CoD2Unbound.exe"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\.cfg\OpenWithProgids"; ValueType: none; ValueName: "CoD2Unbound.Config"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Config\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\.cfg\OpenWithProgids"; ValueType: string; ValueName: "CoD2Unbound.Config"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\cod2x"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('cod2x')
 Root: HKA; Subkey: "Software\Classes\cod2x"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2x')
-Root: HKA; Subkey: "Software\Classes\cod2x\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\CoD2Unbound.exe"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2x')
+Root: HKA; Subkey: "Software\Classes\cod2x\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2x')
 Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('cod2')
 Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2')
-Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\CoD2Unbound.exe"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2')
+Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2')
 #endif
 
 [Code]
@@ -134,6 +139,7 @@ begin
     Busy(Root + '\original\cod2_win32_ded.exe') or
     Busy(Root + '\cod2x\cod2_win32.exe') or
     Busy(Root + '\cod2x\cod2_win32_ded.exe') or
+    Busy(Root + '\launcher\{#Launcher}') or
     Busy(Root + '\launcher\CoD2Unbound.exe');
 end;
 
@@ -168,7 +174,7 @@ end;
 
 function LinkCommand(): String;
 begin
-  Result := '"' + ExpandConstant('{app}\launcher\CoD2Unbound.exe') + '" "%1"';
+  Result := '"' + ExpandConstant('{app}\launcher\{#Launcher}') + '" "%1"';
 end;
 
 function OwnsLink(const Scheme: String): Boolean;
@@ -179,14 +185,23 @@ begin
     '', Command) and (CompareText(Command, LinkCommand()) = 0);
 end;
 
+function CanClaimLink(const Scheme: String): Boolean;
+var
+  Key: String;
+begin
+  Key := 'Software\Classes\' + Scheme;
+  Result := OwnsLink(Scheme) or
+    (not RegKeyExists(HKCU64, Key) and not RegKeyExists(HKLM64, Key));
+end;
+
 var
   AllowCod2x, AllowCod2: Boolean;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then begin
-    AllowCod2x := OwnsLink('cod2x') or not RegKeyExists(HKCR64, 'cod2x');
-    AllowCod2 := OwnsLink('cod2') or not RegKeyExists(HKCR64, 'cod2');
+    AllowCod2x := CanClaimLink('cod2x');
+    AllowCod2 := CanClaimLink('cod2');
   end;
 end;
 

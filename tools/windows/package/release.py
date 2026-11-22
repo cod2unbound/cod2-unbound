@@ -2,9 +2,10 @@
 
 import hashlib
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import sys
@@ -17,6 +18,8 @@ WINDOWS = ROOT / "tools/windows"
 EDITION_NAMES = ("original", "cod2x")
 EXE_NAMES = ("cod2_win32.exe", "cod2_win32_ded.exe")
 OBJ = "x86_64-w64-mingw32-"
+LAUNCHER_NAME = "CoD2Unbound.Windows.exe"
+LAUNCHER_CATALOG = "payload.cat"
 
 
 def checked(command, log):
@@ -40,6 +43,63 @@ def write_checksums(tree, paths):
     (tree / "SHA256SUMS").write_text(
         "".join(f"{sha256(path)}  {path.relative_to(tree).as_posix()}\n" for path in paths)
     )
+
+
+def binary_files(tree):
+    return [path for path in files(tree) if path.suffix.lower() in (".exe", ".dll")]
+
+
+def stage_launcher(bundle, tree, work):
+    with zipfile.ZipFile(bundle) as archive:
+        entries = {}
+        folded = set()
+        for member in archive.infolist():
+            name = member.filename
+            parts = PurePosixPath(name).parts
+            if (not parts or "/".join(parts) != name or any(
+                    part in (".", "..", "/") or part.endswith((".", " "))
+                    or re.search(r'[\\\\:<>"|?*\x00-\x1f]', part) for part in parts)
+                    or stat.S_ISLNK(member.external_attr >> 16) or name.casefold() in folded):
+                raise ValueError(f"Invalid or duplicate launcher member: {name!r}")
+            entries[name] = member
+            folded.add(name.casefold())
+
+        required = {LAUNCHER_NAME, "CoD2Unbound.Windows.pri", "Microsoft.ui.xaml.dll",
+                    "coreclr.dll", "hostfxr.dll", "hostpolicy.dll", "SOURCE_REVISION", "SHA256SUMS"}
+        if required - entries.keys():
+            raise ValueError(f"Missing launcher files: {sorted(required - entries.keys())}")
+        hashes = {}
+        for line in archive.read("SHA256SUMS").decode("ascii").splitlines():
+            match = re.fullmatch(r"([a-f0-9]{64})  (.+)", line)
+            if not match or match[2] in hashes:
+                raise ValueError(f"Invalid launcher checksum entry: {line!r}")
+            hashes[match[2]] = match[1]
+        if hashes.keys() != entries.keys() - {"SHA256SUMS"}:
+            raise ValueError("Launcher checksum list does not match the ZIP contents")
+        for name, digest in hashes.items():
+            with archive.open(name) as source:
+                if name == "SOURCE_REVISION":
+                    revision = source.read()
+                    if (not re.fullmatch(rb"[a-f0-9]{40}\r?\n?", revision)
+                            or hashlib.sha256(revision).hexdigest() != digest):
+                        raise ValueError("Invalid launcher source revision")
+                    (work / name).write_bytes(revision)
+                    continue
+                destination = tree / "launcher" / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with destination.open("xb") as output:
+                    shutil.copyfileobj(source, output)
+                if sha256(destination) != digest:
+                    raise ValueError(f"Launcher SHA-256 mismatch for {name}")
+        (work / "launcher-SHA256SUMS").write_bytes(archive.read("SHA256SUMS"))
+    launcher = tree / "launcher" / LAUNCHER_NAME
+    with launcher.open("rb") as image:
+        image.seek(0x3C)
+        image.seek(int.from_bytes(image.read(4), "little"))
+        if image.read(6) != b"PE\0\0\x64\x86":
+            raise ValueError(f"{launcher}: expected an x64 PE")
+    print(f"Staged launcher from {revision.decode().strip()} (ZIP SHA-256 {sha256(bundle)})",
+          flush=True)
 
 
 def check_pe(exe, allowed_file):
@@ -117,7 +177,10 @@ def build_engine(edition, is_client, tree, work, version, company, jobs):
     check_version(binary, version, company)
 
 
-def stage(tree, work, version, company, jobs):
+def stage(tree, work, version, company, jobs, launcher=None):
+    work.mkdir(parents=True)
+    if launcher is not None:
+        stage_launcher(launcher, tree, work)
     for edition in EDITION_NAMES:
         (tree / edition).mkdir(parents=True)
         for is_client in (True, False):
@@ -150,7 +213,8 @@ def server_zip(tree, archive):
     members = {}
     for path in files(tree):
         relative = path.relative_to(tree)
-        if relative.parts[0] == "launcher" or path.name in (EXE_NAMES[0], "SHA256SUMS"):
+        if relative.parts[0] == "launcher" or path.name in (
+                EXE_NAMES[0], "SHA256SUMS", LAUNCHER_CATALOG):
             continue
         members[relative.as_posix()] = path
     checksums = "".join(f"{sha256(path)}  {name}\n" for name, path in members.items())
@@ -179,7 +243,10 @@ def main(mode):
 
     work = OUT / "work"
     tree = OUT / "layout"
-    stage(tree, work, version, company, jobs)
+    launcher = Path("/launcher-win-x64.zip")
+    if mode != "layout" and not launcher.is_file():
+        raise ValueError("A verified x64 launcher publish ZIP is required for Setup")
+    stage(tree, work, version, company, jobs, launcher if launcher.is_file() else None)
     if mode != "layout":
         from package_installer import release
         release(mode, tree, work, version, company)
