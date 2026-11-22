@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
+using Color = global::Windows.UI.Color;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -100,13 +101,13 @@ public sealed partial class ConfigsPage : Page
         else
             check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
 
-        static double ContrastRatio(Windows.UI.Color ink, Windows.UI.Color background)
+        static double ContrastRatio(Color ink, Color background)
         {
             double a = Luminance(ink) + 0.05;
             double b = Luminance(background) + 0.05;
             return Math.Max(a, b) / Math.Min(a, b);
 
-            static double Luminance(Windows.UI.Color color) =>
+            static double Luminance(Color color) =>
                 0.2126 * Linear(color.R) + 0.7152 * Linear(color.G) + 0.0722 * Linear(color.B);
 
             static double Linear(byte channel)
