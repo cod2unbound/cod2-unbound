@@ -14,6 +14,18 @@ internal static partial class Program
     {
         using var fixture = Fixtures("profiles");
         var row = fixture.RootElement;
+        Check("loadout choices expose the requested startup resolution", () =>
+        {
+            var home = new MemoryPlatform("/game-home");
+            home.WriteAsync(ActivePath, ImportBytes("Main"), default).GetAwaiter().GetResult();
+            home.WriteAsync(ConfigPath, ImportBytes("seta r_mode 640x480\nseta r_mode \"1440x900\"\n"), default).GetAwaiter().GetResult();
+            home.WriteAsync("main/players/Default/config_mp.cfg", ImportBytes("seta sensitivity 2\n"), default).GetAwaiter().GetResult();
+
+            var choices = Sync(ConfigProfileStore.ReadChoicesAsync(home, ["Main", "Default"]));
+            Equal("1440x900", choices.Single(choice => choice.IsActive).RequestedResolution);
+            Equal(null, choices.Single(choice => choice.Id == "Default").RequestedResolution);
+        });
+
         Check("Swift journal recovers a mixed config, metadata and companion", () =>
         {
             var storage = SwiftInterrupted();

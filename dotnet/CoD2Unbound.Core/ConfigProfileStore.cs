@@ -124,12 +124,12 @@ public sealed partial class ConfigProfileStore(
     }
 
     public static async ValueTask<ImmutableArray<ConfigProfile>> ReadChoicesAsync(ISettingsFolder home, IEnumerable<string> ids,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, ConfigDialect dialect = ConfigDialect.Stock)
     {
         var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
         var result = ImmutableArray.CreateBuilder<ConfigProfile>();
         foreach (string id in ids.Where(ValidIdentifier).Distinct(StringComparer.OrdinalIgnoreCase))
-            if (await ReadForDisplayAsync(home, id, selected.ProfileId, cancellationToken).ConfigureAwait(false) is { } profile)
+            if (await ReadForDisplayAsync(home, id, selected.ProfileId, cancellationToken, dialect).ConfigureAwait(false) is { } profile)
                 result.Add(profile);
         return [.. result.OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
     }
@@ -143,13 +143,16 @@ public sealed partial class ConfigProfileStore(
     }
 
     private static async ValueTask<ConfigProfile?> ReadForDisplayAsync(ISettingsFolder home, string id, string? active,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, ConfigDialect? displayDialect = null)
     {
         string directory = DirectoryName(id);
-        if (await home.ReadAsync(directory + ConfigName, cancellationToken).ConfigureAwait(false) is null)
+        if (await home.ReadAsync(directory + ConfigName, cancellationToken).ConfigureAwait(false) is not { } config)
             return null;
         var metadata = await home.ReadAsync(directory + MetadataName, cancellationToken).ConfigureAwait(false);
-        return ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), active);
+        var profile = ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), active);
+        return displayDialect is { } dialect
+            ? profile with { RequestedResolution = new ConfigDocument(config.AsSpan(), dialect).EffectiveSetting("r_mode") }
+            : profile;
     }
 
     public static async ValueTask<string?> ReadPlayerNameAsync(ISettingsFolder home, ConfigDialect dialect,

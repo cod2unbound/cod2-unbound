@@ -51,7 +51,10 @@ public sealed record ConfigStudioMetadata(string DisplayName)
     }
 }
 
-public sealed record ConfigProfile(string Id, string DisplayName, bool IsActive);
+public sealed record ConfigProfile(string Id, string DisplayName, bool IsActive)
+{
+    public string? RequestedResolution { get; init; }
+}
 
 public sealed record ConfigProfileVersion(ImmutableArray<byte> Config, ImmutableArray<byte>? Metadata, ImmutableArray<byte>? Chain = null)
 {

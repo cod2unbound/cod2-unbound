@@ -214,7 +214,8 @@ internal sealed class WindowsLauncherSession
             using var root = new WindowsFiles.DirectoryHandles(players);
             var ids = new DirectoryInfo(players).EnumerateDirectories()
                 .Where(entry => (entry.Attributes & FileAttributes.ReparsePoint) == 0).Select(entry => entry.Name);
-            return await ConfigProfileStore.ReadChoicesAsync(gameFolder, ids);
+            var dialect = Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
+            return await ConfigProfileStore.ReadChoicesAsync(gameFolder, ids, dialect: dialect);
         }
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return []; }
     }

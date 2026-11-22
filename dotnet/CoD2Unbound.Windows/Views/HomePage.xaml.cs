@@ -78,10 +78,12 @@ public sealed partial class HomePage : Page
 
         var settings = model.Settings;
         settingLoadout = true;
-        string resolution = LauncherText.Resolution(settings.Resolution);
         var loadouts = model.Loadouts.Select(profile => new ComboBoxItem
         {
-            Content = profile.DisplayName + " · " + resolution, Tag = profile.Id
+            Content = DisplayResolution.TryParse(profile.RequestedResolution ?? settings.Resolution, out var resolution)
+                ? profile.DisplayName + " · " + LauncherText.Resolution(resolution.ToString())
+                : profile.DisplayName,
+            Tag = profile.Id
         }).ToList();
         var active = model.Loadouts.FirstOrDefault(profile => profile.IsActive);
         if (active is null && loadouts.Count > 0)
