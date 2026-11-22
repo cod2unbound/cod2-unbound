@@ -74,12 +74,12 @@ Source: "{#Payload}\launcher\*"; DestDir: "{app}\launcher"; Flags: ignoreversion
 
 [Icons]
 #ifdef HasLauncher
-Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{app}"
+Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"
 #else
-Name: "{group}\CoD2 Unbound (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{app}"
-Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{app}"
+Name: "{group}\CoD2 Unbound (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{sys}"
+Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{sys}"
 #endif
-Name: "{group}\Dedicated Server Guide"; Filename: "{app}\README-server.txt"; WorkingDir: "{app}"
+Name: "{group}\Dedicated Server Guide"; Filename: "{app}\README-server.txt"; WorkingDir: "{sys}"
 
 #ifdef HasLauncher
 [InstallDelete]
@@ -107,7 +107,7 @@ Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueNa
 Root: HKCU64; Subkey: "Software\Classes\cod2unbound\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2unbound')
 
 [Run]
-Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{app}"; Description: "Launch CoD2 Unbound"; Flags: postinstall nowait skipifsilent unchecked runasoriginaluser
+Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; Description: "Launch CoD2 Unbound"; Flags: postinstall nowait skipifsilent unchecked runasoriginaluser
 #endif
 
 [Code]
@@ -232,6 +232,9 @@ end;
 function MoveInstall(const Source, Target: String): Boolean;
 begin
   Result := MoveFileExW(Source, Target, 8);
+  if not Result then
+    Log(Format('MoveFileExW failed from "%s" to "%s" (Win32 error %d).',
+      [Source, Target, DLLGetLastError]));
 end;
 
 function CopyInstall(const Source, Target: String): Boolean;
@@ -409,7 +412,7 @@ var
 begin
   Exe := Root + '\launcher\{#Launcher}';
   if not IsInstallLink(Root) and FileExists(Exe) and
-    not Exec(Exe, '', Root, SW_SHOWNORMAL, ewNoWait, ResultCode) then
+    not Exec(Exe, '', ExpandConstant('{sys}'), SW_SHOWNORMAL, ewNoWait, ResultCode) then
     Log('Could not reopen CoD2 Unbound after Setup.');
 end;
 

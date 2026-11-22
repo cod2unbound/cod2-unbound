@@ -12,6 +12,8 @@ internal static class Program
     [STAThread]
     private static int Main()
     {
+        // Older shortcuts and shell activations can start inside the directory Setup replaces.
+        Environment.CurrentDirectory = Environment.SystemDirectory;
         StartupTrace.Mark("managed entry");
         if (Platform.WindowsInstallRecovery.RedirectInterruptedStart())
             return 0;

@@ -5,6 +5,7 @@ from pathlib import Path
 import runpy
 import shutil
 import socket
+import struct
 import subprocess
 import sys
 import zipfile
@@ -135,10 +136,39 @@ def assert_version(env, root, scope, version):
     verify_files(root)
 
 
+def verify_shortcut_working_directory(shortcut, expected):
+    # MS-SHLLINK: StringData follows the optional target ID list and LinkInfo.
+    data = shortcut.read_bytes()
+    offset, = struct.unpack_from("<I", data)
+    flags, = struct.unpack_from("<I", data, 0x14)
+    if flags & 0x01:
+        size, = struct.unpack_from("<H", data, offset)
+        offset += 2 + size
+    if flags & 0x02:
+        size, = struct.unpack_from("<I", data, offset)
+        offset += size
+    unicode = bool(flags & 0x80)
+    width = 2 if unicode else 1
+    working_directory = ""
+    for flag in (0x04, 0x08, 0x10):  # name, relative path, working directory
+        if flags & flag:
+            count, = struct.unpack_from("<H", data, offset)
+            offset += 2
+            end = offset + count * width
+            if flag == 0x10:
+                working_directory = data[offset:end].decode("utf-16-le" if unicode else "ascii")
+            offset = end
+    if working_directory.rstrip("\\").casefold() != expected.rstrip("\\").casefold():
+        raise ValueError(f"{shortcut.name} starts in {working_directory!r}, expected {expected!r}")
+
+
 def verify_launcher(env, root, start, uninstaller, signer):
-    if {path.name for path in start.glob("*.lnk")} != {
+    shortcuts = list(start.glob("*.lnk"))
+    if {path.name for path in shortcuts} != {
             "CoD2 Unbound.lnk", "Dedicated Server Guide.lnk"}:
         raise ValueError("Expected a launcher shortcut and a dedicated server guide")
+    for shortcut in shortcuts:
+        verify_shortcut_working_directory(shortcut, r"C:\windows\system32")
     binaries = [path for path in binary_files(root) if path != uninstaller]
     signer.verify_catalog(root / LAUNCHER_CATALOG, binaries, root)
     for path in binaries:
