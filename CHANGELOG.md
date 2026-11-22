@@ -6,6 +6,25 @@ was called CoD2 Silicon, and the entries from before then still use that name.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-22
+
+A second place to get updates.
+
+### Changed
+
+- **Updates no longer depend on one host.** The launcher asks GitHub which
+  release is newest, as before. When GitHub does not answer, it now asks
+  cod2unbound.com, which keeps a copy of the release list, of each release's
+  files and of the news shown on Home. An update is checked exactly as before
+  whichever place it came from: its size, its checksum, that it is this app,
+  and that it is signed by the same developer.
+- Settings › Privacy lists what cod2unbound.com is asked for.
+
+### Fixed
+
+- An address in the release list that tries to step outside the releases
+  folder is refused.
+
 ## [0.4.2] - 2026-11-22
 
 One question, asked once.

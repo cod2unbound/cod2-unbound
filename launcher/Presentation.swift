@@ -122,7 +122,7 @@ struct Dispatch: Codable, Equatable, Sendable {
     /// A place in the app that a news entry opens instead of a link (NewsFeed.places).
     var open: String? = nil
     static let bundled = [
-        Dispatch(stamp: "PREVIEW", title: "CoD2 Unbound 0.4.2", summary: "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind.",
+        Dispatch(stamp: "PREVIEW", title: "CoD2 Unbound 0.4.3", summary: "Updates and the news on Home keep working when GitHub can’t be reached: the launcher asks cod2unbound.com instead.",
                  link: "https://github.com/cod2unbound/cod2-unbound/releases"),
         Dispatch(stamp: "AHEAD", title: "What’s next", summary: "CoD2 Unbound for Windows comes next, then Linux. These are plans, not promises.",
                  link: "https://github.com/cod2unbound/cod2-unbound/blob/main/docs/ROADMAP.md"),
@@ -201,7 +201,8 @@ enum NewsFeed {
 enum HomeDispatches {
     static func builtIn(version: String) -> Dispatch {
         Dispatch(stamp: "NOW", title: "CoD2 Unbound \(version)",
-                 summary: version == "0.4.2" ? "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind."
+                 summary: version == "0.4.3" ? "Updates and the news on Home keep working when GitHub can’t be reached: the launcher asks cod2unbound.com instead."
+                        : version == "0.4.2" ? "The launcher asks once whether you want to send usage data. It stays off unless you say yes, and Settings › Privacy lets you change your mind."
                         : version == "0.4.1" ? "Share one of your loadouts with other players from Configs, and a round of fixes for Metal, voice chat and the launcher."
                         : version == "0.4.0" ? "The game now draws with Metal, the graphics system macOS uses today. OpenGL stays as a choice in Settings › Display."
                         : version == "0.3.7" ? "A tidier launcher: every page has the same titles, labels, buttons and switches. Nothing in the game changed."

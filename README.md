@@ -25,7 +25,7 @@ does the rest. A Windows 1.3 install's folder works as it is.
 
 ## Status
 
-Version `0.4.2` is playable on original 1.3 and CoD2x 1.4 servers, with a
+Version `0.4.3` is playable on original 1.3 and CoD2x 1.4 servers, with a
 native launcher, server browser and Config Studio. Movement, firing, grenades, mounted
 turrets, HTTP mod downloads and round restarts have been tested, and every
 menu is opened by an automated sweep. The picture is compared with the
@@ -53,7 +53,7 @@ have it installed nowhere, setup can download it for you. See
 ### Prebuilt app
 
 1. Open [GitHub Releases](https://github.com/cod2unbound/cod2-unbound/releases).
-2. Download `CoD2-Unbound-0.4.2-macos-arm64.dmg`. To check it first, download
+2. Download `CoD2-Unbound-0.4.3-macos-arm64.dmg`. To check it first, download
    `SHA256SUMS` into the same folder and run:
 
    ```sh
@@ -330,6 +330,9 @@ new performance claims for every release. Verified development results include:
 - 0.4.2 asks whether you want to send usage data, which stays off unless you
   say yes.
   [What was tested for 0.4.2](docs/macos-port/release-0.4.2-verification.md)
+- 0.4.3 gets updates and news from cod2unbound.com when GitHub cannot be
+  reached.
+  [What was tested for 0.4.3](docs/macos-port/release-0.4.3-verification.md)
 - 0.4.0 moves the game from OpenGL to Metal and adds a render scale.
   [What was tested for 0.4.0](docs/macos-port/release-0.4.0-verification.md)
 - 0.3.7 gives every launcher screen one look and changes nothing in the game.
