@@ -2,7 +2,7 @@ using System.Text;
 
 namespace CoD2Unbound.Core;
 
-public enum SetupStep { Welcome, Data, Key, Personalize, CrashReports, Ready, Complete }
+public enum SetupStep { Welcome, Data, Key, Personalize, CrashReports, Ready, Complete, UsageData }
 public enum SetupDataState { Missing, Damaged, Found, UnfinishedSteam }
 public enum CrashConsentQuestion { Nothing, Answered, Ask }
 public sealed record SetupDataChoice(string Path, SetupDataState State, GameArchiveSurvey Survey, string? Problem);
@@ -22,6 +22,7 @@ public sealed class SetupSession
     private readonly ISecretStore secrets;
     private readonly Func<string, bool> unfinishedSteam;
     private readonly bool hasReportService;
+    private readonly bool hasUsageService;
     private string confirmedData;
     private bool canCancel;
 
@@ -34,13 +35,14 @@ public sealed class SetupSession
 
     public SetupSession(IGameFiles files, ISettingsFolder folder, ISecretStore secrets, string initialData,
         bool hasStoredKey, bool canCancel = false, SetupStep step = SetupStep.Welcome,
-        bool hasReportService = false, Func<string, bool>? unfinishedSteam = null)
+        bool hasReportService = false, Func<string, bool>? unfinishedSteam = null, bool hasUsageService = false)
     {
         this.files = files;
         this.folder = folder;
         this.secrets = secrets;
         this.unfinishedSteam = unfinishedSteam ?? (_ => false);
         this.hasReportService = hasReportService;
+        this.hasUsageService = hasUsageService;
         this.canCancel = canCancel;
         HasStoredKey = hasStoredKey;
         confirmedData = initialData;
@@ -119,7 +121,7 @@ public sealed class SetupSession
     {
         if (Step != SetupStep.Personalize)
             return false;
-        Step = hasReportService ? SetupStep.CrashReports : SetupStep.Ready;
+        Step = hasReportService ? SetupStep.CrashReports : AfterCrashQuestion;
         return true;
     }
 
@@ -130,9 +132,23 @@ public sealed class SetupSession
             return null;
         var updated = current with { SendCrashReports = send, CrashReportsAsked = true };
         await new GameSettingsStorage(folder).WriteAsync(updated, cancellationToken).ConfigureAwait(false);
-        Step = SetupStep.Ready;
+        CrashQuestionAnswered();
         return updated;
     }
+
+    public void CrashQuestionAnswered()
+    {
+        if (Step == SetupStep.CrashReports)
+            Step = AfterCrashQuestion;
+    }
+
+    public void UsageQuestionAnswered()
+    {
+        if (Step == SetupStep.UsageData)
+            Step = SetupStep.Ready;
+    }
+
+    private SetupStep AfterCrashQuestion => hasUsageService ? SetupStep.UsageData : SetupStep.Ready;
 
     public bool Back()
     {
@@ -142,7 +158,8 @@ public sealed class SetupSession
             SetupStep.Key => SetupStep.Data,
             SetupStep.Personalize => SetupStep.Key,
             SetupStep.CrashReports => SetupStep.Personalize,
-            SetupStep.Ready => hasReportService ? SetupStep.CrashReports : SetupStep.Personalize,
+            SetupStep.UsageData => hasReportService ? SetupStep.CrashReports : SetupStep.Personalize,
+            SetupStep.Ready => hasUsageService ? SetupStep.UsageData : hasReportService ? SetupStep.CrashReports : SetupStep.Personalize,
             _ => Step
         };
         return Step != SetupStep.Complete;

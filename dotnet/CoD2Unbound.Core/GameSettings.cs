@@ -46,6 +46,13 @@ public sealed partial record GameSettings
     public bool SendCoD2xReports { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool SendUsageData { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool UsageDataAsked { get; init; }
+    [JsonIgnore]
+    public UsageConsent UsageConsent => SendUsageData ? UsageConsent.Yes : UsageDataAsked ? UsageConsent.No : UsageConsent.NotAsked;
+
+    public GameSettings WithUsageConsent(UsageConsent answer) =>
+        this with { UsageDataAsked = answer != UsageConsent.NotAsked, SendUsageData = answer == UsageConsent.Yes };
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public WindowsRenderMode? WindowsRenderer { get; init; }
     public bool CrashReportsAsked { get; init; }
@@ -62,7 +69,9 @@ public sealed partial record GameSettings
     public GameSettings Reset(GameSettings defaults) => defaults with
     {
         IntroFilmsPlayed = IntroFilmsPlayed,
-        CrashReportsAsked = CrashReportsAsked
+        CrashReportsAsked = CrashReportsAsked,
+        UsageDataAsked = UsageDataAsked,
+        SendUsageData = SendUsageData
     };
 
     public static FrozenSet<string> MachineDvarNames { get; } = new[]

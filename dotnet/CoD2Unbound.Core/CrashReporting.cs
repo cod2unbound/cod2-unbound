@@ -25,7 +25,7 @@ public sealed partial class SentryDsn
     public static SentryDsn? Parse(string input)
     {
         string text = input.Trim();
-        if (text.Any(char.IsControl) || !Uri.TryCreate(text, UriKind.Absolute, out var uri) ||
+        if (text.Length > 512 || text.Any(char.IsControl) || !Uri.TryCreate(text, UriKind.Absolute, out var uri) ||
             uri.Host.Length == 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0 ||
             (uri.Scheme != "https" && !(uri.Scheme == "http" && uri.IdnHost is "localhost" or "127.0.0.1" or "::1")))
             return null;
@@ -37,6 +37,16 @@ public sealed partial class SentryDsn
             return null;
         var endpoint = new UriBuilder(uri) { UserName = "", Password = "", Path = "/" + string.Join('/', path.SkipLast(1).Append("api").Append(path[^1]).Append("envelope")) + "/" };
         return new(text, auth[0], secret, endpoint.Uri);
+    }
+
+    public SentryDsn? ForLoopback(string address)
+    {
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Host != "127.0.0.1" ||
+            uri.Scheme is not ("http" or "https") || uri.UserInfo.Length != 0 || uri.Query.Length != 0 ||
+            uri.Fragment.Length != 0 || uri.AbsolutePath != "/")
+            return null;
+        var endpoint = new UriBuilder(uri) { Path = EnvelopeUrl.AbsolutePath }.Uri;
+        return new(Text, PublicKey, SecretKey, endpoint);
     }
 
     public string Authorization(string client) =>
@@ -158,7 +168,14 @@ public sealed partial class CrashReporting(ICrashReportService service, TimeProv
     }
 
     public static ImmutableArray<byte> Envelope(string name, string redacted, DateTimeOffset occurred, CrashReportFacts facts,
-        SentryDsn dsn, Guid id, DateTimeOffset sentAt)
+        SentryDsn dsn, Guid id, DateTimeOffset sentAt) =>
+        EncodeEnvelope(name, redacted, occurred, facts, dsn, id, sentAt, null);
+
+    public static ImmutableArray<byte> WindowsPreview(CrashReportFacts facts, DateTimeOffset now) =>
+        EncodeEnvelope(WindowsCrashReport.AttachmentName, WindowsCrashReport.Example, now, facts, null, Guid.Empty, now, GameEdition.Original);
+
+    private static ImmutableArray<byte> EncodeEnvelope(string name, string redacted, DateTimeOffset occurred, CrashReportFacts facts,
+        SentryDsn? dsn, Guid id, DateTimeOffset sentAt, GameEdition? windowsEdition)
     {
         if (!CrashFiles.IsReportName(name) || name.Any(char.IsControl))
             throw new ArgumentException("Select a crash report from the private game home.", nameof(name));
@@ -166,16 +183,20 @@ public sealed partial class CrashReporting(ICrashReportService service, TimeProv
             throw new InvalidDataException("Crash report contains a possible key.");
         string eventId = id.ToString("N");
         bool mac = facts.OperatingSystem == "macOS";
-        string engine = name.StartsWith("cod2x_", StringComparison.Ordinal) ? "cod2x" : "original";
+        string engine = windowsEdition is { } edition ? (edition == GameEdition.Cod2x ? "cod2x" : "original") :
+            name.StartsWith("cod2x_", StringComparison.Ordinal) ? "cod2x" : "original";
+        if (windowsEdition is not null)
+            facts = new(UsageEvent.Version(facts.Release) ?? "unknown", "Windows",
+                UsageFacts.SafeWindows(facts.OsVersion), UsageFacts.SafeModel(facts.Model));
         var tags = new Dictionary<string, string> { ["engine"] = engine, [mac ? "macos" : "windows"] = facts.OsVersion,
-            [mac ? "mac_model" : "windows_arch"] = facts.Model };
+            [mac ? "mac_model" : windowsEdition is not null ? "pc_model" : "windows_arch"] = facts.Model };
         var root = new CrashEvent(eventId, occurred.ToUnixTimeSeconds(), "native", "fatal",
-            new(Reason(redacted, name)), facts.Release, tags,
+            new(windowsEdition is not null ? WindowsCrashReport.Reason(redacted) : Reason(redacted, name)), facts.Release, tags,
             new(new("os", facts.OperatingSystem, facts.OsVersion), new("device", facts.Model)),
             new("cod2-unbound.launcher", facts.Release, new("never")));
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(root, EnvelopeJson.CrashEvent);
         byte[] attachment = Encoding.UTF8.GetBytes(redacted);
-        var sent = new CrashHeader(eventId, dsn.Text,
+        var sent = new CrashHeader(eventId, dsn?.Text,
             sentAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture));
         byte[] header = JsonSerializer.SerializeToUtf8Bytes(sent, EnvelopeJson.CrashHeader);
         return [.. header, 10,
@@ -231,6 +252,43 @@ public sealed partial class CrashReporting(ICrashReportService service, TimeProv
         }
     }
 
+    public async Task<CrashReportStatus?> ReportWindowsAsync(IEnumerable<CrashFile> reports, GameEdition edition,
+        SentryDsn dsn, CrashReportFacts facts, IEnumerable<string> privateValues, CancellationToken cancellationToken)
+    {
+        await using var lease = await service.AcquireAsync(cancellationToken).ConfigureAwait(false);
+        CrashReportStatus? result = null;
+        foreach (var file in reports.Where(file => WindowsCrashReport.IsReportName(file.Name)).Take(WindowsCrashReport.ReportsPerExit))
+        {
+            ImmutableArray<byte>? bytes;
+            try { bytes = await service.ReadAsync(file, SizeLimit + 1, cancellationToken).ConfigureAwait(false); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { result = CrashReportStatus.Unreadable; continue; }
+            if (bytes is null) { result = CrashReportStatus.Unreadable; continue; }
+            if (bytes.Value.Length > SizeLimit) { result = CrashReportStatus.TooLarge; continue; }
+            string? text = WindowsCrashReport.Parse(bytes.Value, privateValues);
+            if (text is null) { result = CrashReportStatus.Key; continue; }
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            hash.AppendData(Encoding.ASCII.GetBytes(file.Name));
+            hash.AppendData(bytes.Value.AsSpan());
+            string digest = Convert.ToHexStringLower(hash.GetHashAndReset());
+            if (lease.WasSent(digest))
+                continue;
+            // Retry the same Sentry ID if a response or ledger write is interrupted.
+            var id = newEventId?.Invoke() ?? new Guid(Convert.FromHexString(digest[..32]));
+            var upload = new CrashUpload(dsn.EnvelopeUrl,
+                EncodeEnvelope(WindowsCrashReport.AttachmentName, text, file.Modified, facts, null, id, clock.GetUtcNow(), edition),
+                TimeSpan.FromSeconds(15), dsn.Authorization("cod2-unbound-launcher/" + (UsageEvent.Version(facts.Release) ?? "unknown")));
+            int code;
+            try { code = await lease.SendAsync(upload, cancellationToken).ConfigureAwait(false); }
+            catch (Exception error) when ((error is IOException or HttpRequestException or OperationCanceledException) &&
+                !cancellationToken.IsCancellationRequested) { return CrashReportStatus.Offline; }
+            if (code is < 200 or >= 300)
+                return CrashReportStatus.Refused;
+            await lease.RecordSentAsync(digest, CancellationToken.None).ConfigureAwait(false);
+            result = CrashReportStatus.Sent;
+        }
+        return result;
+    }
+
     internal static bool IsPrivate(string line, IEnumerable<string> secrets)
     {
         string plain = ColorMarkup().Replace(line, "");
@@ -271,7 +329,7 @@ internal sealed record CrashOs(string Type, string Name, string Version);
 internal sealed record CrashDevice(string Type, string Model);
 internal sealed record CrashSdk(string Name, string Version, CrashSdkSettings Settings);
 internal sealed record CrashSdkSettings(string InferIp);
-internal sealed record CrashHeader(string EventId, string Dsn, string SentAt);
+internal sealed record CrashHeader(string EventId, string? Dsn, string SentAt);
 internal sealed record CrashItem(string Type, int Length, string? Filename = null, string? ContentType = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,

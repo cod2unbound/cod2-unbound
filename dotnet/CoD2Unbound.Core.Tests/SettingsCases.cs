@@ -77,7 +77,7 @@ internal static partial class Program
             var restored = GameSettingsJson.Decode(GameSettingsJson.Encode(edited));
             Equal(true, restored.SendUsageData);
             Equal<WindowsRenderMode?>(WindowsRenderMode.DirectX7, restored.WindowsRenderer);
-            Equal(false, restored.Reset(new()).SendUsageData);
+            Equal(true, restored.Reset(new()).SendUsageData);
             Equal<WindowsRenderMode?>(null, restored.Reset(new()).WindowsRenderer);
         });
         Check("stream archive SHA-256 verification", () =>

@@ -50,6 +50,7 @@ public static class GameSettingsJson
             }, lenient: true),
             SendCrashReports = Read("sendCrashReports", defaults.SendCrashReports, value => value.GetBoolean(), lenient: true),
             SendCoD2xReports = Read("sendCoD2xReports", defaults.SendCoD2xReports, value => value.GetBoolean(), lenient: true),
+            UsageDataAsked = Read("usageDataAsked", false, value => value.GetBoolean(), lenient: true),
             SendUsageData = Read("sendUsageData", false, value => value.GetBoolean(), lenient: true),
             WindowsRenderer = Known<WindowsRenderMode?>("windowsRenderer", null, value => value switch
             {

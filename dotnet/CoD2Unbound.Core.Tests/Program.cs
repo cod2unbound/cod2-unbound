@@ -36,6 +36,7 @@ internal static partial class Program
         ExtraCases();
         WorkflowCases();
         WindowsUpdateCases();
+        UsageCases();
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }
