@@ -4,6 +4,7 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Shapes;
@@ -124,12 +125,7 @@ public sealed partial class ServersPage : Page
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
-    private void OnServerRowLoaded(object sender, RoutedEventArgs args)
-    {
-        var row = (Grid)sender;
-        ApplyServerRow(row);
-        TrackListSelection(row, selected => ApplyServerNameBrush(row, selected));
-    }
+    private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
 
     private void ApplyServerRow(Grid row)
@@ -140,8 +136,10 @@ public sealed partial class ServersPage : Page
         var facts = ServerFacts.From(server);
         bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
-        AddGameName(name, server.Name, ActualTheme, contrast);
-        ApplyServerNameBrush(row, ContainingListItem(row)?.IsSelected == true);
+        if (contrast)
+            name.Text = QuakeColors.Plain(server.Name);
+        else
+            AddGameName(name, server.Name, ActualTheme, false);
         var tag = (Border)row.FindName("RowEdition")!;
         tag.Style = StyleFor(server.IsCod2x ? "Cod2xTag" : "EditionTag");
         var tagText = (TextBlock)row.FindName("RowEditionText")!;
@@ -166,20 +164,24 @@ public sealed partial class ServersPage : Page
         signal.Children.Clear();
         int level = server.Ping < 0 ? 0 : facts.PingLevel;
         for (int bar = 1; bar <= 4; bar++)
-            signal.Children.Add(new Rectangle { Width = 3, Height = 2 + bar * 2, VerticalAlignment = VerticalAlignment.Bottom,
-                Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, shell.IsHighContrast) });
+        {
+            var mark = new Rectangle { Width = 3, Height = 2 + bar * 2, VerticalAlignment = VerticalAlignment.Bottom };
+            if (contrast)
+            {
+                // The numeric ping inherits the native foreground for both row states.
+                mark.SetBinding(Shape.FillProperty, new Binding
+                {
+                    Path = new PropertyPath(nameof(TextBlock.Foreground)),
+                    Source = row.FindName("RowPing")
+                });
+                mark.Opacity = bar <= level ? 1 : 0.5;
+            }
+            else
+                mark.Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, false);
+            signal.Children.Add(mark);
+        }
         SetFavorite((Button)row.FindName("RowFavorite")!, server);
         _ = previews.FillAsync((Image)row.FindName("RowArt")!, server.Map);
-    }
-
-    private void ApplyServerNameBrush(Grid row, bool selected)
-    {
-        if (row.FindName("RowName") is not TextBlock name)
-            return;
-        if (shell.IsHighContrast && selected)
-            name.Foreground = ThemeBrush("TextOnAccentFillColorPrimaryBrush", ActualTheme, true);
-        else
-            name.ClearValue(TextBlock.ForegroundProperty);
     }
 
     private void SetFavorite(Button button, GameServer server)
