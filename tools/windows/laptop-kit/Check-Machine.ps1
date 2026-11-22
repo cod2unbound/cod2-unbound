@@ -60,10 +60,11 @@ function Save-Machine {
         Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, SmartAppControlState |
             ConvertTo-Json | Set-Content -LiteralPath (Join-Path $log.Evidence 'windows-security.json') -Encoding UTF8
     } catch { Write-Warning 'Record the Windows Security settings on the checklist.' }
-    $setup = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -Recurse -File | Where-Object Extension -in '.exe','.cat')
-    $portable = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'portable') -Recurse -File -Filter '*.exe')
+    $setup = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -Recurse -File -Filter 'CoD2-Unbound-*' |
+        Where-Object Extension -in '.exe','.cat')
+    $portable = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'portable') -Recurse -File -Filter 'cod2_win32*.exe')
     Save-Signatures ($setup.FullName + $portable.FullName) (Join-Path $log.Evidence 'signatures.json')
-    $zip = Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -File -Filter '*-server.zip'
+    $zip = Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -File -Filter 'CoD2-Unbound-*-server.zip'
     $cat = [IO.Path]::ChangeExtension($zip.FullName, '.cat')
     $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash
     $dump = & "$env:SystemRoot\System32\certutil.exe" -dump $cat 2>&1

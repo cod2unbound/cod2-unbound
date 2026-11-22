@@ -23,8 +23,8 @@ function Save-ServerQueries($Process, [string]$Evidence, [int]$Port, [string]$Pr
     try {
         $socket.Connect($Address, $Port)
         foreach ($spec in @(
-            @{ Query = 'getinfo'; Kind = 'infoResponse'; Protocol = '118'; GameKey = 'gametype' },
-            @{ Query = 'getstatus'; Kind = 'statusResponse'; Protocol = $Protocol; GameKey = 'g_gametype' }
+            @{ Query = 'getinfo'; Kind = 'infoResponse'; Protocol = '118'; GameKey = 'gametype'; HostKey = 'hostname' },
+            @{ Query = 'getstatus'; Kind = 'statusResponse'; Protocol = $Protocol; GameKey = 'g_gametype'; HostKey = 'sv_hostname' }
         )) {
             $reply = Receive-Status $socket $Process $spec.Query $spec.Kind
             $reply | Set-Content -LiteralPath (Join-Path $Evidence ($spec.Query + '.txt')) -Encoding ASCII
@@ -34,7 +34,7 @@ function Save-ServerQueries($Process, [string]$Evidence, [int]$Port, [string]$Pr
             if ($fields.protocol -ne $spec.Protocol -or $fields.mapname -ne $MapName -or $fields[$spec.GameKey] -ne $GameType) {
                 throw 'The server reply showed different game details than expected. See results.'
             }
-            if ($SampleConfig -and $fields.sv_hostname -ne 'CoD2 Unbound LAN') {
+            if ($SampleConfig -and $fields[$spec.HostKey] -ne 'CoD2 Unbound LAN') {
                 throw 'The server did not use the included sample configuration.'
             }
         }
@@ -42,7 +42,7 @@ function Save-ServerQueries($Process, [string]$Evidence, [int]$Port, [string]$Pr
 }
 
 function Expand-ServerPackage {
-    $zip = Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -Filter '*-server.zip' -File
+    $zip = Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -Filter 'CoD2-Unbound-*-server.zip' -File
     $target = Join-Path $Private 'Server zip contents'
     Expand-Archive -LiteralPath $zip.FullName -DestinationPath $target
     foreach ($line in Get-Content -LiteralPath (Join-Path $target 'SHA256SUMS')) {

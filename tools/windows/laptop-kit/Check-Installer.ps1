@@ -40,8 +40,8 @@ function New-PreservationFiles {
 
 function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $install = Join-Path $Kit 'install'
-    $setup = Get-ChildItem -LiteralPath $install -File -Filter '*-setup.exe'
-    $prior = Get-ChildItem -LiteralPath (Join-Path $install 'previous') -File -Filter '*-setup.exe'
+    $setup = Get-ChildItem -LiteralPath $install -File -Filter 'CoD2-Unbound-*-setup.exe'
+    $prior = Get-ChildItem -LiteralPath (Join-Path $install 'previous') -File -Filter 'CoD2-Unbound-*-setup.exe'
     $root = Join-Path $LocalData 'Programs\CoD2 Unbound'
     $allRoot = Join-Path $env:ProgramFiles 'CoD2 Unbound'
     $uninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1'
