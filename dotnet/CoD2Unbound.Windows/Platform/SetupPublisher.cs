@@ -114,11 +114,17 @@ internal static class SetupPublisher
 
         using var leafCertificate = X509CertificateLoader.LoadCertificate(ReadCertificate(leaf.Certificate));
         using var rootCertificate = X509CertificateLoader.LoadCertificate(ReadCertificate(root.Certificate));
+        VerifyIdentity(leafCertificate, rootCertificate, Rules);
+    }
+
+    internal static void VerifyIdentity(X509Certificate2 leafCertificate, X509Certificate2 rootCertificate,
+        IReadOnlyCollection<PublisherRule> rules)
+    {
         string rootHash = rootCertificate.GetCertHashString(HashAlgorithmName.SHA256);
         var usages = leafCertificate.Extensions.OfType<X509EnhancedKeyUsageExtension>().SingleOrDefault()
             ?.EnhancedKeyUsages.Cast<Oid>().Select(usage => usage.Value).ToHashSet();
         if (usages is null || !usages.Contains(CodeSigning) ||
-            !Rules.Any(rule => rootHash.Equals(rule.Root, StringComparison.OrdinalIgnoreCase) && usages.Contains(rule.Oid)))
+            !rules.Any(rule => rootHash.Equals(rule.Root, StringComparison.OrdinalIgnoreCase) && usages.Contains(rule.Oid)))
             throw new LauncherUpdateException("Setup's accepted signing root or publisher EKU was unexpected.");
     }
 
@@ -132,7 +138,7 @@ internal static class SetupPublisher
             throw new LauncherUpdateException("Windows could not establish the revocation status of the Setup signature.");
     }
 
-    private sealed record PublisherRule(string Root, string Oid);
+    internal sealed record PublisherRule(string Root, string Oid);
 
     private static byte[] ReadCertificate(nint certificate)
     {

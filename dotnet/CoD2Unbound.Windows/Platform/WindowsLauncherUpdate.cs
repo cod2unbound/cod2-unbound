@@ -364,19 +364,13 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
 
         internal async Task DownloadAsync(Action<long> progress, CancellationToken token)
         {
-            using var sums = new MemoryStream();
             var download = WindowsReleaseSource.Download;
             try
             {
-                await download.CopyAsync(offer.Checksums, sums, WindowsReleaseAssets.ChecksumsLimit, offer.ChecksumsSize,
-                    null, token);
-                checksum = ReleasePackage.Checksum(sums.GetBuffer().AsSpan(0, (int)sums.Length), offer.Archive.Name);
-                if (checksum is null)
-                    throw new LauncherUpdateException("The release did not provide a usable checksum for Setup.");
+                checksum = await download.ReadSetupChecksumAsync(offer, token);
                 await using (var output = new FileStream(PathTo(SetupName), FileMode.CreateNew, FileAccess.Write,
                     FileShare.None, 64 * 1024, FileOptions.Asynchronous))
-                    await download.CopyAsync(offer.Archive.Url, output, WindowsReleaseAssets.SetupLimit, offer.Archive.Size,
-                        progress, token);
+                    await download.CopySetupAsync(offer, output, progress, token);
                 pinned = WindowsFiles.Open(Path.Combine(owner.staging, id), SetupName, FileShare.Read);
             }
             catch (Exception error) when (error is HttpRequestException or HttpIOException ||

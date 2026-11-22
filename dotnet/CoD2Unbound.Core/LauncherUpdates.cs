@@ -24,8 +24,7 @@ public sealed record LauncherActivity(bool GameRunning, bool ServersRunning);
 
 public interface ILauncherReleaseSource
 {
-    // The caller supplies a whole-response deadline. Bound release bytes to 1 MB and news to 64 KiB.
-    ValueTask<ImmutableArray<byte>> ReleasesAsync(CancellationToken cancellationToken);
+    ValueTask<ReleaseFeed> ReleasesAsync(TimeZoneInfo timeZone, CancellationToken cancellationToken);
     ValueTask<ImmutableArray<byte>?> NewsAsync(CancellationToken cancellationToken);
     // News null means keep the prior copy. A missing project file is an explicit empty feed.
 }
@@ -96,8 +95,7 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
             Message = null, Issue = UpdateIssue.None, FailedStage = null });
         try
         {
-            var releaseBytes = await source.ReleasesAsync(cancellationToken).ConfigureAwait(false);
-            var release = ReleaseNotes.Parse(releaseBytes.AsSpan(), timeZone: timeZone);
+            var release = await source.ReleasesAsync(timeZone, cancellationToken).ConfigureAwait(false);
             NewsFeed? news = null;
             try
             {
@@ -116,11 +114,13 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
                 {
                     diagnostic?.Invoke(describeRefusal?.Invoke(version, release.LatestAssets) ?? "The release did not provide a valid Windows Setup.");
                     Publish(new(WasChecked: true, AvailableVersion: version, Issue: UpdateIssue.Refused,
-                        FailedStage: UpdateFailureStage.Check, ReleaseUrl: ReleasesPage, Notes: [], CheckedAt: library.DispatchesCheckedAt));
+                        FailedStage: UpdateFailureStage.Check, ReleaseUrl: release.LatestUrl ?? ReleasesPage,
+                        Notes: [], CheckedAt: library.DispatchesCheckedAt));
                     return new(State, library, null);
                 }
                 Publish(new(Phase: UpdatePhase.Offered, WasChecked: true, AvailableVersion: version,
-                    ReleaseUrl: ReleasesPage, Offer: offer, Notes: release.LatestNotes, CheckedAt: library.DispatchesCheckedAt));
+                    ReleaseUrl: release.LatestUrl, Offer: offer with { ListedByGitHub = release.ListedByGitHub },
+                    Notes: release.LatestNotes, CheckedAt: library.DispatchesCheckedAt));
                 return new(State, library, automatic && before.AvailableVersion != version ? version : null);
             }
             Publish(new(WasChecked: true, Notes: [], CheckedAt: library.DispatchesCheckedAt));

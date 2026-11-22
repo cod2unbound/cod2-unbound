@@ -28,25 +28,29 @@ public static class WindowsReleaseAssets
         problem = "The release version or update origin was invalid.";
         if (ParseVersion(version) is null || (loopbackOrigin is not null && !IsLoopbackOrigin(loopbackOrigin)))
             return null;
-        var page = loopbackOrigin is null ? Project : new Uri(loopbackOrigin, "releases").AbsoluteUri;
-        string root = $"{page}/download/v{version}/";
+        string downloads = loopbackOrigin is null ? ReleasePackage.GitHubDownloads : new Uri(loopbackOrigin, "releases/download/").AbsoluteUri;
+        string root = $"{downloads}v{version}/";
+        string? mirror = loopbackOrigin is null ? $"{ReleasePackage.MirrorDownloads}v{version}/" : null;
         string name = $"CoD2-Unbound-{version}-windows-x64-setup.exe";
         var list = assets.ToLookup(asset => asset.Name, StringComparer.Ordinal);
-        var setup = Trusted(list[name], SetupLimit, root + name, out problem);
+        var setup = Trusted(list[name], SetupLimit, root, mirror, name, out problem);
         if (setup is null)
             return null;
-        var sums = Trusted(list[ChecksumsName], ChecksumsLimit, root + ChecksumsName, out problem);
+        var sums = Trusted(list[ChecksumsName], ChecksumsLimit, root, mirror, ChecksumsName, out problem);
         return sums is not null ? new(version, setup, sums.Url, sums.Size) : null;
     }
 
-    private static ReleaseAsset? Trusted(IEnumerable<ReleaseAsset> candidates, long limit, string address, out string? problem)
+    private static ReleaseAsset? Trusted(IEnumerable<ReleaseAsset> candidates, long limit, string root, string? mirror, string name,
+        out string? problem)
     {
         var entries = candidates.Take(2).ToArray();
         problem = entries switch
         {
             not [var _] => "The release was missing a required asset or listed it more than once.",
             [var only] when only.Size < 1 || only.Size > limit => "A required release asset had a size outside the allowed range.",
-            [var only] when !only.Url.IsAbsoluteUri || only.Url.OriginalString != address => "A required release asset had an unexpected address.",
+            [var only] when !only.Url.IsAbsoluteUri || (only.Url.OriginalString != root + name &&
+                (mirror is null || only.Url.OriginalString != mirror + name)) =>
+                "A required release asset had an unexpected address.",
             _ => null
         };
         return problem is null ? entries[0] : null;

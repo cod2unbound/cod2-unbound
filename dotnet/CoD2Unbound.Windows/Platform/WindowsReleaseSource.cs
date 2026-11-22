@@ -18,31 +18,22 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
         null;
 #endif
 
-    public async ValueTask<ImmutableArray<byte>> ReleasesAsync(CancellationToken cancellationToken)
+    public async ValueTask<ReleaseFeed> ReleasesAsync(TimeZoneInfo timeZone, CancellationToken cancellationToken)
     {
-        if (LocalOrigin is { } origin)
-            return await ReadFeedAsync(new Uri(origin, "releases"), cancellationToken);
-        if (!testMode)
-            return await ReadFeedAsync(WindowsReleaseAssets.Feed, cancellationToken);
+        if (LocalOrigin is not null || !testMode)
+            return await ReleaseNotes.FetchAsync(Download, timeZone, cancellationToken);
         if (Fixture is not { } fixture)
             throw new IOException("No local release fixture was supplied.");
         using var local = WindowsFiles.Open(Path.GetDirectoryName(fixture)!, Path.GetFileName(fixture));
-        byte[] input = new byte[1_000_001];
+        byte[] input = new byte[ReleaseNotes.FeedLimit + 1];
         int length = await local.ReadAtLeastAsync(input, input.Length, false, cancellationToken);
         if (length == input.Length)
             throw new IOException("The release list is too large.");
-        return [.. input.AsSpan(0, length)];
+        return ReleaseNotes.Parse(input.AsSpan(0, length), timeZone: timeZone) with { ListedByGitHub = false };
     }
 
     public ValueTask<ImmutableArray<byte>?> NewsAsync(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<ImmutableArray<byte>?>(null);
-
-    private static async ValueTask<ImmutableArray<byte>> ReadFeedAsync(Uri uri, CancellationToken cancellationToken)
-    {
-        using var output = new MemoryStream();
-        await Download.CopyAsync(uri, output, 1_000_000, null, null, cancellationToken, feed: true);
-        return [.. output.GetBuffer().AsSpan(0, (int)output.Length)];
-    }
+        testMode ? ValueTask.FromResult<ImmutableArray<byte>?>(null) : NewsFeed.FetchAsync(Download, cancellationToken);
 
     private static Uri? TestOrigin()
     {
