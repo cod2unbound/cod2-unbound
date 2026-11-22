@@ -38,13 +38,15 @@ internal static unsafe class WindowsGraphicsFacts
                     AdapterDescription description;
                     if (getDescription(adapter, &description) < 0)
                         continue;
-                    bool isSoftware = (description.Flags & SoftwareAdapter) != 0;
-                    if (isSoftware && software.HasValue)
-                        continue;
                     var text = new ReadOnlySpan<char>(description.Name, 128);
                     int terminator = text.IndexOf('\0');
-                    var facts = (terminator < 0 ? null : text[..terminator].ToString(), (ulong)description.DedicatedVideoBytes,
-                        ReadDriver(adapter));
+                    string? name = terminator < 0 ? null : text[..terminator].ToString();
+                    // Windows can also expose its Basic Render Driver as a display adapter with the software flag clear.
+                    bool isSoftware = (description.Flags & SoftwareAdapter) != 0 ||
+                        name?.Trim() is "Microsoft Basic Render Driver" or "Microsoft Basic Display Adapter";
+                    if (isSoftware && software.HasValue)
+                        continue;
+                    var facts = (name, (ulong)description.DedicatedVideoBytes, ReadDriver(adapter));
                     if (!isSoftware)
                         return facts;
                     software = facts;
