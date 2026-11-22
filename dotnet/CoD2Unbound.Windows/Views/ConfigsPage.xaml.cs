@@ -527,12 +527,15 @@ public sealed partial class ConfigsPage : Page
         MatchSummary? match;
         try { match = model.LastMatch; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { match = null; }
-        var report = checkup.Evaluate(profile, [], ConfigTuneFor.Balanced,
-            measurements: new ConfigCheckupMeasurements(PacketLossPercent: match?.PacketLossPercent));
         studioBody.Children.Add(new TextBlock { Text = "Check-up", Style = StyleFor("SectionTitle") });
         if (match is null)
-            studioBody.Children.Add(EmptyState("HeartPulse", "No matches recorded yet",
-                "After your next match, the game saves a short summary on this PC and Check-up shows it here."));
+        {
+            AddStudioEmpty("HeartPulse", "No matches recorded yet",
+                "After your next match, its summary appears here if match summaries are on.");
+            return;
+        }
+        var report = checkup.Evaluate(profile, [], ConfigTuneFor.Balanced,
+            measurements: new ConfigCheckupMeasurements(PingMS: match.PingAverageMS, PacketLossPercent: match.PacketLossPercent));
         foreach (var dial in report.Dials)
             studioBody.Children.Add(SettingRow(dial.Area.ToString(), dial.Source, Caption(dial.StatusText)));
         foreach (var suggestion in report.Suggestions.Where(item => item.Area != ConfigCheckupArea.Movement))
@@ -554,8 +557,8 @@ public sealed partial class ConfigsPage : Page
     {
         studioBody.Children.Add(new TextBlock { Text = "History", Style = StyleFor("SectionTitle") });
         if (state.History.IsEmpty)
-            studioBody.Children.Add(EmptyState("History", "No changes recorded yet",
-                "Changes to this loadout appear here. Undo anytime from History."));
+            AddStudioEmpty("History", "No changes recorded yet",
+                "Changes to this loadout appear here. Undo anytime from History.");
         foreach (var entry in state.History.Reverse())
         {
             var restore = Action("Restore…", async () =>
@@ -569,6 +572,21 @@ public sealed partial class ConfigsPage : Page
             restore.IsEnabled = !state.ReadOnly;
             studioBody.Children.Add(SettingRow(entry.Summary, entry.Date.LocalDateTime.ToString("g", CultureInfo.CurrentCulture), restore));
         }
+    }
+
+    private void AddStudioEmpty(string icon, string heading, string detail)
+    {
+        var state = EmptyState(icon, heading, detail);
+        state.HorizontalAlignment = HorizontalAlignment.Center;
+        state.VerticalAlignment = VerticalAlignment.Center;
+        foreach (UIElement child in state.Children)
+        {
+            if (child is FrameworkElement element)
+                element.HorizontalAlignment = HorizontalAlignment.Center;
+            if (child is TextBlock text)
+                text.TextAlignment = TextAlignment.Center;
+        }
+        studioBody.Children.Add(new Grid { MinHeight = 214, Children = { state } });
     }
 
     private async void OnDiscoverPlaceChanged(object sender, SelectionChangedEventArgs args)
