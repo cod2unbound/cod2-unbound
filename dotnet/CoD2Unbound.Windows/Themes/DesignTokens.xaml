@@ -28,7 +28,6 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#C99A4C" />
-            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#C99A4C" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#73E2BD72" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="#C4984C" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#E8C478" />
@@ -92,6 +91,15 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#1C170C" />
+            <LinearGradientBrush x:Key="TextControlBorderBrushFocused" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,2">
+                <LinearGradientBrush.RelativeTransform>
+                    <ScaleTransform ScaleY="-1" CenterY="0.5" />
+                </LinearGradientBrush.RelativeTransform>
+                <LinearGradientBrush.GradientStops>
+                    <GradientStop Offset="1" Color="#C99A4C" />
+                    <GradientStop Offset="1" Color="#29FFFFFF" />
+                </LinearGradientBrush.GradientStops>
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
@@ -123,7 +131,6 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#55622F" />
-            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#55622F" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#735C6A33" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="#46522A" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#5C6A33" />
@@ -187,6 +194,15 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFF8E8" />
+            <LinearGradientBrush x:Key="TextControlBorderBrushFocused" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,2">
+                <LinearGradientBrush.RelativeTransform>
+                    <ScaleTransform ScaleY="-1" CenterY="0.5" />
+                </LinearGradientBrush.RelativeTransform>
+                <LinearGradientBrush.GradientStops>
+                    <GradientStop Offset="1" Color="#55622F" />
+                    <GradientStop Offset="1" Color="#24504628" />
+                </LinearGradientBrush.GradientStops>
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
@@ -218,7 +234,6 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />

@@ -34,7 +34,6 @@ BRUSHES = {
     "ListViewItemSelectionIndicatorBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPointerOverBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPressedBrush": ("control", "HighlightText"),
-    "TextControlBorderBrushFocused": ("control", "Highlight"),
     "TextControlSelectionHighlightColor": ("selection-stroke", "Highlight"),
     "SliderThumbBackground": ("prominent-bottom", "Highlight"),
     "SliderThumbBackgroundPointerOver": ("prominent-top", "Highlight"),
@@ -127,7 +126,19 @@ def generate(tokens):
         for brush, (token, system_color) in BRUSHES.items():
             color = xaml_color(tokens[token][theme]) if theme else f"{{ThemeResource SystemColor{system_color}Color}}"
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": color})
-        if theme is None:
+        if theme:
+            # Mirror the native TextBox gradient: the flipped two-pixel region
+            # paints only the bottom edge of the focused border in the accent.
+            focused = ET.SubElement(dictionary, "LinearGradientBrush", {
+                "x:Key": "TextControlBorderBrushFocused",
+                "MappingMode": "Absolute", "StartPoint": "0,0", "EndPoint": "0,2",
+            })
+            transform = ET.SubElement(focused, "LinearGradientBrush.RelativeTransform")
+            ET.SubElement(transform, "ScaleTransform", {"ScaleY": "-1", "CenterY": "0.5"})
+            stops = ET.SubElement(focused, "LinearGradientBrush.GradientStops")
+            for token in ("control", "button-stroke"):
+                ET.SubElement(stops, "GradientStop", {"Offset": "1", "Color": xaml_color(tokens[token][theme])})
+        else:
             for state in ("Selected", "SelectedPointerOver", "SelectedPressed"):
                 ET.SubElement(dictionary, "SolidColorBrush", {
                     "x:Key": f"ListViewItemForeground{state}", "Color": "{ThemeResource SystemColorHighlightTextColor}",
