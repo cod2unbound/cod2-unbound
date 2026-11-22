@@ -389,7 +389,9 @@ import Foundation
         let mirroredOffer = try requireValue(AppUpdate.offer(version: "0.4.3", assets: mirrored.latestAssets))
         precondition(mirroredOffer.archive.absoluteString == "https://cod2unbound.com/releases/v0.4.3/CoD2-Unbound-0.4.3-macos-arm64.zip")
         for root in ["https://cod2unbound.com/other/", "http://cod2unbound.com/releases/",
-                     "https://cod2unbound.com.example/releases/", "https://user@cod2unbound.com/releases/"] {
+                     "https://cod2unbound.com.example/releases/", "https://user@cod2unbound.com/releases/",
+                     "https://cod2unbound.com/releases/../other/", "https://cod2unbound.com/releases/%2e%2e/other/",
+                     "https://github.com/cod2unbound/cod2-unbound/releases/download/../../../../someone/else/releases/download/"] {
             let invalid = try ReleaseNotes.parse(mirroredReleaseJSON(root: root))
             precondition(AppUpdate.offer(version: "0.4.3", assets: invalid.latestAssets) == nil, root)
         }

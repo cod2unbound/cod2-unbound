@@ -472,7 +472,9 @@ enum AppUpdate {
         guard version.range(of: "\\A[0-9]+\\.[0-9]+\\.[0-9]+\\z", options: .regularExpression) != nil else { return nil }
         func asset(_ name: String) -> ReleaseAsset? {
             let found = assets.filter { $0.name == name }
+            // A root is only a prefix: an address that climbs back out of it ("..", plain or percent-encoded) is refused.
             guard found.count == 1, let one = found.first, one.url.user == nil, one.url.password == nil,
+                  one.url.query == nil, one.url.fragment == nil, !one.url.path.contains(".."),
                   downloadRoots.contains(where: one.url.absoluteString.hasPrefix) else { return nil }
             return one
         }
