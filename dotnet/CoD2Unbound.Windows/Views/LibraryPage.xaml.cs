@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
@@ -109,7 +110,11 @@ public sealed partial class LibraryPage : Page
                 });
                 if (!ReferenceEquals(tile.Tag, row))
                     return;
-                thumbnail = await BgraBitmapAsync(decoded.Bgra, decoded.Width, decoded.Height);
+                var bitmap = new WriteableBitmap(decoded.Width, decoded.Height);
+                using (var pixels = bitmap.PixelBuffer.AsStream())
+                    pixels.Write(decoded.Bgra);
+                bitmap.Invalidate();
+                thumbnail = bitmap;
             }
             else
             {

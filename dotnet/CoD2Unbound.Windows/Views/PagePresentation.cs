@@ -177,13 +177,8 @@ internal static class PagePresentation
             (bgra[i], bgra[i + 2]) = (bgra[i + 2], bgra[i]);
             bgra[i + 3] = 255;
         }
-        return await BgraBitmapAsync(bgra, art.Width, art.Height);
-    }
-
-    internal static async Task<SoftwareBitmapSource> BgraBitmapAsync(byte[] bgra, int width, int height)
-    {
         using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(CryptographicBuffer.CreateFromByteArray(bgra),
-            BitmapPixelFormat.Bgra8, width, height, BitmapAlphaMode.Premultiplied);
+            BitmapPixelFormat.Bgra8, art.Width, art.Height, BitmapAlphaMode.Premultiplied);
         var image = new SoftwareBitmapSource();
         await image.SetBitmapAsync(bitmap);
         return image;
