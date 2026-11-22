@@ -297,8 +297,8 @@ public sealed partial class HostingPage : Page
     private async Task LogAsync(HostedServer server)
     {
         string log = await hosting.ReadLogAsync(server.Id) ?? "No server log yet.";
-        var text = new TextBox { Text = log, IsReadOnly = true, AcceptsReturn = true, MinWidth = 360, MaxHeight = 340,
-            Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap };
+        var text = new TextBox { IsReadOnly = true, AcceptsReturn = true, MinWidth = 360, MaxHeight = 340,
+            Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap, Text = log };
         AutomationProperties.SetName(text, "Server log");
         await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Server log", Content = text, CloseButtonText = "Close",
             DefaultButton = ContentDialogButton.None }.ShowAsync();
