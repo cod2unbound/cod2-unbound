@@ -1,0 +1,102 @@
+<Page x:Class="CoD2Unbound.Windows.Views.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Enter" Modifiers="Control" Invoked="OnLaunchShortcut" />
+    </Page.KeyboardAccelerators>
+    <ScrollViewer x:Name="Scroll" SizeChanged="OnLayoutChanged">
+        <Grid>
+            <Grid x:Name="ArtLayer" Height="520" VerticalAlignment="Top" IsHitTestVisible="False"
+                  AutomationProperties.AccessibilityView="Raw">
+                <Border x:Name="PanelPalette" Background="{ThemeResource PanelBrush}" />
+                <Image x:Name="HeroArt" Stretch="UniformToFill" />
+                <Rectangle x:Name="HeroScrim" />
+                <Rectangle x:Name="HeroFade" />
+            </Grid>
+            <Grid x:Name="ContentLayout" Padding="48,72,48,32" RowSpacing="18">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel x:Name="Hero" HorizontalAlignment="Left" MaxWidth="768" Spacing="16" Padding="0,0,0,4"
+                            Background="{ThemeResource HeroBackplateBrush}">
+                    <TextBlock x:Name="HeroLead" Text="READY TO PLAY" Style="{StaticResource HeroEyebrow}" />
+                    <TextBlock x:Name="HeroTitle" Text="COD2 UNBOUND" Style="{StaticResource HeroTitle}" />
+                    <TextBlock x:Name="HeroDetail" MaxWidth="540" HorizontalAlignment="Left" FontSize="16"
+                               TextWrapping="Wrap" Foreground="{ThemeResource HeroInkBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button x:Name="LaunchButton" AutomationProperties.Name="Launch" AccessKey="L"
+                                AutomationProperties.AcceleratorKey="Ctrl+Enter" Height="42" MinWidth="140"
+                                Click="OnLaunch" Style="{StaticResource AccentButtonStyle}" IsEnabled="False">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#x25B6;" FontFamily="Segoe UI Symbol" FontSize="20" />
+                                <TextBlock Text="Launch" />
+                            </StackPanel>
+                        </Button>
+                        <Button Height="42" AccessKey="F" Click="OnFindServer" AutomationProperties.Name="Find a server">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <SymbolIcon Symbol="Globe" />
+                                <TextBlock Text="Find a server" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock x:Name="LaunchHint" Style="{StaticResource SecondaryText}" FontSize="12"
+                                   Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock x:Name="LaunchReason" Foreground="{ThemeResource HeroInkBrush}" TextWrapping="Wrap"
+                               Visibility="Collapsed" />
+                    <HyperlinkButton x:Name="OpenGameData" Content="Open game data" AutomationProperties.Name="Open Game Data" Click="OnOpenGameData"
+                                     Visibility="Collapsed" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                    <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
+                              AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
+                    <ComboBox x:Name="DisplayChoice" AutomationProperties.Name="Display mode"
+                              AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged" />
+                </StackPanel>
+
+                <Grid x:Name="Cards" Grid.Row="2" ColumnSpacing="12" RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.45*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="NewsColumn" Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="RecentCard" Style="{StaticResource FieldCard}">
+                        <StackPanel Spacing="6">
+                            <Grid>
+                                <TextBlock Text="Jump back in" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <HyperlinkButton Content="All recent" HorizontalAlignment="Right" Click="OnRecent" />
+                            </Grid>
+                            <StackPanel x:Name="RecentRows" Spacing="6" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="MatchCard" Grid.Column="1" Style="{StaticResource FieldCard}">
+                        <StackPanel Spacing="10">
+                            <Grid>
+                                <TextBlock Text="Last match" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <HyperlinkButton x:Name="AllMatches" Content="All matches" HorizontalAlignment="Right"
+                                                 Click="OnAllMatches" Visibility="Collapsed" />
+                            </Grid>
+                            <StackPanel x:Name="MatchRows" Spacing="8" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="NewsCard" Grid.Column="2" Style="{StaticResource FieldCard}">
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <TextBlock Text="What’s new" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <HyperlinkButton Content="See all" HorizontalAlignment="Right" Click="OnShowNews" />
+                            </Grid>
+                            <StackPanel x:Name="NewsRows" Spacing="8" />
+                            <TextBlock x:Name="NewsChecked" Style="{StaticResource SecondaryText}" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</Page>

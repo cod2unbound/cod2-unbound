@@ -1,6 +1,9 @@
 import Foundation
 
-@main struct ConfigImportTests {
+#if !CORE_PARITY_TESTS
+@main
+#endif
+struct ConfigImportTests {
     static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
         if !condition() { FileHandle.standardError.write(Data("FAIL: \(message)\n".utf8)); exit(1) }
     }
@@ -17,13 +20,17 @@ import Foundation
         "protected_foreign_fixture": .init(cheatProtected: true, inert: true)
     ], commands: ["+attack": .init(bindable: true), "-attack": .init(bindable: true),
                   "+forward": .init(bindable: true), "weapnext": .init(bindable: true)])
-    static func review(_ text: String, dialect: ConfigDialect = .stock,
-                       files: [String: Data] = [:]) -> ConfigImportReview {
-        let entry = ConfigImportFile(path: "config.cfg", data: bytes(text), dialect: dialect)
-        let others = files.map { ConfigImportFile(path: $0.key, data: $0.value, dialect: dialect) }
-        return ConfigImportSafety(catalog: catalog).review(.init(source: .init(kind: .paste), entryPath: entry.path, files: [entry] + others))
-    }
-    static func safety() {
+    static func safety(record: ((ConfigImportReview) -> Void)? = nil) {
+        func inspect(_ bundle: ConfigImportBundle) -> ConfigImportReview {
+            let result = ConfigImportSafety(catalog: catalog).review(bundle)
+            record?(result)
+            return result
+        }
+        func review(_ text: String, dialect: ConfigDialect = .stock, files: [String: Data] = [:]) -> ConfigImportReview {
+            let entry = ConfigImportFile(path: "config.cfg", data: bytes(text), dialect: dialect)
+            let others = files.sorted { $0.key < $1.key }.map { ConfigImportFile(path: $0.key, data: $0.value, dialect: dialect) }
+            return inspect(.init(source: .init(kind: .paste), entryPath: entry.path, files: [entry] + others))
+        }
         for dialect in [ConfigDialect.stock, .cod2x] {
             let comment = review("// harmless; quit\n", dialect: dialect)
             require(comment.candidates.count == 2, "comment semicolon yields two review commands")
@@ -78,7 +85,7 @@ import Foundation
             require(review(text).candidates[0].classification == .blocked, "credential wrappers and relative paths blocked")
         }
         let nulFile = ConfigImportFile(path: "nul.cfg", data: bytes("seta sensitivity 2") + Data([0]) + bytes("quit"), dialect: .stock)
-        require(!ConfigImportSafety(catalog: catalog).review(.init(source: .init(kind: .paste), entryPath: nulFile.path, files: [nulFile])).candidates[0].importable, "ignored NUL suffix cannot be imported as clean text")
+        require(!inspect(.init(source: .init(kind: .paste), entryPath: nulFile.path, files: [nulFile])).candidates[0].importable, "ignored NUL suffix cannot be imported as clean text")
         let reassigned = review("seta a +attack\na \"connect example.invalid\"\nbind j \"vstr a\"")
         require(reassigned.candidates.last!.effects.contains { $0.reasons.contains(.connect) }, "bare writes to script variables cannot hide effects")
         for text in ["toggle helper \"rcon login secret\"", "seta a \"rcon login secret\"\nsetfromdvar b a"] {

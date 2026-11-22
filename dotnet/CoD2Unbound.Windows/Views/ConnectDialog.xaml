@@ -1,0 +1,14 @@
+<ContentDialog x:Class="CoD2Unbound.Windows.Views.ConnectDialog"
+               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               Title="Connect to an address" PrimaryButtonText="Connect" CloseButtonText="Cancel"
+               DefaultButton="Primary" IsPrimaryButtonEnabled="False">
+    <StackPanel Spacing="12">
+        <TextBlock Text="For a server that isn’t in the list, or one a friend sent you."
+                   Style="{StaticResource SecondaryText}" />
+        <TextBox x:Name="AddressBox" Header="Server address" PlaceholderText="203.0.113.24:28960" Style="{StaticResource MonoField}"
+                 TextChanged="OnEntryChanged" MaxLength="1024" />
+        <PasswordBox x:Name="PasswordInput" Header="Password (optional)" PasswordRevealMode="Hidden"
+                     PasswordChanged="OnEntryChanged" MaxLength="127" />
+    </StackPanel>
+</ContentDialog>

@@ -1,0 +1,314 @@
+{
+  "authorization" : "Sentry sentry_version=7, sentry_client=fixture/1, sentry_key=exampleKey, sentry_secret=exampleSecret",
+  "crashes" : [
+    {
+      "containsKey" : false,
+      "filtered" : "Reason: signal 11",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : "signal 11",
+      "redacted" : "Reason: signal 11\n~/CoD2/log\n~/path\n",
+      "text" : "Reason: signal 11\n/home/test/CoD2/log\n/Users/synthetic/path\nCommand line: demo stub\n"
+    },
+    {
+      "containsKey" : false,
+      "filtered" : "",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : "The game crashed",
+      "redacted" : "Good line\n\n",
+      "text" : "Message: use +EXEC test.cfg\nGood line\n\n"
+    },
+    {
+      "containsKey" : true,
+      "filtered" : "[Private connection or key details omitted]",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : null,
+      "redacted" : null,
+      "text" : "cdkey data: 0000-0000-0000-0000-86D3"
+    },
+    {
+      "containsKey" : true,
+      "filtered" : "[Private connection or key details omitted]",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : null,
+      "redacted" : null,
+      "text" : "name=CODKEY\n"
+    },
+    {
+      "containsKey" : false,
+      "filtered" : "not a valid key: 0000-0000-0000-0000-86D4",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : "The game crashed",
+      "redacted" : "not a valid key: 0000-0000-0000-0000-86D4",
+      "text" : "not a valid key: 0000-0000-0000-0000-86D4"
+    },
+    {
+      "containsKey" : false,
+      "filtered" : "reason: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "home" : "/home/test",
+      "name" : "cod2_crash_1.txt",
+      "reason" : "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "redacted" : "reason: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "text" : "reason: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    }
+  ],
+  "demos" : [
+    {
+      "alias" : "round__1_",
+      "name" : "round (1)",
+      "playable" : false
+    },
+    {
+      "alias" : "demo...",
+      "name" : "...",
+      "playable" : true
+    },
+    {
+      "alias" : "demo",
+      "name" : "",
+      "playable" : false
+    },
+    {
+      "alias" : "mp_Br_Court_12",
+      "name" : "mp_BréCourt_12",
+      "playable" : false
+    },
+    {
+      "alias" : "_ngstr_m",
+      "name" : "ångström",
+      "playable" : false
+    },
+    {
+      "alias" : "match-7",
+      "name" : "match-7",
+      "playable" : true
+    },
+    {
+      "alias" : "__",
+      "name" : "😀́",
+      "playable" : false
+    },
+    {
+      "alias" : "x_y",
+      "name" : "x:y",
+      "playable" : false
+    },
+    {
+      "alias" : "a_b",
+      "name" : "a/b",
+      "playable" : false
+    }
+  ],
+  "endpoint" : "https://fixture.invalid/reporting/path/api/123/envelope/",
+  "envelope" : "eyJkc24iOiJodHRwczovL2V4YW1wbGVLZXk6ZXhhbXBsZVNlY3JldEBmaXh0dXJlLmludmFsaWQvcmVwb3J0aW5nL3BhdGgvMTIzIiwiZXZlbnRfaWQiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMSIsInNlbnRfYXQiOiIyMDI2LTExLTIxVDEyOjAwOjAwWiJ9CnsibGVuZ3RoIjo0MjksInR5cGUiOiJldmVudCJ9CnsiY29udGV4dHMiOnsiZGV2aWNlIjp7Im1vZGVsIjoiRml4dHVyZSIsInR5cGUiOiJkZXZpY2UifSwib3MiOnsibmFtZSI6Im1hY09TIiwidHlwZSI6Im9zIiwidmVyc2lvbiI6IjI2LjAifX0sImV2ZW50X2lkIjoiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEiLCJsZXZlbCI6ImZhdGFsIiwibG9nZW50cnkiOnsiZm9ybWF0dGVkIjoic3ludGhldGljIGxvZyJ9LCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInJlbGVhc2UiOiIwLjUuMCIsInNkayI6eyJuYW1lIjoiY29kMi11bmJvdW5kLmxhdW5jaGVyIiwic2V0dGluZ3MiOnsiaW5mZXJfaXAiOiJuZXZlciJ9LCJ2ZXJzaW9uIjoiMC41LjAifSwidGFncyI6eyJlbmdpbmUiOiJvcmlnaW5hbCIsIm1hY19tb2RlbCI6IkZpeHR1cmUiLCJtYWNvcyI6IjI2LjAifSwidGltZXN0YW1wIjoxNzk1MjYyNDAwfQp7ImNvbnRlbnRfdHlwZSI6InRleHQvcGxhaW4iLCJmaWxlbmFtZSI6ImNvZDJfY3Jhc2hfMS50eHQiLCJsZW5ndGgiOjIyLCJ0eXBlIjoiYXR0YWNobWVudCJ9ClJlYXNvbjogc3ludGhldGljIGxvZwoK",
+  "maps" : [
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "round (1)",
+      "mode" : "ROUND (1)",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "...",
+      "mode" : "...",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "",
+      "mode" : "—",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "mp_BréCourt_12",
+      "mode" : "MP_BRÉCOURT_",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "ångström",
+      "mode" : "ÅNGSTRÖM",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "match-7",
+      "mode" : "MATCH-7",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "😀́",
+      "mode" : "😀́",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "x:y",
+      "mode" : "X:Y",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "a/b",
+      "mode" : "A/B",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "mp_",
+      "mode" : "MP_",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "../toujane",
+      "mode" : "../TOUJANE",
+      "region" : null,
+      "scenery" : 0
+    },
+    {
+      "display" : "Toujane",
+      "key" : "toujane",
+      "map" : "mp_toujane",
+      "mode" : "MP_TOUJANE",
+      "region" : "NORTH AFRICA",
+      "scenery" : 0
+    },
+    {
+      "display" : "Custom Map",
+      "key" : "custom_map",
+      "map" : "mp_custom_map",
+      "mode" : "MP_CUSTOM_MA",
+      "region" : null,
+      "scenery" : 1
+    },
+    {
+      "display" : "Unknown map",
+      "key" : null,
+      "map" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "mode" : "XXXXXXXXXXXX",
+      "region" : null,
+      "scenery" : 0
+    }
+  ],
+  "media" : [
+    {
+      "bytes" : -1,
+      "map" : null,
+      "name" : "round (1)",
+      "size" : "0 B"
+    },
+    {
+      "bytes" : 0,
+      "map" : null,
+      "name" : "...",
+      "size" : "0 B"
+    },
+    {
+      "bytes" : 999,
+      "map" : null,
+      "name" : "",
+      "size" : "999 B"
+    },
+    {
+      "bytes" : 1000,
+      "map" : null,
+      "name" : "mp_BréCourt_12",
+      "size" : "1 KB"
+    },
+    {
+      "bytes" : 1500,
+      "map" : null,
+      "name" : "ångström",
+      "size" : "2 KB"
+    },
+    {
+      "bytes" : 999999,
+      "map" : null,
+      "name" : "match-7",
+      "size" : "1000 KB"
+    },
+    {
+      "bytes" : 1050000,
+      "map" : null,
+      "name" : "😀́",
+      "size" : "1.1 MB"
+    },
+    {
+      "bytes" : 1234567890,
+      "map" : null,
+      "name" : "x:y",
+      "size" : "1.2 GB"
+    }
+  ],
+  "news" : {
+    "input" : "eyJpdGVtcyI6WwogIHsiZGF0ZSI6IjIwMjYtMTEtMjAiLCJ0aXRsZSI6IiAgSGVsbG8gXG4gd29ybGQiLCJzdW1tYXJ5IjoiTmV3XHR0ZXh0Iiwib3BlbiI6ImNvbmZpZ3MifSwKICB7ImRhdGUiOiIyMDI2LTExLTIxIiwidGl0bGUiOiJUb21vcnJvdyJ9LAogIHsiZGF0ZSI6IjIwMjYtMDItMjkiLCJ0aXRsZSI6IkludmFsaWQgZGF0ZSJ9LAogIHsiZGF0ZSI6IjIwMjYtMTEtMTkiLCJ0aXRsZSI6IlVuc2FmZSBsaW5rIiwibGluayI6Imh0dHBzOi8vZ2l0aHViLmNvbS5ldmlsLmludmFsaWQvZ28iLCJvcGVuIjoidW5rbm93biJ9LAogIHsiZGF0ZSI6IjIwMjYtMTEtMTkiLCJ0aXRsZSI6Ikdvb2QgbGluayIsImxpbmsiOiJodHRwczovL2dpdGh1Yi5jb20vY29kMnVuYm91bmQvY29kMi11bmJvdW5kIn0sCiAgeyJkYXRlIjoiMjAyNi0xMS0xOSIsInRpdGxlIjoiXHUyMDJlIn0KXSwibmV4dCI6eyJ0aXRsZSI6Ik5leHQiLCJzdW1tYXJ5IjoiV29yayBpbiBwcm9ncmVzcyIsImxpbmsiOiJodHRwczovL2dpdGh1Yi5jb20vY29kMnVuYm91bmQvY29kMi11bmJvdW5kL3JlbGVhc2VzIn19",
+    "items" : [
+      {
+        "link" : null,
+        "open" : null,
+        "stamp" : "21 NOV",
+        "summary" : "",
+        "title" : "Tomorrow"
+      },
+      {
+        "link" : null,
+        "open" : "configs",
+        "stamp" : "20 NOV",
+        "summary" : "New text",
+        "title" : "Hello world"
+      },
+      {
+        "link" : null,
+        "open" : null,
+        "stamp" : "19 NOV",
+        "summary" : "",
+        "title" : "Unsafe link"
+      },
+      {
+        "link" : "https://github.com/cod2unbound/cod2-unbound",
+        "open" : null,
+        "stamp" : "19 NOV",
+        "summary" : "",
+        "title" : "Good link"
+      }
+    ],
+    "next" : {
+      "link" : "https://github.com/cod2unbound/cod2-unbound/releases",
+      "open" : null,
+      "stamp" : "NEXT",
+      "summary" : "Work in progress",
+      "title" : "Next"
+    },
+    "now" : 1795262400
+  },
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

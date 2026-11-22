@@ -1,0 +1,22 @@
+<!-- CoD2 Unbound design canvas, Scene hero. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 620" preserveAspectRatio="xMidYMid slice" width="1440" height="620">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="100%"><stop offset="0" stop-color="#b9c7c2"></stop><stop offset="0.34" stop-color="#d2d6c2"></stop><stop offset="0.6" stop-color="#e6d7ae"></stop><stop offset="0.78" stop-color="#ecc98c"></stop><stop offset="0.9" stop-color="#e9bd78"></stop></linearGradient>
+      <radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff3cf" stop-opacity="0.75"></stop><stop offset="1" stop-color="#fff3cf" stop-opacity="0"></stop></radialGradient>
+    </defs>
+    <rect width="1440" height="620" fill="url(#sky)"></rect>
+    <circle cx="1252" cy="262" r="170" fill="url(#sun)"></circle>
+    <circle cx="1252" cy="262" r="40" fill="#fff0c4" opacity="0.92"></circle>
+    <path d="M0 438 Q 210 400 430 424 T 870 408 T 1440 420 V620 H0Z" fill="#c9ab72" opacity="0.6"></path>
+    <path d="M0 476 Q 270 450 540 466 T 1060 452 T 1440 462 V620 H0Z" fill="#b0935f" opacity="0.85"></path>
+    <g fill="#5a4a2c">
+      <rect x="610" y="444" width="72" height="80"></rect><rect x="682" y="420" width="58" height="104"></rect><rect x="740" y="434" width="92" height="90"></rect><rect x="832" y="404" width="50" height="120"></rect><rect x="882" y="428" width="112" height="96"></rect><rect x="994" y="398" width="66" height="126"></rect>
+      <rect x="1060" y="304" width="22" height="220"></rect><rect x="1054" y="296" width="34" height="9"></rect><circle cx="1071" cy="288" r="10"></circle><rect x="1070" y="268" width="2" height="12"></rect>
+      <rect x="1082" y="422" width="80" height="102"></rect><rect x="1162" y="390" width="58" height="134"></rect><rect x="1220" y="416" width="96" height="108"></rect><rect x="1316" y="400" width="60" height="124"></rect><rect x="1376" y="432" width="64" height="92"></rect>
+      <path d="M760 434 a14 14 0 0 1 28 0 Z"></path><path d="M1236 416 a16 16 0 0 1 32 0 Z"></path>
+    </g>
+    <g fill="#7a6233" opacity="0.85"><rect x="704" y="444" width="6" height="9"></rect><rect x="772" y="456" width="6" height="9"></rect><rect x="904" y="446" width="6" height="9"></rect><rect x="1012" y="414" width="6" height="9"></rect><rect x="1100" y="440" width="6" height="9"></rect><rect x="1180" y="406" width="6" height="9"></rect><rect x="1250" y="440" width="6" height="9"></rect><rect x="1334" y="416" width="6" height="9"></rect></g>
+    <path d="M583 478 C 578 430 584 392 598 352" stroke="#5a4a2c" stroke-width="7" fill="none" stroke-linecap="round"></path>
+    <g fill="none" stroke="#5a4a2c" stroke-width="5" stroke-linecap="round"><path d="M598 352 C 570 340 548 346 528 362"></path><path d="M598 352 C 584 326 560 316 538 318"></path><path d="M598 352 C 612 324 638 316 660 322"></path><path d="M598 352 C 628 344 652 352 668 370"></path><path d="M598 352 C 600 330 596 312 586 300"></path></g>
+    <path d="M0 566 L 110 552 L 170 560 L 290 542 L 372 556 L 470 548 L 540 566 L 640 560 L 760 574 L 900 566 L 1040 578 L 1200 570 L 1440 580 V620 H0Z" fill="#8f7648"></path>
+  </svg>

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="[2.7.0]" />
+    <EmbeddedResource Include="../../launcher/Resources/ConfigCatalog.json" LogicalName="ConfigCatalog.json" />
+    <EmbeddedResource Include="../../launcher/Resources/ConfigRulesets.json" LogicalName="ConfigRulesets.json" />
+    <EmbeddedResource Include="../../launcher/Resources/ConfigOptimizer.json" LogicalName="ConfigOptimizer.json" />
+  </ItemGroup>
+</Project>

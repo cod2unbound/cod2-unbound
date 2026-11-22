@@ -1,18 +1,25 @@
 import Foundation
 
-@main struct ConfigImportSafetyTests {
+#if !CORE_PARITY_TESTS
+@main
+#endif
+struct ConfigImportSafetyTests {
     static func require(_ value: Bool, _ message: String) {
         if !value { FileHandle.standardError.write(Data("FAIL: \(message)\n".utf8)); exit(1) }
     }
     static let catalog = ConfigImportCatalogSnapshot(settings: ["motd": .init(archived: true)],
                                                      commands: ["+attack": .init(bindable: true)])
-    static func review(_ text: String, dialect: ConfigDialect) -> ConfigImportReview {
-        let file = ConfigImportFile(path: "private.cfg", data: Data(text.utf8), dialect: dialect)
-        return ConfigImportSafety(catalog: catalog).review(.init(source: .init(kind: .paste), entryPath: file.path, files: [file]))
-    }
-    static func main() {
+    static func main() { safety(vstrOnly: CommandLine.arguments.contains("--vstr-only")) }
+
+    static func safety(vstrOnly: Bool = false, record: ((ConfigImportReview) -> Void)? = nil) {
+        func review(_ text: String, dialect: ConfigDialect) -> ConfigImportReview {
+            let file = ConfigImportFile(path: "private.cfg", data: Data(text.utf8), dialect: dialect)
+            let result = ConfigImportSafety(catalog: catalog).review(.init(source: .init(kind: .paste), entryPath: file.path, files: [file]))
+            record?(result)
+            return result
+        }
         for dialect in [ConfigDialect.stock, .cod2x] {
-            if !CommandLine.arguments.contains("--vstr-only") {
+            if !vstrOnly {
             let hidden = review("bind k say \"a ;connect 1.2.3.4 \"\n", dialect: dialect).candidates[0]
             require(hidden.classification == .blocked && !hidden.importable && hidden.reasons.contains(.malformed),
                     "\(dialect): a binding whose saved spelling exposes connect is blocked")

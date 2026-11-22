@@ -1,0 +1,506 @@
+{
+  "cases" : [
+    {
+      "document" : "c2V0YSBzZW5zaXRpdml0eSA0Cg==",
+      "everything" : false,
+      "id" : "default",
+      "input" : "seta sensitivity 4\nseta name New\nseta password test-only\nexec absent.cfg\nunknown_forwarded\n",
+      "lastImportedValues" : {
+        "sensitivity" : "4"
+      },
+      "locks" : [
+
+      ],
+      "platform" : "native",
+      "preview" : "accepted",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "4",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : true,
+          "id" : "config.cfg:19",
+          "locks" : [
+
+          ],
+          "new" : "New",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:33",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:57",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:73",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:0"
+      ]
+    },
+    {
+      "document" : "c2V0YSBzZW5zaXRpdml0eSA0CgpzZXRhIG5hbWUgTmV3Cg==",
+      "everything" : true,
+      "id" : "everything",
+      "input" : "seta sensitivity 4\nseta name New\nseta password test-only\nexec absent.cfg\nunknown_forwarded\n",
+      "lastImportedValues" : {
+        "name" : "New",
+        "sensitivity" : "4"
+      },
+      "locks" : [
+
+      ],
+      "platform" : "native",
+      "preview" : "accepted",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "4",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : true,
+          "id" : "config.cfg:19",
+          "locks" : [
+
+          ],
+          "new" : "New",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:33",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:57",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:73",
+          "locks" : [
+
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:0",
+        "config.cfg:19"
+      ]
+    },
+    {
+      "document" : "c2V0YSBzZW5zaXRpdml0eSAyDQpiaW5kIE1PVVNFMSArYXR0YWNrDQoKc2V0YSBuYW1lIE90aGVyCg==",
+      "everything" : true,
+      "id" : "locked",
+      "input" : "seta sensitivity 8\nbind MOUSE1 +forward\nbind w \"toggle sensitivity 1 9\"\nunbindall\nseta name Other\n",
+      "lastImportedValues" : {
+        "name" : "Other"
+      },
+      "locks" : [
+        "SENSITIVITY",
+        "bind:mouse1"
+      ],
+      "platform" : "native",
+      "preview" : "accepted",
+      "prior" : "seta sensitivity 2\r\nbind MOUSE1 +attack\r\n",
+      "rows" : [
+        {
+          "eligible" : false,
+          "id" : "config.cfg:0",
+          "locks" : [
+            "SENSITIVITY"
+          ],
+          "new" : "8",
+          "old" : "2",
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:19",
+          "locks" : [
+            "bind:mouse1"
+          ],
+          "new" : "+forward",
+          "old" : "+attack",
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:40",
+          "locks" : [
+            "SENSITIVITY"
+          ],
+          "new" : "toggle sensitivity 1 9",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:72",
+          "locks" : [
+            "bind:mouse1"
+          ],
+          "new" : null,
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : true,
+          "id" : "config.cfg:82",
+          "locks" : [
+
+          ],
+          "new" : "Other",
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:82"
+      ]
+    },
+    {
+      "document" : "c2V0YSBzZW5zaXRpdml0eSA2Cg==",
+      "everything" : true,
+      "id" : "windows-source",
+      "input" : "seta sensitivity 6\nseta r_mode 4\nseta r_fullscreen 1\nseta in_mouse 1\nbind 0x00 +attack\n",
+      "lastImportedValues" : {
+        "sensitivity" : "6"
+      },
+      "locks" : [
+
+      ],
+      "platform" : "windows",
+      "preview" : "accepted",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "6",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:19",
+          "locks" : [
+
+          ],
+          "new" : "4",
+          "old" : null,
+          "platformNote" : "Resolution and display modes are chosen for this Mac: the resolution in this loadout, the mode in Settings › Display. Imported ones are omitted."
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:33",
+          "locks" : [
+
+          ],
+          "new" : "1",
+          "old" : null,
+          "platformNote" : "Resolution and display modes are chosen for this Mac: the resolution in this loadout, the mode in Settings › Display. Imported ones are omitted."
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:53",
+          "locks" : [
+
+          ],
+          "new" : "1",
+          "old" : null,
+          "platformNote" : "This Windows input or driver choice has no verified Mac translation. Keep the native device settings."
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:69",
+          "locks" : [
+
+          ],
+          "new" : "+attack",
+          "old" : null,
+          "platformNote" : "This key has no supported native mapping. Choose a key in Binds."
+        }
+      ],
+      "selected" : [
+        "config.cfg:0"
+      ]
+    },
+    {
+      "document" : "c2V0YSBzZW5zaXRpdml0eSA0Cg==",
+      "everything" : true,
+      "id" : "nested-machine",
+      "input" : "seta sensitivity 4\nbind w \"toggle r_mode 1 2\"\n",
+      "lastImportedValues" : {
+        "sensitivity" : "4"
+      },
+      "locks" : [
+
+      ],
+      "platform" : "windows",
+      "preview" : "accepted",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "4",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:19",
+          "locks" : [
+
+          ],
+          "new" : "toggle r_mode 1 2",
+          "old" : null,
+          "platformNote" : "Resolution and display modes are chosen for this Mac: the resolution in this loadout, the mode in Settings › Display. Imported ones are omitted."
+        }
+      ],
+      "selected" : [
+        "config.cfg:0"
+      ]
+    },
+    {
+      "everything" : true,
+      "id" : "renderer-and-key",
+      "input" : "seta r_rendererPreference dx9\nseta r_renderer gl\nbind COMMAND +attack\n",
+      "locks" : [
+
+      ],
+      "platform" : "windows",
+      "preview" : "Select at least one config change.",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : false,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "dx9",
+          "old" : null,
+          "platformNote" : "This value belongs to this Mac's launcher settings. Choose it there instead of importing a machine-specific value."
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:30",
+          "locks" : [
+
+          ],
+          "new" : "gl",
+          "old" : null,
+          "platformNote" : "This value belongs to this Mac's launcher settings. Choose it there instead of importing a machine-specific value."
+        },
+        {
+          "eligible" : false,
+          "id" : "config.cfg:49",
+          "locks" : [
+
+          ],
+          "new" : "+attack",
+          "old" : null,
+          "platformNote" : "Command is a Mac key, rather than a verified Windows mapping. Choose the intended key in Binds."
+        }
+      ],
+      "selected" : [
+
+      ]
+    },
+    {
+      "everything" : false,
+      "id" : "target-nul",
+      "input" : "seta sensitivity 8\n",
+      "locks" : [
+
+      ],
+      "platform" : "native",
+      "preview" : "These selected commands cannot be safely combined with this loadout. Review their dependencies and scripts.",
+      "prior" : "seta sensitivity 2\u0000ignored",
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "8",
+          "old" : "2",
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:0"
+      ]
+    },
+    {
+      "document" : "c2V0YSBmaXJlICIrYXR0YWNrIgpiaW5kIE1PVVNFMSAidnN0ciBmaXJlIgoKc2V0YSBzZW5zaXRpdml0eSA1Cg==",
+      "everything" : true,
+      "id" : "locked-helper",
+      "input" : "seta fire \"+forward\"\nseta sensitivity 5\n",
+      "lastImportedValues" : {
+        "sensitivity" : "5"
+      },
+      "locks" : [
+        "action:+attack"
+      ],
+      "platform" : "native",
+      "preview" : "accepted",
+      "prior" : "seta fire \"+attack\"\nbind MOUSE1 \"vstr fire\"\n",
+      "rows" : [
+        {
+          "eligible" : false,
+          "id" : "config.cfg:0",
+          "locks" : [
+            "action:+attack"
+          ],
+          "new" : "+forward",
+          "old" : "+attack",
+          "platformNote" : null
+        },
+        {
+          "eligible" : true,
+          "id" : "config.cfg:21",
+          "locks" : [
+
+          ],
+          "new" : "5",
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:21"
+      ]
+    },
+    {
+      "document" : "YmluZCB3ICJyY29ucGFzc3dvcmQgc3ludGhldGljLWJhc2VsaW5lLXNlY3JldCIKCmJpbmQgdyArZm9yd2FyZAo=",
+      "everything" : false,
+      "id" : "old-key-secret",
+      "input" : "bind w +forward\n",
+      "lastImportedValues" : {
+
+      },
+      "locks" : [
+
+      ],
+      "platform" : "native",
+      "preview" : "accepted",
+      "prior" : "bind w \"rconpassword synthetic-baseline-secret\"\n",
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "+forward",
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:0"
+      ]
+    },
+    {
+      "everything" : true,
+      "id" : "omitted-helper",
+      "input" : "seta helper \"sensitivity 7\"\nbind w \"vstr helper\"\n",
+      "locks" : [
+
+      ],
+      "platform" : "native",
+      "preview" : "These selected commands cannot be safely combined with this loadout. Review their dependencies and scripts.",
+      "prior" : null,
+      "rows" : [
+        {
+          "eligible" : true,
+          "id" : "config.cfg:0",
+          "locks" : [
+
+          ],
+          "new" : "sensitivity 7",
+          "old" : null,
+          "platformNote" : null
+        },
+        {
+          "eligible" : true,
+          "id" : "config.cfg:28",
+          "locks" : [
+
+          ],
+          "new" : "vstr helper",
+          "old" : null,
+          "platformNote" : null
+        }
+      ],
+      "selected" : [
+        "config.cfg:28"
+      ]
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

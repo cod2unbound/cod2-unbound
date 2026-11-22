@@ -1,0 +1,199 @@
+{
+  "cases" : [
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "signed",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "verified",
+      "signature" : "5p/fnw66y09t4FbIznysJS0gE08YDkHcuJI7HPxHXzV87AGL+KgKpK4mzQxLucLmKg5fGABog2Nk8mCjP0PuCg=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "newer",
+      "index" : "eyJlbnRyaWVzIjpbXSwicmV2aXNpb24iOjIsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "verified",
+      "signature" : "AQOX32o/9tmDnAFukz+TcickLRw1vJQkIDozLybYTKNnQCDTpcxkwW5n6MkC/+mLmOlOf62NOQymzOY+tWLyCA=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "same-revision-edited",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6Ik90aGVyIiwicHJvdmVuYW5jZSI6eyJhdHRyaWJ1dGlvbiI6InNlbGYtcHVibGlzaGVkIiwiY2hhbmdlcyI6IlByaXZhdGUgbGluZXMgcmVtb3ZlZC4iLCJwdWJsaXNoZWRCeSI6IkNvRDIgVW5ib3VuZCIsInJldHJpZXZlZEF0IjoiMjAyNC0wMi0yOSJ9LCJzaGEyNTYiOiI1YmQ2NWNmM2U4Y2E4ZjY3MGU0ZTM1ZGE2ZjdiMWVjNzZiM2VmMDcwNGZmMmFhNGRmYmE4YTg1YzFiZDU4YWQ3Iiwic291cmNlVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9jcmVkaXRzL3NhbXBsZSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "verified",
+      "signature" : "83sRE2muzKxuKY5SUT6fmHa5V6KLIQgJ6J2E+L+uyB6+CVgHxRXth7fEdl/i2pnha8Lgd5Zl4kESawmVCYxTBQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "schema",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjJ9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "usyYNZ1OoVeHKoqCdmRP00/RtwzCy/MjnNl9lMHPXJp5zf0EfYdlDAYd67xznWn35pfxJQt+LqYXR7X+Ze2+CA=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "zero-revision",
+      "index" : "eyJlbnRyaWVzIjpbXSwicmV2aXNpb24iOjAsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "yHgvEBAOYHDvIsZL0jWOfLGEp0gHxVGUAg2VtAwxoLhMvTnfR+I4yBKccxJNn1IeTpPQThfBuCRoEzlDl8cNAQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "duplicate-id",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9LHsiYnl0ZUNvdW50Ijo2OCwiY29uZmlnVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9lbnRyaWVzL3NhbXBsZS9jb25maWcuY2ZnIiwiY3JlZGl0IjoiV3JlbiIsImVyYSI6IjIwMTAiLCJmYWN0cyI6eyJyZXNvbHV0aW9uIjoiMTAyNHg3NjgiLCJzZW5zaXRpdml0eSI6IjIuMSJ9LCJmZWF0dXJlZCI6dHJ1ZSwiZmVlbCI6IkxvdyBzZW5zaXRpdml0eSIsImlkIjoic2FtcGxlIiwicGxhdGZvcm0iOiJuYXRpdmUiLCJwbGF5ZXIiOiJXcmVuIiwicHJvdmVuYW5jZSI6eyJhdHRyaWJ1dGlvbiI6InNlbGYtcHVibGlzaGVkIiwiY2hhbmdlcyI6IlByaXZhdGUgbGluZXMgcmVtb3ZlZC4iLCJwdWJsaXNoZWRCeSI6IkNvRDIgVW5ib3VuZCIsInJldHJpZXZlZEF0IjoiMjAyNC0wMi0yOSJ9LCJzaGEyNTYiOiI1YmQ2NWNmM2U4Y2E4ZjY3MGU0ZTM1ZGE2ZjdiMWVjNzZiM2VmMDcwNGZmMmFhNGRmYmE4YTg1YzFiZDU4YWQ3Iiwic291cmNlVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9jcmVkaXRzL3NhbXBsZSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "frfwiCywtDDz+npMdgNykSsb0Hf0luyw7zCW0TTtZExQTq0aekHKIHKZuRLvyH7jPqwJxvhW8slyQTI47/0MCQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-root",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjEsInVucmVjb2duaXplZCI6dHJ1ZX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "pyVVM9bng/TCqCiAodtJd067J6xdn2whjfqMovNpNpOAMeu9F0SQPc+s0HiqFcLIDSH3NUUBecDk5fwGex6tAA=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-entry",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCIsInVucmVjb2duaXplZCI6dHJ1ZX1dLCJyZXZpc2lvbiI6MSwic2NoZW1hVmVyc2lvbiI6MX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "9ixD3gEAEtqVrYkDXlmZ5HRp4ejdnsflt0sOP4PPiGPvinfmjSuqC6Mse10ysCHvklEJH+z6yeNRmVxDW1esCw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "missing-field",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJlcmEiOiIyMDEwIiwiZmFjdHMiOnsicmVzb2x1dGlvbiI6IjEwMjR4NzY4Iiwic2Vuc2l0aXZpdHkiOiIyLjEifSwiZmVhdHVyZWQiOnRydWUsImZlZWwiOiJMb3cgc2Vuc2l0aXZpdHkiLCJpZCI6InNhbXBsZSIsInBsYXRmb3JtIjoibmF0aXZlIiwicGxheWVyIjoiV3JlbiIsInByb3ZlbmFuY2UiOnsiYXR0cmlidXRpb24iOiJzZWxmLXB1Ymxpc2hlZCIsImNoYW5nZXMiOiJQcml2YXRlIGxpbmVzIHJlbW92ZWQuIiwicHVibGlzaGVkQnkiOiJDb0QyIFVuYm91bmQiLCJyZXRyaWV2ZWRBdCI6IjIwMjQtMDItMjkifSwic2hhMjU2IjoiNWJkNjVjZjNlOGNhOGY2NzBlNGUzNWRhNmY3YjFlYzc2YjNlZjA3MDRmZjJhYTRkZmJhOGE4NWMxYmQ1OGFkNyIsInNvdXJjZVVSTCI6Imh0dHBzOi8vZml4dHVyZXMuaW52YWxpZC9zZXR1cHMvY3JlZGl0cy9zYW1wbGUiLCJzdG9yeSI6IlNhbXBsZSBzZXR1cC4iLCJzdHlsZVRhZ3MiOlsiQ2xhc3NpYyJdLCJ0ZWFtIjoiTm9ydGh3aW5kIn1dLCJyZXZpc2lvbiI6MSwic2NoZW1hVmVyc2lvbiI6MX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "pSbfjIWtyy3e/ctxh/0P/U855FqFjKZqwWDtNLBFmIDcg58dvO2ZLwKveskL+majFkLlXgFEOfxs3Ns4eVYiDQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-provenance",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5IiwidW5yZWNvZ25pemVkIjoiZXh0cmEifSwic2hhMjU2IjoiNWJkNjVjZjNlOGNhOGY2NzBlNGUzNWRhNmY3YjFlYzc2YjNlZjA3MDRmZjJhYTRkZmJhOGE4NWMxYmQ1OGFkNyIsInNvdXJjZVVSTCI6Imh0dHBzOi8vZml4dHVyZXMuaW52YWxpZC9zZXR1cHMvY3JlZGl0cy9zYW1wbGUiLCJzdG9yeSI6IlNhbXBsZSBzZXR1cC4iLCJzdHlsZVRhZ3MiOlsiQ2xhc3NpYyJdLCJ0ZWFtIjoiTm9ydGh3aW5kIn1dLCJyZXZpc2lvbiI6MSwic2NoZW1hVmVyc2lvbiI6MX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "sSpqc9suRcn88hu1bI+36lxdiAW80twKkDIKI4VWWaEgfUqSqyL/ppiHyrblsboNP3KDOaH5pOIjp8toM3waAQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-attribution",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoib2ZmaWNpYWwiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "L/x3wDC55/1HGvVjjuRFpEWSayAQwcSiRM340Xv7xOlFOMC8wsOGP6avF8yZcyLJhoKjzVMd5YNYBaI8Gtr7Bw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "invalid-date",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDIzLTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "LU8ZFKXIntlqXDIk3BIzZKzGJKGrM4VgwkYkElVyUL2eao4SVLsF0Gf4bnnTjyJxfoYF73zk3kyNhjX1h36VDg=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-fact",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InVucmVjb2duaXplZCI6ImV4dHJhIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "plYsX0x8XSYkaNhxhYpPjMrEGQy+tF6qZYpds29QjbvF5QMuSewz6WF5rA2o/W3CH8si0guOJozt+C8G7t2TAg=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "null-facts",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjpudWxsLCJmZWF0dXJlZCI6dHJ1ZSwiZmVlbCI6IkxvdyBzZW5zaXRpdml0eSIsImlkIjoic2FtcGxlIiwicGxhdGZvcm0iOiJuYXRpdmUiLCJwbGF5ZXIiOiJXcmVuIiwicHJvdmVuYW5jZSI6eyJhdHRyaWJ1dGlvbiI6InNlbGYtcHVibGlzaGVkIiwiY2hhbmdlcyI6IlByaXZhdGUgbGluZXMgcmVtb3ZlZC4iLCJwdWJsaXNoZWRCeSI6IkNvRDIgVW5ib3VuZCIsInJldHJpZXZlZEF0IjoiMjAyNC0wMi0yOSJ9LCJzaGEyNTYiOiI1YmQ2NWNmM2U4Y2E4ZjY3MGU0ZTM1ZGE2ZjdiMWVjNzZiM2VmMDcwNGZmMmFhNGRmYmE4YTg1YzFiZDU4YWQ3Iiwic291cmNlVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9jcmVkaXRzL3NhbXBsZSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "XcfHsrKH3oYUMlIxK0uUcLzEHO0g+JDFWYs2V/e4LMNkSht/oLUdiuFVXCFSEcO1WI+FiqwlneEhhiZataIRCw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "unknown-platform",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im90aGVyIiwicGxheWVyIjoiV3JlbiIsInByb3ZlbmFuY2UiOnsiYXR0cmlidXRpb24iOiJzZWxmLXB1Ymxpc2hlZCIsImNoYW5nZXMiOiJQcml2YXRlIGxpbmVzIHJlbW92ZWQuIiwicHVibGlzaGVkQnkiOiJDb0QyIFVuYm91bmQiLCJyZXRyaWV2ZWRBdCI6IjIwMjQtMDItMjkifSwic2hhMjU2IjoiNWJkNjVjZjNlOGNhOGY2NzBlNGUzNWRhNmY3YjFlYzc2YjNlZjA3MDRmZjJhYTRkZmJhOGE4NWMxYmQ1OGFkNyIsInNvdXJjZVVSTCI6Imh0dHBzOi8vZml4dHVyZXMuaW52YWxpZC9zZXR1cHMvY3JlZGl0cy9zYW1wbGUiLCJzdG9yeSI6IlNhbXBsZSBzZXR1cC4iLCJzdHlsZVRhZ3MiOlsiQ2xhc3NpYyJdLCJ0ZWFtIjoiTm9ydGh3aW5kIn1dLCJyZXZpc2lvbiI6MSwic2NoZW1hVmVyc2lvbiI6MX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "u3YSrpALbj9UNtGlIrxvk2B+u2lw98CCNFi0QXroWafOeyK7qOOdCLp9FSJUJMik/wdi4Id8z1oRHmPtyRZ3DQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "bad-id",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJCYWQvaWQiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "X+QgIzsJfiJHZOTFYyvQ2t+NnK4i1Hcd8H9KstHU75QimWctzOdSbfg7paegMoZoGxQ2gr3PcDScA7JF/g4CDw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "duplicate-tags",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiLCJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "UD2NC/8X3ukiGPPw4AaaxgGBaNix7oBn9t3egO5nUTNFqs1O7A68PlRHIBTfFNm5moYrmlRnb1rtzalzf9PDDw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "bad-hash",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjVCRDY1Q0YzRThDQThGNjcwRTRFMzVEQTZGN0IxRUM3NkIzRUYwNzA0RkYyQUE0REZCQThBODVDMUJENThBRDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "312Kw31a78wTk2Elf8OzaCGxMzj/3Fp3k0V6wKFepOBPJHe0ZK1+Wq92KOVhrrCBRxvIEtvSQYgeoSlA99xDCA=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "bad-size",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY1NTM2LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "cJhKTqr2HPYObkg0fczavdO6f9Jse9QZmeDWHWDVvkTCqReTNNx63mkCcZxPmvPjqggOLLmI8n4Zr0ZMoBDUBg=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "control",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW5cdCIsInByb3ZlbmFuY2UiOnsiYXR0cmlidXRpb24iOiJzZWxmLXB1Ymxpc2hlZCIsImNoYW5nZXMiOiJQcml2YXRlIGxpbmVzIHJlbW92ZWQuIiwicHVibGlzaGVkQnkiOiJDb0QyIFVuYm91bmQiLCJyZXRyaWV2ZWRBdCI6IjIwMjQtMDItMjkifSwic2hhMjU2IjoiNWJkNjVjZjNlOGNhOGY2NzBlNGUzNWRhNmY3YjFlYzc2YjNlZjA3MDRmZjJhYTRkZmJhOGE4NWMxYmQ1OGFkNyIsInNvdXJjZVVSTCI6Imh0dHBzOi8vZml4dHVyZXMuaW52YWxpZC9zZXR1cHMvY3JlZGl0cy9zYW1wbGUiLCJzdG9yeSI6IlNhbXBsZSBzZXR1cC4iLCJzdHlsZVRhZ3MiOlsiQ2xhc3NpYyJdLCJ0ZWFtIjoiTm9ydGh3aW5kIn1dLCJyZXZpc2lvbiI6MSwic2NoZW1hVmVyc2lvbiI6MX0=",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "6eB915reNs6YZrPjuCd+y00S5d+rjE+ZPE01VY9bQ8S+LPVXIJUYIIlX1GrnfuU/MzlsvDSQkOiHmuJ/g+R5Ag=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "insecure-url",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwOi8vZml4dHVyZXMuaW52YWxpZC9jb25maWcuY2ZnIiwiY3JlZGl0IjoiV3JlbiIsImVyYSI6IjIwMTAiLCJmYWN0cyI6eyJyZXNvbHV0aW9uIjoiMTAyNHg3NjgiLCJzZW5zaXRpdml0eSI6IjIuMSJ9LCJmZWF0dXJlZCI6dHJ1ZSwiZmVlbCI6IkxvdyBzZW5zaXRpdml0eSIsImlkIjoic2FtcGxlIiwicGxhdGZvcm0iOiJuYXRpdmUiLCJwbGF5ZXIiOiJXcmVuIiwicHJvdmVuYW5jZSI6eyJhdHRyaWJ1dGlvbiI6InNlbGYtcHVibGlzaGVkIiwiY2hhbmdlcyI6IlByaXZhdGUgbGluZXMgcmVtb3ZlZC4iLCJwdWJsaXNoZWRCeSI6IkNvRDIgVW5ib3VuZCIsInJldHJpZXZlZEF0IjoiMjAyNC0wMi0yOSJ9LCJzaGEyNTYiOiI1YmQ2NWNmM2U4Y2E4ZjY3MGU0ZTM1ZGE2ZjdiMWVjNzZiM2VmMDcwNGZmMmFhNGRmYmE4YTg1YzFiZDU4YWQ3Iiwic291cmNlVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9jcmVkaXRzL3NhbXBsZSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "rhbVZ9OcChsCjhYcwUi81XMDSVrtKGwoGIYQCjcI0kp8PkZmdSmAH164zW93Z6ytqR/uBpwN87YctZHL5zucCQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "queried-url",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvY3JlZGl0P3g9MSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "JKuLyGKHt8/ZQ9zLfX3M25vQGKbJrLdnLhc8Apq2/RlZKDgY2Ddg4wc9Kjl0ukoKy3mrw6hswAg88LiQsFDBBQ=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "traversing-url",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzLyUyZSUyZS9jb25maWcuY2ZnIiwiY3JlZGl0IjoiV3JlbiIsImVyYSI6IjIwMTAiLCJmYWN0cyI6eyJyZXNvbHV0aW9uIjoiMTAyNHg3NjgiLCJzZW5zaXRpdml0eSI6IjIuMSJ9LCJmZWF0dXJlZCI6dHJ1ZSwiZmVlbCI6IkxvdyBzZW5zaXRpdml0eSIsImlkIjoic2FtcGxlIiwicGxhdGZvcm0iOiJuYXRpdmUiLCJwbGF5ZXIiOiJXcmVuIiwicHJvdmVuYW5jZSI6eyJhdHRyaWJ1dGlvbiI6InNlbGYtcHVibGlzaGVkIiwiY2hhbmdlcyI6IlByaXZhdGUgbGluZXMgcmVtb3ZlZC4iLCJwdWJsaXNoZWRCeSI6IkNvRDIgVW5ib3VuZCIsInJldHJpZXZlZEF0IjoiMjAyNC0wMi0yOSJ9LCJzaGEyNTYiOiI1YmQ2NWNmM2U4Y2E4ZjY3MGU0ZTM1ZGE2ZjdiMWVjNzZiM2VmMDcwNGZmMmFhNGRmYmE4YTg1YzFiZDU4YWQ3Iiwic291cmNlVVJMIjoiaHR0cHM6Ly9maXh0dXJlcy5pbnZhbGlkL3NldHVwcy9jcmVkaXRzL3NhbXBsZSIsInN0b3J5IjoiU2FtcGxlIHNldHVwLiIsInN0eWxlVGFncyI6WyJDbGFzc2ljIl0sInRlYW0iOiJOb3J0aHdpbmQifV0sInJldmlzaW9uIjoxLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+      "outcome" : "The directory index has invalid metadata or an unsupported version.",
+      "signature" : "BihFs/r89HTMw73j14P4IpTlkq0V0ROcRcGrmzjRuxo6QgQ0A8pevgHDYvqCngWjvi3RWEC1udFcSODcU4jnDw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "tampered",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9IA==",
+      "outcome" : "The directory signature could not be verified.",
+      "signature" : "5p/fnw66y09t4FbIznysJS0gE08YDkHcuJI7HPxHXzV87AGL+KgKpK4mzQxLucLmKg5fGABog2Nk8mCjP0PuCg=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "wrong-key",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory signature could not be verified.",
+      "signature" : "kl5juxbHTWVVuhf/Y9uJ6LW7os++lw5uzMxzfSCN715tg6IfkF1yEQEKW8/SFUcvcaQj7+4OhSkVK/WQTBv8Dw=="
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/index.json",
+      "id" : "wrong-length",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The directory signature could not be verified.",
+      "signature" : "5p/fnw66y09t4FbIznysJS0gE08YDkHcuJI7HPxHXzV87AGL+KgKpK4mzQxLucLmKg5fGABog2Nk8mCjP0Pu"
+    },
+    {
+      "finalURL" : "https://fixtures.invalid/setups/other.json",
+      "id" : "wrong-identity",
+      "index" : "eyJlbnRyaWVzIjpbeyJieXRlQ291bnQiOjY4LCJjb25maWdVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2VudHJpZXMvc2FtcGxlL2NvbmZpZy5jZmciLCJjcmVkaXQiOiJXcmVuIiwiZXJhIjoiMjAxMCIsImZhY3RzIjp7InJlc29sdXRpb24iOiIxMDI0eDc2OCIsInNlbnNpdGl2aXR5IjoiMi4xIn0sImZlYXR1cmVkIjp0cnVlLCJmZWVsIjoiTG93IHNlbnNpdGl2aXR5IiwiaWQiOiJzYW1wbGUiLCJwbGF0Zm9ybSI6Im5hdGl2ZSIsInBsYXllciI6IldyZW4iLCJwcm92ZW5hbmNlIjp7ImF0dHJpYnV0aW9uIjoic2VsZi1wdWJsaXNoZWQiLCJjaGFuZ2VzIjoiUHJpdmF0ZSBsaW5lcyByZW1vdmVkLiIsInB1Ymxpc2hlZEJ5IjoiQ29EMiBVbmJvdW5kIiwicmV0cmlldmVkQXQiOiIyMDI0LTAyLTI5In0sInNoYTI1NiI6IjViZDY1Y2YzZThjYThmNjcwZTRlMzVkYTZmN2IxZWM3NmIzZWYwNzA0ZmYyYWE0ZGZiYThhODVjMWJkNThhZDciLCJzb3VyY2VVUkwiOiJodHRwczovL2ZpeHR1cmVzLmludmFsaWQvc2V0dXBzL2NyZWRpdHMvc2FtcGxlIiwic3RvcnkiOiJTYW1wbGUgc2V0dXAuIiwic3R5bGVUYWdzIjpbIkNsYXNzaWMiXSwidGVhbSI6Ik5vcnRod2luZCJ9XSwicmV2aXNpb24iOjEsInNjaGVtYVZlcnNpb24iOjF9",
+      "outcome" : "The downloaded file is not the selected directory resource.",
+      "signature" : "5p/fnw66y09t4FbIznysJS0gE08YDkHcuJI7HPxHXzV87AGL+KgKpK4mzQxLucLmKg5fGABog2Nk8mCjP0PuCg=="
+    }
+  ],
+  "indexURL" : "https://fixtures.invalid/setups/index.json",
+  "productionPublicKey" : "iTOphG+NSxzT4k9BumMTP7h3Ui408zuH63b8S+3klSs=",
+  "profile" : "c2V0YSBzZW5zaXRpdml0eSAyLjEKc2V0YSByY29ucGFzc3dvcmQgc2FtcGxlLXNlY3JldApleGVjIGV4dHJhLmNmZwo=",
+  "publicKey" : "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+  "signatureURL" : "https://fixtures.invalid/setups/index.sig",
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

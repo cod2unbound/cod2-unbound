@@ -1,0 +1,399 @@
+{
+  "cases" : [
+    {
+      "cod2x" : false,
+      "commands" : 14,
+      "findings" : [
+        {
+          "detail" : "Those rules keep it between 125 and 250. Yours is 333.",
+          "end" : 41,
+          "fixLabel" : "Set to 250",
+          "id" : 20,
+          "kind" : 2,
+          "line" : 2,
+          "note" : "zPAM 3.36 keeps this between 125 and 250",
+          "title" : "zPAM 3.36 limits com_maxfps"
+        },
+        {
+          "detail" : "Probably cl_maxpackets, which is a setting of this game. As written, the line does nothing.",
+          "end" : 90,
+          "fixLabel" : "Rename",
+          "id" : 67,
+          "kind" : 0,
+          "line" : 4,
+          "note" : "Unknown setting. Did you mean cl_maxpackets?",
+          "title" : "Unknown setting “cl_maxpakets”"
+        },
+        {
+          "detail" : "snaps takes 1 to 30. The game refuses a value outside that and keeps the one it had.",
+          "end" : 126,
+          "fixLabel" : "Set to 30",
+          "id" : 111,
+          "kind" : 1,
+          "line" : 6,
+          "note" : "Above the limit of 30",
+          "title" : "snaps is above the limit"
+        },
+        {
+          "detail" : "Line 14 sets it again and the later line wins, so this one changes nothing.",
+          "end" : 144,
+          "fixLabel" : "Remove",
+          "id" : 128,
+          "kind" : 1,
+          "line" : 7,
+          "note" : "Set again on line 14",
+          "title" : "cg_fov is set twice"
+        },
+        {
+          "detail" : "It may belong to another game or to a mod. Without that, the line does nothing.",
+          "end" : 162,
+          "fixLabel" : "Remove",
+          "id" : 146,
+          "kind" : 0,
+          "line" : 8,
+          "note" : "Not a CoD2 setting",
+          "title" : "“r_vsync” isn’t a Call of Duty 2 setting"
+        },
+        {
+          "detail" : "Line 11 sets it again and the later line wins, so this one changes nothing.",
+          "end" : 203,
+          "fixLabel" : "Remove",
+          "id" : 183,
+          "kind" : 1,
+          "line" : 10,
+          "note" : "Set again on line 11",
+          "title" : "m_pitch is set twice"
+        },
+        {
+          "detail" : "Anyone you share this file with would see it.",
+          "end" : 287,
+          "fixLabel" : "Remove",
+          "id" : 250,
+          "kind" : 2,
+          "line" : 13,
+          "note" : "Contains a password",
+          "title" : "A password is stored on this line"
+        },
+        {
+          "detail" : "On a server with cheats off the game puts it back to 80.",
+          "end" : 305,
+          "fixLabel" : "Remove",
+          "id" : 289,
+          "kind" : 1,
+          "line" : 14,
+          "note" : "Only works with cheats on",
+          "title" : "cg_fov only changes with cheats on"
+        },
+        {
+          "detail" : "Only CoD2x has it. This line does nothing here.",
+          "end" : 324,
+          "fixLabel" : "Remove",
+          "id" : 306,
+          "kind" : 0,
+          "line" : 14,
+          "note" : "Not in 1.3",
+          "title" : "“m_rinput” isn’t a setting of the original 1.3"
+        }
+      ],
+      "fixed" : "Ly8gYSBzYW1wbGUgY29uZmlnDQpzZXRhIGNvbV9tYXhmcHMgIjMzMyINCnNldGEgc2Vuc2l0aXZpdHkgIjEuNCINCnNldGEgY2xfbWF4cGFja2V0cyAiMTAwIg0Kc2V0YSByYXRlICIyNTAwMCINCnNldGEgc25hcHMgIjMwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgbV9waXRjaCAiMC4wMjIiDQpiaW5kIE1PVVNFMSAiK2F0dGFjayINCmJpbmQgRjkgInJjb24gbG9naW4gc3ludGhldGljLXNlY3JldCINCg==",
+      "id" : "original",
+      "input" : "Ly8gYSBzYW1wbGUgY29uZmlnDQpzZXRhIGNvbV9tYXhmcHMgIjMzMyINCnNldGEgc2Vuc2l0aXZpdHkgIjEuNCINCnNldGEgY2xfbWF4cGFrZXRzICIxMDAiDQpzZXRhIHJhdGUgIjI1MDAwIg0Kc2V0YSBzbmFwcyAiNDAiDQpzZXRhIGNnX2ZvdiAiOTAiDQpzZXRhIHJfdnN5bmMgIjAiDQpzZXRhIHJfcGljbWlwICIzIg0Kc2V0YSBtX3BpdGNoICIwLjAyMiINCnNldGEgbV9waXRjaCAiMC4wMjIiDQpiaW5kIE1PVVNFMSAiK2F0dGFjayINCmJpbmQgRjkgInJjb24gbG9naW4gc3ludGhldGljLXNlY3JldCINCnNldGEgY2dfZm92ICI5MCI7IHNldGEgbV9yaW5wdXQgIjEiDQo=",
+      "lines" : [
+        "// a sample config",
+        "seta com_maxfps \"333\"",
+        "seta sensitivity \"1.4\"",
+        "seta cl_maxpakets \"100\"",
+        "seta rate \"25000\"",
+        "seta snaps \"40\"",
+        "seta cg_fov \"90\"",
+        "seta r_vsync \"0\"",
+        "seta r_picmip \"3\"",
+        "seta m_pitch \"0.022\"",
+        "seta m_pitch \"0.022\"",
+        "bind MOUSE1 \"+attack\"",
+        "bind F9 \"••••••••\"",
+        "seta cg_fov \"90\"; seta m_rinput \"1\""
+      ],
+      "policy" : "zpam-3.36",
+      "shown" : [
+        {
+          "note" : "",
+          "text" : "// a sample config"
+        },
+        {
+          "note" : "zPAM 3.36 keeps this between 125 and 250",
+          "text" : "seta com_maxfps \"333\""
+        },
+        {
+          "note" : "",
+          "text" : "seta sensitivity \"1.4\""
+        },
+        {
+          "note" : "Renamed",
+          "text" : "seta cl_maxpackets \"100\""
+        },
+        {
+          "note" : "",
+          "text" : "seta rate \"25000\""
+        },
+        {
+          "note" : "Changed to 30",
+          "text" : "seta snaps \"30\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta cg_fov \"90\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta r_vsync \"0\""
+        },
+        {
+          "note" : "",
+          "text" : "seta r_picmip \"3\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta m_pitch \"0.022\""
+        },
+        {
+          "note" : "",
+          "text" : "seta m_pitch \"0.022\""
+        },
+        {
+          "note" : "",
+          "text" : "bind MOUSE1 \"+attack\""
+        },
+        {
+          "note" : "Contains a password",
+          "text" : "bind F9 \"••••••••\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta cg_fov \"90\"; seta m_rinput \"1\""
+        }
+      ]
+    },
+    {
+      "cod2x" : true,
+      "commands" : 14,
+      "findings" : [
+        {
+          "detail" : "Probably cl_maxpackets, which is a setting of this game. As written, the line does nothing.",
+          "end" : 90,
+          "fixLabel" : "Rename",
+          "id" : 67,
+          "kind" : 0,
+          "line" : 4,
+          "note" : "Unknown setting. Did you mean cl_maxpackets?",
+          "title" : "Unknown setting “cl_maxpakets”"
+        },
+        {
+          "detail" : "Line 14 sets it again and the later line wins, so this one changes nothing.",
+          "end" : 144,
+          "fixLabel" : "Remove",
+          "id" : 128,
+          "kind" : 1,
+          "line" : 7,
+          "note" : "Set again on line 14",
+          "title" : "cg_fov is set twice"
+        },
+        {
+          "detail" : "It may belong to another game or to a mod. Without that, the line does nothing.",
+          "end" : 162,
+          "fixLabel" : "Remove",
+          "id" : 146,
+          "kind" : 0,
+          "line" : 8,
+          "note" : "Not a CoD2 setting",
+          "title" : "“r_vsync” isn’t a Call of Duty 2 setting"
+        },
+        {
+          "detail" : "Line 11 sets it again and the later line wins, so this one changes nothing.",
+          "end" : 203,
+          "fixLabel" : "Remove",
+          "id" : 183,
+          "kind" : 1,
+          "line" : 10,
+          "note" : "Set again on line 11",
+          "title" : "m_pitch is set twice"
+        },
+        {
+          "detail" : "Anyone you share this file with would see it.",
+          "end" : 287,
+          "fixLabel" : "Remove",
+          "id" : 250,
+          "kind" : 2,
+          "line" : 13,
+          "note" : "Contains a password",
+          "title" : "A password is stored on this line"
+        },
+        {
+          "detail" : "On a server with cheats off the game puts it back to 80.",
+          "end" : 305,
+          "fixLabel" : "Remove",
+          "id" : 289,
+          "kind" : 1,
+          "line" : 14,
+          "note" : "Only works with cheats on",
+          "title" : "cg_fov only changes with cheats on"
+        }
+      ],
+      "fixed" : "Ly8gYSBzYW1wbGUgY29uZmlnDQpzZXRhIGNvbV9tYXhmcHMgIjMzMyINCnNldGEgc2Vuc2l0aXZpdHkgIjEuNCINCnNldGEgY2xfbWF4cGFja2V0cyAiMTAwIg0Kc2V0YSByYXRlICIyNTAwMCINCnNldGEgc25hcHMgIjQwIg0Kc2V0YSByX3BpY21pcCAiMyINCnNldGEgbV9waXRjaCAiMC4wMjIiDQpiaW5kIE1PVVNFMSAiK2F0dGFjayINCmJpbmQgRjkgInJjb24gbG9naW4gc3ludGhldGljLXNlY3JldCINCjsgc2V0YSBtX3JpbnB1dCAiMSINCg==",
+      "id" : "cod2x",
+      "input" : "Ly8gYSBzYW1wbGUgY29uZmlnDQpzZXRhIGNvbV9tYXhmcHMgIjMzMyINCnNldGEgc2Vuc2l0aXZpdHkgIjEuNCINCnNldGEgY2xfbWF4cGFrZXRzICIxMDAiDQpzZXRhIHJhdGUgIjI1MDAwIg0Kc2V0YSBzbmFwcyAiNDAiDQpzZXRhIGNnX2ZvdiAiOTAiDQpzZXRhIHJfdnN5bmMgIjAiDQpzZXRhIHJfcGljbWlwICIzIg0Kc2V0YSBtX3BpdGNoICIwLjAyMiINCnNldGEgbV9waXRjaCAiMC4wMjIiDQpiaW5kIE1PVVNFMSAiK2F0dGFjayINCmJpbmQgRjkgInJjb24gbG9naW4gc3ludGhldGljLXNlY3JldCINCnNldGEgY2dfZm92ICI5MCI7IHNldGEgbV9yaW5wdXQgIjEiDQo=",
+      "lines" : [
+        "// a sample config",
+        "seta com_maxfps \"333\"",
+        "seta sensitivity \"1.4\"",
+        "seta cl_maxpakets \"100\"",
+        "seta rate \"25000\"",
+        "seta snaps \"40\"",
+        "seta cg_fov \"90\"",
+        "seta r_vsync \"0\"",
+        "seta r_picmip \"3\"",
+        "seta m_pitch \"0.022\"",
+        "seta m_pitch \"0.022\"",
+        "bind MOUSE1 \"+attack\"",
+        "bind F9 \"••••••••\"",
+        "seta cg_fov \"90\"; seta m_rinput \"1\""
+      ],
+      "policy" : null,
+      "shown" : [
+        {
+          "note" : "",
+          "text" : "// a sample config"
+        },
+        {
+          "note" : "",
+          "text" : "seta com_maxfps \"333\""
+        },
+        {
+          "note" : "",
+          "text" : "seta sensitivity \"1.4\""
+        },
+        {
+          "note" : "Renamed",
+          "text" : "seta cl_maxpackets \"100\""
+        },
+        {
+          "note" : "",
+          "text" : "seta rate \"25000\""
+        },
+        {
+          "note" : "",
+          "text" : "seta snaps \"40\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta cg_fov \"90\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta r_vsync \"0\""
+        },
+        {
+          "note" : "",
+          "text" : "seta r_picmip \"3\""
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta m_pitch \"0.022\""
+        },
+        {
+          "note" : "",
+          "text" : "seta m_pitch \"0.022\""
+        },
+        {
+          "note" : "",
+          "text" : "bind MOUSE1 \"+attack\""
+        },
+        {
+          "note" : "Contains a password",
+          "text" : "bind F9 \"••••••••\""
+        },
+        {
+          "note" : "Changed",
+          "text" : "; seta m_rinput \"1\""
+        }
+      ]
+    },
+    {
+      "cod2x" : false,
+      "commands" : 3,
+      "findings" : [
+        {
+          "detail" : "snaps takes 1 to 30. The game refuses a value outside that and keeps the one it had.",
+          "end" : 13,
+          "fixLabel" : "Set to 30",
+          "id" : 0,
+          "kind" : 1,
+          "line" : 1,
+          "note" : "Above the limit of 30",
+          "title" : "snaps is above the limit"
+        },
+        {
+          "detail" : "Anyone you share this file with would see it.",
+          "end" : 44,
+          "fixLabel" : "Remove",
+          "id" : 14,
+          "kind" : 2,
+          "line" : 1,
+          "note" : "Contains a password",
+          "title" : "A password is stored on this line"
+        },
+        {
+          "detail" : "A quote is left open or the line is too long, so the game would read something else than what is written.",
+          "end" : 76,
+          "fixLabel" : "Remove",
+          "id" : 57,
+          "kind" : 0,
+          "line" : 3,
+          "note" : "Can’t be read",
+          "title" : "The game can’t read this line"
+        }
+      ],
+      "fixed" : "c2V0YSBzbmFwcyAiMzAiOyBzZXQgcGFzc3dvcmQgc3ludGhldGljLXNlY3JldAoJLy8gY29tbWVudAo=",
+      "id" : "mixed",
+      "input" : "c2V0YSBzbmFwcyA5OTsgc2V0IHBhc3N3b3JkIHN5bnRoZXRpYy1zZWNyZXQKCS8vIGNvbW1lbnQKc2V0YSBzZW5zaXRpdml0eSAiNQ==",
+      "lines" : [
+        "set password \"••••••••\"",
+        "    // comment",
+        "seta sensitivity \"5"
+      ],
+      "policy" : null,
+      "shown" : [
+        {
+          "note" : "Changed to 30",
+          "text" : "set password \"••••••••\""
+        },
+        {
+          "note" : "",
+          "text" : "    // comment"
+        },
+        {
+          "note" : "Removed",
+          "text" : "seta sensitivity \"5"
+        }
+      ]
+    },
+    {
+      "cod2x" : false,
+      "commands" : 0,
+      "findings" : [
+
+      ],
+      "fixed" : "",
+      "id" : "empty",
+      "input" : "",
+      "lines" : [
+
+      ],
+      "policy" : null,
+      "shown" : [
+
+      ]
+    }
+  ],
+  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c"
+}

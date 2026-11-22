@@ -7,7 +7,10 @@ import Darwin
 // service on 127.0.0.1 (tools/config-directory/share_standin.py, started by config_share.sh), the
 // record's write and removal, and how a shared setup is credited. Nothing here reaches the network.
 
-@main struct ConfigShareTests {
+#if !CORE_PARITY_TESTS
+@main
+#endif
+struct ConfigShareTests {
     static func require(_ condition: Bool, _ message: String, line: UInt = #line) {
         if !condition { print("FAIL: \(message) (line \(line))"); exit(1) }
     }
@@ -42,6 +45,7 @@ import Darwin
 
     """
 
+    #if !CORE_PARITY_TESTS
     static func main() async {
         do {
             try await cleaning()
@@ -59,6 +63,8 @@ import Darwin
             print("FAIL: \(error)"); exit(1)
         }
     }
+
+    #endif
 
     static func cleaning() async throws {
         let prepared = try await ConfigShare.prepare(Data(loadout.utf8), catalog: try catalog())
@@ -253,6 +259,7 @@ import Darwin
         print("PASS: a shared setup is credited with the board's line; others keep today's wording")
     }
 
+    #if !CORE_PARITY_TESTS
     /// The client against the stand-in service: what it sends, and each reply it can get.
     static func standIn() async throws {
         guard let address = environment["COD2_SHARE_URL"], let base = URL(string: address), base.host == "127.0.0.1",
@@ -363,4 +370,5 @@ import Darwin
         require(studio.failure == nil && studio.notice == "Main is no longer shared.", "and says so: \(studio.notice ?? "nil")")
         print("PASS: Stop Sharing keeps the record when it fails and forgets it when the request is withdrawn")
     }
+    #endif
 }
