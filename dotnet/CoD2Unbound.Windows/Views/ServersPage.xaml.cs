@@ -169,7 +169,7 @@ public sealed partial class ServersPage : Page
     {
         bool favorite = model.IsFavorite(server.Address);
         button.Content = Fluent(favorite ? "StarFilled" : "Star", 16, filled: favorite);
-        button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
+        button.Foreground = ThemeBrush(favorite || ReferenceEquals(button, FavoriteButton) ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
         string action = favorite ? "Remove from Favorites" : "Add to Favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
         ToolTipService.SetToolTip(button, action);

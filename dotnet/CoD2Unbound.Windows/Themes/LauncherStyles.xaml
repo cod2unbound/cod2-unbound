@@ -190,10 +190,14 @@
         <Setter Property="Padding" Value="10,3" />
     </Style>
     <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="HighContrastAdjustment" Value="None" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="MinHeight" Value="28" />
         <Setter Property="Padding" Value="8,3" />
     </Style>
     <Style x:Key="SubtleLinkAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="HighContrastAdjustment" Value="None" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
     </Style>
     <Style x:Key="SubtleAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}" />
@@ -202,6 +206,8 @@
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
     </Style>
     <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="HighContrastAdjustment" Value="None" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Width" Value="32" />
         <Setter Property="Height" Value="32" />
         <Setter Property="Padding" Value="0" />

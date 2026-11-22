@@ -260,7 +260,7 @@
                                 <TextBlock Text="Launch" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                        <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" />
+                        <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" Style="{StaticResource IconAction}" />
                     </Grid>
                 </Grid>
             </Border>
