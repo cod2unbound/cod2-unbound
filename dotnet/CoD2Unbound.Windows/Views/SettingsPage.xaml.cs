@@ -83,6 +83,7 @@ public sealed partial class SettingsPage : Page
     {
         string[] modes = ["exclusive", "borderless", "windowed"];
         Group("Display");
+        Fields.Children.Add(Body("Applies the next time the game starts."));
         Choice("Mode", null, ["Full screen", "Borderless", "Windowed"], Current.Fullscreen == "spaces" ? 1 : Array.IndexOf(modes, Current.Fullscreen),
             async value => await ChangeAsync(Current with { Fullscreen = modes[value] }));
         Choice("Graphics", "Choose how the game draws on Windows.", ["Direct3D 9", "DirectX 7"], (int)model.Renderer,
@@ -99,14 +100,14 @@ public sealed partial class SettingsPage : Page
         });
         restore.IsEnabled = Current.Fullscreen != new GameSettings().Fullscreen || model.Renderer != WindowsRenderMode.Direct3D9;
         if (previousDisplay is { } previous)
-            Row("Applies the next time the game starts.", null, Buttons(restore, Action("Undo", async () =>
+            Fields.Children.Add(Buttons(restore, Action("Undo", async () =>
             {
                 await ChangeAsync(Current with { Fullscreen = previous.Mode, WindowsRenderer = previous.Renderer });
                 previousDisplay = null;
                 Render();
             })));
         else
-            Row("Applies the next time the game starts.", null, restore);
+            Fields.Children.Add(restore);
     }
 
     private void GameData()
@@ -144,11 +145,21 @@ public sealed partial class SettingsPage : Page
             Action(session.Setup.HasStoredKey ? "Replace…" : "Add key…", ReplaceKeyAsync));
         Group("Your files");
         Row("Loadouts, demos and screenshots", session.HomePath, Action("Show in File Explorer", () => OpenAsync(session.HomePath)));
-        Row("Game versions installed", string.Join(" · ", new[]
+        var versions = new StackPanel { Spacing = 4 };
+        AddEdition(GameEdition.Cod2x, "CoD2x 1.4.6.8");
+        AddEdition(GameEdition.Original, "Original 1.3");
+        if (versions.Children.Count > 0)
+            Row("Game versions installed", null, versions);
+
+        void AddEdition(GameEdition edition, string name)
         {
-            session.HasClient(GameEdition.Cod2x) ? "CoD2x 1.4.6.8" : null,
-            session.HasClient(GameEdition.Original) ? "Original 1.3" : null
-        }.OfType<string>()));
+            if (!session.HasClient(edition))
+                return;
+            var check = Glyph("\uE73E", 14);
+            check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, shell.IsHighContrast);
+            versions.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
+                Children = { check, new TextBlock { Text = name } } });
+        }
     }
 
     private async Task ReplaceKeyAsync()
@@ -173,14 +184,16 @@ public sealed partial class SettingsPage : Page
     private void Privacy()
     {
         Group("Sharing");
-        Switch("Send crash reports to CoD2 Unbound", "Record your choice for crash reports.",
+        Fields.Children.Add(Body("Sending is unavailable in this build."));
+        Switch("Send crash reports to CoD2 Unbound",
+            "If the game closes unexpectedly: what failed, your Windows version and PC model. Never your name, CD key or the servers you play on.",
             Current.SendCrashReports, value => ChangeAsync(Current with { SendCrashReports = value, CrashReportsAsked = true }));
-        Switch("Send CoD2x crash reports to the CoD2x project", "Record your choice for reports about faults in CoD2x’s code.",
+        Switch("Send CoD2x crash reports to the CoD2x project", "Faults in CoD2x’s own code, sent to the people who make CoD2x. Reports include folder paths and the list of loaded game files.",
             Current.SendCoD2xReports, value => ChangeAsync(Current with { SendCoD2xReports = value }));
-        Switch("Send usage data to CoD2 Unbound", "Record your choice for anonymous usage data.",
+        Switch("Send usage data to CoD2 Unbound", "Which screens and features you use, with your PC model, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
             Current.SendUsageData, value => ChangeAsync(Current with { SendUsageData = value }));
         Group("On this PC");
-        Switch("Match summaries", "Kept on this PC for Check-up.", Current.MatchSummariesEnabled,
+        Switch("Match summaries", "Notes on how each match ran, so Check-up can advise you. Kept on this PC, the last 200 matches.", Current.MatchSummariesEnabled,
             value => ChangeAsync(Current with { MatchSummariesEnabled = value }));
         var delete = Action("Delete summaries…", async () =>
         {

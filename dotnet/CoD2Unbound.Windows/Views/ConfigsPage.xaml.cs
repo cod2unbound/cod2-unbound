@@ -18,6 +18,7 @@ public sealed partial class ConfigsPage : Page
     private bool syncing;
     private int studioTab;
     private bool expert;
+    private bool wideGroupRail;
     private string? category;
     private string query = "";
     private (string Id, ConfigProfileTrashHandle Handle)? removed;
@@ -27,6 +28,15 @@ public sealed partial class ConfigsPage : Page
         this.shell = shell;
         this.model = model;
         InitializeComponent();
+        SizeChanged += (_, args) =>
+        {
+            bool wide = args.NewSize.Width >= 1100;
+            if (wideGroupRail == wide)
+                return;
+            wideGroupRail = wide;
+            if (studioTab == 0 && studioBody.Parent is not null)
+                RenderStudioBody();
+        };
         RenderLoadouts();
         ShowStudio();
     }
@@ -195,19 +205,17 @@ public sealed partial class ConfigsPage : Page
         studioBody.Children.Add(modes);
         var groups = model.Catalog.Groups;
         category ??= groups.FirstOrDefault(group => model.Model.Guided(group.Id).Any(spec => spec.Name == "sensitivity"))?.Id ?? groups[0].Id;
-        var groupChoice = new ComboBox { Header = "Group", ItemsSource = groups, DisplayMemberPath = "Title",
-            SelectedItem = groups.FirstOrDefault(group => group.Id == category) };
         var fields = new StackPanel { Spacing = 4 };
         var filter = ConfigExpertFilter.Group;
+        var groupChoice = new ComboBox { Header = "Group", ItemsSource = groups, DisplayMemberPath = "Title",
+            SelectedItem = groups.FirstOrDefault(group => group.Id == category) };
         groupChoice.SelectionChanged += (_, _) =>
         {
             if (groupChoice.SelectedItem is ConfigCatalogGroup group)
-            {
-                category = group.Id;
-                RenderRows();
-            }
+                SelectGroup(group.Id);
         };
-        studioBody.Children.Add(groupChoice);
+        if (!wideGroupRail)
+            studioBody.Children.Add(groupChoice);
         if (expert)
         {
             var search = new TextBox { Header = "Find a setting", Text = query };
@@ -227,9 +235,34 @@ public sealed partial class ConfigsPage : Page
             text.IsEnabled = !state.ReadOnly;
             studioBody.Children.Add(text);
         }
-        studioBody.Children.Add(fields);
+        if (wideGroupRail)
+        {
+            var rail = new ListView
+            {
+                ItemsSource = groups, DisplayMemberPath = "Title", SelectionMode = ListViewSelectionMode.Single,
+                ItemContainerStyle = StyleFor("SidebarItem"), SelectedItem = groups.FirstOrDefault(group => group.Id == category)
+            };
+            AutomationProperties.SetName(rail, "Groups");
+            rail.SelectionChanged += (_, _) =>
+            {
+                if (rail.SelectedItem is ConfigCatalogGroup group)
+                    SelectGroup(group.Id);
+            };
+            var columns = Columns(12, new GridLength(200), new GridLength(1, GridUnitType.Star));
+            Put(columns, 0, rail);
+            Put(columns, 1, fields);
+            studioBody.Children.Add(columns);
+        }
+        else
+            studioBody.Children.Add(fields);
         studioBody.Children.Add(Caption("Changes save to this loadout as you make them. Undo anytime from History."));
         RenderRows();
+
+        void SelectGroup(string group)
+        {
+            category = group;
+            RenderRows();
+        }
 
         void RenderRows()
         {
@@ -266,6 +299,40 @@ public sealed partial class ConfigsPage : Page
             return SettingRow(spec.Title, block, Caption(item.Display));
 
         Control control;
+        if (!expert && spec.Name.Equals("cl_mouseAccel", StringComparison.OrdinalIgnoreCase))
+        {
+            double current = ConfigValues.Number(item.Value ?? "", spec.Type) ?? 0;
+            string on = current > 0 ? ConfigValues.Clamped(current, spec) : "1";
+            var toggle = new ToggleSwitch { IsOn = current > 0, OnContent = "On", OffContent = "Off", MinWidth = 0 };
+            AutomationProperties.SetName(toggle, "Speed up on fast movements");
+            toggle.Toggled += async (_, _) => await Apply(toggle.IsOn ? on : "0");
+            return SettingRow("Speed up on fast movements", "Off keeps every turn the same size, however fast your hand moves.", toggle);
+        }
+        if (!expert && spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
+            spec.SliderRange is { Min: > 0 } range && MouseDistance.Centimetres(model.MouseDpi, 1) is { } reference &&
+            ConfigValues.Number(item.Value ?? "", spec.Type) is > 0 and var sensitivity)
+        {
+            double current = reference / sensitivity;
+            double minimum = Math.Min(current, reference / range.Max);
+            double maximum = Math.Max(current, reference / range.Min);
+            var slider = new Slider { Minimum = minimum, Maximum = maximum, Value = current,
+                Width = 148, StepFrequency = 0.1, IsThumbToolTipEnabled = false };
+            var distance = new TextBlock { Text = Distance(current), Width = 148, VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = TextAlignment.Right, Style = StyleFor("BodyStrongTextBlockStyle") };
+            var layout = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                Children = { slider, distance } };
+            AutomationProperties.SetName(slider, "Mouse speed, centimeters per full turn");
+            double lastSaved = current;
+            slider.ValueChanged += async (_, args) =>
+            {
+                distance.Text = Distance(args.NewValue);
+                if (!slider.IsLoaded || Math.Abs(args.NewValue - lastSaved) < 0.05)
+                    return;
+                lastSaved = args.NewValue;
+                await Apply(ConfigValues.Clamped(reference / args.NewValue, spec));
+            };
+            return SettingRow("Mouse speed", $"Worked out from {model.MouseDpi:G} DPI.", layout);
+        }
         if (spec.Type == "bool")
         {
             var toggle = new ToggleSwitch { IsOn = ConfigValues.Integer(item.Value ?? "") is not (null or 0),
@@ -311,10 +378,12 @@ public sealed partial class ConfigsPage : Page
         });
     }
 
+    private static string Distance(double cm) => $"{cm:F1} cm per full turn";
+
     private async Task EditTextAsync(ConfigProfileRead profile)
     {
         var code = new TextBox { Header = "Config text", Text = System.Text.Encoding.Latin1.GetString(profile.Document.Serialized.AsSpan()),
-            AcceptsReturn = true, Height = 240, MinWidth = 350, FontFamily = new("Consolas"), TextWrapping = TextWrapping.Wrap };
+            AcceptsReturn = true, Height = 240, MinWidth = 350, Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap };
         if (await Dialog("Edit as text", code, "Save changes").ShowAsync() == ContentDialogResult.Primary)
         {
             model.Model.ApplyText(model.Studio, profile.Version, code.Text.ReplaceLineEndings("\n"));
@@ -326,27 +395,38 @@ public sealed partial class ConfigsPage : Page
     {
         var binds = new ConfigBindings(profile.Document, model.Catalog, model.Model.Mode);
         studioBody.Children.Add(new TextBlock { Text = "Binds", Style = StyleFor("SectionTitle") });
-        foreach (var group in binds.Actions.GroupBy(action => action.Group))
+        foreach (var group in binds.Actions.GroupBy(action => action.Group).OrderBy(group => group.Key))
         {
             studioBody.Children.Add(Caption(group.Key == ConfigBindingGroup.GameUI ? "Game interface" : group.Key.ToString()));
-            foreach (var action in group)
+            foreach (var row in group.Select(action => binds.Row(action.Name)!).OrderByDescending(row => row.Primary.HasValue))
             {
-                if (binds.Row(action.Name) is not { } row)
-                    continue;
+                var action = row.Action;
                 var primary = KeyButton(row.Primary, ConfigBindingSlot.Primary);
                 var secondary = KeyButton(row.Secondary, ConfigBindingSlot.Secondary);
-                studioBody.Children.Add(SettingRow(action.Title, action.Summary, Buttons(primary, secondary)));
+                string? help = action.Summary.Trim().TrimEnd('.').Equals(action.Title, StringComparison.OrdinalIgnoreCase)
+                    ? null : action.Summary;
+                studioBody.Children.Add(SettingRow(action.Title, help, Buttons(primary, secondary)));
 
                 Button KeyButton(EngineKey? key, ConfigBindingSlot slot)
                 {
-                    var button = Action(key?.Spelling ?? "Set key", () => BindAsync(action, slot));
-                    AutomationProperties.SetName(button, $"{action.Title}, {slot.ToString().ToLowerInvariant()} key, {key?.Spelling ?? "unassigned"}");
+                    string? label = key is { } assigned ? KeyLabel(assigned) : null;
+                    var button = Action(label ?? "Add key", () => BindAsync(action, slot));
+                    button.Style = StyleFor(label is null ? "AddKeycap" : "Keycap");
+                    AutomationProperties.SetName(button, $"{action.Title}, {slot.ToString().ToLowerInvariant()} key, {label ?? "unassigned"}");
                     button.IsEnabled = !state.ReadOnly;
                     return button;
                 }
             }
         }
     }
+
+    private static string KeyLabel(EngineKey key) => key.Spelling.ToUpperInvariant() switch
+    {
+        "SPACE" => "Space", "ENTER" => "Enter", "TAB" => "Tab", "CTRL" => "Ctrl", "SHIFT" => "Shift",
+        "ALT" => "Alt", "BACKSPACE" => "Backspace", "ESCAPE" => "Esc",
+        "UPARROW" => "↑", "DOWNARROW" => "↓", "LEFTARROW" => "←", "RIGHTARROW" => "→",
+        _ => key.Spelling.ToUpperInvariant()
+    };
 
     private async Task BindAsync(ConfigBindingAction action, ConfigBindingSlot slot)
     {
@@ -371,8 +451,15 @@ public sealed partial class ConfigsPage : Page
     private void ShowCheckup(ConfigStudioState state, ConfigProfileRead profile)
     {
         var checkup = new ConfigCheckup(model.Catalog, ConfigRules.LoadBundled(), ConfigOptimizer.LoadBundled());
-        var report = checkup.Evaluate(profile, [], ConfigTuneFor.Balanced);
+        MatchSummary? match;
+        try { match = model.LastMatch; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { match = null; }
+        var report = checkup.Evaluate(profile, [], ConfigTuneFor.Balanced,
+            measurements: new ConfigCheckupMeasurements(PacketLossPercent: match?.PacketLossPercent));
         studioBody.Children.Add(new TextBlock { Text = "Check-up", Style = StyleFor("SectionTitle") });
+        if (match is null)
+            studioBody.Children.Add(EmptyState("\uE9D9", "No matches recorded yet",
+                "After your next match, the game saves a short summary on this PC and Check-up shows it here."));
         foreach (var dial in report.Dials)
             studioBody.Children.Add(SettingRow(dial.Area.ToString(), dial.Source, Caption(dial.StatusText)));
         foreach (var suggestion in report.Suggestions.Where(item => item.Area != ConfigCheckupArea.Movement))
@@ -394,7 +481,8 @@ public sealed partial class ConfigsPage : Page
     {
         studioBody.Children.Add(new TextBlock { Text = "History", Style = StyleFor("SectionTitle") });
         if (state.History.IsEmpty)
-            studioBody.Children.Add(Caption("No changes recorded yet."));
+            studioBody.Children.Add(EmptyState("\uE81C", "No changes recorded yet",
+                "Changes to this loadout appear here. Undo anytime from History."));
         foreach (var entry in state.History.Reverse())
         {
             var restore = Action("Restore…", async () =>
@@ -485,7 +573,8 @@ public sealed partial class ConfigsPage : Page
                 results.Children.Add(SettingRow(entry.Player, string.Join(" · ", new[] { entry.Team, entry.Era, entry.Feel }.OfType<string>()),
                     Action("View setup", () => ShowSetupAsync(entry, saved))));
             if (results.Children.Count == 0)
-                results.Children.Add(Caption(saved && entries.IsEmpty ? "No saved player setups." : "No matching player setups."));
+                results.Children.Add(EmptyState("\uE721", saved && entries.IsEmpty ? "No saved player setups" : "No matching player setups",
+                    saved && entries.IsEmpty ? "Setups you save for later appear here." : "Try another search."));
         }
     }
 
@@ -546,7 +635,7 @@ public sealed partial class ConfigsPage : Page
         var profiles = model.State.Profiles;
         var target = new ComboBox { Header = "Import into", ItemsSource = new[] { "New loadout" }
             .Concat(profiles.Select(profile => profile.DisplayName)).ToArray(), SelectedIndex = 0, Visibility = IsVisible(!newOnly) };
-        var rows = new StackPanel { Spacing = 4 };
+        var rows = new StackPanel { Spacing = 4, Padding = new Thickness(0, 0, 0, 8) };
         var problem = Caption("");
         var content = new StackPanel { Spacing = 8, MinWidth = 360 };
         content.Children.Add(target);
@@ -607,18 +696,54 @@ public sealed partial class ConfigsPage : Page
             {
                 if (row.Candidate.Command.Kind is ConfigCommandKind.Empty or ConfigCommandKind.Comment)
                     continue;
-                var select = new CheckBox { Content = row.Title, IsEnabled = row.CanSelect, IsChecked = review.SelectedIds.Contains(row.Id) };
+                var (title, detail) = ReviewCopy(row);
+                var select = new CheckBox { Content = title, IsEnabled = row.CanSelect, IsChecked = review.SelectedIds.Contains(row.Id) };
                 select.Checked += (_, _) => { review.Select(row.Id, true); Validate(); };
                 select.Unchecked += (_, _) => { review.Select(row.Id, false); Validate(); };
-                string? detail = row.PlatformNote ?? (row.CanSelect ? row.NewValue : row.Candidate.Classification.ToString());
                 var line = new StackPanel { Spacing = 2 };
                 line.Children.Add(select);
-                if (detail is not null)
+                if (detail.Length > 0)
                     line.Children.Add(Caption(detail));
-                rows.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = line });
+                rows.Children.Add(new Border { Style = StyleFor("ReviewRow"), Child = line });
             }
             Validate();
         }
+    }
+
+    private (string Title, string Detail) ReviewCopy(ConfigImportRow row)
+    {
+        var candidate = row.Candidate;
+        bool credential = candidate.Reasons.Contains(ConfigImportRisk.Credential);
+        string? setting = row.Title.StartsWith("Set ", StringComparison.Ordinal) ? row.Title[4..] : null;
+        var spec = setting is null ? null : model.Model.Specs.FirstOrDefault(spec => spec.Name.Equals(setting, StringComparison.OrdinalIgnoreCase));
+        string title = credential ? "Password or key" : spec?.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase) == true
+            ? "Game timing setting" : spec?.Title ?? (row.Group == "Settings" ? "Config setting" :
+                row.Group == "Bindings" ? "Key binding" : RiskSummary(candidate.Reasons.FirstOrDefault(), candidate.Reasons.IsEmpty));
+        string status = candidate.Classification switch
+        {
+            ConfigImportClassification.NeedsOk => "Needs your OK",
+            ConfigImportClassification.Blocked => "Blocked",
+            _ => ""
+        };
+        string? reason = row.PlatformNote;
+        if (reason is null && credential)
+            reason = ConfigImportRisk.Credential.Summary();
+        if (reason is null && !candidate.Reasons.IsEmpty && (candidate.Classification != ConfigImportClassification.Safe || !row.CanSelect))
+            reason = candidate.Reasons.Select(risk => RiskSummary(risk, false)).FirstOrDefault(summary => summary != title);
+        if (reason is null && !row.LockedNames.IsEmpty)
+            reason = "Locked in this loadout";
+        if (reason is null && spec is not null && row.NewValue is { } value)
+        {
+            if (spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
+                ConfigValues.Number(value, spec.Type) is { } number && MouseDistance.Centimetres(model.MouseDpi, number) is { } cm)
+                reason = Distance(cm);
+            else
+                reason = "New value: " + ConfigValues.Display(spec, value);
+        }
+        return (title, string.Join(" · ", new[] { status, reason }.Where(value => !string.IsNullOrEmpty(value))));
+
+        static string RiskSummary(ConfigImportRisk risk, bool empty) =>
+            empty ? "Config command" : risk == ConfigImportRisk.FileWrite ? "Writes files on this PC" : risk.Summary();
     }
 
     private static TextBlock Heading(string title) => new() { Text = title, Style = StyleFor("PageTitle"), TextWrapping = TextWrapping.Wrap };

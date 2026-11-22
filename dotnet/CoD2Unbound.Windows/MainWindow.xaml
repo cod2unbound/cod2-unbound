@@ -27,7 +27,7 @@
             <TitleBar.Content>
                 <Grid x:Name="JumpHost" SizeChanged="OnJumpHostSizeChanged">
                     <Button x:Name="JumpButton" HorizontalAlignment="Center" HorizontalContentAlignment="Stretch"
-                            Width="300" IsEnabled="False" AutomationProperties.Name="Jump to…"
+                            Width="420" Height="32" IsEnabled="False" AutomationProperties.Name="Jump to…"
                             AutomationProperties.AcceleratorKey="Ctrl+K" ToolTipService.ToolTip="Jump to… (Ctrl+K)">
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>

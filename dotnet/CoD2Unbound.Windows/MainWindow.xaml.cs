@@ -250,6 +250,13 @@ public sealed partial class MainWindow : Window
             Nav.SelectedItem = Nav.SettingsItem;
             ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings);
         }
+        object? content = ContentFrame.Content;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (ReferenceEquals(ContentFrame.Content, content) && content is DependencyObject root &&
+                FocusManager.FindFirstFocusableElement(root) is Control first)
+                first.Focus(FocusState.Programmatic);
+        });
     }
 
     private async void OnServersLoaded(object sender, RoutedEventArgs args)
@@ -394,7 +401,7 @@ public sealed partial class MainWindow : Window
         try { await action(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
             or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException
-            or ConfigDirectoryException or ConfigImportSessionException or ConfigBindingException)
+            or ConfigDirectoryException or ConfigImportSessionException or ConfigBindingException or ConfigEditException)
         {
             Problem.Message = error.Message;
             Problem.IsOpen = true;

@@ -16,7 +16,8 @@
             <TextBlock Text="Library" Style="{StaticResource PageTitle}" />
             <Button Grid.Column="1" Content="Show folder" Click="OnShowFolder" AccessKey="O" />
         </Grid>
-        <SelectorBar x:Name="Sections" Grid.Row="1" SelectionChanged="OnSectionChanged" AutomationProperties.Name="Library sections">
+        <SelectorBar x:Name="Sections" Grid.Row="1" Style="{StaticResource AlignedSelector}"
+                     SelectionChanged="OnSectionChanged" AutomationProperties.Name="Library sections">
             <SelectorBarItem Text="Screenshots" AccessKey="T" />
             <SelectorBarItem Text="Demos" AccessKey="D" />
             <SelectorBarItem x:Name="ConfigFilesSection" Text="Configs" AccessKey="K" />
@@ -24,31 +25,101 @@
         <TextBox x:Name="Search" Grid.Row="2" PlaceholderText="Find a file" TextChanged="OnSearch"
                  AutomationProperties.Name="Find a file" AccessKey="F" MaxLength="256" />
         <Grid Grid.Row="3">
-            <TextBlock x:Name="Empty" Style="{StaticResource SecondaryText}" />
-            <ListView x:Name="Files" TabNavigation="Once" AutomationProperties.Name="Files"
-                      IsItemClickEnabled="True" ItemClick="OnOpenFile">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
+            <ContentPresenter x:Name="Empty" />
+            <GridView x:Name="Screenshots" AutomationProperties.Name="Screenshots" IsItemClickEnabled="True"
+                      ItemClick="OnOpenFile" SelectionMode="None" TabNavigation="Once">
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="208" ItemHeight="152" />
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+                <GridView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Padding="4,6" ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryText}" />
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="More…" AutomationProperties.Name="{Binding MenuName}"
-                                    Click="OnFileMenu" Tag="{Binding}" />
+                        <Grid Width="200" Margin="0,0,8,8" RowSpacing="4" AutomationProperties.Name="{Binding Name}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="112.5" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border Style="{StaticResource MediaTile}">
+                                <Grid>
+                                    <FontIcon Glyph="&#xEB9F;" FontSize="26" Foreground="{ThemeResource TertiaryBrush}" />
+                                    <Image Stretch="UniformToFill" Loaded="OnScreenshotLoaded" DataContextChanged="OnScreenshotChanged"/>
+                                </Grid>
+                            </Border>
+                            <Grid Grid.Row="1" ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
+                                        AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="{Binding MenuName}">
+                                    <FontIcon Glyph="&#xE712;" FontSize="16" />
+                                </Button>
+                            </Grid>
                         </Grid>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                </GridView.ItemTemplate>
+            </GridView>
+            <Grid x:Name="FileTable" RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid Padding="12,0,12,0" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="112" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="NameHeader" Text="Name" FontSize="12" Style="{StaticResource SecondaryText}" />
+                    <TextBlock x:Name="MapHeader" Grid.Column="1" Text="Map" FontSize="12" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Grid.Column="2" Text="Date" FontSize="12" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Grid.Column="3" Text="Size" FontSize="12" Style="{StaticResource SecondaryText}" />
+                </Grid>
+                <ListView x:Name="Files" Grid.Row="1" TabNavigation="Once" AutomationProperties.Name="Files"
+                          IsItemClickEnabled="True" ItemClick="OnOpenFile">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="0,6" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="112" />
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="32" />
+                                </Grid.ColumnDefinitions>
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="72" Height="48" Visibility="{Binding Demo}" Style="{StaticResource MediaTile}">
+                                        <Image Stretch="UniformToFill" Loaded="OnDemoArtLoaded" DataContextChanged="OnDemoArtChanged" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </Grid>
+                                <TextBlock Grid.Column="1" Text="{Binding Map}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="{Binding Stamp}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+                                <Button Grid.Column="4" Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
+                                        VerticalAlignment="Center" Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
+                                    <FontIcon Glyph="&#xE712;" FontSize="16" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

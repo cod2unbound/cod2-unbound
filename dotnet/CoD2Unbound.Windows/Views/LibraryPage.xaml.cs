@@ -3,6 +3,7 @@ using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -14,6 +15,7 @@ public sealed partial class LibraryPage : Page
     private readonly WindowsLauncherSession session;
     private readonly WindowsMediaFiles files;
     private readonly MediaLibrary library;
+    private readonly MapPreviews previews;
     private bool ready;
 
     internal LibraryPage(MainWindow shell, WindowsLauncherSession session)
@@ -22,6 +24,7 @@ public sealed partial class LibraryPage : Page
         this.session = session;
         files = new(session.HomePath);
         library = new(files);
+        previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
         Sections.SelectedItem = Sections.Items[0];
         ready = true;
@@ -48,15 +51,64 @@ public sealed partial class LibraryPage : Page
     {
         var kind = CurrentKind;
         var items = library.List(kind, Search.Text);
-        Files.ItemsSource = items.Select(file => new MediaRow(kind, file)).ToArray();
-        Files.Visibility = IsVisible(!items.IsEmpty);
+        var rows = items.Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local))).ToArray();
+        Screenshots.ItemsSource = kind == MediaKind.Screenshot ? rows : null;
+        Files.ItemsSource = kind == MediaKind.Screenshot ? null : rows;
+        Screenshots.Visibility = IsVisible(!items.IsEmpty && kind == MediaKind.Screenshot);
+        FileTable.Visibility = IsVisible(!items.IsEmpty && kind != MediaKind.Screenshot);
+        NameHeader.Text = kind == MediaKind.Demo ? "Recording" : "Name";
+        MapHeader.Visibility = IsVisible(kind == MediaKind.Demo);
         Empty.Visibility = IsVisible(items.IsEmpty);
-        Empty.Text = string.IsNullOrWhiteSpace(Search.Text) ? kind switch
+        if (!items.IsEmpty)
+            return;
+        var (icon, heading, detail) = kind switch
         {
-            MediaKind.Screenshot => "No screenshots yet.",
-            MediaKind.Demo => "No demos yet.",
-            _ => "No config files yet."
-        } : "No matching files.";
+            MediaKind.Screenshot => ("\uEB9F", "No screenshots yet", "Screenshots you take in the game appear here."),
+            MediaKind.Demo => ("\uE786", "No demos yet", "Demos you record in the game appear here."),
+            _ => ("\uE8A5", "No config files yet", "Config files saved in the game folder appear here.")
+        };
+        if (!string.IsNullOrWhiteSpace(Search.Text))
+            (heading, detail) = ("No matching files", "Try another search.");
+        Empty.Content = EmptyState(icon, heading, detail);
+    }
+
+    private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
+    private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
+    private void OnDemoArtLoaded(object sender, RoutedEventArgs args) => ShowDemoArt((Image)sender);
+    private void OnDemoArtChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ShowDemoArt((Image)sender);
+
+    private void ShowDemoArt(Image image)
+    {
+        if (image.DataContext is MediaRow { Kind: MediaKind.Demo, Facts.Map: { } map })
+            _ = previews.FillAsync(image, map);
+        else
+        {
+            image.Tag = null;
+            image.Source = null;
+        }
+    }
+
+    private async Task ShowScreenshotAsync(Image image)
+    {
+        if (image.DataContext is not MediaRow row || ReferenceEquals(image.Tag, row))
+            return;
+        image.Tag = row;
+        image.Source = null;
+        if (Path.GetExtension(row.Name).Equals(".tga", StringComparison.OrdinalIgnoreCase))
+            return;
+        try
+        {
+            using var input = files.OpenScreenshot(row.Name);
+            using var source = input.AsRandomAccessStream();
+            var bitmap = new BitmapImage { DecodePixelWidth = 400 };
+            await bitmap.SetSourceAsync(source);
+            if (ReferenceEquals(image.Tag, row))
+                image.Source = bitmap;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            // A file can disappear during preview or be unsupported by the Windows decoder.
+        }
     }
 
     private async void OnShowFolder(object sender, RoutedEventArgs args) =>
@@ -177,19 +229,13 @@ public sealed partial class LibraryPage : Page
     }
 }
 
-internal sealed record MediaRow(MediaKind Kind, MediaFile File)
+internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts)
 {
     public string Name => File.Name;
-    public string MenuName => $"More options for {Name}";
+    public string MenuName => $"More actions for {Name}";
+    public string Map => Kind == MediaKind.Demo && Facts.Map is { } map ? MapCatalog.DisplayName(map) : "";
+    public string Stamp => Facts.Stamp;
+    public string Size => Facts.Size;
+    public Visibility Demo => IsVisible(Kind == MediaKind.Demo);
     public override string ToString() => Name;
-
-    public string Detail
-    {
-        get
-        {
-            var facts = MediaFacts.From(File, TimeZoneInfo.Local);
-            return string.Join(" · ", new[] { facts.Map is { } map ? MapCatalog.DisplayName(map) : "",
-                facts.Stamp, facts.Size }.Where(value => value.Length > 0));
-        }
-    }
 }

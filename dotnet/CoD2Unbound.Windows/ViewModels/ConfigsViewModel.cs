@@ -7,9 +7,11 @@ namespace CoD2Unbound.Windows.ViewModels;
 internal sealed class ConfigsViewModel : IConfigImportStore
 {
     private readonly WindowsConfigProfiles files;
+    private readonly WindowsLauncherSession session;
 
     internal ConfigsViewModel(WindowsLauncherSession session, nint owner)
     {
+        this.session = session;
         files = new(session.HomePath, owner);
         Studio = new(files, session.Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock,
             () => session.ClientIsRunning, TimeProvider.System);
@@ -23,6 +25,8 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal ConfigCatalog Catalog { get; }
     internal ConfigStudioModel Model { get; }
     internal ConfigDiscover Discover { get; }
+    internal double MouseDpi => State.Current?.Metadata.Dpi ?? session.Settings.Working.Dpi;
+    internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
     public ConfigDialect Dialect => Studio.Dialect;
 

@@ -1,8 +1,6 @@
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Automation;
-using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -71,10 +69,7 @@ internal static class PagePresentation
     internal static StackPanel EmptyState(string glyph, string title, string detail)
     {
         var panel = new StackPanel { Spacing = 6, Padding = new Thickness(0, 8, 0, 8) };
-        var icon = Glyph(glyph, 32);
-        icon.HorizontalAlignment = HorizontalAlignment.Left;
-        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
-        panel.Children.Add(icon);
+        panel.Children.Add(new FontIcon { Glyph = glyph, Style = StyleFor("EmptyIcon") });
         panel.Children.Add(new TextBlock { Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading") });
         if (!string.IsNullOrEmpty(detail))
             panel.Children.Add(Body(detail));
@@ -91,7 +86,7 @@ internal static class PagePresentation
 
     internal static SelectorBar Tabs(string[] labels, int selection, Action<int> change)
     {
-        var bar = new SelectorBar();
+        var bar = new SelectorBar { Style = StyleFor("AlignedSelector") };
         foreach (string label in labels)
             bar.Items.Add(new SelectorBarItem { Text = label });
         bar.SelectedItem = bar.Items[selection];

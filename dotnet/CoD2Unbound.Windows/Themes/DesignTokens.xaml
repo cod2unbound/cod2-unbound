@@ -28,6 +28,14 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#C99A4C" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#73E2BD72" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="#C4984C" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#E8C478" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#C99A4C" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#C99A4C" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#C4984C" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#E8C478" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#C99A4C" />
+            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#C99A4C" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#C4984C" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#C4984C" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="#C4984C" />
@@ -113,6 +121,14 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#55622F" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#55622F" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#735C6A33" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="#46522A" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#5C6A33" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#55622F" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#55622F" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#46522A" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#5C6A33" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#55622F" />
+            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#55622F" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#46522A" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#46522A" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="#46522A" />
@@ -198,6 +214,14 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource SystemColorHotlightColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource SystemColorHotlightColor}" />
+            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="{ThemeResource SystemColorHighlightColor}" />

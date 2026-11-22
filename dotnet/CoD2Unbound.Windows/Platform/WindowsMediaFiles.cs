@@ -89,6 +89,8 @@ internal sealed class WindowsMediaFiles(string home) : IMediaFiles
         return folder;
     }
 
+    internal FileStream OpenScreenshot(string name) => WindowsFiles.Open(home, Relative(MediaKind.Screenshot, name));
+
     internal string Existing(MediaKind kind, string name)
     {
         string relative = Relative(kind, name);

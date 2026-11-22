@@ -8,7 +8,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
-        <SelectorBar x:Name="Panes" Grid.Row="1" SelectionChanged="OnPaneChanged"
+        <SelectorBar x:Name="Panes" Grid.Row="1" Style="{StaticResource AlignedSelector}" SelectionChanged="OnPaneChanged"
                      AutomationProperties.Name="Settings panes">
             <SelectorBarItem Text="General" AccessKey="G" />
             <SelectorBarItem Text="Display" AccessKey="D" />
