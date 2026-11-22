@@ -246,7 +246,8 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
                 SetupPublisher.Verify(PathTo(SetupName), pinned.SafeFileHandle);
                 var details = FileVersionInfo.GetVersionInfo(PathTo(SetupName));
                 var version = new Version(details.FileMajorPart, details.FileMinorPart, details.FileBuildPart);
-                if (details.ProductName != "CoD2 Unbound" || details.FilePrivatePart != 0 ||
+                // Inno reserves room in its version resource by padding the product name.
+                if (details.ProductName?.TrimEnd(' ') != "CoD2 Unbound" || details.FilePrivatePart != 0 ||
                     version != WindowsReleaseAssets.ParseVersion(offer.Version))
                     throw new LauncherUpdateException("Setup did not contain the offered version of CoD2 Unbound.");
                 verified = true;
