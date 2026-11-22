@@ -180,7 +180,8 @@ internal static partial class Program
 
     private sealed class TestReleases(ImmutableArray<byte> release) : ILauncherReleaseSource
     {
-        public ValueTask<ImmutableArray<byte>> ReleasesAsync(CancellationToken cancellationToken) => ValueTask.FromResult(release);
+        public ValueTask<ReleaseFeed> ReleasesAsync(TimeZoneInfo timeZone, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(ReleaseNotes.Parse(release.AsSpan(), timeZone: timeZone));
         public ValueTask<ImmutableArray<byte>?> NewsAsync(CancellationToken cancellationToken) => ValueTask.FromResult<ImmutableArray<byte>?>(null);
     }
 

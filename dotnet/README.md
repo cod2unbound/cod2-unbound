@@ -172,6 +172,15 @@ running game and launcher.
 
 ### Windows launcher updates
 
+The launcher checks GitHub first for releases and the news on Home. It uses
+cod2unbound.com when GitHub can’t be reached or the release list is unusable.
+A missing news file on GitHub means there is no news. An unreadable news file
+keeps the previous copy. If a listed GitHub download is unavailable, the
+launcher tries the website once. Setup and `SHA256SUMS` use the same names at
+both hosts. Size, checksum and publisher checks apply whichever host served
+the file. The Privacy contacts list describes the website as “For updates and
+the news on Home when GitHub can’t be reached; nothing about you.”
+
 Set `UpdateBuildProfile=Public`, `EnableLocalUpdateFeed=false`,
 `EnableLocalReportReceivers=false`, and `UpdatePublisherRules=<ROOT_SHA256>=<PUBLISHER_PROFILE_EKU_OID>` when publishing.
 Use the 64 hex digits of the SHA-256 fingerprint of the root certificate

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -124,10 +125,34 @@ public sealed record NewsDispatch(string Stamp, string Title, string Summary, st
 
 public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? Next)
 {
+    private const int FeedLimit = 65_536;
     public static Uri Url { get; } = new("https://raw.githubusercontent.com/cod2unbound/cod2-unbound/main/docs/news.json");
+    internal static Uri MirrorUrl { get; } = new("https://cod2unbound.com/update/news.json");
+
+    public static async ValueTask<ImmutableArray<byte>?> FetchAsync(ReleaseDownload download, CancellationToken cancellationToken)
+    {
+        if (download.LoopbackOrigin is not null)
+            return null;
+        foreach (var source in new[] { Url, MirrorUrl })
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var (status, bytes) = await download.ReadFeedAsync(source, FeedLimit, cancellationToken).ConfigureAwait(false);
+                if (status == HttpStatusCode.OK)
+                    return bytes.IsEmpty ? null : bytes;
+                if (status == HttpStatusCode.NotFound && source == Url)
+                    return ImmutableArray<byte>.Empty;
+            }
+            catch (Exception error) when (ReleaseDownload.IsTransportFailure(error, cancellationToken)) { }
+            catch (LauncherUpdateException) { return null; } // A 200 whose body exceeds the limit is malformed news.
+        }
+        return null;
+    }
+
     public static NewsFeed Parse(ReadOnlyMemory<byte> data, DateTimeOffset now, TimeZoneInfo timeZone)
     {
-        if (data.Length > 65_536)
+        if (data.Length > FeedLimit)
             throw new InvalidDataException("The news file is too large.");
         using var json = JsonDocument.Parse(data);
         if (json.RootElement.ValueKind != JsonValueKind.Object)
@@ -135,6 +160,8 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
         var items = new List<NewsDispatch>();
         if (Value(json.RootElement, "items") is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined } entries)
         {
+            if (entries.ValueKind != JsonValueKind.Array)
+                throw new JsonException("Expected an array of news items.");
             foreach (var entry in entries.EnumerateArray().Take(50))
             {
                 if (Dispatch(entry) is not { } dispatch ||
@@ -201,6 +228,10 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
     private static JsonElement Value(JsonElement parent, string key) =>
         parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(key, out var property) ? property : default;
 
-    private static string? Text(JsonElement item, string key) => Value(item, key) is { ValueKind: not JsonValueKind.Undefined } value
-        ? value.GetString() : null;
+    private static string? Text(JsonElement item, string key) => Value(item, key) switch
+    {
+        { ValueKind: JsonValueKind.String } value => value.GetString(),
+        { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined } => null,
+        _ => throw new JsonException("Expected a news text field.")
+    };
 }

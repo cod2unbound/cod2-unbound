@@ -4,6 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../CoD2Unbound.Core/CoD2Unbound.Core.csproj" />
+    <Compile Include="../CoD2Unbound.Windows/Platform/SetupPublisher.cs" Link="Windows/SetupPublisher.cs" />
+    <Compile Include="../CoD2Unbound.Windows/Platform/WindowsFiles.cs" Link="Windows/WindowsFiles.cs" />
+    <Compile Include="../CoD2Unbound.Windows/Platform/WindowsReleaseSource.cs" Link="Windows/WindowsReleaseSource.cs" />
     <None Include="../../tests/launcher/fixtures/core-parity/*.json" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

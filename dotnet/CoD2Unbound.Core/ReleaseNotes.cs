@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -10,17 +11,41 @@ public sealed record ReleaseDispatch(string Stamp, string Title, string Summary,
 public sealed record ReleaseAsset(string Name, long Size, Uri Url);
 public sealed record ReleaseNoteItem(string Tag, string Title, string Detail);
 public sealed record ReleaseFeed(ImmutableArray<ReleaseDispatch> Dispatches, string? LatestVersion,
-    ImmutableArray<ReleaseAsset> LatestAssets, ImmutableArray<ReleaseNoteItem> LatestNotes);
+    ImmutableArray<ReleaseAsset> LatestAssets, ImmutableArray<ReleaseNoteItem> LatestNotes, Uri? LatestUrl = null,
+    bool ListedByGitHub = true);
 
 public static partial class ReleaseNotes
 {
+    public const int FeedLimit = 1_000_000;
+    internal static readonly Uri MirrorUrl = new("https://cod2unbound.com/update/releases.json");
     private static readonly string[] ReleaseDates = ["yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:sszzz"];
     private static readonly string[] Months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    public static async ValueTask<ReleaseFeed> FetchAsync(ReleaseDownload download, TimeZoneInfo timeZone, CancellationToken cancellationToken)
+    {
+        if (download.LoopbackOrigin is { } origin)
+            return await ReadAsync(new Uri(origin, "releases"), listedByGitHub: false).ConfigureAwait(false);
+        try { return await ReadAsync(WindowsReleaseAssets.Feed, listedByGitHub: true).ConfigureAwait(false); }
+        catch (Exception error) when (error is JsonException or LauncherUpdateException ||
+            ReleaseDownload.IsTransportFailure(error, cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return await ReadAsync(MirrorUrl, listedByGitHub: false).ConfigureAwait(false);
+        }
+
+        async Task<ReleaseFeed> ReadAsync(Uri url, bool listedByGitHub)
+        {
+            var (status, bytes) = await download.ReadFeedAsync(url, FeedLimit, cancellationToken).ConfigureAwait(false);
+            if (status != HttpStatusCode.OK)
+                throw ReleaseDownload.Unavailable();
+            return Parse(bytes.AsSpan(), timeZone: timeZone) with { ListedByGitHub = listedByGitHub };
+        }
+    }
 
     public static ReleaseFeed Parse(ReadOnlySpan<byte> data, int limit = 3, TimeZoneInfo? timeZone = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(limit);
-        if (data.Length > 1_000_000)
+        if (data.Length > FeedLimit)
             throw new InvalidDataException("The release feed is too large.");
 
         var parsed = JsonSerializer.Deserialize(data, ReleaseJson.Default.ImmutableArrayGitHubRelease);
@@ -29,7 +54,11 @@ public static partial class ReleaseNotes
         foreach (var release in parsed)
             foreach (var asset in release.Assets ?? [])
                 if (asset.Size is { } size)
-                    _ = GameSettingsJson.Integer(size);
+                {
+                    try { _ = GameSettingsJson.Integer(size); }
+                    catch (Exception error) when (error is FormatException or InvalidOperationException)
+                    { throw new JsonException("Expected an integer release asset size.", error); }
+                }
 
         var releases = parsed.Take(50).Where(release => release.Draft != true).ToArray();
         var dispatches = ImmutableArray.CreateBuilder<ReleaseDispatch>();
@@ -45,8 +74,7 @@ public static partial class ReleaseNotes
                 var day = TimeZoneInfo.ConvertTime(value, timeZone ?? TimeZoneInfo.Utc);
                 stamp = FormattableString.Invariant($"{day.Day:00} {Months[day.Month - 1]}");
             }
-            string? link = release.HtmlUrl?.StartsWith("https://github.com/", StringComparison.Ordinal) == true
-                ? Prefix(release.HtmlUrl, 256) : null;
+            string? link = ReleaseLink(release.HtmlUrl)?.OriginalString;
             dispatches.Add(new(stamp, title.Length == 0 ? $"CoD2 Unbound {Version(tag)}" : title, Summary(release.Body ?? ""), link,
                 date, tag.Length == 0 ? null : Version(tag)));
         }
@@ -57,8 +85,12 @@ public static partial class ReleaseNotes
             if (asset.Name is { } name && asset.Size is { } size && asset.Url is { } link && Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var url))
                 assets.Add(new(name, GameSettingsJson.Integer(size), url));
 
-        return new(dispatches.ToImmutable(), latest?.Tag is { } latestTag ? Version(latestTag) : null, assets.ToImmutable(), Items(latest?.Body ?? ""));
+        return new(dispatches.ToImmutable(), latest?.Tag is { } latestTag ? Version(latestTag) : null,
+            assets.ToImmutable(), Items(latest?.Body ?? ""), ReleaseLink(latest?.HtmlUrl));
     }
+
+    private static Uri? ReleaseLink(string? link) => link is { Length: <= 256 } && Uri.TryCreate(link, UriKind.Absolute, out var url)
+        && ReleasePackage.IsProjectLink(url) ? url : null;
 
     public static string Version(string tag) => Prefix(TrimHorizontal(tag).TrimStart('v', 'V'), 32);
 

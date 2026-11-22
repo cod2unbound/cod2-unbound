@@ -5,18 +5,22 @@ using System.Text.RegularExpressions;
 
 namespace CoD2Unbound.Core;
 
-public sealed record ReleaseOffer(string Version, ReleaseAsset Archive, Uri Checksums, long ChecksumsSize = 0);
+public sealed record ReleaseOffer(string Version, ReleaseAsset Archive, Uri Checksums, long ChecksumsSize = 0,
+    bool ListedByGitHub = true);
 public enum UpdateBlock { GameRunning, ServersRunning }
 
 public static partial class ReleasePackage
 {
     private const long ArchiveLimit = 1L << 30;
     private const int SumsLimit = 64 * 1024;
+    internal const string GitHubDownloads = "https://github.com/cod2unbound/cod2-unbound/releases/download/";
+    internal const string MirrorDownloads = "https://cod2unbound.com/releases/";
     private static readonly string[] DownloadRoots =
     [
-        "https://github.com/cod2unbound/cod2-unbound/releases/download/",
+        GitHubDownloads,
         "https://github.com/cod2unbound/cod2-silicon/releases/download/",
-        "https://github.com/STiXzoOR/cod2-silicon/releases/download/"
+        "https://github.com/STiXzoOR/cod2-silicon/releases/download/",
+        MirrorDownloads
     ];
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
@@ -33,16 +37,19 @@ public static partial class ReleasePackage
     private static ReleaseAsset? TrustedAsset(IEnumerable<ReleaseAsset> assets)
     {
         var entries = assets.Take(2).ToArray();
-        if (entries.Length != 1)
-            return null;
-        var entry = entries[0];
-        var url = entry.Url;
-        if (!url.IsAbsoluteUri || url.Scheme != Uri.UriSchemeHttps || url.Host != "github.com")
-            return null;
-        return DownloadRoots.Any(root =>
-            url.OriginalString.StartsWith(root, StringComparison.Ordinal) && url.AbsoluteUri.StartsWith(root, StringComparison.Ordinal))
-            ? entry : null;
+        return entries is [var entry] && IsDownloadAddress(entry.Url) ? entry : null;
     }
+
+    internal static bool IsDownloadAddress(Uri url) => IsProjectLink(url) && DownloadRoots.Any(root =>
+        url.OriginalString.StartsWith(root, StringComparison.Ordinal) && url.AbsoluteUri.StartsWith(root, StringComparison.Ordinal));
+
+    internal static bool IsProjectLink(Uri url) => url is
+        { IsAbsoluteUri: true, Scheme: "https", Host: "github.com" or "cod2unbound.com", IsDefaultPort: true, UserInfo.Length: 0 }
+        && (url.OriginalString.StartsWith("https://github.com/", StringComparison.Ordinal) ||
+            url.OriginalString.StartsWith("https://cod2unbound.com/", StringComparison.Ordinal))
+        // Uri normalizes dot segments, so inspect the original spelling as well.
+        && url.OriginalString.IndexOfAny(['?', '#', '\\']) < 0 && !url.OriginalString.Any(char.IsWhiteSpace)
+        && !Uri.UnescapeDataString(url.OriginalString).Contains("..", StringComparison.Ordinal);
 
     public static UpdateBlock? Block(bool gameRunning, bool serversRunning) =>
         gameRunning ? UpdateBlock.GameRunning : serversRunning ? UpdateBlock.ServersRunning : null;
