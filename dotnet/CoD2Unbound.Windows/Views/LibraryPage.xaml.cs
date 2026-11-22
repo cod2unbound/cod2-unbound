@@ -217,7 +217,7 @@ public sealed partial class LibraryPage : Page
 
     private async Task RecycleAsync(MediaRow row)
     {
-        var dialog = new SafeRemovalDialog("Move this file to the Recycle Bin?", row.File.Name, "Move to Recycle Bin", "AccentButtonStyle")
+        var dialog = new SafeRemovalDialog("Move this file to the Recycle Bin?", row.File.Name, "Move to Recycle Bin")
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };

@@ -180,7 +180,7 @@ public sealed partial class ConfigsPage : Page
     {
         var dialog = new SafeRemovalDialog($"Delete the loadout “{profile.DisplayName}”?",
             "Its settings, binds and history go with it. Your other loadouts aren’t affected. You can put it back from the Recycle Bin.",
-            "Delete loadout", "NegativeButton")
+            "Delete loadout")
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };

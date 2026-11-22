@@ -8,13 +8,15 @@ namespace CoD2Unbound.Windows.Views;
 
 internal sealed class SafeRemovalDialog : ContentDialog
 {
-    internal SafeRemovalDialog(string title, string message, string action, string actionStyle)
+    internal SafeRemovalDialog(string title, string message, string action)
     {
         Title = title;
-        Content = Body(message);
+        var body = Body(message);
+        body.MinWidth = 352;
+        Content = body;
         PrimaryButtonText = action;
         CloseButtonText = "Cancel";
-        PrimaryButtonStyle = StyleFor(actionStyle);
+        PrimaryButtonStyle = StyleFor("NegativeButton");
         DefaultButton = ContentDialogButton.None;
         IsPrimaryButtonEnabled = false;
         Opened += (_, _) =>
