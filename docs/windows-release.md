@@ -111,8 +111,10 @@ installs it beside the `original` and `cod2x` engine folders. The **CoD2 Unbound
 Start shortcut opens `launcher\CoD2Unbound.Windows.exe`. Setup adds
 `.dm_1` and `.cfg` Open With entries and an opt-in for available `cod2x:`
 and `cod2:` handlers. Existing defaults and third-party URL handlers are
-preserved. External activation reaches the launcher, which still needs a
-dispatcher for importing a config, playing a demo or joining from a link.
+preserved. An activated file or link opens in the existing launcher window
+when one is running. Configs open the import review. Demos and server links
+show the requested game edition and wait for Play or Connect. Requests that
+arrive during Setup or a dialog wait for it to finish.
 
 The WinUI 3 launcher uses unpackaged, app-local Windows App SDK 2.7.0 and
 self-contained .NET 10. Keep all the published libraries and resources next
