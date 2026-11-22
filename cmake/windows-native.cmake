@@ -114,7 +114,7 @@ foreach(source ${WIN_TARGET_GEN_C})
 endforeach()
 
 # -mno-ms-bitfields: the engine headers describe GCC struct layout.
-set(COD2_WIN_C_OPTIONS -w -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fno-strict-aliasing -fwrapv
+set(COD2_WIN_C_OPTIONS -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fno-strict-aliasing -fwrapv
   -fno-strict-overflow -fno-delete-null-pointer-checks -fno-aggressive-loop-optimizations
   -include ${COD2_SRC_DIR}/headers/win32_compat.h ${COD2_WNO})
 
