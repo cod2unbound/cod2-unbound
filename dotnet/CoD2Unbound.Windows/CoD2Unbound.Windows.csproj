@@ -13,6 +13,7 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <ApplicationIcon>Assets/mark.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationTitle>CoD2 Unbound</ApplicationTitle>
     <Version>0.5.0</Version>
@@ -24,11 +25,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.7.0]" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.26100.7175]" PrivateAssets="all" />
     <ProjectReference Include="../CoD2Unbound.Core/CoD2Unbound.Core.csproj" />
-    <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf;Assets/FluentSystemIcons-*.ttf;Assets/LICENSE-FluentSystemIcons.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf;Assets/FluentSystemIcons-*.ttf;Assets/LICENSE-FluentSystemIcons.txt;Assets/mark.ico;Assets/mark-16.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../launcher/Resources/Fonts/OFL-BigShouldersStencilDisplay.txt;../../launcher/Resources/Fonts/CourierPrime-*.ttf;../../launcher/Resources/Fonts/OFL-CourierPrime.txt"
              Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../../docs/brand/monogram.svg" Link="Assets/monogram.svg"
-             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <!-- Windows App SDK 2.7.0 builds the app PRI but omits it from unpackaged publish output. -->
   <Target Name="IncludeLauncherPriInPublish" BeforeTargets="ComputeResolvedFilesToPublishList"
