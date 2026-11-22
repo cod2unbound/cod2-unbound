@@ -509,6 +509,7 @@
           "con_outputBarColor",
           "con_outputSliderColor",
           "con_outputWindowColor",
+          "con_printDoubleColors",
           "hud_deathQuoteFadeTime",
           "hud_enable",
           "hud_fade_ammodisplay",
@@ -1191,6 +1192,7 @@
           "cl_vmix_scr_spectatedUserId",
           "cl_vmix_scr_spectatedUserName",
           "cl_vmix_scr_spectatedUserTeam",
+          "com_affinity",
           "com_animCheck",
           "com_autoaffinity",
           "com_errorMessage",
@@ -1231,6 +1233,7 @@
           "nextdemo",
           "password",
           "r_anisotropic",
+          "r_autopriority",
           "r_vsync",
           "scr_dm_scorelimit",
           "scr_sd_roundlimit",
@@ -1282,9 +1285,9 @@
       "missingGroups" : true,
       "unknownSchema" : true
     },
-    "revision" : "d2e2806b0bf73a217bcc8602ce8c67451e592ec5",
+    "revision" : "f5ec87a709a0c704e2845274c4dbee0a969af01e",
     "schemaVersion" : 1,
-    "settingCount" : 852,
+    "settingCount" : 855,
     "settings" : [
       {
         "availability" : "registered",
@@ -3546,7 +3549,7 @@
       "spelling" : "command"
     }
   ],
-  "swiftRevision" : "c7ee91656e679b86e6e2f17f58f6b641d1b7ba2c",
+  "swiftRevision" : "37917ecaa95d16b0ca5c55e0e0a4f23a179e1ea3",
   "tokenizations" : [
     {
       "bytes" : "c2V0ICAgeCAvKi8gInRoaXMiAEE=",
