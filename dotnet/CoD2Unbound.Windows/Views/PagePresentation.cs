@@ -61,6 +61,26 @@ internal static class PagePresentation
         throw new InvalidOperationException($"Missing launcher theme brush {key}.");
     }
 
+    internal static void TrackSelectionPill(Border pill)
+    {
+        DependencyObject? parent = VisualTreeHelper.GetParent(pill);
+        while (parent is not null && parent is not ListViewItem)
+            parent = VisualTreeHelper.GetParent(parent);
+        if (parent is not ListViewItem item)
+            return;
+
+        void Update() => pill.Visibility = IsVisible(item.IsSelected);
+        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => Update());
+        pill.Unloaded += Unloaded;
+        Update();
+
+        void Unloaded(object sender, RoutedEventArgs args)
+        {
+            item.UnregisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, token);
+            pill.Unloaded -= Unloaded;
+        }
+    }
+
     // In contrast mode the native row presenter supplies both the normal and selected ink.
     internal static void SetRowTextBrush(TextBlock text, string key, bool contrast)
     {

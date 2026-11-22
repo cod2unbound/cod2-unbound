@@ -47,6 +47,9 @@
                         <TextBlock Text="My loadouts" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="8,12,8,4" />
                         <ListView x:Name="Loadouts" TabNavigation="Once" ItemContainerStyle="{StaticResource SidebarItem}"
                                   AutomationProperties.Name="My loadouts" SelectionChanged="OnSelectLoadout">
+                            <ListView.Resources>
+                                <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+                            </ListView.Resources>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid MinHeight="52" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}" Loaded="OnLoadoutRowLoaded" ActualThemeChanged="OnLoadoutRowThemeChanged">
@@ -55,6 +58,8 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource SelectionPill}" Margin="-12,0,0,0"
+                                                Loaded="OnSelectionPillLoaded" />
                                         <Border x:Name="LoadoutTile" Style="{StaticResource InitialTile}">
                                             <TextBlock Text="{Binding Initial}" Style="{StaticResource LoadoutInitial}"
                                                        AutomationProperties.AccessibilityView="Raw" />

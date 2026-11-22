@@ -43,6 +43,8 @@ public sealed partial class ConfigsPage : Page
 
     internal void UpdateContrast() => RenderLoadouts();
 
+    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
+
     private void OnLoadoutRowLoaded(object sender, RoutedEventArgs args) => ApplyLoadoutRowTheme((Grid)sender);
 
     private void OnLoadoutRowThemeChanged(FrameworkElement sender, object args) => ApplyLoadoutRowTheme((Grid)sender);

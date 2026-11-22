@@ -120,6 +120,8 @@ public sealed partial class ServersPage : Page
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
         Details.Width = args.NewSize.Width >= 1000 ? 320 : 300;
 
+    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
+
     private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
 

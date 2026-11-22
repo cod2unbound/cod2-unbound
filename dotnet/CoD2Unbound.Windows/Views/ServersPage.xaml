@@ -105,10 +105,14 @@
                 </Grid>
                 <ListView x:Name="ServerList" Grid.Row="1" SelectionChanged="OnSelectionChanged"
                           AutomationProperties.Name="Servers">
+                    <ListView.Resources>
+                        <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+                    </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HighContrastAdjustment" Value="None" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
@@ -121,7 +125,9 @@
                                     <ColumnDefinition Width="82" />
                                     <ColumnDefinition Width="32" />
                                 </Grid.ColumnDefinitions>
-                                <Grid ColumnSpacing="10">
+                                <Border Style="{StaticResource SelectionPill}" Margin="4,0,0,0"
+                                        Loaded="OnSelectionPillLoaded" />
+                                <Grid ColumnSpacing="10" Margin="16,0,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="72" />
                                         <ColumnDefinition Width="*" />
