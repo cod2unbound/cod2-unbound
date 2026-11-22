@@ -13,6 +13,7 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal string Search { get; set; } = "";
     internal ServerFilters Filters => session.ServerPreferences.Filters;
     internal bool IsFavorite(string address) => session.Library.Favorites.Contains(address);
+    internal DateTimeOffset? CachedAt => session.Library.CachedAt;
     internal bool GameRunning => session.Game.State.Running;
 
     internal ImmutableArray<GameServer> Visible(ImmutableArray<GameServer>? live = null) =>
@@ -50,8 +51,10 @@ internal sealed record ServerRow(GameServer Server)
 {
     public string Name => QuakeColors.Plain(Server.Name);
     public string Map => MapCatalog.DisplayName(Server.Map);
-    public string Detail => GameModes.Short(Server.GameType) + " · " + ServerFacts.From(Server).VersionLabel +
-        (Server.Mod.Length == 0 ? "" : " · " + Server.Mod);
+    public string MapMode => Map + " · " + GameModes.Long(Server.GameType);
+    public string Edition => Server.IsCod2x ? "CoD2x" : ServerFacts.From(Server).VersionLabel;
+    public Microsoft.UI.Xaml.Visibility Lock => Views.PagePresentation.IsVisible(Server.PasswordRequired);
+    public Microsoft.UI.Xaml.Visibility ModVisibility => Views.PagePresentation.IsVisible(Server.Mod.Length != 0);
     public string Players => Server.MaxPlayers > 0 ? $"{Server.PlayerCount}/{Server.MaxPlayers}" : "—";
     public string Ping => Server.Ping < 0 ? "—" : $"{Server.Ping} ms";
     public string Label => $"{Name}, {Map}, {Players}, {Ping}";

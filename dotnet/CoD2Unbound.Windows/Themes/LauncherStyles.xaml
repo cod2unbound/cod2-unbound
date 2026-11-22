@@ -123,6 +123,19 @@
         <Setter Property="Height" Value="32" />
         <Setter Property="Padding" Value="0" />
     </Style>
+    <Style x:Key="EditionTag" TargetType="Border">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="Padding" Value="4,0" />
+    </Style>
+    <Style x:Key="Cod2xTag" TargetType="Border" BasedOn="{StaticResource EditionTag}">
+        <Setter Property="BorderBrush" Value="{ThemeResource EditionStrokeBrush}" />
+    </Style>
+    <Style x:Key="AlignedSelector" TargetType="SelectorBar">
+        <Setter Property="Margin" Value="-12,0,0,0" />
+    </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />

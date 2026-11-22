@@ -75,10 +75,21 @@ public sealed partial class HostingPage : Page
         playersButton = Action("Players…", () => PlayersAsync(server), "P");
         Details.Children.Add(Buttons(Action("Server log…", () => LogAsync(server), "L"), playersButton));
 
-        Details.Children.Add(SettingRow("Game version", server.Engine == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3"));
-        Details.Children.Add(SettingRow("Game type", HostingCatalog.GameTypeTitle(HostingConfig.GameType(server))));
-        Details.Children.Add(SettingRow("Port", server.Port.ToString(CultureInfo.InvariantCulture)));
-        Details.Children.Add(SettingRow("Map rotation", string.Join(" · ", server.Maps.Select(MapCatalog.DisplayName))));
+        var summary = new StackPanel { Spacing = 8 };
+        SummaryRow("Game version", server.Engine == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3");
+        SummaryRow("Game type", HostingCatalog.GameTypeTitle(HostingConfig.GameType(server)));
+        SummaryRow("Port", server.Port.ToString(CultureInfo.InvariantCulture), mono: true);
+        SummaryRow("Map rotation", string.Join(" · ", server.Maps.Select(MapCatalog.DisplayName)));
+        Details.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = summary });
+
+        void SummaryRow(string label, string value, bool mono = false)
+        {
+            var row = Columns(10, new GridLength(1, GridUnitType.Star), new GridLength(2, GridUnitType.Star));
+            Put(row, 0, Body(label));
+            Put(row, 1, new TextBlock { Text = value, TextAlignment = TextAlignment.Right, TextWrapping = TextWrapping.Wrap,
+                Style = StyleFor(mono ? "Mono" : "BodyStrongTextBlockStyle") });
+            summary.Children.Add(row);
+        }
         UpdateRunState();
     }
 
@@ -103,6 +114,7 @@ public sealed partial class HostingPage : Page
         detailText.Text = state.Status is { } status
             ? $"{MapCatalog.DisplayName(status.Map)} · {status.Players.Length}/{status.MaxPlayers} players"
             : state.NextPort is { } port ? $"Choose another port, such as {port}." : state.Problem ?? "";
+        detailText.Visibility = IsVisible(detailText.Text.Length > 0);
         processButton.Content = active ? "Stop server" : "Start server";
         processButton.IsEnabled = state.Phase != HostedPhase.Stopping;
         settingsButton.IsEnabled = !active;
@@ -117,8 +129,6 @@ public sealed partial class HostingPage : Page
             await hosting.StartAsync(server, session.Setup.DataPath);
         UpdateRunState();
     }
-
-    private async void OnServers(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);
 
     private async void OnNew(object sender, RoutedEventArgs args) => await shell.RunAsync(() =>
     {

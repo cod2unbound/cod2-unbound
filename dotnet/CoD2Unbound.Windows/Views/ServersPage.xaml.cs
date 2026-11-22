@@ -5,6 +5,9 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Shapes;
+using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -16,6 +19,11 @@ public sealed partial class ServersPage : Page
     private readonly MainWindow shell;
     private readonly ServersViewModel model;
     private readonly WindowsLauncherSession session;
+    private readonly MapPreviews previews;
+    private readonly Lazy<ConfigReadyCheck> readiness = new(() =>
+        new(ConfigCatalog.LoadBundled(), ConfigRules.LoadBundled(), TimeProvider.System));
+    private HostingPage? hosting;
+    private GameServer? currentReadyServer;
     private string? currentMap;
     private CancellationTokenSource? refreshing;
     private bool dialogOpen;
@@ -26,10 +34,10 @@ public sealed partial class ServersPage : Page
         this.shell = shell;
         this.session = session;
         model = new(session, scope);
+        previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        ActualThemeChanged += (_, _) => Render();
         Scopes.SelectedItem = Scopes.Items[(int)scope];
-        ServerIntro.Text = "Original 1.3 and CoD2x servers from the public master lists. " +
-            (session.Settings.Working.RefreshServersOnOpen ? "The list refreshes when Servers opens." : "Nothing is contacted until you refresh.");
         ready = true;
         Render(address);
     }
@@ -43,8 +51,21 @@ public sealed partial class ServersPage : Page
         int count = model.Filters.Count;
         FilterButton.Content = count == 0 ? "Filters" : $"Filters ({count})";
         if (refreshing is null)
-            RefreshStatus.Text = rows.Length == 0 ? EmptyState() : $"{rows.Length} {(rows.Length == 1 ? "server" : "servers")}";
+            RefreshStatus.Text = rows.Length == 0 ? EmptyState() : CountWithAge(rows.Length);
         RenderDetails();
+    }
+
+    private string CountWithAge(int count)
+    {
+        string result = $"{count} {(count == 1 ? "server" : "servers")}";
+        if (model.CachedAt is not { } date)
+            return result;
+        var age = DateTimeOffset.UtcNow - date;
+        if (age < TimeSpan.FromMinutes(1))
+            return result + " · just now";
+        if (age < TimeSpan.FromHours(1))
+            return result + $" · {(int)age.TotalMinutes} min ago";
+        return result + " · " + LauncherText.StencilTime(date.ToLocalTime());
     }
 
     private string EmptyState()
@@ -64,13 +85,80 @@ public sealed partial class ServersPage : Page
         int index = sender.Items.IndexOf(sender.SelectedItem);
         if (!ready || index < 0)
             return;
-        if (index == sender.Items.Count - 1)
+        bool showHosting = index == sender.Items.Count - 1;
+        BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility = SearchBox.Visibility = IsVisible(!showHosting);
+        HostingContent.Visibility = IsVisible(showHosting);
+        if (showHosting)
         {
-            await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.Hosting));
+            RefreshStatus.Text = "";
+            await shell.RunAsync(async () =>
+            {
+                hosting ??= new HostingPage(shell, session);
+                HostingContent.Content = hosting;
+                await hosting.RefreshAsync();
+            });
             return;
         }
         model.Scope = (ServerScope)index;
         Render();
+    }
+
+    internal void UpdateHostingState() => hosting?.UpdateRunState();
+
+    private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
+        Details.Width = args.NewSize.Width >= 1000 ? 320 : 300;
+
+    private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
+    private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
+
+    private void ApplyServerRow(Grid row)
+    {
+        if (row.DataContext is not ServerRow entry || row.FindName("RowName") is not TextBlock name)
+            return;
+        var server = entry.Server;
+        var facts = ServerFacts.From(server);
+        name.Inlines.Clear();
+        AddGameName(name, server.Name, shell.IsHighContrast);
+        var tag = (Border)row.FindName("RowEdition")!;
+        tag.Style = StyleFor(server.IsCod2x ? "Cod2xTag" : "EditionTag");
+        var tagText = (TextBlock)row.FindName("RowEditionText")!;
+        tagText.Foreground = ThemeBrush(server.IsCod2x ? "HeroAccentBrush" : "BodyBrush", ActualTheme, shell.IsHighContrast);
+        var players = (TextBlock)row.FindName("RowPlayers")!;
+        players.Inlines.Clear();
+        players.Inlines.Add(new Run { Text = server.MaxPlayers > 0 ? server.PlayerCount.ToString() : "—",
+            FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Foreground = ThemeBrush(facts.Occupancy == ServerOccupancy.Full ? "NegativeBrush" : "BodyBrush", ActualTheme, shell.IsHighContrast) });
+        if (server.MaxPlayers > 0)
+            players.Inlines.Add(new Run { Text = $" / {server.MaxPlayers}", FontSize = 12,
+                Foreground = ThemeBrush("TertiaryBrush", ActualTheme, shell.IsHighContrast) });
+        var signal = (StackPanel)row.FindName("RowSignal")!;
+        signal.Children.Clear();
+        int level = server.Ping < 0 ? 0 : facts.PingLevel;
+        for (int bar = 1; bar <= 4; bar++)
+            signal.Children.Add(new Rectangle { Width = 3, Height = 2 + bar * 2, VerticalAlignment = VerticalAlignment.Bottom,
+                Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, shell.IsHighContrast) });
+        SetFavorite((Button)row.FindName("RowFavorite")!, server);
+        _ = previews.FillAsync((Image)row.FindName("RowArt")!, server.Map);
+    }
+
+    private void SetFavorite(Button button, GameServer server)
+    {
+        bool favorite = model.IsFavorite(server.Address);
+        button.Content = Glyph(favorite ? "\uE735" : "\uE734", 16);
+        button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
+        string action = favorite ? "Remove from Favorites" : "Add to Favorites";
+        AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
+        ToolTipService.SetToolTip(button, action);
+    }
+
+    private void OnCopyAddress(object sender, RoutedEventArgs args)
+    {
+        if (ServerList.SelectedItem is ServerRow row)
+        {
+            var data = new DataPackage();
+            data.SetText(row.Server.Address);
+            Clipboard.SetContent(data);
+        }
     }
 
     private void OnSearch(object sender, TextChangedEventArgs args)
@@ -96,13 +184,15 @@ public sealed partial class ServersPage : Page
     {
         if (ServerList.SelectedItem is not ServerRow row)
         {
+            currentReadyServer = null;
             Details.Visibility = Visibility.Collapsed;
             return;
         }
         Details.Visibility = Visibility.Visible;
         var server = row.Server;
         var facts = ServerFacts.From(server);
-        DetailName.Text = row.Name;
+        DetailName.Inlines.Clear();
+        AddGameName(DetailName, server.Name, shell.IsHighContrast);
         DetailMap.Text = (row.Map + " · " + GameModes.Long(server.GameType)).ToUpperInvariant();
         RenderMapArtwork(server.Map);
         DetailAddress.Text = server.Address;
@@ -112,14 +202,48 @@ public sealed partial class ServersPage : Page
         DetailRoster.Text = "Roster · " + row.Players;
         Roster.Children.Clear();
         foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
-            Roster.Children.Add(new TextBlock { Text = $"{QuakeColors.Plain(player.Name)} · {player.Score} · {player.Ping} ms",
-                TextTrimming = TextTrimming.CharacterEllipsis });
-        bool saved = model.IsFavorite(server.Address);
-        string favoriteAction = saved ? "Remove from Favorites" : "Add to Favorites";
-        FavoriteButton.Content = new FontIcon { Glyph = saved ? "\uE735" : "\uE734", FontSize = 16 };
-        AutomationProperties.SetName(FavoriteButton, favoriteAction);
-        ToolTipService.SetToolTip(FavoriteButton, favoriteAction);
+        {
+            var columns = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(40), new GridLength(40));
+            columns.MinHeight = 22;
+            var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+            AddGameName(name, player.Name, shell.IsHighContrast);
+            Put(columns, 0, name);
+            Put(columns, 1, new TextBlock { Text = player.Score.ToString(), TextAlignment = TextAlignment.Right,
+                Style = StyleFor("BodyStrongTextBlockStyle") });
+            var ping = Body(player.Ping.ToString());
+            ping.TextAlignment = TextAlignment.Right;
+            Put(columns, 2, ping);
+            Roster.Children.Add(columns);
+        }
+        SetFavorite(FavoriteButton, server);
+        _ = ShowReadinessAsync(server);
         JoinButton.IsEnabled = !model.GameRunning;
+    }
+
+    private async Task ShowReadinessAsync(GameServer server)
+    {
+        if (ReferenceEquals(currentReadyServer, server))
+            return;
+        currentReadyServer = server;
+        DetailReady.Visibility = Visibility.Collapsed;
+        if (server.ObservedAt is not { } date || DateTimeOffset.UtcNow - date > TimeSpan.FromMinutes(1))
+            return;
+
+        await shell.ShowProblemAsync(async () =>
+        {
+            var active = await session.ReadLoadoutAsync();
+            if (active is null)
+                return;
+            var mode = server.IsCod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock;
+            var dialect = server.IsCod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
+            var store = new ConfigProfileStore(new WindowsConfigProfiles(session.HomePath, 0), dialect, () => session.ClientIsRunning);
+            var report = await Task.Run(() => readiness.Value.Evaluate(server, store.Read(active.Id), mode));
+            if (ReferenceEquals(currentReadyServer, server) && report.Status == ConfigReadyStatus.MatchesKnownRules)
+            {
+                DetailReady.Text = $"Your {active.DisplayName} loadout is ready for this server";
+                DetailReady.Visibility = Visibility.Visible;
+            }
+        });
     }
 
     private async void RenderMapArtwork(string map)
@@ -129,15 +253,8 @@ public sealed partial class ServersPage : Page
         currentMap = map;
         string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
         DetailArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
-        await shell.ShowProblemAsync(async () =>
-        {
-            if (map.Length != 0 && await Task.Run(() => session.ReadMapArtwork(map)) is { } pixels && currentMap == map)
-            {
-                var bitmap = await MapBitmapAsync(pixels);
-                if (currentMap == map)
-                    DetailArt.Source = bitmap;
-            }
-        });
+        if (await previews.GetAsync(map) is { } image && currentMap == map)
+            DetailArt.Source = image;
     }
 
     private void OnFiltersOpening(object sender, object args)
@@ -168,10 +285,20 @@ public sealed partial class ServersPage : Page
         Render();
     });
 
-    private async void OnFavorite(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
+    private async void OnFavorite(object sender, RoutedEventArgs args)
     {
-        if (ServerList.SelectedItem is not ServerRow row)
-            return;
+        if (ServerList.SelectedItem is ServerRow row)
+            await ToggleFavoriteAsync(row);
+    }
+
+    private async void OnRowFavorite(object sender, RoutedEventArgs args)
+    {
+        if (sender is Button { Tag: ServerRow row })
+            await ToggleFavoriteAsync(row);
+    }
+
+    private Task ToggleFavoriteAsync(ServerRow row) => shell.RunAsync(async () =>
+    {
         await model.FavoriteAsync(row.Server);
         shell.RefreshFavorites();
         Render();
@@ -181,6 +308,8 @@ public sealed partial class ServersPage : Page
 
     internal async Task RefreshAsync()
     {
+        if (HostingContent.Visibility == Visibility.Visible)
+            return;
         if (refreshing is { } active)
         {
             active.Cancel();
@@ -190,7 +319,9 @@ public sealed partial class ServersPage : Page
         {
             using var cancellation = new CancellationTokenSource();
             refreshing = cancellation;
-            RefreshButton.Content = "Stop";
+            RefreshGlyph.Glyph = "\uE71A";
+            AutomationProperties.SetName(RefreshButton, "Stop refresh");
+            ToolTipService.SetToolTip(RefreshButton, "Stop refresh");
             string? message = null;
             try
             {
@@ -206,7 +337,9 @@ public sealed partial class ServersPage : Page
             finally
             {
                 refreshing = null;
-                RefreshButton.Content = "Refresh";
+                RefreshGlyph.Glyph = "\uE72C";
+                AutomationProperties.SetName(RefreshButton, "Refresh server list");
+                ToolTipService.SetToolTip(RefreshButton, "Refresh server list (Ctrl+R)");
                 Render();
                 if (message is not null)
                     RefreshStatus.Text = message;

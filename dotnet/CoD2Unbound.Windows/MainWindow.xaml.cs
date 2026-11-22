@@ -233,13 +233,6 @@ public sealed partial class MainWindow : Window
                 page.Loaded += OnServersLoaded;
             ContentFrame.Content = page;
         }
-        else if (place == LauncherPlace.Hosting)
-        {
-            Nav.SelectedItem = ServersItem;
-            var page = new HostingPage(this, session);
-            ContentFrame.Content = page;
-            await page.RefreshAsync();
-        }
         else if (place == LauncherPlace.Library)
         {
             Nav.SelectedItem = LibraryItem;
@@ -348,8 +341,8 @@ public sealed partial class MainWindow : Window
             {
                 hostPolled = now;
                 await session.Hosting.PollAsync();
-                if (ContentFrame.Content is HostingPage hosting)
-                    hosting.UpdateRunState();
+                if (ContentFrame.Content is ServersPage hosting)
+                    hosting.UpdateHostingState();
             }
             if (session.TestMaster is null && session.Settings.Working.CheckUpdatesAutomatically && now >= firstUpdate &&
                 LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
@@ -410,4 +403,4 @@ public sealed partial class MainWindow : Window
 
 }
 
-internal enum LauncherPlace { Setup, Home, Settings, GameDataSettings, Servers, Hosting, Library, Configs }
+internal enum LauncherPlace { Setup, Home, Settings, GameDataSettings, Servers, Library, Configs }
