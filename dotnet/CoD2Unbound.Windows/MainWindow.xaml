@@ -18,9 +18,6 @@
         </Grid.RowDefinitions>
 
         <TitleBar x:Name="WindowBar" Title="CoD2 Unbound" Height="48">
-            <TitleBar.IconSource>
-                <ImageIconSource ImageSource="ms-appx:///Assets/mark-16.png" />
-            </TitleBar.IconSource>
             <TitleBar.Resources>
                 <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
             </TitleBar.Resources>

@@ -36,7 +36,13 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(WindowBar);
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "mark.ico"));
+        string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
+        AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
+        WindowBar.IconSource = new BitmapIconSource
+        {
+            UriSource = new Uri(Path.Combine(assets, "mark-16.png")),
+            ShowAsMonochrome = false
+        };
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
         windowTheme.Changed += OnSystemThemeChanged;
