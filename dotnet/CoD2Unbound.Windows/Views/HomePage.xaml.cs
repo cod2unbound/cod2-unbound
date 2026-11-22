@@ -107,7 +107,7 @@ public sealed partial class HomePage : Page
         if (last.GameType != "—")
             HeroDetail.Inlines.Add(new Run { Text = "   ·   " + GameModes.Long(last.GameType) });
         if (model.Played(last.Address, includeTime: true) is { } played)
-            HeroDetail.Inlines.Add(new Run { Text = "   ·   Played " + played.ToLowerInvariant() });
+            HeroDetail.Inlines.Add(new Run { Text = "   ·   Played " + played });
     }
 
     private void RenderRecent()
@@ -213,9 +213,7 @@ public sealed partial class HomePage : Page
     private void RenderNews()
     {
         NewsRows.Children.Clear();
-        NewsChecked.Text = model.NewsChecked is { } checkedAt
-            ? "Checked " + MatchFacts.Played(checkedAt, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: true).ToLowerInvariant() + "."
-            : "";
+        NewsChecked.Text = model.NewsChecked is { } checkedAt ? $"Checked {checkedAt}." : "";
         NewsChecked.Visibility = IsVisible(NewsChecked.Text.Length > 0);
         foreach (var dispatch in model.News)
         {

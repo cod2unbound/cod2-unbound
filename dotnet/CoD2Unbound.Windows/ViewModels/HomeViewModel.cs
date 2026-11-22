@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 
@@ -17,9 +18,9 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal GameServer? LastServer => session.Library.Recent.FirstOrDefault() is { } address
         ? session.ServerForAddress(address) : null;
     internal string? Played(string address, bool includeTime) => session.Library.Played.TryGetValue(address, out var date)
-        ? MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime)
+        ? includeTime ? TimeInSentence(date) : MatchFacts.Played(date, DateTimeOffset.UtcNow, TimeZoneInfo.Local, includeTime: false)
         : null;
-    internal DateTimeOffset? NewsChecked => session.Library.DispatchesCheckedAt;
+    internal string? NewsChecked => session.Library.DispatchesCheckedAt is { } date ? TimeInSentence(date) : null;
     internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext);
     internal ImmutableArray<NewsDispatch> AllNews => NewsFeed.Home(session.Version, session.Library.Dispatches,
@@ -27,6 +28,19 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
     internal ImmutableArray<MatchSummary> Matches { get; private set; } = [];
     internal bool UnreadableMatches { get; private set; }
+
+    private static string TimeInSentence(DateTimeOffset date)
+    {
+        string day = MatchFacts.Played(date, DateTimeOffset.UtcNow, TimeZoneInfo.Local, includeTime: false);
+        var local = date.ToLocalTime();
+        string when = day switch
+        {
+            "TODAY" => "today",
+            "YESTERDAY" => "yesterday",
+            _ => "on " + local.ToString("d MMMM", CultureInfo.CurrentCulture)
+        };
+        return when + " at " + local.ToString("HH:mm", CultureInfo.InvariantCulture);
+    }
 
     internal async Task RefreshAsync()
     {
