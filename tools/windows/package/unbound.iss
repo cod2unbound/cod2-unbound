@@ -107,6 +107,10 @@ const
 
 var
   ArmNotice: TOutputMsgWizardPage;
+#ifdef HasLauncher
+  UpdateBackup: String;
+  UpdateCommitted: Boolean;
+#endif
 
 procedure InitializeWizard;
 begin
@@ -167,9 +171,64 @@ begin
     Busy(Root + '\launcher\CoD2Unbound.exe');
 end;
 
+#ifdef HasLauncher
+function IsLauncherUpdate(): Boolean;
+begin
+  Result := (not IsAdminInstallMode) and (ExpandConstant('{param:UNBOUNDUPDATE|0}') = '1');
+end;
+
+function CopyInstall(const Source, Target: String): Boolean;
+var
+  Entry: TFindRec;
+  FromPath, ToPath: String;
+begin
+  Result := ForceDirectories(Target);
+  if not Result then Exit;
+  if FindFirst(Source + '\*', Entry) then begin
+    try
+      repeat
+        if (Entry.Name <> '.') and (Entry.Name <> '..') then begin
+          FromPath := Source + '\' + Entry.Name;
+          ToPath := Target + '\' + Entry.Name;
+          if (Entry.Attributes and $400) <> 0 then Result := False
+          else if (Entry.Attributes and $10) <> 0 then Result := CopyInstall(FromPath, ToPath)
+          else Result := FileCopy(FromPath, ToPath, True);
+          if not Result then Exit;
+        end;
+      until not FindNext(Entry);
+    finally
+      FindClose(Entry);
+    end;
+  end;
+end;
+
+procedure DeinitializeSetup;
+var
+  Root, Failed: String;
+begin
+  if UpdateCommitted or (UpdateBackup = '') then Exit;
+  Root := ExpandConstant('{app}');
+  Failed := ExpandConstant('{src}\failed-install');
+  if (not DirExists(Root)) or RenameFile(Root, Failed) then begin
+    if RenameFile(UpdateBackup, Root) then
+      Log('Restored the previous installation after the update stopped.')
+    else begin
+      Log('Could not restore the previous installation from ' + UpdateBackup);
+      if not RenameFile(Failed, Root) then
+        Log('Could not put the installation folder back.');
+    end;
+  end else
+    Log('Could not move the incomplete installation. Previous files are at ' + UpdateBackup);
+end;
+#endif
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Root: String;
+#ifdef HasLauncher
+  Attempt: Integer;
+  Backup, Scratch: String;
+#endif
 begin
   Root := ExpandConstant('{app}');
   Result := '';
@@ -178,8 +237,32 @@ begin
     IsReparsePoint(Root + '\cod2x') or IsReparsePoint(Root + '\licenses') or
     IsReparsePoint(Root + '\launcher') then
     Result := 'Install CoD2 Unbound in its standard Programs folder.'
-  else if InstalledFilesBusy(Root) then
-    Result := 'Close CoD2 Unbound, the game and any hosted servers, then run Setup again.';
+  else begin
+#ifdef HasLauncher
+    if IsLauncherUpdate() then
+      for Attempt := 1 to 40 do begin
+        if not Busy(Root + '\launcher\{#Launcher}') then Break;
+        Sleep(200);
+      end;
+#endif
+    if InstalledFilesBusy(Root) then
+      Result := 'Close CoD2 Unbound, the game and any hosted servers, then run Setup again.'
+#ifdef HasLauncher
+    else if IsLauncherUpdate() and (UpdateBackup = '') then begin
+      Backup := ExpandConstant('{src}\previous-install');
+      Scratch := ExpandConstant('{src}\preparing-install');
+      if (not FileExists(Root + '\launcher\{#Launcher}')) or
+        (CompareText(ExtractFileDrive(Root), ExtractFileDrive(Backup)) <> 0) or
+        (CompareText(Copy(Backup, 1, Length(Root) + 1), AddBackslash(Root)) = 0) or
+        DirExists(Backup) or DirExists(Scratch) or (not CopyInstall(Root, Scratch)) or
+        (not RenameFile(Scratch, Backup)) then
+        Result := 'Setup could not save the previous installation.'
+      else
+        UpdateBackup := Backup;
+    end
+#endif
+    ;
+  end;
 end;
 
 function InitializeUninstall(): Boolean;
@@ -222,10 +305,20 @@ var
   AllowCod2x, AllowCod2: Boolean;
 
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
 begin
   if CurStep = ssInstall then begin
     AllowCod2x := CanClaimLink('cod2x');
     AllowCod2 := CanClaimLink('cod2');
+  end;
+  if (CurStep = ssDone) and IsLauncherUpdate() then begin
+    UpdateCommitted := True;
+    if not SaveStringToFile(ExpandConstant('{src}\installed.ok'), '{#ReleaseVersion}', False) then
+      Log('Could not record the completed update.');
+    if not Exec(ExpandConstant('{app}\launcher\{#Launcher}'), '', ExpandConstant('{app}'),
+      SW_SHOWNORMAL, ewNoWait, ResultCode) then
+      Log('Could not reopen CoD2 Unbound after the update.');
   end;
 end;
 

@@ -21,6 +21,9 @@ internal sealed class WindowsLauncherSession
     internal LauncherLibrary Library { get; private set; } = new();
     internal WindowsRenderMode Renderer => Settings.Working.WindowsRenderer ?? WindowsRenderMode.Direct3D9;
     internal LauncherUpdates Updates { get; }
+    internal WindowsLauncherUpdate UpdateInstaller { get; }
+    private UpdateOutcome lastUpdateOutcome;
+    internal bool SetupUpdating => lastUpdateOutcome == UpdateOutcome.Waiting;
     internal WindowsHosting Hosting { get; }
     private const string RendererFile = "windows-renderer.txt";
     internal string HomePath => gameFolder.Root;
@@ -45,7 +48,10 @@ internal sealed class WindowsLauncherSession
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
         Hosting = new(HomePath, inventory, files, TestMaster is not null);
         Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
-            Version, version => $"CoD2-Unbound-{version}-Windows-x64.exe", TimeZoneInfo.Local);
+            Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin),
+            TimeZoneInfo.Local, WindowsReleaseAssets.IsNewer);
+        UpdateInstaller = new(installRoot, HomePath, Version, inventory, () => new(Game.State.Running, Hosting.HasActiveServers),
+            () => Settings.FlushAsync());
     }
 
     internal LauncherSettingsSession Settings { get; private set; } = null!;
@@ -75,6 +81,7 @@ internal sealed class WindowsLauncherSession
             : null;
         bool hasKey = SetupSession.KeyTail(await credentials.ReadAsync(SetupSession.KeySecret, default)) is not null;
         Setup = await CreateSetupAsync(remembered, hasKey, SetupStep.Welcome);
+        RefreshUpdateOutcome();
     }
 
     internal string Version => typeof(WindowsLauncherSession).Assembly.GetName().Version!.ToString(3);
@@ -166,6 +173,8 @@ internal sealed class WindowsLauncherSession
 
     internal async Task<GameStartState> LaunchAsync(LaunchLink? link = null, GameEdition? edition = null, string? demo = null)
     {
+        if (SetupUpdating)
+            throw new IOException("Wait for the launcher update to finish before opening the game.");
         var settings = Settings.Working;
         var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo };
         var start = await Game.StartAsync(request, SetupComplete);
@@ -222,7 +231,16 @@ internal sealed class WindowsLauncherSession
             await SaveLibraryAsync(Library with { Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt });
     }
 
-    internal bool CanCheckUpdates => TestMaster is null || WindowsReleaseSource.Fixture is not null;
+    internal bool CanCheckUpdates => !SetupUpdating &&
+        (TestMaster is null || WindowsReleaseSource.Fixture is not null || WindowsReleaseSource.LocalOrigin is not null);
+    internal bool CanAutoCheckUpdates => !SetupUpdating && (TestMaster is null || WindowsReleaseSource.LocalOrigin is not null);
+
+    internal void RefreshUpdateOutcome()
+    {
+        lastUpdateOutcome = UpdateInstaller.ReadOutcome();
+        if (lastUpdateOutcome is UpdateOutcome.Failed or UpdateOutcome.Installed)
+            Updates.RestoreInstallResult(lastUpdateOutcome == UpdateOutcome.Installed);
+    }
 
     internal async Task SaveFiltersAsync(ServerFilters filters)
     {

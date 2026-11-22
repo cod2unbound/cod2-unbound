@@ -169,3 +169,25 @@ headlessly. WinUI XAML compilation, package identity and activation, native
 adapter behavior and UI Automation require Windows. A physical Windows PC is
 needed to accept the GPU, focus, keyboard, audio and display behavior of the
 running game and launcher.
+
+### Windows launcher updates
+
+Set the `UpdatePublisherCertificateSha256` MSBuild property when publishing the
+Windows launcher. Use the SHA-256 fingerprint of the Authenticode signing
+certificate in hex. The launcher requires Windows to trust the Setup signature
+and checks the certificate Windows accepted against this fingerprint. Until a
+publisher is configured, the launcher can check for releases and open the
+download page.
+
+Publish the launcher and Setup with the same three-field version. For a signing
+certificate change, publish a transition launcher with both old and new
+fingerprints in the property, separated by commas, before releasing a Setup
+signed by the new certificate. The new certificate also needs a chain Windows
+trusts.
+
+For an offline test build, set `EnableLocalUpdateFeed=true` when publishing and
+set `COD2_UNBOUND_TEST_UPDATE_ORIGIN` in the launcher process environment to a
+`127.0.0.1` origin. Serve the feed at `/releases` and the exact Setup filename
+and `SHA256SUMS` at `/releases/download/v<version>/`. Use a test signer trusted
+by the test machine and configure its fingerprint in the test launcher. Leave
+`EnableLocalUpdateFeed` unset for public builds.
