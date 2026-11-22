@@ -88,12 +88,12 @@ public sealed partial class ServersPage : Page
         bool showHosting = index == sender.Items.Count - 1;
         // New server takes Alt+N while Hosting is active in the shared Servers view.
         RecentScope.AccessKey = showHosting ? "" : "N";
-        BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility = SearchBox.Visibility = IsVisible(!showHosting);
+        BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility =
+            SearchBox.Visibility = RefreshStatus.Visibility = IsVisible(!showHosting);
         HostingContent.Visibility = IsVisible(showHosting);
         if (showHosting)
         {
-            RefreshStatus.Text = "";
-            await shell.RunAsync(async () =>
+            await shell.ShowProblemAsync(async () =>
             {
                 hosting ??= new HostingPage(shell, session);
                 HostingContent.Content = hosting;
@@ -153,7 +153,7 @@ public sealed partial class ServersPage : Page
         ToolTipService.SetToolTip(button, action);
     }
 
-    private void OnCopyAddress(object sender, RoutedEventArgs args)
+    private async void OnCopyAddress(object sender, RoutedEventArgs args) => await shell.ShowProblemAsync(() =>
     {
         if (ServerList.SelectedItem is ServerRow row)
         {
@@ -161,7 +161,8 @@ public sealed partial class ServersPage : Page
             data.SetText(row.Server.Address);
             Clipboard.SetContent(data);
         }
-    }
+        return Task.CompletedTask;
+    });
 
     private void OnSearch(object sender, TextChangedEventArgs args)
     {
