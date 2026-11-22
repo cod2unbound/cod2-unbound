@@ -105,6 +105,9 @@ Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string
 Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueData: "URL:CoD2 Unbound player setup link"; Tasks: links; Check: CanRegisterLink('cod2unbound')
 Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2unbound')
 Root: HKCU64; Subkey: "Software\Classes\cod2unbound\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2unbound')
+
+[Run]
+Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{app}"; Description: "Launch CoD2 Unbound"; Flags: postinstall nowait skipifsilent unchecked runasoriginaluser
 #endif
 
 [Code]
