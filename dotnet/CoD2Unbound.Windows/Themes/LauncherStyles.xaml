@@ -96,6 +96,13 @@
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <Style x:Key="PositiveCaption" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
+        <Setter Property="Foreground" Value="{ThemeResource PositiveBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style x:Key="PositiveIcon" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource PositiveBrush}" />
+    </Style>
     <Style x:Key="NegativeText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>

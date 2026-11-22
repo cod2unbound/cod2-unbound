@@ -18,6 +18,7 @@ public sealed partial class ConfigsPage : Page
     private bool syncing;
     private int studioTab;
     private bool expert;
+    private SelectorBar? studioModes;
     private bool wideGroupRail;
     private string? category;
     private string query = "";
@@ -144,11 +145,46 @@ public sealed partial class ConfigsPage : Page
         var tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, index =>
         {
             studioTab = index;
+            if (studioModes is not null)
+                studioModes.Visibility = IsVisible(index == 0);
             RenderStudioBody();
         });
         AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
         Detail.Children.Add(tabs);
-        Detail.Children.Add(Heading(profile.Profile.DisplayName));
+        var title = new StackPanel { Spacing = 2, Children = { Heading(profile.Profile.DisplayName) } };
+        var subtitle = new List<string>();
+        if (profile.Profile.Id.Equals("main", StringComparison.OrdinalIgnoreCase))
+            subtitle.Add("Your everyday setup");
+        if (state.History.LastOrDefault() is { } edit)
+            subtitle.Add($"Edited {edit.Date.LocalDateTime:d}");
+        if (subtitle.Count != 0)
+            title.Children.Add(Caption(string.Join(" · ", subtitle)));
+
+        var right = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right };
+        if (profile.Profile.IsActive)
+        {
+            var badge = IconLabel("Check", "In use for your next game", 14);
+            badge.HorizontalAlignment = HorizontalAlignment.Right;
+            var icon = (FontIcon)badge.Children[0];
+            var label = (TextBlock)badge.Children[1];
+            icon.Style = StyleFor("PositiveIcon");
+            label.Style = StyleFor("PositiveCaption");
+            right.Children.Add(badge);
+        }
+        studioModes = Tabs(["Guided", "Expert"], expert ? 1 : 0, index =>
+        {
+            expert = index == 1;
+            query = "";
+            RenderStudioBody();
+        });
+        studioModes.Margin = new Thickness(0);
+        studioModes.HorizontalAlignment = HorizontalAlignment.Right;
+        studioModes.Visibility = IsVisible(studioTab == 0);
+        right.Children.Add(studioModes);
+        var header = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        Put(header, 0, title);
+        Put(header, 1, right);
+        Detail.Children.Add(header);
         var next = Action("Use for next game", async () =>
         {
             model.Studio.Select(profile.Profile.Id);
@@ -167,8 +203,6 @@ public sealed partial class ConfigsPage : Page
         next.IsEnabled = !state.ReadOnly && !profile.Profile.IsActive;
         rename.IsEnabled = !state.ReadOnly;
         delete.IsEnabled = ConfigStudioModel.DeleteBlock(state, profile.Profile.Id) is null;
-        if (profile.Profile.IsActive)
-            Detail.Children.Add(Caption("In use for your next game"));
         if (state.ReadOnly)
             Detail.Children.Add(Caption("Configs are read-only while Call of Duty 2 is running."));
         Detail.Children.Add(actions);
@@ -218,13 +252,6 @@ public sealed partial class ConfigsPage : Page
 
     private void ShowSettings(ConfigStudioState state, ConfigProfileRead profile)
     {
-        var modes = Tabs(["Guided", "Expert"], expert ? 1 : 0, index =>
-        {
-            expert = index == 1;
-            query = "";
-            RenderStudioBody();
-        });
-        studioBody.Children.Add(modes);
         var groups = model.Catalog.Groups;
         category ??= groups.FirstOrDefault(group => model.Model.Guided(group.Id).Any(spec => spec.Name == "sensitivity"))?.Id ?? groups[0].Id;
         var fields = new StackPanel { Spacing = 4 };
@@ -307,7 +334,31 @@ public sealed partial class ConfigsPage : Page
             var specs = settings.Where(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)).ToArray();
             if (specs.Length == 0)
                 return;
-            fields.Children.Add(new TextBlock { Text = groups.First(item => item.Id == group).Title, Style = StyleFor("SectionTitle") });
+            var groupTitle = groups.First(item => item.Id == group).Title;
+            var groupHeader = new StackPanel { Spacing = 2 };
+            groupHeader.Children.Add(new TextBlock { Text = groupTitle, Style = StyleFor("SectionTitle") });
+            if (!expert && specs.Any(spec => spec.Name == "sensitivity"))
+                groupHeader.Children.Add(Caption("How the game responds to your mouse or touchpad."));
+            if (!expert)
+            {
+                int total = model.Model.Expert(group, ConfigExpertFilter.Group, "", profile.Document, profile.Metadata)
+                    .Sum(section => section.Rows.Count(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)));
+                var link = new HyperlinkButton { Content = $"Show all {total} in Expert ›", VerticalAlignment = VerticalAlignment.Top };
+                link.Click += (_, _) =>
+                {
+                    if (studioModes is not null)
+                    {
+                        studioModes.SelectedItem = studioModes.Items[1];
+                        studioModes.SelectedItem.Focus(FocusState.Programmatic);
+                    }
+                };
+                var heading = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+                Put(heading, 0, groupHeader);
+                Put(heading, 1, link);
+                fields.Children.Add(heading);
+            }
+            else
+                fields.Children.Add(groupHeader);
             foreach (var spec in specs)
                 fields.Children.Add(Setting(state, profile.Profile.Id, spec));
         }
@@ -558,8 +609,8 @@ public sealed partial class ConfigsPage : Page
         return Task.CompletedTask;
     }
 
-    private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Snapshot is null
-        ? "" : model.Discover.State.Saved.Length.ToString(CultureInfo.CurrentCulture);
+    private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0
+        ? count.ToString(CultureInfo.CurrentCulture) : "";
 
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
