@@ -193,7 +193,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnNavigation(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (ReferenceEquals(args.InvokedItemContainer, SettingsItem))
+        if (args.IsSettingsInvoked)
             await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
         else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
@@ -236,8 +236,14 @@ public sealed partial class MainWindow : Window
         bool refreshServers = true)
     {
         Nav.IsPaneVisible = JumpButton.IsEnabled = session.SetupComplete;
+        JumpHost.Visibility = IsVisible(session.SetupComplete);
         if (Nav.IsPaneVisible)
         {
+            if (Nav.SettingsItem is NavigationViewItem settings)
+            {
+                settings.AccessKey = "T";
+                settings.HighContrastAdjustment = ElementHighContrastAdjustment.None;
+            }
             UpdatePaneMode(Root.ActualWidth);
             await RefreshPlayerAsync();
             OnPaneChanged(Nav, EventArgs.Empty);
@@ -285,7 +291,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            Nav.SelectedItem = SettingsItem;
+            Nav.SelectedItem = Nav.SettingsItem;
             ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings,
                 openUpdates: place == LauncherPlace.UpdateSettings);
         }
