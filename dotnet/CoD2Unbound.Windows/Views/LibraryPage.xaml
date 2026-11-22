@@ -28,6 +28,12 @@
             <ContentPresenter x:Name="Empty" />
             <GridView x:Name="Screenshots" AutomationProperties.Name="Screenshots" IsItemClickEnabled="True"
                       ItemClick="OnOpenFile" SelectionMode="None" TabNavigation="Once">
+                <GridView.ItemContainerStyle>
+                    <Style TargetType="GridViewItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </GridView.ItemContainerStyle>
                 <GridView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsWrapGrid Orientation="Horizontal" ItemWidth="208" ItemHeight="152" />
