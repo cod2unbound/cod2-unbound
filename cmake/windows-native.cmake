@@ -45,7 +45,11 @@ if(COD2_WIN32_CLIENT)
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/Mac/Main/(mac_play_dsound|mac_record_dsound)\\.c$")
   include(${CMAKE_SOURCE_DIR}/cmake/windows-voice.cmake OPTIONAL)
   if(NOT COD2_WIN_VOICE_C)
+    # export-begin: codx
     if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT COD2_FEATURE_CFLAGS MATCHES "(^| )-DCOD2_CODX=1( |$)")
+    # export-else
+    #| if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # export-end
       set(COD2_WIN_VOICE_C src/platform/macos_voice.c src/platform/macos_record.c)
     else()
       set(COD2_WIN_VOICE_C src/win32/win_voice_none.c)
@@ -114,11 +118,12 @@ foreach(source ${WIN_TARGET_GEN_C})
 endforeach()
 
 # -mno-ms-bitfields: the engine headers describe GCC struct layout.
-set(COD2_WIN_C_OPTIONS -w -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fno-strict-aliasing -fwrapv
+set(COD2_WIN_C_OPTIONS -msse -mno-ms-bitfields -fcommon -ffp-contract=off -fno-strict-aliasing -fwrapv
   -fno-strict-overflow -fno-delete-null-pointer-checks -fno-aggressive-loop-optimizations
   -include ${COD2_SRC_DIR}/headers/win32_compat.h ${COD2_WNO})
 
 add_executable(${WIN_TARGET} ${WIN_TARGET_C} src/win32/unbound.rc)
+# export-begin: app
 if(DEFINED COD2_WINDOWS_COMPANY)
   file(STRINGS "${CMAKE_SOURCE_DIR}/RELEASE_VERSION" WIN_RELEASE_VERSION LIMIT_COUNT 1)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/RELEASE_VERSION")
@@ -130,6 +135,7 @@ if(DEFINED COD2_WINDOWS_COMPANY)
   target_sources(${WIN_TARGET} PRIVATE "${CMAKE_BINARY_DIR}/unbound-version.rc")
   target_link_options(${WIN_TARGET} PRIVATE -Wl,--no-insert-timestamp)
 endif()
+# export-end
 set_source_files_properties(src/win32/unbound.rc PROPERTIES
   COMPILE_OPTIONS "-I${COD2_SRC_DIR}/win32"
   OBJECT_DEPENDS "${COD2_SRC_DIR}/win32/unbound.manifest")

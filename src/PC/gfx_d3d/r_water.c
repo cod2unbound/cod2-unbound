@@ -2,6 +2,7 @@
 extern dvar_t *r_rendererInUse;
 #include "imports.h"
 #include "bytematch.h"
+#include <math.h>
 extern GfxBackEndData *backEndData;
 
 extern float floorf(float x);

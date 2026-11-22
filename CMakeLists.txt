@@ -90,7 +90,9 @@ if(NOT COD2_X64)
   set_source_files_properties(src/PC/qcommon/port_debug.c PROPERTIES HEADER_FILE_ONLY TRUE)
   set_source_files_properties(src/PC/qcommon/match_summary.c PROPERTIES HEADER_FILE_ONLY TRUE)
   set_source_files_properties(
+    # export-begin: codx
     src/PC/gfx_d3d/r_cod2x_film.c
+    # export-end
     src/PC/gfx_d3d/rb_fxlayer.c
     src/PC/gfx_d3d/rb_scenetarget.c
     src/PC/universal/com_random.c

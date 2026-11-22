@@ -48,14 +48,10 @@ extern void __attribute_regparm__(1) R_LoadCullGroups(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadPortalVerts(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadOccluders(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadAabbTrees(GfxBspLoad *load);
-extern void R_LoadCells(GfxBspLoad *load);
+extern void __attribute_regparm__(1) R_LoadCells(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadPortals(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadNodesAndLeafs(GfxBspLoad *load);
 extern void __attribute_regparm__(1) R_LoadEntities(GfxBspLoad *load);
-
-typedef void (*loader_regparm_fn)(void *) __attribute_regparm__(1);
-#define CALL_LOADER_EAX(func, arg) \
-    ((loader_regparm_fn)(func))((void *)(arg))
 
 #define LIGHTMAP_NONE 31
 #define MAX_LIGHTMAPS 31
@@ -687,10 +683,10 @@ GfxWorld *R_LoadWorldInternal(const char *name)
     }
 
     R_PrintLoadProgress("surfaces");
-    CALL_LOADER_EAX(R_LoadSurfaces, &load);
+    R_LoadSurfaces(&load);
 
     R_PrintLoadProgress("cull groups");
-    CALL_LOADER_EAX(R_LoadCullGroups, &load);
+    R_LoadCullGroups(&load);
 
     R_PrintLoadProgress("cull group indices");
     {
@@ -709,17 +705,17 @@ GfxWorld *R_LoadWorldInternal(const char *name)
     }
 
     R_PrintLoadProgress("portal vertices");
-    CALL_LOADER_EAX(R_LoadPortalVerts, &load);
+    R_LoadPortalVerts(&load);
 
     R_PrintLoadProgress("occluders");
     {
 
 #if defined(COD2_X64)
-        CALL_LOADER_EAX(R_LoadOccluders, &load);
+        R_LoadOccluders(&load);
 #else
         int occLumpSize = *(int *)(header + LUMP_OFS_OCCLUDERS);
         if (occLumpSize > 0)
-            CALL_LOADER_EAX(R_LoadOccluders, &load);
+            R_LoadOccluders(&load);
 #endif
     }
 
@@ -751,16 +747,16 @@ GfxWorld *R_LoadWorldInternal(const char *name)
     }
 
     R_PrintLoadProgress("AABB trees");
-    CALL_LOADER_EAX(R_LoadAabbTrees, &load);
+    R_LoadAabbTrees(&load);
 
     R_PrintLoadProgress("cells");
-    CALL_LOADER_EAX(R_LoadCells, &load);
+    R_LoadCells(&load);
 
     R_PrintLoadProgress("portals");
-    CALL_LOADER_EAX(R_LoadPortals, &load);
+    R_LoadPortals(&load);
 
     R_PrintLoadProgress("nodes and leafs");
-    CALL_LOADER_EAX(R_LoadNodesAndLeafs, &load);
+    R_LoadNodesAndLeafs(&load);
 
     R_PrintLoadProgress("submodels");
     {

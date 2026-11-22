@@ -37,6 +37,11 @@ tools/wine/
 tools/cod2x/icon-source/
 tools/cod2x/app_icon.swift
 tools/cod2x/make_macos_app.py
+tools/windows/laptop-kit/
+tools/windows/package/
+tools/windows/check-package.sh
+tools/windows/release.sh
+tools/windows/vm-build.sh
 tools/tests/test_server_service.py
 # Written for the other copy and kept there
 tools/windows/README.md

@@ -151,8 +151,8 @@ Run `python3 tests/fixes13/legacy.py --base 410342a` to check the record's
 source entries across ten include-free configurations. All listed source
 differences must still match the pinned projections and all other checked
 sources must match upstream. Run `python3 tests/fixes13/legacy.py --base main`
-as the release gate. It accepts exact upstream restorations at their
-original positions.
+as the release gate. It accepts upstream restorations at their original
+positions and exact projections of catalogued sources at the reviewed commit.
 
 This proves equality under the normalized build conditions, not that an old
 release artifact from another toolchain has identical bytes. The workflow's

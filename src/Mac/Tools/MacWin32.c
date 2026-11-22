@@ -302,6 +302,8 @@ int GetSystemMetrics(int nIndex)
 }
 #endif
 
+/* Native Windows uses the file APIs in win_files.c on both architectures. */
+#if !defined(_M_X64) && !COD2_WINDOWS_NATIVE
 BOOL FindNextFileA(HANDLE hFindFile, LPWIN32_FIND_DATAA lpFindFileData);
 
 typedef struct {
@@ -311,7 +313,6 @@ typedef struct {
     int find_dirs;
 } FFState;
 
-#if !defined(_M_X64)  /* x64: use real Win32 (Mac/POSIX emulation collides by name) */
 HANDLE FindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
 {
     FFState *state;
@@ -352,7 +353,7 @@ HANDLE FindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
         slash = strrchr(lpFileName, '/');
         strncpy(lpFindFileData->cFileName, slash ? slash + 1 : lpFileName, 259);
         lpFindFileData->nFileSizeLow = (DWORD)(st.st_size & 0xFFFFFFFF);
-        lpFindFileData->nFileSizeHigh = (DWORD)(st.st_size >> 32);
+        lpFindFileData->nFileSizeHigh = (DWORD)((int64_t)st.st_size >> 32);
 
         return (HANDLE)state;
     }
@@ -370,9 +371,7 @@ HANDLE FindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
     free(state);
     return (HANDLE)-1;
 }
-#endif
 
-#if !defined(_M_X64)  /* x64: use real Win32 (Mac/POSIX emulation collides by name) */
 BOOL FindNextFileA(HANDLE hFindFile, LPWIN32_FIND_DATAA lpFindFileData)
 {
     FFState *state = (FFState *)hFindFile;
@@ -399,7 +398,7 @@ BOOL FindNextFileA(HANDLE hFindFile, LPWIN32_FIND_DATAA lpFindFileData)
         if (stat(fullpath, &st) == 0) {
             lpFindFileData->dwFileAttributes = S_ISDIR(st.st_mode) ? 0x10 : 0;
             lpFindFileData->nFileSizeLow = (DWORD)(st.st_size & 0xFFFFFFFF);
-            lpFindFileData->nFileSizeHigh = (DWORD)(st.st_size >> 32);
+            lpFindFileData->nFileSizeHigh = (DWORD)((int64_t)st.st_size >> 32);
         }
         strncpy(lpFindFileData->cFileName, entry->d_name, 259);
         return 1;
