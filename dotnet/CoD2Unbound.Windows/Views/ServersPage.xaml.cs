@@ -4,7 +4,6 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Shapes;
@@ -162,23 +161,22 @@ public sealed partial class ServersPage : Page
         }
         var signal = (StackPanel)row.FindName("RowSignal")!;
         signal.Children.Clear();
-        int level = server.Ping < 0 ? 0 : facts.PingLevel;
-        for (int bar = 1; bar <= 4; bar++)
+        // The numeric ping uses the list item's native contrast foreground.
+        // Keep it as the signal indicator while Windows controls the palette.
+        signal.Visibility = contrast ? Visibility.Collapsed : Visibility.Visible;
+        if (!contrast)
         {
-            var mark = new Rectangle { Width = 3, Height = 2 + bar * 2, VerticalAlignment = VerticalAlignment.Bottom };
-            if (contrast)
+            int level = server.Ping < 0 ? 0 : facts.PingLevel;
+            for (int bar = 1; bar <= 4; bar++)
             {
-                // The numeric ping inherits the native foreground for both row states.
-                mark.SetBinding(Shape.FillProperty, new Binding
+                signal.Children.Add(new Rectangle
                 {
-                    Path = new PropertyPath(nameof(TextBlock.Foreground)),
-                    Source = row.FindName("RowPing")
+                    Width = 3,
+                    Height = 2 + bar * 2,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, false)
                 });
-                mark.Opacity = bar <= level ? 1 : 0.5;
             }
-            else
-                mark.Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, false);
-            signal.Children.Add(mark);
         }
         SetFavorite((Button)row.FindName("RowFavorite")!, server);
         _ = previews.FillAsync((Image)row.FindName("RowArt")!, server.Map);
