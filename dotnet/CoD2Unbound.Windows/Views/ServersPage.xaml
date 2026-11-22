@@ -20,13 +20,15 @@
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="4">
                 <TextBlock Text="Servers" Style="{StaticResource PageTitle}" />
-                <TextBlock x:Name="RefreshStatus" FontSize="12" Style="{StaticResource SecondaryText}"
-                           AutomationProperties.LiveSetting="Polite" />
+                <TextBlock x:Name="BrowserSubtitle" FontSize="12" Style="{StaticResource SecondaryText}"
+                           Text="Original 1.3 and CoD2x servers from the public master lists. Nothing is contacted until you refresh." />
             </StackPanel>
-            <StackPanel x:Name="BrowserActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+            <StackPanel x:Name="BrowserActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Margin="0,6,0,0">
+                <TextBlock x:Name="RefreshStatus" FontSize="12" Style="{StaticResource SecondaryText}"
+                           VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                 <Button x:Name="RefreshButton" Style="{StaticResource IconAction}" AccessKey="R" Click="OnRefresh"
                         ToolTipService.ToolTip="Refresh server list (Ctrl+R)"
-                        AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list">
+                        AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list, Ctrl+R">
                     <FontIcon x:Name="RefreshGlyph" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentRefresh}" FontSize="20" />
                 </Button>
                 <Button AccessKey="C" Click="OnConnect" AutomationProperties.Name="Connect to address…"
@@ -58,9 +60,19 @@
                 <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
                 <SelectorBarItem Text="Hosting" AccessKey="T" />
             </SelectorBar>
-            <TextBox x:Name="SearchBox" Grid.Column="1" PlaceholderText="Search servers, maps or mods"
-                     AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
-                     TextChanged="OnSearch" VerticalAlignment="Center" MaxLength="256" />
+            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" MaxWidth="300" HorizontalAlignment="Right"
+                            PlaceholderText="Search servers, maps or mods" VerticalAlignment="Center"
+                            AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
+                            TextChanged="OnSearch" QuerySubmitted="OnSearchSubmitted">
+                <AutoSuggestBox.QueryIcon>
+                    <FontIconSource FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
+                </AutoSuggestBox.QueryIcon>
+                <AutoSuggestBox.TextBoxStyle>
+                    <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                        <Setter Property="MaxLength" Value="256" />
+                    </Style>
+                </AutoSuggestBox.TextBoxStyle>
+            </AutoSuggestBox>
             <Button x:Name="FilterButton" Grid.Column="2" Content="Filters" AccessKey="F" VerticalAlignment="Center">
                 <Button.Flyout>
                     <Flyout Opening="OnFiltersOpening">
@@ -92,16 +104,18 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Grid ColumnSpacing="8" Padding="12,0,12,0">
+                <Grid ColumnSpacing="8" Padding="16,0,0,0">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="72" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="64" />
                         <ColumnDefinition Width="82" />
                         <ColumnDefinition Width="32" />
                     </Grid.ColumnDefinitions>
-                    <Button Content="Server" Style="{StaticResource ColumnHeading}" Tag="Name" Click="OnSort" />
-                    <Button Grid.Column="1" Content="Players" Style="{StaticResource ColumnHeading}" Tag="Players" Click="OnSort" />
-                    <Button Grid.Column="2" Content="Ping" Style="{StaticResource ColumnHeading}" Tag="Ping" Click="OnSort" />
+                    <TextBlock Text="Map" FontSize="12" VerticalAlignment="Center" Style="{StaticResource SecondaryText}" />
+                    <Button x:Name="SortName" Grid.Column="1" Content="Server" Style="{StaticResource ColumnHeading}" Tag="Name" Click="OnSort" />
+                    <Button x:Name="SortPlayers" Grid.Column="2" Content="Players" Style="{StaticResource ColumnHeading}" Tag="Players" Click="OnSort" />
+                    <Button x:Name="SortPing" Grid.Column="3" Content="Ping" Style="{StaticResource ColumnHeading}" Tag="Ping" Click="OnSort" />
                 </Grid>
                 <ListView x:Name="ServerList" Grid.Row="1" SelectionChanged="OnSelectionChanged"
                           AutomationProperties.Name="Servers">
@@ -145,18 +159,24 @@
                                             <FontIcon Grid.Column="1" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="12"
                                                       Visibility="{Binding Lock}" AutomationProperties.Name="Password required" />
                                         </Grid>
-                                        <TextBlock x:Name="RowMapMode" Text="{Binding MapMode}" FontSize="12"
-                                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
-                                                <TextBlock x:Name="RowEditionText" Text="{Binding Edition}" FontSize="12"
-                                                           VerticalAlignment="Center" />
-                                            </Border>
-                                            <Border Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="80">
-                                                <TextBlock Text="{Binding Server.Mod}" FontSize="12" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis" />
-                                            </Border>
-                                        </StackPanel>
+                                        <Grid ColumnSpacing="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="RowMapMode" Text="{Binding MapMode}" FontSize="12"
+                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
+                                                    <TextBlock x:Name="RowEditionText" Text="{Binding Edition}" FontSize="12"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
+                                                <Border Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="64">
+                                                    <TextBlock Text="{Binding Server.Mod}" FontSize="12" VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock x:Name="RowPlayers" Grid.Column="1" VerticalAlignment="Center" TextWrapping="NoWrap" />

@@ -8,8 +8,8 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
 {
     private readonly ServerAdmission admission = new();
     internal ServerScope Scope { get; set; } = scope;
-    internal ServerSort Sort { get; private set; } = ServerSort.Players;
-    internal bool Ascending { get; private set; }
+    internal ServerSort Sort { get; private set; } = ServerSort.Ping;
+    internal bool Ascending { get; private set; } = true;
     internal string Search { get; set; } = "";
     internal ServerFilters Filters => session.ServerPreferences.Filters;
     internal bool IsFavorite(string address) => session.Library.Favorites.Contains(address);
@@ -21,7 +21,7 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
 
     internal void SortBy(ServerSort sort)
     {
-        Ascending = Sort == sort ? !Ascending : sort != ServerSort.Players;
+        Ascending = Sort == sort ? !Ascending : sort != ServerSort.Ping;
         Sort = sort;
     }
 
@@ -51,8 +51,8 @@ internal sealed record ServerRow(GameServer Server)
 {
     public string Name => QuakeColors.Plain(Server.Name);
     public string Map => MapCatalog.DisplayName(Server.Map);
-    public string MapMode => Map + " · " + GameModes.Long(Server.GameType);
-    public string Edition => Server.IsCod2x ? "CoD2x" : ServerFacts.From(Server).VersionLabel;
+    public string MapMode => Map + " · " + (GameModes.Short(Server.GameType) is "SD" ? "S&D" : GameModes.Short(Server.GameType));
+    public string Edition => ServerFacts.From(Server).VersionLabel;
     public Microsoft.UI.Xaml.Visibility Lock => Views.PagePresentation.IsVisible(Server.PasswordRequired);
     public Microsoft.UI.Xaml.Visibility ModVisibility => Views.PagePresentation.IsVisible(Server.Mod.Length != 0);
     public string Players => Server.MaxPlayers > 0 ? $"{Server.PlayerCount}/{Server.MaxPlayers}" : "—";

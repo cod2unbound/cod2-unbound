@@ -39,6 +39,7 @@ public sealed partial class ServersPage : Page
         ActualThemeChanged += (_, _) => Render();
         Scopes.SelectedItem = Scopes.Items[(int)scope];
         ready = true;
+        RenderSort();
         Render(address);
     }
 
@@ -91,7 +92,7 @@ public sealed partial class ServersPage : Page
         // New server takes Alt+N while Hosting is active in the shared Servers view.
         RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility =
-            SearchBox.Visibility = RefreshStatus.Visibility = IsVisible(!showHosting);
+            SearchBox.Visibility = BrowserSubtitle.Visibility = IsVisible(!showHosting);
         HostingContent.Visibility = NewHost.Visibility = IsVisible(showHosting);
         if (showHosting)
         {
@@ -185,7 +186,7 @@ public sealed partial class ServersPage : Page
         return Task.CompletedTask;
     });
 
-    private void OnSearch(object sender, TextChangedEventArgs args)
+    private void OnSearch(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (!ready)
             return;
@@ -193,11 +194,26 @@ public sealed partial class ServersPage : Page
         Render();
     }
 
+    private void OnSearchSubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args) =>
+        sender.Focus(FocusState.Programmatic);
+
+    private void RenderSort()
+    {
+        foreach (var button in new[] { SortName, SortPlayers, SortPing })
+        {
+            string label = (string)button.Tag;
+            bool active = label == model.Sort.ToString();
+            button.Content = active ? IconLabel(model.Ascending ? "ChevronUp" : "ChevronDown", label, 12) : label;
+            AutomationProperties.SetName(button, active ? $"{label}, sorted {(model.Ascending ? "ascending" : "descending")}" : $"Sort by {label}");
+        }
+    }
+
     private void OnSort(object sender, RoutedEventArgs args)
     {
         if (sender is Button { Tag: string value } && Enum.TryParse<ServerSort>(value, out var sort))
         {
             model.SortBy(sort);
+            RenderSort();
             Render();
         }
     }
