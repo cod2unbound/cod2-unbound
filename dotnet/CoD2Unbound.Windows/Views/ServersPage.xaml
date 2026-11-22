@@ -60,7 +60,7 @@
                 <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
                 <SelectorBarItem Text="Hosting" AccessKey="T" />
             </SelectorBar>
-            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" MaxWidth="300" HorizontalAlignment="Right"
+            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" Width="300" HorizontalAlignment="Right"
                             PlaceholderText="Search servers, maps or mods" VerticalAlignment="Center"
                             AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                             TextChanged="OnSearch" QuerySubmitted="OnSearchSubmitted">

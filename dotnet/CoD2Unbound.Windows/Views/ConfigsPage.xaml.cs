@@ -43,7 +43,12 @@ public sealed partial class ConfigsPage : Page
         ShowStudio();
     }
 
-    internal void UpdateContrast() => RenderLoadouts();
+    internal void UpdateContrast()
+    {
+        foreach (var item in Loadouts.Items)
+            if (Loadouts.ContainerFromItem(item) is ListViewItem { ContentTemplateRoot: Grid row })
+                ApplyLoadoutRowTheme(row);
+    }
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
