@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
-using Color = global::Windows.UI.Color;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -59,16 +58,7 @@ public sealed partial class ConfigsPage : Page
     {
         var row = (Grid)sender;
         ApplyLoadoutRowTheme(row);
-        if (ContainingListItem(row) is not { } item)
-            return;
-        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => ApplyLoadoutRowTheme(row));
-        row.Unloaded += Unloaded;
-
-        void Unloaded(object sender, RoutedEventArgs args)
-        {
-            item.UnregisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, token);
-            row.Unloaded -= Unloaded;
-        }
+        TrackListSelection(row, _ => ApplyLoadoutRowTheme(row));
     }
 
     private void OnLoadoutRowThemeChanged(FrameworkElement sender, object args) => ApplyLoadoutRowTheme((Grid)sender);
@@ -82,10 +72,8 @@ public sealed partial class ConfigsPage : Page
         if (contrast)
         {
             bool selected = ContainingListItem(row)?.IsSelected == true;
-            var ink = (SolidColorBrush)ThemeBrush(selected ? "LauncherSelectionPillBrush" : "HeadingBrush", ActualTheme, true);
-            var window = (SolidColorBrush)ThemeBrush("PanelBrush", ActualTheme, true);
-            tile.Background = selected && ContrastRatio(ink.Color, window.Color) < 4.5
-                ? ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, true) : window;
+            var ink = ThemeBrush(selected ? "TextOnAccentFillColorPrimaryBrush" : "HeadingBrush", ActualTheme, true);
+            tile.Background = ThemeBrush(selected ? "AccentFillColorDefaultBrush" : "PanelBrush", ActualTheme, true);
             tile.BorderBrush = initial.Foreground = ink;
         }
         else
@@ -100,22 +88,6 @@ public sealed partial class ConfigsPage : Page
             check.ClearValue(IconElement.ForegroundProperty);
         else
             check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
-
-        static double ContrastRatio(Color ink, Color background)
-        {
-            double a = Luminance(ink) + 0.05;
-            double b = Luminance(background) + 0.05;
-            return Math.Max(a, b) / Math.Min(a, b);
-
-            static double Luminance(Color color) =>
-                0.2126 * Linear(color.R) + 0.7152 * Linear(color.G) + 0.0722 * Linear(color.B);
-
-            static double Linear(byte channel)
-            {
-                double srgb = channel / 255.0;
-                return srgb <= 0.04045 ? srgb / 12.92 : Math.Pow((srgb + 0.055) / 1.055, 2.4);
-            }
-        }
     }
 
     internal void OpenCheckup()

@@ -124,7 +124,12 @@ public sealed partial class ServersPage : Page
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
-    private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
+    private void OnServerRowLoaded(object sender, RoutedEventArgs args)
+    {
+        var row = (Grid)sender;
+        ApplyServerRow(row);
+        TrackListSelection(row, selected => ApplyServerNameBrush(row, selected));
+    }
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
 
     private void ApplyServerRow(Grid row)
@@ -136,6 +141,7 @@ public sealed partial class ServersPage : Page
         bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
         AddGameName(name, server.Name, ActualTheme, contrast);
+        ApplyServerNameBrush(row, ContainingListItem(row)?.IsSelected == true);
         var tag = (Border)row.FindName("RowEdition")!;
         tag.Style = StyleFor(server.IsCod2x ? "Cod2xTag" : "EditionTag");
         var tagText = (TextBlock)row.FindName("RowEditionText")!;
@@ -164,6 +170,16 @@ public sealed partial class ServersPage : Page
                 Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, shell.IsHighContrast) });
         SetFavorite((Button)row.FindName("RowFavorite")!, server);
         _ = previews.FillAsync((Image)row.FindName("RowArt")!, server.Map);
+    }
+
+    private void ApplyServerNameBrush(Grid row, bool selected)
+    {
+        if (row.FindName("RowName") is not TextBlock name)
+            return;
+        if (shell.IsHighContrast && selected)
+            name.Foreground = ThemeBrush("TextOnAccentFillColorPrimaryBrush", ActualTheme, true);
+        else
+            name.ClearValue(TextBlock.ForegroundProperty);
     }
 
     private void SetFavorite(Button button, GameServer server)

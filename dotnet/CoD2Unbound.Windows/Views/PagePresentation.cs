@@ -69,20 +69,22 @@ internal static class PagePresentation
         return (ListViewItem?)parent;
     }
 
-    internal static void TrackSelectionPill(Border pill)
+    internal static void TrackSelectionPill(Border pill) =>
+        TrackListSelection(pill, selected => pill.Visibility = IsVisible(selected));
+
+    internal static void TrackListSelection(FrameworkElement content, Action<bool> apply)
     {
-        if (ContainingListItem(pill) is not { } item)
+        if (ContainingListItem(content) is not { } item)
             return;
 
-        void Update() => pill.Visibility = IsVisible(item.IsSelected);
-        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => Update());
-        pill.Unloaded += Unloaded;
-        Update();
+        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => apply(item.IsSelected));
+        content.Unloaded += Unloaded;
+        apply(item.IsSelected);
 
         void Unloaded(object sender, RoutedEventArgs args)
         {
             item.UnregisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, token);
-            pill.Unloaded -= Unloaded;
+            content.Unloaded -= Unloaded;
         }
     }
 

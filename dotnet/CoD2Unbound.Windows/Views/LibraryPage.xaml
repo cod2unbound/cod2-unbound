@@ -88,6 +88,18 @@
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" TabNavigation="Once" AutomationProperties.Name="Files"
                           IsItemClickEnabled="True" ItemClick="OnOpenFile">
+                    <ListView.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Default">
+                                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="HighContrast">
+                                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -115,8 +127,8 @@
                                                Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 </Grid>
                                 <TextBlock Grid.Column="1" Text="{Binding Map}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{Binding Stamp}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="{Binding Stamp}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
                                 <Button Grid.Column="4" Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
                                         VerticalAlignment="Center" Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
