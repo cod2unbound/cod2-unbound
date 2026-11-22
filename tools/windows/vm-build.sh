@@ -4,6 +4,14 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 out="${COD2_WINDOWS_VM_OUTPUT:-$root/output/r05/winvm}"
+export_x64=0
+if [ "$#" -ne 0 ]; then
+    if [ "$#" -ne 1 ] || [ "$1" != --export-x64 ]; then
+        echo "Usage: $0 [--export-x64]" >&2
+        exit 2
+    fi
+    export_x64=1
+fi
 mkdir -p "$out"
 
 bounded() {
@@ -61,7 +69,7 @@ cleanup() {
             result=1
         fi
     fi
-    for file in "$scratch/source.zip" "$scratch/build.ps1" "$scratch/receipt"; do
+    for file in "$scratch/source.zip" "$scratch/build.ps1" "$scratch/receipt" "$scratch/launcher-win-x64.zip.partial"; do
         if [ -f "$file" ]; then
             rm "$file" || result=1
         fi
@@ -78,7 +86,10 @@ git -C "$root" archive --format=zip --output="$scratch/source.zip" "$revision" \
     dotnet launcher/Resources tests/launcher/fixtures/core-parity docs/brand/monogram.svg
 
 cat > "$scratch/build.ps1" <<'POWERSHELL'
-param([ValidateSet('core', 'shell')][string]$Phase)
+param(
+    [ValidateSet('core', 'shell')][string]$Phase,
+    [string]$ExportRevision
+)
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -144,6 +155,28 @@ try {
             }
             $files = @(Get-ChildItem -LiteralPath $output -Recurse -File)
             Write-Output "$rid publish contains $($files.Count) files and $(($files | Measure-Object Length -Sum).Sum) bytes."
+            if ($rid -eq 'win-x64' -and $ExportRevision) {
+                Set-Content -LiteralPath (Join-Path $output 'SOURCE_REVISION') -Value $ExportRevision -Encoding ascii
+                @($files + (Get-Item -LiteralPath (Join-Path $output 'SOURCE_REVISION'))) |
+                    Sort-Object FullName | ForEach-Object {
+                        $digest = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+                        $relative = $_.FullName.Substring($output.Length + 1).Replace('\', '/')
+                        "$digest  $relative"
+                    } | Set-Content -LiteralPath (Join-Path $output 'SHA256SUMS') -Encoding ascii
+                Add-Type -AssemblyName System.IO.Compression,System.IO.Compression.FileSystem
+                $bundle = Join-Path $work 'launcher-win-x64.zip'
+                $zip = [IO.Compression.ZipFile]::Open($bundle, [IO.Compression.ZipArchiveMode]::Create)
+                try {
+                    foreach ($file in Get-ChildItem -LiteralPath $output -Recurse -File) {
+                        $relative = $file.FullName.Substring($output.Length + 1).Replace('\', '/')
+                        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $relative)
+                    }
+                } finally {
+                    $zip.Dispose()
+                }
+                (Get-FileHash -LiteralPath $bundle -Algorithm SHA256).Hash.ToLowerInvariant() |
+                    Set-Content -LiteralPath "$bundle.sha256" -Encoding ascii
+            }
         }
     }
 } catch {
@@ -188,7 +221,11 @@ run_phase() {
     phase=$1
     seconds=$2
     check_disk
-    guest "$seconds" "& '$vmroot\build.ps1' -Phase '$phase'; exit \$LASTEXITCODE" > "$scratch/$phase.log" 2>&1 || :
+    export_arg=
+    if [ "$phase" = shell ] && [ "$export_x64" -eq 1 ]; then
+        export_arg="-ExportRevision '$revision'"
+    fi
+    guest "$seconds" "& '$vmroot\build.ps1' -Phase '$phase' $export_arg; exit \$LASTEXITCODE" > "$scratch/$phase.log" 2>&1 || :
     utm 20 file pull --hide cod2-win11 "$vmroot\downloads.csv" > "$scratch/downloads.csv" || :
     if ! utm 12 file pull --hide cod2-win11 "$vmroot\\$phase.ok" > "$scratch/receipt" ||
         [ "$(tr -d '\r\n' < "$scratch/receipt")" != "$phase" ]; then
@@ -199,3 +236,17 @@ run_phase() {
 
 run_phase core 660
 run_phase shell 900
+if [ "$export_x64" -eq 1 ]; then
+    bundle=launcher-win-x64.zip
+    check_disk
+    utm 900 file pull --hide cod2-win11 "$vmroot\\$bundle" > "$scratch/$bundle.partial"
+    utm 20 file pull --hide cod2-win11 "$vmroot\\$bundle.sha256" > "$scratch/$bundle.sha256"
+    expected=$(tr -d '\r\n' < "$scratch/$bundle.sha256")
+    actual=$(shasum -a 256 "$scratch/$bundle.partial" | awk '{ print $1 }')
+    if [ "$actual" != "$expected" ]; then
+        echo "Windows and Mac SHA-256 differ for $bundle." >&2
+        exit 1
+    fi
+    mv "$scratch/$bundle.partial" "$scratch/$bundle"
+    echo "Pass $scratch/$bundle to tools/windows/release.sh."
+fi
