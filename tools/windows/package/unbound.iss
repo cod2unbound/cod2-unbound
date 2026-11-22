@@ -233,8 +233,7 @@ function MoveInstall(const Source, Target: String): Boolean;
 begin
   Result := MoveFileExW(Source, Target, 8);
   if not Result then
-    Log(Format('MoveFileExW failed from "%s" to "%s" (Win32 error %d).',
-      [Source, Target, DLLGetLastError]));
+    Log(Format('MoveFileExW failed from "%s" to "%s" (Win32 error %d).', [Source, Target, DLLGetLastError]));
 end;
 
 function CopyInstall(const Source, Target: String): Boolean;
