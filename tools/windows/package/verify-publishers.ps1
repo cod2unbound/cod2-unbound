@@ -12,13 +12,15 @@ function Refuse([string]$reason) {
     exit 1
 }
 
-function Read-LeafUsages([Security.Cryptography.X509Certificates.X509Certificate2]$certificate) {
-    $extension = $certificate.Extensions |
-        Where-Object { $_ -is [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension] }
-    if ($null -eq $extension -or @($extension).Count -ne 1) { Refuse 'expected one leaf EKU extension' }
-    $usages = @($extension.EnhancedKeyUsages | ForEach-Object { $_.Value })
-    if ($codeSigning -notin $usages) { Refuse 'the certificate is missing the code signing EKU' }
-    return $usages
+function Read-LeafUsageHashes([Security.Cryptography.X509Certificates.X509Certificate2]$certificate) {
+    # Windows PowerShell's certificate API can narrow long OID arcs. Use the
+    # same managed DER decoder as the launcher and keep raw OIDs out of its output.
+    $encoded = [Convert]::ToBase64String($certificate.RawData)
+    $lines = @($encoded | & dotnet run --file "$PSScriptRoot\publisher-leaf-usages.cs" --disable-build-servers 2>&1)
+    if ($LASTEXITCODE -ne 0) { Refuse 'could not decode the leaf EKU with .NET SDK 10' }
+    $hashes = @($lines | Where-Object { $_ -cmatch '^EKU [0-9a-f]{64}$' } | ForEach-Object { $_.Substring(4) })
+    if ((Get-OidHash $codeSigning) -notin $hashes) { Refuse 'the certificate is missing the code signing EKU' }
+    return $hashes
 }
 
 function Get-OidHash([string]$oid) {
@@ -74,8 +76,8 @@ try {
             Refuse "Setup $number needs a valid embedded Authenticode signature"
         }
         $leafThumbprints += $signature.SignerCertificate.Thumbprint
-        $usages = Read-LeafUsages $signature.SignerCertificate
-        $matchesForSetup = @($oids | Where-Object { $_ -in $usages })
+        $usageHashes = Read-LeafUsageHashes $signature.SignerCertificate
+        $matchesForSetup = @($oids | Where-Object { (Get-OidHash $_) -in $usageHashes })
         if (!$matchesForSetup) { Refuse "Setup $number leaf contains none of the configured OIDs" }
         foreach ($oid in $matchesForSetup) {
             "Setup $number embedded signer leaf contains OID SHA-256 $(Get-OidHash $oid)"
@@ -93,10 +95,10 @@ try {
         $reference = [Security.Cryptography.X509Certificates.X509Certificate2]::new($path)
         try {
             if ($reference.Thumbprint -in $leafThumbprints) { Refuse "reference $number is a Setup signer certificate" }
-            $usages = Read-LeafUsages $reference
+            $usageHashes = Read-LeafUsageHashes $reference
             foreach ($oid in $oids) {
                 $hash = Get-OidHash $oid
-                if ($oid -in $usages) { Refuse "reference $number also contains OID SHA-256 $hash" }
+                if ($hash -in $usageHashes) { Refuse "reference $number also contains OID SHA-256 $hash" }
                 "Reference $number does not contain OID SHA-256 $hash"
             }
         } finally { $reference.Dispose() }

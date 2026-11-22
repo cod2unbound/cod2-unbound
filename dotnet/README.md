@@ -191,9 +191,9 @@ this signing identity. Sign fixtures and prereleases with a separate identity.
 
 Keep the exact `UpdatePublisherRules` value used for the public publish in an
 untracked file outside the checkout. After signing and before distributing
-Setup, run the publisher check on Windows against the exact signed release
-asset. Use a public certificate from a different publisher on the same signing
-service as the reference so the check can catch shared EKUs.
+Setup, run the publisher check on Windows with .NET SDK 10 on PATH and
+point it at the exact signed release asset. Use a public certificate from a
+different publisher on the same signing service to check for shared EKUs.
 
 ```powershell
 powershell.exe -NoProfile -File tools/windows/package/verify-publishers.ps1 `
