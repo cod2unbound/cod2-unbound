@@ -25,6 +25,7 @@
     <x:String x:Key="FluentChevronUp">&#xF2B5;</x:String>
     <x:String x:Key="FluentChevronRight">&#xF2AF;</x:String>
     <x:String x:Key="FluentPeopleCommunity">&#xF5B0;</x:String>
+    <x:String x:Key="FluentPerson">&#xF5BD;</x:String>
     <x:String x:Key="FluentShieldCheckmark">&#xEAC8;</x:String>
     <x:String x:Key="FluentArrowDownload">&#xF150;</x:String>
     <x:String x:Key="FluentPlayOutline">&#xE990;</x:String>
