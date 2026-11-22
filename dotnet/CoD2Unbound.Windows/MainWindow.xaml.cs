@@ -58,6 +58,10 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += OnClosing;
         Closed += (_, _) =>
         {
+            CompositionTarget.Rendered -= OnFirstRendered;
+#if UPDATE_FIXTURES
+            CompositionTarget.Rendered -= OnFirstContentRendered;
+#endif
             gameWatcher.Stop();
             session.Reports.CancelCrash();
             session.Updates.Changed -= OnUpdateChanged;
@@ -69,7 +73,7 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs args)
+    private void OnLoaded(object sender, RoutedEventArgs args)
     {
         if (loaded)
             return;
@@ -78,6 +82,20 @@ public sealed partial class MainWindow : Window
         ResizeForDisplay(startup: true);
         session.Reports.Facts.Window = WinRT.Interop.WindowNative.GetWindowHandle(this);
         UpdateCaptionColors();
+        CompositionTarget.Rendered += OnFirstRendered;
+    }
+
+    private void OnFirstRendered(object? sender, RenderedEventArgs args)
+    {
+        CompositionTarget.Rendered -= OnFirstRendered;
+        StartupTrace.Mark("first XAML frame");
+        DispatcherQueue.TryEnqueue(InitializeFirstPage);
+    }
+
+    private async void InitializeFirstPage()
+    {
+        if (!Root.IsLoaded)
+            return;
         await RunAsync(async () =>
         {
             await session.InitializeAsync();
@@ -86,9 +104,20 @@ public sealed partial class MainWindow : Window
             await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
             initialized = true;
             StartupTrace.Mark("first page ready");
+#if UPDATE_FIXTURES
+            CompositionTarget.Rendered += OnFirstContentRendered;
+#endif
             gameWatcher.Start();
         });
     }
+
+#if UPDATE_FIXTURES
+    private void OnFirstContentRendered(object? sender, RenderedEventArgs args)
+    {
+        CompositionTarget.Rendered -= OnFirstContentRendered;
+        StartupTrace.Mark("first content frame");
+    }
+#endif
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs args)
     {

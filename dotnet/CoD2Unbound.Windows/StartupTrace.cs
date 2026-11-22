@@ -14,7 +14,13 @@ internal static class StartupTrace
         try
         {
             using var directory = new Platform.WindowsFiles.DirectoryHandles(home);
-            File.AppendAllText(Path.Combine(home, "startup-timing.log"), $"{DateTimeOffset.UtcNow:O} {Environment.ProcessId} {step}\n");
+            string line = $"{DateTimeOffset.UtcNow:O} {Environment.ProcessId} {step}\n";
+            if (step == "managed entry")
+            {
+                using var process = Process.GetCurrentProcess();
+                line = $"{process.StartTime.ToUniversalTime():O} {Environment.ProcessId} process start\n" + line;
+            }
+            File.AppendAllText(Path.Combine(home, "startup-timing.log"), line);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
 #endif
