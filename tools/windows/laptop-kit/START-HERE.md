@@ -2,6 +2,12 @@
 
 This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays version 0.4.0. The 0.3.9 test installer gives Setup an older version to upgrade.
 
+## What ran in the Windows VM
+
+Windows PowerShell 5.1 ran the file and key checks, both loopback servers and the saved matches on a Windows 11 ARM64 VM with x64 emulation and a 640 × 480 software display. The saved matches passed for both editions, including the four-player checks in Part B. Original 1.3 loaded Toujane and saved pictures in both graphics modes. CoD2x stopped before opening a game window because the VM supplied no baseboard information. The laptop still needs both CoD2x runs and the checks for display changes, mouse, keyboard and sound.
+
+VM-only Setup builds passed current-user install, upgrade blocking, upgrade, repair and uninstall. Installed Original 1.3 switched graphics modes after returning to the menu. Run the kit's shipped Setup on the Windows 11 x64 laptop and record any security warning. The VM reported an untrusted root for the test signature.
+
 ## Part A — The essential sitting
 
 Allow **45–60 minutes**, including **about 15–20 minutes** for the automatic file, key and server checks. This is an estimate for a laptop with the game already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
@@ -32,9 +38,9 @@ Allow about 20–25 minutes for the four portable runs and 10–15 minutes for S
    **Expect** You can play Toujane, take both pictures and return to PowerShell.
 7. [ ] **CoD2x · DirectX 7 mode.** Follow the same play instructions.\
    **Expect** You can play Toujane, take both pictures and return to PowerShell.
-8. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only**, keep the default folder, and type `quit` in the CoD2 server console when asked.\
-   **Expect** Setup installs without asking for administrator approval. The first upgrade attempt leaves the running server alone. After it closes, Setup upgrades and restores the test file the script removes.
-9. [ ] **Play the installed games.** Open Toujane in each installed edition. In one, switch to DirectX 7 mode with `/set r_rendererPreference dx7` then `/vid_restart`. Quit each game.\
+8. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only** and keep the default folder. Leave the test server open while the kit checks the blocked upgrade.\
+   **Expect** Setup installs without asking for administrator approval. The first upgrade attempt leaves the running server alone. The kit then stops that server, upgrades Setup and restores the test file it removes.
+9. [ ] **Play the installed games.** Open Toujane in each installed edition. In one, use `/disconnect` to return to the menu, then enter `/set r_rendererPreference dx7` and `/vid_restart`. Open Toujane again and quit each game.\
    **Expect** Both installed games find your game files, and the picture returns after changing graphics mode.
 10. [ ] **Uninstall.** Confirm the uninstall prompt, then look for CoD2 Unbound in **Start** and **Installed apps**.\
     **Expect** Its entries are gone. The script confirms uninstall kept the test saves and key, then removes its temporary files and test key.
@@ -45,7 +51,7 @@ Allow about 20–25 minutes for the four portable runs and 10–15 minutes for S
 
 At the menu, open the game console with the key above Tab and enter `/toggleconsole; screenshotJpeg kit-menu`. Open it again, enter `/devmap mp_toujane`, select **Click to Continue** on the briefing, then pick a team and weapon, and play briefly. Press **F12** while playing to save the second picture. The briefing should be upright and the sky, buildings, weapon and HUD should look right. Check that the graphics options show the mode from the prompt. Use `/quit` to return to PowerShell.
 
-On each Direct3D 9 run, look around quickly, move and release the movement keys, and listen to footsteps and a shot. Aim and movement should feel steady and the sounds should be clear. Alt+Tab to the desktop and back, then apply a different game resolution in the graphics options. The desktop should get its pointer back, and the picture and controls should return when you switch back or apply the resolution.
+On each Direct3D 9 run, look around quickly, move and release the movement keys, and listen to footsteps and a shot. Aim and movement should feel steady and the sounds should be clear. Alt+Tab to the desktop and back. Use `/disconnect` to return to the menu before applying a different resolution in the graphics options. Reopen Toujane. The desktop should get its pointer back, and the picture and controls should return when you switch back or apply the resolution.
 
 ### Pack the results
 
@@ -63,7 +69,7 @@ Each group can be done another day. Record the screen resolution and scaling, ke
 
 - **Mouse.** Try Original 1.3 with both mouse options on the script menu and CoD2x with `m_rinput` set to 0, 1 and 2. Move between two marks 10 cm apart slowly and quickly. Try changes to Windows pointer speed and **Enhance pointer precision**. Original’s regular mouse should follow Windows settings, and the direct mouse modes should stay consistent. For CoD2x modes 1 and 2, note `m_rinput_hz` and `m_rinput_hz_max` while moving and again while stopped. Try menus in windowed and fullscreen play, reopen a menu to check pointer position, and try both side buttons and slow and fast wheel turns in both directions if your mouse has them. Note missed releases, extra scroll steps, jumps or drift.
 - **Keys and focus.** Try the console key, arrows, **Num Lock**, keypad Enter, left and right modifiers, Backspace held down, and typed and pasted chat. Check saved bindings with `/bindlist`. Switch away while holding a movement key and release it on the desktop. Try the Windows key and Alt+Enter with `developer` set to 0 and 1. Movement should stop when released and saved keys should work after you return.
-- **Display recovery.** Change anti-aliasing to an available value, switch between windowed and fullscreen play, Alt+Tab twice and minimise and restore. On a loaded map switch graphics modes with `/set r_rendererPreference dx7` and `/vid_restart`, then repeat with `dx9`. **F10** saves an extra picture. Move the window and restart using the same game menu choice to check its restored position. Note `vid_xpos` and `vid_ypos`. Try resizing CoD2x and running in a window the size of the desktop. Watch for misplaced clicks, black screens and a jump on the first mouse movement after returning. For the Task Manager comparison, note CPU usage over ten seconds active and minimised with the same `r_swapInterval` in both games. Repeat with `com_maxfps 85` and `com_maxfps 125`, then restore both settings.
+- **Display recovery.** Change anti-aliasing to an available value, switch between windowed and fullscreen play, Alt+Tab twice and minimise and restore. Use `/disconnect` to return to the menu before applying graphics changes or running `/vid_restart`. Switch graphics modes with `/set r_rendererPreference dx7` and `/vid_restart`, then reopen the map and repeat with `dx9`. **F10** saves an extra picture. Move the window and restart using the same game menu choice to check its restored position. Note `vid_xpos` and `vid_ypos`. Try resizing CoD2x and running in a window the size of the desktop. Watch for misplaced clicks, black screens and a jump on the first mouse movement after returning. For the Task Manager comparison, note CPU usage over ten seconds active and minimised with the same `r_swapInterval` in both games. Repeat with `com_maxfps 85` and `com_maxfps 125`, then restore both settings.
 - **Sound devices.** Listen to menu music, footsteps and gunfire from the front, side and rear, at two distances and in a room where sounds trail off. In Original, try `snd_khz 44` and `22`, and `snd_stereo 1` and `0` on separate starts. Switch between speakers and a headset if available, unplug the headset, then try starting with no playback device and reconnecting it before `/snd_restart`. Note whether sound returns, how long it takes and whether the game stays usable.
 - **Saved matches with four players.** Accept the script’s offer when you leave the game menu. Both servers should finish the saved movement, weapon and objective cases. This part takes about 10–20 minutes on its own.
 

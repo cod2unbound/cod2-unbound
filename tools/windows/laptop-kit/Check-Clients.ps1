@@ -32,7 +32,7 @@ function Invoke-ClientCheck {
         Write-Host 'Open the console with the key above Tab and enter /toggleconsole; screenshotJpeg kit-menu'
         Write-Host 'Reopen the console, enter /devmap mp_toujane, select Click to Continue, then pick a team and weapon. Play briefly and press F12.'
         if ($Renderer -eq 'dx9') {
-            Write-Host 'Try the mouse, keyboard and sound. Alt+Tab out and back, then change the game resolution.'
+            Write-Host 'Try the mouse, keyboard and sound. Alt+Tab out and back. Use /disconnect to return to the menu before changing the game resolution.'
         }
     }
     $proc = Start-KitProcess (Get-Binary $Edition -Root $BinaryRoot) $launchArgs $entry.Folder
