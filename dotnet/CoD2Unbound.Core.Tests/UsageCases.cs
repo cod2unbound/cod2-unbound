@@ -250,7 +250,15 @@ internal static partial class Program
             Equal(false, hostile.Any(value => wire.Contains(value, StringComparison.Ordinal)));
             Equal(false, wire.Contains("$geoip_disable", StringComparison.Ordinal));
             Equal(false, wire.Contains("\"$ip\"", StringComparison.Ordinal));
-            Equal(preview, received.Single(item => Name(item) == "server joined").GetRawText());
+            using var sample = JsonDocument.Parse(preview);
+            var joined = received.Single(item => Name(item) == "server joined");
+            Equal(true, JsonElement.DeepEquals(sample.RootElement, joined));
+            Equal(true, preview.StartsWith("{\n  \"distinct_id\": ", StringComparison.Ordinal));
+            Equal(true, preview.Contains("\n    \"$lib\": \"cod2unbound-launcher\",\n", StringComparison.Ordinal));
+            Equal(true, sample.RootElement.EnumerateObject().Select(field => field.Name)
+                .SequenceEqual(new[] { "distinct_id", "event", "properties", "timestamp", "uuid" }));
+            Equal(true, Props(sample.RootElement).EnumerateObject().Select(field => field.Name)
+                .SequenceEqual(Props(joined).EnumerateObject().Select(field => field.Name).Order(StringComparer.Ordinal)));
             foreach (var item in received)
             {
                 var facts = Props(item);
@@ -267,14 +275,44 @@ internal static partial class Program
             foreach (var model in new[] { "", "System Product Name", "To Be Filled By O.E.M.", "Default string", "System Version", "Not Specified" })
                 Equal("no model given", UsageFacts.Model("ASUS", model));
             Equal("Lenovo ThinkPad T14", UsageFacts.Model("Lenovo", "ThinkPad T14"));
-            Equal("unknown", UsageFacts.Model("Dell", "PrivateHandle 666", "PrivateHandle"));
-            Equal("unknown", UsageFacts.Model("Dell", "AABBCCDDEEFF"));
+            Equal("no model given", UsageFacts.Model("Dell", "PrivateHandle 666", "PrivateHandle"));
+            Equal("no model given", UsageFacts.Model("Dell", "AABBCCDDEEFF"));
             Equal("AMD Ryzen 7 7800X3D", UsageFacts.SafeProcessor("  AMD Ryzen 7 7800X3D  "));
             Equal("unknown", UsageFacts.SafeProcessor("Intel(R) Core PrivateHandle 5", "PrivateHandle"));
             Equal("unknown", UsageFacts.SafeWindows("10.0.26100 Pro"));
             Equal(new Uri("http://127.0.0.1:9/batch/"), LoopbackUsage.Address);
             foreach (var address in new[] { "https://example.invalid", "http://127.0.0.1:9/?key=1", "http://u@127.0.0.1:9", "http://localhost:9" })
                 Equal<UsageEndpoint?>(null, UsageEndpoint.Create("phc_fixture", address));
+        });
+        Check("usage accepts Windows hardware names and rejects private identifiers", () =>
+        {
+            foreach (string name in new[]
+            {
+                "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+                "AMD Ryzen 7 7800X3D 8-Core Processor",
+                "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Oryon(TM) CPU",
+                "13th Gen Intel(R) Core(TM) i5-13400F"
+            })
+                Equal(name, UsageFacts.SafeProcessor("  " + name + "  "));
+            foreach ((string maker, string model) in new[]
+            {
+                ("LENOVO", "21HM"), ("Dell Inc.", "XPS 15 9530"), ("ASUS", "ROG Strix G16"),
+                ("Micro-Star International Co., Ltd.", "MS-7D25")
+            })
+            {
+                Equal(maker + " " + model, UsageFacts.Model(maker, model));
+                Equal(maker + " " + model, UsageFacts.SafeModel(maker + " " + model));
+            }
+            Equal("no model given", UsageFacts.Model(null, null));
+            Equal("no model given", UsageFacts.Model("QEMU", "QEMU Virtual Machine"));
+            Equal("unknown", UsageFacts.SafeProcessor("virt-10.0"));
+            Equal("no model given", UsageFacts.Model("Dell", @"C:\Users\player\XPS15"));
+            Equal("no model given", UsageFacts.Model("Dell", "PF3CK8HL"));
+            Equal("no model given", UsageFacts.Model("Dell", "XPS 15 PF3CK8HL", "PF3CK8HL"));
+            Equal("no model given", UsageFacts.SafeModel("Dell PC 1234567891011"));
+            Equal("unknown", UsageFacts.SafeProcessor(@"Intel Core i7 C:\Users\player"));
+            Equal("unknown", UsageFacts.SafeProcessor("AMD Ryzen 7 player", "player"));
+            Equal("unknown", UsageFacts.SafeProcessor("AMD Ryzen 7 PF3CK8HL", "PF3CK8HL"));
         });
         Check("legacy usage preference and both explicit answers survive reset", () =>
         {

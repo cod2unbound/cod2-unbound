@@ -225,42 +225,43 @@ public sealed record UsageFacts(string App, string Windows, string PcModel, stri
     int DisplayHeight, int DisplayHz, string Language)
 {
     private const string Unknown = "unknown";
+    private const string ModelUnavailable = "no model given";
+    private const string Manufacturer = @"(?:Acer(?: Inc\.)?|Alienware|Apple(?: Inc\.)?|ASUS(?:TEK COMPUTER INC\.)?|ASRock|Dell(?: Inc\.)?|Fujitsu|Framework|Gigabyte(?: Technology Co\., Ltd\.)?|Google|HP|Hewlett[- ]Packard|Huawei|Intel(?: Corporation)?|Lenovo|LG|MEDION|Micro-Star(?: International Co\., Ltd\.)?|Microsoft(?: Corporation)?|MINISFORUM|MSI|Panasonic|Parallels|QEMU|Razer|Samsung|Sony(?: Corporation)?|Toshiba|VMware(?:, Inc\.)?)";
     private static readonly HashSet<string> NoModel = new(StringComparer.OrdinalIgnoreCase)
     {
         "", "System Product Name", "To Be Filled By O.E.M.", "To Be Filled By OEM", "Default string", "System Version",
         "System Manufacturer", "System Name", "Not Applicable", "Not Specified", "Not Available", "OEM", "None", "Unknown", "N/A",
-        "All Series", "Type1ProductConfigId", "Product Name", "SKU", "Base Board Product Name"
+        "All Series", "Type1ProductConfigId", "Product Name", "SKU", "Base Board Product Name", "QEMU Virtual Machine"
     };
 
     public static string Model(string? maker, string? model, params string[] privateValues)
     {
         string product = model?.Trim() ?? "";
         string manufacturer = maker?.Trim() ?? "";
-        if (NoModel.Contains(product))
-            return "no model given";
-        if (NoModel.Contains(manufacturer))
-            return Unknown;
+        if (NoModel.Contains(product) || !Regex.IsMatch(manufacturer, @"\A" + Manufacturer + @"\z",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase))
+            return ModelUnavailable;
         return SafeModel(manufacturer + " " + product, privateValues);
     }
 
-    public static string SafeModel(string? value, params string[] privateValues) => value == "no model given" ? value :
-        Text(value, @"\A(?:Acer|Alienware|Apple|ASUS(?:TEK)?|ASRock|Dell|Fujitsu|Framework|Gigabyte|Google|HP|Hewlett[- ]Packard|Huawei|Intel|Lenovo|LG|MEDION|Micro-Star|Microsoft|MINISFORUM|MSI|Panasonic|Parallels|QEMU|Razer|Samsung|Sony|Toshiba|VMware)[A-Za-z. ]* [A-Z0-9][A-Z0-9 ().-]*\z",
-            privateValues);
+    public static string SafeModel(string? value, params string[] privateValues) =>
+        Text(value, @"\A" + Manufacturer + @" (?:MS-[A-Z0-9]{4}|[A-Z0-9]{2,6}|[A-Z0-9][A-Z0-9().-]* [A-Z0-9][A-Z0-9 ().-]*)\z",
+            ModelUnavailable, privateValues);
 
     public static string SafeProcessor(string? value, params string[] privateValues) =>
-        Text(value?.Trim(), @"\A(?:Intel(?:\(R\))? (?:Core|Xeon|Pentium|Celeron|Processor|Atom)|AMD (?:Ryzen|EPYC|Athlon|Phenom|FX|A[0-9]+)|Qualcomm(?:\(R\))? (?:Snapdragon|Oryon)|Snapdragon|Apple M[0-9])[A-Z0-9 ().+@-]*\z",
-            privateValues);
+        Text(value?.Trim(), @"\A(?:(?:[0-9]{1,2}(?:st|nd|rd|th) Gen )?Intel(?:\(R\))? (?:Core|Xeon|Pentium|Celeron|Processor|Atom)|AMD (?:Ryzen|EPYC|Athlon|Phenom|FX|A[0-9]+)|Qualcomm(?:\(R\))? (?:Snapdragon|Oryon)|Snapdragon|Apple M[0-9])[A-Z0-9 ().+@-]*\z",
+            Unknown, privateValues);
 
     public static string SafeWindows(string? value) => value is { Length: <= 21 } &&
         Regex.IsMatch(value, @"\A[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,8}\z", RegexOptions.CultureInvariant) ? value : Unknown;
 
-    private static string Text(string? value, string pattern, string[] privateValues) =>
+    private static string Text(string? value, string pattern, string fallback, string[] privateValues) =>
         value is { Length: <= 64 } && Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase) &&
         value.Any(char.IsAsciiDigit) && !CrashReporting.ContainsKey(value) &&
-        !Regex.IsMatch(value, @"[a-f0-9]{12,}|(?:[a-f0-9]{2}-){5}[a-f0-9]{2}|(?:^| )S-[0-9]-|(?:[0-9]{1,3}\.){3}[0-9]{1,3}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
+        !Regex.IsMatch(value, @"[a-f0-9]{12,}|[0-9]{9,}|(?:[a-f0-9]{2}-){5}[a-f0-9]{2}|(?:^| )S-[0-9]-|(?:[0-9]{1,3}\.){3}[0-9]{1,3}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
         !privateValues.Any(secret => !string.IsNullOrWhiteSpace(secret) &&
             Regex.IsMatch(value, @"(?<![A-Za-z0-9])" + Regex.Escape(secret) + @"(?![A-Za-z0-9])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-            ? value : Unknown;
+            ? value : fallback;
 
     internal SortedDictionary<string, object> Properties() => new(StringComparer.Ordinal)
     {

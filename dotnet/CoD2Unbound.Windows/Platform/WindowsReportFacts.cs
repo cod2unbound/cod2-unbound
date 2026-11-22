@@ -27,8 +27,8 @@ internal sealed class WindowsReportFacts(string version)
 
     private static (string Model, string Processor) ReadMachine()
     {
-        var (maker, model) = FirmwareModel();
-        string[] privateNames = PrivateNames();
+        var (maker, model, serial) = FirmwareModel();
+        string[] privateNames = [.. PrivateNames(), serial?.Trim() ?? ""];
         string? processor = null;
         try
         {
@@ -39,15 +39,15 @@ internal sealed class WindowsReportFacts(string version)
         return (UsageFacts.Model(maker, model, privateNames), UsageFacts.SafeProcessor(processor, privateNames));
     }
 
-    private static (string? Maker, string? Model) FirmwareModel()
+    private static (string? Maker, string? Model, string? Serial) FirmwareModel()
     {
         const uint rawSmbios = 0x52534D42;
         uint size = GetSystemFirmwareTable(rawSmbios, 0, null, 0);
         if (size is < 8 or > 1024 * 1024)
-            return (null, null);
+            return default;
         var data = new byte[size];
         if (GetSystemFirmwareTable(rawSmbios, 0, data, size) != size)
-            return (null, null);
+            return default;
         for (int start = 8; start + 4 < data.Length;)
         {
             int length = data[start + 1], end = start + length;
@@ -58,20 +58,20 @@ internal sealed class WindowsReportFacts(string version)
             {
                 int next = Array.IndexOf(data, (byte)0, end);
                 if (next < 0 || next == data.Length - 1)
-                    return (null, null);
+                    return default;
                 if (data[start] == 1)
                     strings.Add(Encoding.UTF8.GetString(data, end, Math.Min(next - end, 65)));
                 end = next + (data[next + 1] == 0 ? 0 : 1);
             }
             if (data[start] == 1 && length >= 6)
-                return (Read(data[start + 4]), Read(data[start + 5]));
+                return (Read(data[start + 4]), Read(data[start + 5]), length >= 8 ? Read(data[start + 7]) : null);
             if (data[start] == 127)
                 break;
             start = end + 2;
 
             string? Read(int index) => index > 0 && index <= strings.Count ? strings[index - 1] : null;
         }
-        return (null, null);
+        return default;
     }
 
     private static string Language()

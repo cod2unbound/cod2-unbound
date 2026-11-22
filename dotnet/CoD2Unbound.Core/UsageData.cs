@@ -76,15 +76,19 @@ public sealed class PrivateReportTransport : IDisposable
 
 internal sealed record UsageOccurrence(Guid Id, long Minute, UsageEvent Event, UsageFacts Facts)
 {
-    internal static readonly JsonWriterOptions WriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    internal static readonly JsonWriterOptions WriterOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        NewLine = "\n"
+    };
 
-    internal byte[]? Encode(Guid install)
+    internal byte[]? Encode(Guid install, bool indented = false)
     {
         var fields = Facts.Properties();
         if (Event.AddProperties(fields) is not { } name || Minute is < 0 or > 4_223_371_679)
             return null;
         using var buffer = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(buffer, WriterOptions))
+        using (var writer = new Utf8JsonWriter(buffer, WriterOptions with { Indented = indented }))
         {
             writer.WriteStartObject();
             writer.WriteString("distinct_id", install);
@@ -191,7 +195,7 @@ public sealed partial class UsageData
     }
 
     public string? Preview() => Available ? Encoding.UTF8.GetString(new UsageOccurrence(newEventId(), Minute,
-        UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x), facts()).Encode(InstallNumber ?? Guid.Empty)!) : null;
+        UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x), facts()).Encode(InstallNumber ?? Guid.Empty, indented: true)!) : null;
 
     public async Task<bool> SetConsentAsync(UsageConsent choice, UsageSource source, Func<UsageConsent, Task> persist)
     {
