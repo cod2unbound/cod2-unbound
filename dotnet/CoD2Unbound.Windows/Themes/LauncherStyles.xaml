@@ -209,8 +209,12 @@
         <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
     </Style>
-    <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource Keycap}">
+    <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
+    </Style>
+    <Style x:Key="CardDivider" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SeparatorBrush}" />
     </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />

@@ -40,11 +40,10 @@
                                 <RowDefinition Height="112.5" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Border Style="{StaticResource MediaTile}">
-                                <Grid>
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentImage}" FontSize="24" Foreground="{ThemeResource TertiaryBrush}" />
-                                    <Image Stretch="UniformToFill" Loaded="OnScreenshotLoaded" DataContextChanged="OnScreenshotChanged"/>
-                                </Grid>
+                            <Border Style="{StaticResource MediaTile}" Loaded="OnScreenshotLoaded"
+                                    DataContextChanged="OnScreenshotChanged">
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentImage}"
+                                          FontSize="24" Foreground="{ThemeResource TertiaryBrush}" />
                             </Border>
                             <Grid Grid.Row="1" ColumnSpacing="4">
                                 <Grid.ColumnDefinitions>

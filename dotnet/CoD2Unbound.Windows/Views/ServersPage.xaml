@@ -65,7 +65,7 @@
                             AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                             TextChanged="OnSearch" QuerySubmitted="OnSearchSubmitted">
                 <AutoSuggestBox.QueryIcon>
-                    <FontIconSource FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
+                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
                 </AutoSuggestBox.QueryIcon>
                 <AutoSuggestBox.TextBoxStyle>
                     <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">

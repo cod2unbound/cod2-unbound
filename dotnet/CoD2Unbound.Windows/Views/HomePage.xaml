@@ -52,8 +52,18 @@
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
                     <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
                               AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
-                    <ComboBox x:Name="DisplayChoice" AutomationProperties.Name="Display mode"
-                              AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged" />
+                    <DropDownButton x:Name="DisplayChoice" AutomationProperties.Name="Display mode" AccessKey="D" MinWidth="128">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <RadioMenuFlyoutItem x:Name="BorderlessMode" Text="Borderless" GroupName="DisplayMode"
+                                                     Tag="borderless" Click="OnDisplayChanged" />
+                                <RadioMenuFlyoutItem x:Name="ExclusiveMode" Text="Exclusive fullscreen" GroupName="DisplayMode"
+                                                     Tag="exclusive" Click="OnDisplayChanged" />
+                                <RadioMenuFlyoutItem x:Name="WindowMode" Text="Window" GroupName="DisplayMode"
+                                                     Tag="windowed" Click="OnDisplayChanged" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
                 </StackPanel>
 
                 <Grid x:Name="Cards" Grid.Row="2" ColumnSpacing="12" RowSpacing="12">

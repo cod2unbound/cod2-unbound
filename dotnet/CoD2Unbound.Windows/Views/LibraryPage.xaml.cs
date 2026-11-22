@@ -3,6 +3,7 @@ using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -72,8 +73,8 @@ public sealed partial class LibraryPage : Page
         Empty.Content = EmptyState(icon, heading, detail);
     }
 
-    private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
-    private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
+    private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Border)sender);
+    private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Border)sender);
     private void OnDemoArtLoaded(object sender, RoutedEventArgs args) => ShowDemoArt((Image)sender);
     private void OnDemoArtChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ShowDemoArt((Image)sender);
 
@@ -88,12 +89,14 @@ public sealed partial class LibraryPage : Page
         }
     }
 
-    private async Task ShowScreenshotAsync(Image image)
+    private async Task ShowScreenshotAsync(Border tile)
     {
-        if (image.DataContext is not MediaRow row || ReferenceEquals(image.Tag, row))
+        if (tile.DataContext is not MediaRow row || ReferenceEquals(tile.Tag, row))
             return;
-        image.Tag = row;
-        image.Source = null;
+        tile.Tag = row;
+        tile.ClearValue(Border.BackgroundProperty);
+        var placeholder = (FontIcon)tile.Child;
+        placeholder.Visibility = Visibility.Visible;
         if (Path.GetExtension(row.Name).Equals(".tga", StringComparison.OrdinalIgnoreCase))
             return;
         try
@@ -102,8 +105,11 @@ public sealed partial class LibraryPage : Page
             using var source = input.AsRandomAccessStream();
             var bitmap = new BitmapImage { DecodePixelWidth = 400 };
             await bitmap.SetSourceAsync(source);
-            if (ReferenceEquals(image.Tag, row))
-                image.Source = bitmap;
+            if (ReferenceEquals(tile.Tag, row))
+            {
+                tile.Background = new ImageBrush { ImageSource = bitmap, Stretch = Stretch.UniformToFill };
+                placeholder.Visibility = Visibility.Collapsed;
+            }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {

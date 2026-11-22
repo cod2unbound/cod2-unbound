@@ -167,7 +167,8 @@ public sealed partial class HostingPage : Page
         var players = new NumberBox { Header = "Player slots", Minimum = 2, Maximum = 64, Value = server.Players,
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
         var port = new NumberBox { Minimum = 1025, Maximum = 65535, Value = server.Port,
-            TextBoxStyle = StyleFor("MonoField") };
+            FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CourierPrime"],
+            Padding = new Thickness(10, 7, 10, 3) };
         var portLabel = new TextBlock { Text = "Port" };
         AutomationProperties.SetLabeledBy(port, portLabel);
         var portField = new StackPanel { Spacing = 4, Children = { portLabel, port } };

@@ -19,7 +19,6 @@ public sealed partial class HomePage : Page
     private readonly HomeViewModel model;
     private readonly MapPreviews previews;
     private readonly List<Button> recentButtons = [];
-    private bool settingDisplay = true;
     private bool settingLoadout = true;
     private (double Low, double High)? artworkLuminance;
 
@@ -61,16 +60,7 @@ public sealed partial class HomePage : Page
             loadouts.First(choice => Equals(choice.Tag, active.Id));
         LoadoutChoice.Visibility = IsVisible(loadouts.Count > 0);
         settingLoadout = false;
-        settingDisplay = true;
-        string prefix = loadouts.Count == 0 ? resolution + " · " : "";
-        DisplayChoice.ItemsSource = new[]
-        {
-            new ComboBoxItem { Content = prefix + "Borderless", Tag = "borderless" },
-            new ComboBoxItem { Content = prefix + "Exclusive fullscreen", Tag = "exclusive" },
-            new ComboBoxItem { Content = prefix + "Window", Tag = "windowed" }
-        };
-        DisplayChoice.SelectedIndex = settings.Fullscreen switch { "exclusive" => 1, "windowed" => 2, _ => 0 };
-        settingDisplay = false;
+        RenderDisplay();
 
         RenderRecent();
         RenderGame(model.Game);
@@ -180,15 +170,29 @@ public sealed partial class HomePage : Page
         Put(heading, 1, title);
         target.Children.Add(heading);
         if (match.PingAverageMS is { } ping)
-            MatchFact("Ping", $"{ping:F0} ms");
-        MatchFact("Connection", MatchFacts.ConnectionText(
-            MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent)));
+        {
+            target.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+            MatchFact("Ping", Strong($"{ping:F0} ms"));
+        }
+        var connection = MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent);
+        string label = MatchFacts.ConnectionText(connection);
+        if (connection == MatchConnection.Steady)
+        {
+            var positive = IconLabel("CheckCircle", label, 14);
+            ((FontIcon)positive.Children[0]).Style = StyleFor("PositiveIcon");
+            ((TextBlock)positive.Children[1]).Style = StyleFor("PositiveCaption");
+            MatchFact("Connection", positive);
+        }
+        else
+            MatchFact("Connection", Strong(label));
 
-        void MatchFact(string title, string value)
+        static TextBlock Strong(string value) => new() { Text = value, Style = StyleFor("BodyStrongTextBlockStyle") };
+
+        void MatchFact(string title, FrameworkElement value)
         {
             var row = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
             Put(row, 0, Body(title));
-            Put(row, 1, new TextBlock { Text = value, Style = StyleFor("BodyStrongTextBlockStyle") });
+            Put(row, 1, value);
             target.Children.Add(row);
         }
     }
@@ -359,10 +363,23 @@ public sealed partial class HomePage : Page
         });
     }
 
-    private async void OnDisplayChanged(object sender, SelectionChangedEventArgs args)
+    private void RenderDisplay()
     {
-        if (settingDisplay || DisplayChoice.SelectedItem is not ComboBoxItem { Tag: string mode })
-            return;
-        await shell.RunAsync(() => model.SetDisplayAsync(mode));
+        var settings = model.Settings;
+        var selected = settings.Fullscreen switch { "exclusive" => ExclusiveMode, "windowed" => WindowMode, _ => BorderlessMode };
+        selected.IsChecked = true;
+        string prefix = model.Loadouts.IsEmpty ? LauncherText.Resolution(settings.Resolution) + " · " : "";
+        DisplayChoice.Content = IconLabel("Desktop", prefix + selected.Text);
+        AutomationProperties.SetName(DisplayChoice, "Display mode: " + selected.Text);
+    }
+
+    private async void OnDisplayChanged(object sender, RoutedEventArgs args)
+    {
+        if (sender is RadioMenuFlyoutItem { Tag: string mode })
+            await shell.RunAsync(async () =>
+            {
+                try { await model.SetDisplayAsync(mode); }
+                finally { RenderDisplay(); }
+            });
     }
 }
