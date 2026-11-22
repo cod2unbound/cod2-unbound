@@ -35,19 +35,20 @@ public sealed partial class ConfigsPage : Page
     {
         var state = model.State;
         syncing = true;
-        Loadouts.ItemsSource = state.Profiles;
-        Loadouts.SelectedItem = state.Current?.Profile;
+        var rows = state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray();
+        Loadouts.ItemsSource = rows;
+        Loadouts.SelectedItem = rows.FirstOrDefault(row => row.Profile.Id == state.Current?.Profile.Id);
         syncing = false;
         NewLoadout.IsEnabled = AddConfig.IsEnabled = !state.ReadOnly && state.Draft is null;
     }
 
     private async void OnSelectLoadout(object sender, SelectionChangedEventArgs args)
     {
-        if (syncing || Loadouts.SelectedItem is not ConfigProfile loadout)
+        if (syncing || Loadouts.SelectedItem is not LoadoutRow loadout)
             return;
         await shell.RunAsync(() =>
         {
-            model.Studio.Focus(loadout.Id);
+            model.Studio.Focus(loadout.Profile.Id);
             ShowStudio();
             return Task.CompletedTask;
         });
@@ -90,6 +91,8 @@ public sealed partial class ConfigsPage : Page
 
     private void ShowStudio()
     {
+        DiscoverPlaces.SelectedItem = null;
+        Status.IsOpen = false;
         Detail.Children.Clear();
         studioBody.Children.Clear();
         var state = model.State;
@@ -401,16 +404,56 @@ public sealed partial class ConfigsPage : Page
         }
     }
 
-    private async void OnPlayerSetups(object sender, RoutedEventArgs args) => await shell.RunAsync(() => ShowCatalogueAsync(saved: false));
-    private async void OnSaved(object sender, RoutedEventArgs args) => await shell.RunAsync(() => ShowCatalogueAsync(saved: true));
+    private async void OnDiscoverPlaceChanged(object sender, SelectionChangedEventArgs args)
+    {
+        int place = DiscoverPlaces.SelectedIndex;
+        if (place < 0)
+            return;
+        await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
+    }
+
+    private Task ShowCheckerAsync()
+    {
+        Status.IsOpen = false;
+        Loadouts.SelectedItem = null;
+        Detail.Children.Clear();
+        Detail.Children.Add(Heading("Check a config"));
+        var text = new TextBox
+        {
+            Header = "Paste config text", AcceptsReturn = true, Height = 150,
+            Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap
+        };
+        var results = new StackPanel { Spacing = 4 };
+        var check = Action("Check config", async () =>
+        {
+            var report = await ConfigChecker.CheckAsync([.. ConfigDocument.Encode(text.Text.ReplaceLineEndings("\n"))],
+                model.Dialect, null, model.Catalog, null);
+            results.Children.Clear();
+            if (report.Findings.IsEmpty)
+                results.Children.Add(Body("No problems found."));
+            foreach (var finding in report.Findings)
+                results.Children.Add(SettingRow(finding.Title, finding.Detail));
+        });
+        check.IsEnabled = false;
+        text.TextChanged += (_, _) => check.IsEnabled = !string.IsNullOrWhiteSpace(text.Text);
+        Detail.Children.Add(text);
+        Detail.Children.Add(check);
+        Detail.Children.Add(results);
+        return Task.CompletedTask;
+    }
+
+    private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Snapshot is null
+        ? "" : model.Discover.State.Saved.Length.ToString(CultureInfo.CurrentCulture);
 
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
+        Status.IsOpen = false;
         Detail.Children.Clear();
         Loadouts.SelectedItem = null;
         Detail.Children.Add(Heading(saved ? "Saved" : "Player Setups"));
         Detail.Children.Add(Caption("Loading player setups…"));
         await model.Discover.LoadAsync(retry);
+        UpdateSavedCount();
         Detail.Children.RemoveAt(1);
         if (model.Discover.State.Snapshot is null)
         {
@@ -443,8 +486,12 @@ public sealed partial class ConfigsPage : Page
     private Task ShowSetupAsync(ConfigDirectoryEntry entry, bool fromSaved)
     {
         bool saved = model.Discover.State.Saved.Any(bookmark => bookmark.Id == entry.Id);
+        Status.IsOpen = false;
+        UpdateSavedCount();
         Detail.Children.Clear();
-        Detail.Children.Add(Action(fromSaved ? "Back to Saved" : "Back to Player Setups", () => ShowCatalogueAsync(fromSaved)));
+        var back = new HyperlinkButton { Content = fromSaved ? "Back to Saved" : "Back to Player Setups" };
+        back.Click += async (_, _) => await shell.RunAsync(() => ShowCatalogueAsync(fromSaved));
+        Detail.Children.Add(back);
         Detail.Children.Add(Heading(entry.Player));
         Detail.Children.Add(Caption(string.Join(" · ", new[] { entry.Team, entry.Era, entry.Role }.OfType<string>())));
         Detail.Children.Add(Caption(entry.Feel));
@@ -590,4 +637,13 @@ public sealed partial class ConfigsPage : Page
         Status.Severity = InfoBarSeverity.Success;
         Status.IsOpen = true;
     }
+}
+
+
+internal sealed record LoadoutRow(ConfigProfile Profile)
+{
+    public string Name => Profile.DisplayName;
+    public string Initial => StringInfo.GetNextTextElement(Name).ToUpper(CultureInfo.CurrentCulture);
+    public string Status => Profile.IsActive ? "In use" : "Ready to use";
+    public Visibility Checkmark => IsVisible(Profile.IsActive);
 }

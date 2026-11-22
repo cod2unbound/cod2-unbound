@@ -84,6 +84,32 @@
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
+    <Style x:Key="SidebarItem" TargetType="ListViewItem">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,0,12,0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style x:Key="SidebarAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="16,0,12,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
+    </Style>
+    <Style x:Key="InitialTile" TargetType="Border">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="LoadoutInitial" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />
