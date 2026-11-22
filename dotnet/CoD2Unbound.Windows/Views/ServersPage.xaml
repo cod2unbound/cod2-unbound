@@ -37,6 +37,13 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
+            <Button x:Name="NewHost" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
+                    <TextBlock Text="New server" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
         </Grid>
         <Grid Grid.Row="1" ColumnSpacing="8">
             <Grid.ColumnDefinitions>

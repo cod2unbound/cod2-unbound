@@ -92,7 +92,7 @@ public sealed partial class ServersPage : Page
         RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility =
             SearchBox.Visibility = RefreshStatus.Visibility = IsVisible(!showHosting);
-        HostingContent.Visibility = IsVisible(showHosting);
+        HostingContent.Visibility = NewHost.Visibility = IsVisible(showHosting);
         if (showHosting)
         {
             await shell.ShowProblemAsync(async () =>
@@ -105,6 +105,12 @@ public sealed partial class ServersPage : Page
         }
         model.Scope = (ServerScope)index;
         Render();
+    }
+
+    private async void OnNewHostedServer(object sender, RoutedEventArgs args)
+    {
+        if (hosting is not null)
+            await hosting.NewAsync();
     }
 
     internal void UpdateContrast() => Render();
@@ -423,7 +429,11 @@ public sealed partial class ServersPage : Page
         RenderDetails();
     }
 
-    internal void UpdateGameState(GameSessionState state) => RenderDetails();
+    internal void UpdateGameState(GameSessionState state)
+    {
+        RenderDetails();
+        UpdateHostingState();
+    }
 
     private async void OnRefreshShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {

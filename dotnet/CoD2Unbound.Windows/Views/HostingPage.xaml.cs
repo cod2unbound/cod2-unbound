@@ -21,6 +21,7 @@ public sealed partial class HostingPage : Page
     private TextBlock? phaseText;
     private TextBlock? detailText;
     private Button? processButton;
+    private Button? joinButton;
     private Button? settingsButton;
     private Button? playersButton;
 
@@ -54,7 +55,7 @@ public sealed partial class HostingPage : Page
     private void ShowServer()
     {
         Details.Children.Clear();
-        processButton = settingsButton = playersButton = null;
+        processButton = joinButton = settingsButton = playersButton = null;
         if (Selected is not { } server)
         {
             Details.Children.Add(new TextBlock { Text = "No servers yet", Style = StyleFor("SectionTitle") });
@@ -71,7 +72,9 @@ public sealed partial class HostingPage : Page
 
         processButton = Action("Start server", () => ToggleAsync(server), "R");
         settingsButton = Action("Edit server…", () => EditAsync(server), "E");
-        Details.Children.Add(Buttons(processButton, settingsButton));
+        joinButton = Action("Join", () => JoinAsync(server), "J");
+        joinButton.Style = StyleFor("LauncherAccentButton");
+        Details.Children.Add(Buttons(joinButton, processButton, settingsButton));
         playersButton = Action("Players…", () => PlayersAsync(server), "P");
         Details.Children.Add(Buttons(Action("Server log…", () => LogAsync(server), "L"), playersButton));
 
@@ -96,7 +99,7 @@ public sealed partial class HostingPage : Page
     internal void UpdateRunState()
     {
         if (Selected is not { } server || phaseText is null || detailText is null || processButton is null ||
-            settingsButton is null || playersButton is null)
+            settingsButton is null || playersButton is null || joinButton is null)
             return;
         var state = hosting.Running.GetValueOrDefault(server.Id) ?? new(HostedPhase.Stopped);
         bool active = hosting.IsActive(server.Id);
@@ -116,9 +119,25 @@ public sealed partial class HostingPage : Page
             : state.NextPort is { } port ? $"Choose another port, such as {port}." : state.Problem ?? "";
         detailText.Visibility = IsVisible(detailText.Text.Length > 0);
         processButton.Content = active ? "Stop server" : "Start server";
+        processButton.Style = StyleFor(active ? "DefaultButtonStyle" : "LauncherAccentButton");
         processButton.IsEnabled = state.Phase != HostedPhase.Stopping;
+        joinButton.Visibility = IsVisible(state.Phase == HostedPhase.Running);
+        joinButton.IsEnabled = !session.Game.State.Running;
         settingsButton.IsEnabled = !active;
         playersButton.IsEnabled = state.Status is not null;
+    }
+
+    private async Task JoinAsync(HostedServer server)
+    {
+        if (hosting.Running.GetValueOrDefault(server.Id)?.Phase != HostedPhase.Running)
+            return;
+        var result = await session.JoinAsync(new($"127.0.0.1:{server.Port}", server.JoinPassword), server.Engine);
+        if (result != GameStartState.Started && detailText is not null)
+        {
+            detailText.Text = result is not (GameStartState.NeedsSetup or GameStartState.MissingData)
+                ? "Call of Duty 2 is already running." : "Choose a complete game data folder before launching.";
+            detailText.Visibility = Visibility.Visible;
+        }
     }
 
     private async Task ToggleAsync(HostedServer server)
@@ -130,7 +149,7 @@ public sealed partial class HostingPage : Page
         UpdateRunState();
     }
 
-    private async void OnNew(object sender, RoutedEventArgs args) => await shell.RunAsync(() =>
+    internal Task NewAsync() => shell.RunAsync(() =>
     {
         var fresh = HostedServer.New(edition: session.Settings.Working.Engine);
         if (hosts.Any(server => server.Port == fresh.Port))
