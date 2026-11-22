@@ -30,7 +30,6 @@ BRUSHES = {
     "HyperlinkForegroundPointerOver": ("link", "Hotlight"),
     "HyperlinkForegroundPressed": ("link", "Hotlight"),
     "InfoBarHyperlinkButtonForeground": ("link", "Hotlight"),
-    "InfoBarInformationalSeverityIconForeground": ("control", "WindowText"),
     "ListViewItemSelectionIndicatorBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPointerOverBrush": ("control", "HighlightText"),
     "ListViewItemSelectionIndicatorPressedBrush": ("control", "HighlightText"),
@@ -127,6 +126,9 @@ def generate(tokens):
             color = xaml_color(tokens[token][theme]) if theme else f"{{ThemeResource SystemColor{system_color}Color}}"
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": color})
         if theme:
+            ET.SubElement(dictionary, "SolidColorBrush", {
+                "x:Key": "InfoBarInformationalSeverityIconBackground", "Color": xaml_color(tokens["control"][theme]),
+            })
             # Mirror the native TextBox gradient: the flipped two-pixel region
             # paints only the bottom edge of the focused border in the accent.
             focused = ET.SubElement(dictionary, "LinearGradientBrush", {

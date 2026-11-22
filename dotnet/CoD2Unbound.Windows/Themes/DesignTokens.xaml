@@ -24,7 +24,6 @@
             <SolidColorBrush x:Key="HyperlinkForegroundPointerOver" Color="#E2BD72" />
             <SolidColorBrush x:Key="HyperlinkForegroundPressed" Color="#E2BD72" />
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="#E2BD72" />
-            <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#C99A4C" />
@@ -91,6 +90,7 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#1C170C" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#1C170C" />
+            <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="#C99A4C" />
             <LinearGradientBrush x:Key="TextControlBorderBrushFocused" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,2">
                 <LinearGradientBrush.RelativeTransform>
                     <ScaleTransform ScaleY="-1" CenterY="0.5" />
@@ -127,7 +127,6 @@
             <SolidColorBrush x:Key="HyperlinkForegroundPointerOver" Color="#8A5A12" />
             <SolidColorBrush x:Key="HyperlinkForegroundPressed" Color="#8A5A12" />
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="#8A5A12" />
-            <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#55622F" />
@@ -194,6 +193,7 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFF8E8" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFF8E8" />
+            <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="#55622F" />
             <LinearGradientBrush x:Key="TextControlBorderBrushFocused" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,2">
                 <LinearGradientBrush.RelativeTransform>
                     <ScaleTransform ScaleY="-1" CenterY="0.5" />
@@ -230,7 +230,6 @@
             <SolidColorBrush x:Key="HyperlinkForegroundPointerOver" Color="{ThemeResource SystemColorHotlightColor}" />
             <SolidColorBrush x:Key="HyperlinkForegroundPressed" Color="{ThemeResource SystemColorHotlightColor}" />
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="{ThemeResource SystemColorHotlightColor}" />
-            <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
