@@ -153,7 +153,22 @@ public sealed partial class HostingPage : Page
         if (hosting.IsActive(server.Id))
             await hosting.StopAsync(server.Id);
         else
-            await hosting.StartAsync(server, session.Setup.DataPath);
+        {
+            try
+            {
+                await hosting.StartAsync(server, session.Setup.DataPath);
+                if (hosting.IsActive(server.Id))
+                    session.Record(new(UsageKind.HostingStarted,
+                        server.Reach == HostedReach.Listed && !hosting.LoopbackOnly ? 1 : 0, (int)server.Engine));
+                else
+                    session.ShowError(UsageProblem.Hosting);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or LaunchPlanException)
+            {
+                session.ShowError(UsageProblem.Hosting);
+                throw;
+            }
+        }
         UpdateRunState();
     }
 

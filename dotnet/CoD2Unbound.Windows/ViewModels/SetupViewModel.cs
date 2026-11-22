@@ -6,5 +6,5 @@ namespace CoD2Unbound.Windows.ViewModels;
 internal sealed class SetupViewModel(WindowsLauncherSession session)
 {
     internal SetupSession Setup => session.Setup;
-    internal void Finish() => session.FinishSetup();
+    internal Task FinishAsync() => session.FinishSetupAsync();
 }

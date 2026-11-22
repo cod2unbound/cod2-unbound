@@ -25,6 +25,7 @@ public sealed partial class SettingsPage : Page
     private (string Mode, WindowsRenderMode? Renderer)? previousDisplay;
     private string? advancedDraft;
     private string? advancedProblem;
+    private int lastPane = -1;
 
     internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false, bool openUpdates = false)
     {
@@ -56,7 +57,13 @@ public sealed partial class SettingsPage : Page
     {
         Fields.Children.Clear();
         updateCard = null;
-        switch (Panes.Items.IndexOf(Panes.SelectedItem))
+        int pane = Panes.Items.IndexOf(Panes.SelectedItem);
+        if (pane >= 0 && lastPane != pane)
+        {
+            lastPane = pane;
+            session.Opened(UsagePage.General + pane);
+        }
+        switch (pane)
         {
             case 0: General(); break;
             case 1: Display(); break;
@@ -147,7 +154,12 @@ public sealed partial class SettingsPage : Page
         var dataActions = Buttons(reveal, choose);
         if (model.HasPendingData)
         {
-            var use = Action("Use this folder", async () => { await model.SaveDataAsync(); Render(); });
+            var use = Action("Use this folder", async () =>
+            {
+                await model.SaveDataAsync();
+                session.Record(new(UsageKind.SettingChanged, (int)UsageSetting.GameDataFolder));
+                Render();
+            });
             use.IsEnabled = data.State == SetupDataState.Found && !session.Game.State.Running;
             dataActions = Buttons(use, Action("Cancel", () =>
             {
@@ -202,15 +214,47 @@ public sealed partial class SettingsPage : Page
 
     private void Privacy()
     {
-        Group("Sharing");
-        Fields.Children.Add(Body("Sending is unavailable in this build."));
-        Switch("Send crash reports to CoD2 Unbound",
-            "If the game closes unexpectedly: what failed, your Windows version and PC model. Never your name, CD key or the servers you play on.",
-            Current.SendCrashReports, value => ChangeAsync(Current with { SendCrashReports = value, CrashReportsAsked = true }));
-        Switch("Send CoD2x crash reports to the CoD2x project", "Faults in CoD2x’s own code, sent to the people who make CoD2x. Reports include folder paths and the list of loaded game files.",
-            Current.SendCoD2xReports, value => ChangeAsync(Current with { SendCoD2xReports = value }));
-        Switch("Send usage data to CoD2 Unbound", "Which screens and features you use, with your PC model, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
-            Current.SendUsageData, value => ChangeAsync(Current with { SendUsageData = value }));
+        Fields.Children.Add(new InfoBar
+        {
+            Message = "CoD2 Unbound has no account and sends nothing about you unless you turn it on here.",
+            IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational
+        });
+        var reports = session.Reports;
+        if (reports.CrashAvailable || reports.Usage.Available)
+            Group("Sharing");
+        if (reports.CrashAvailable)
+        {
+            var crash = PrivacySwitch(PrivacyPresentation.CrashSwitch, Current.SendCrashReports, "H", session.SetCrashAsync);
+            Row(PrivacyPresentation.CrashSwitch,
+                "If the game crashes: what failed, your Windows version and PC model, and the game’s report. Never your CD key or your Windows user name.",
+                Buttons(PrivacyPresentation.PreviewButton(true, "F", shell, reports), crash));
+            const string cod2xName = "Send CoD2x crash reports to the CoD2x project";
+            var cod2x = new ToggleSwitch { OffContent = "Off", IsEnabled = false, MinWidth = 0 };
+            AutomationProperties.SetName(cod2x, cod2xName);
+            Row(cod2xName, "CoD2x’s own crash service is separate. This Windows launcher keeps those diagnostics on this PC.", cod2x);
+        }
+        if (reports.Usage.Available)
+        {
+            var usage = PrivacySwitch(PrivacyPresentation.UsageSwitch, reports.Usage.InstallNumber is not null, "U",
+                value => session.SetUsageAsync(value, UsageSource.Settings));
+            Row(PrivacyPresentation.UsageSwitch,
+                "Which screens and features you use, with your PC’s model, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
+                Buttons(PrivacyPresentation.PreviewButton(false, "W", shell, reports), usage));
+            if (reports.Usage.InstallNumber is { } id)
+            {
+                string full = id.ToString("D");
+                var number = new TextBlock { Text = full[..8] + "…", Style = StyleFor("AddressText") };
+                number.VerticalAlignment = VerticalAlignment.Center;
+                AutomationProperties.SetName(number, "Install number " + full);
+                ToolTipService.SetToolTip(number, full);
+                var reset = Action("Reset number", async () => { await session.ResetUsageAsync(); Render(); });
+                reset.Style = StyleFor("SubtleAction");
+                reset.AccessKey = "R";
+                AutomationProperties.SetName(reset, "Reset number");
+                ToolTipService.SetToolTip(reset, "Make a new number, so later sessions don’t link to earlier ones");
+                Row("Install number", PrivacyPresentation.NumberDetail, Buttons(number, reset));
+            }
+        }
         Group("On this PC");
         Switch("Match summaries", "Notes on how each match ran, so Check-up can advise you. Kept on this PC, the last 200 matches.", Current.MatchSummariesEnabled,
             value => ChangeAsync(Current with { MatchSummariesEnabled = value }));
@@ -222,8 +266,52 @@ public sealed partial class SettingsPage : Page
             Render();
             ShowFeedback("Match summaries deleted.", InfoBarSeverity.Success);
         });
+        delete.Style = StyleFor("SubtleAction");
         delete.IsEnabled = !session.Game.State.Running && !session.ReadMatches().IsEmpty;
         Row("Saved match summaries", null, delete);
+
+        Group("What CoD2 Unbound contacts");
+        var contacts = new StackPanel { Spacing = 12 };
+        foreach (var (who, when) in new (string, string)[]
+        {
+            ("Master servers", "Activision’s and the CoD2x project’s, when the server list refreshes. The game also asks them and the key server, as the original does."),
+            ("Game servers", "Those in the list when it refreshes, and the one you join. CoD2x servers also get a hash of CoD2x’s ID for this PC."),
+            ("The CoD2x project", "With CoD2x, its update check each time the game’s menu opens: your CoD2x version, a hash of your CD key, CoD2x’s IDs for this PC and a short description of it. Mod files a server needs come from its site."),
+            ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Nothing about you."),
+            ("The certificate’s issuer", "When an update’s signature is verified, Windows asks whether it is still valid. Nothing about you."),
+            ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers. A CoD2x server asks the CoD2x project about new versions.")
+        })
+            contacts.Children.Add(PrivacyPresentation.TextRow(who, when, 190));
+        if (reports.CrashAvailable)
+            contacts.Children.Add(PrivacyPresentation.TextRow("Crash reports", "Only with the crash reports switch above on, once for each crash.", 190));
+        if (reports.Usage.Available)
+            contacts.Children.Add(PrivacyPresentation.TextRow("PostHog, in the EU", "While you use the launcher, only if usage data is on. What you open and use, never who you are.", 190));
+        Fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = contacts });
+    }
+
+    private ToggleSwitch PrivacySwitch(string name, bool value, string key, Func<bool, Task> save)
+    {
+        var control = new ToggleSwitch { OnContent = "On", OffContent = "Off", IsOn = value, MinWidth = 0, AccessKey = key };
+        AutomationProperties.SetName(control, name);
+        control.Toggled += async (_, _) =>
+        {
+            if (!control.IsEnabled)
+                return;
+            if (shell.IsBusy)
+            {
+                control.IsEnabled = false;
+                control.IsOn = value;
+                control.IsEnabled = true;
+                return;
+            }
+            control.IsEnabled = false;
+            await shell.RunAsync(async () =>
+            {
+                try { await save(control.IsOn); }
+                finally { if (Panes.SelectedItem == Panes.Items[3]) Render(); }
+            });
+        };
+        return control;
     }
 
     private void Updates()
@@ -497,12 +585,26 @@ public sealed partial class SettingsPage : Page
 
     private async Task ChangeAsync(GameSettings settings)
     {
+        var before = model.Settings.Saved;
         model.Settings.Replace(settings);
         shell.ApplyAppearance(settings.Appearance);
         saveDelay?.Cancel();
         using var delay = new CancellationTokenSource();
         saveDelay = delay;
-        try { await shell.ShowProblemAsync(() => model.Settings.SaveAfterQuietAsync(delay.Token)); }
+        try
+        {
+            await shell.ShowProblemAsync(async () =>
+            {
+                try { await model.Settings.SaveAfterQuietAsync(delay.Token); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    session.ShowError(UsageProblem.SaveSettings);
+                    throw;
+                }
+                foreach (var item in UsageEvent.Changed(before, model.Settings.Saved))
+                    session.Record(item);
+            });
+        }
         catch (OperationCanceledException) when (delay.IsCancellationRequested) { }
         finally
         {

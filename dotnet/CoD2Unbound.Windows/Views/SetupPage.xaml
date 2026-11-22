@@ -22,10 +22,14 @@
                 <PasswordBox x:Name="KeyInput" Header="CD key" PasswordChanged="OnKeyChanged"
                              PasswordRevealMode="Hidden" />
             </StackPanel>
+            <StackPanel x:Name="PrivacyQuestion" Spacing="12" Visibility="Collapsed" />
             <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="SendReport" Click="OnSendReport" AccessKey="S" TabIndex="0" Visibility="Collapsed" />
+                <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t send" AutomationProperties.Name="Don’t send"
+                        AccessKey="N" TabIndex="1" Visibility="Collapsed" />
                 <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
                         Style="{StaticResource LauncherAccentButton}" />
-                <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" />
+                <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B" TabIndex="2" />
                 <Button x:Name="SkipKey" Content="Skip for now" Click="OnSkipKey" Visibility="Collapsed" />
             </StackPanel>
         </StackPanel>

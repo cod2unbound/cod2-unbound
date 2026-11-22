@@ -26,6 +26,8 @@ public sealed partial class ConfigsPage
 
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
+        if (!retry)
+            model.Opened(saved ? UsagePage.Saved : UsagePage.Setups);
         Status.IsOpen = false;
         Loadouts.SelectedItem = null;
         Detail.Children.Clear();
@@ -39,6 +41,7 @@ public sealed partial class ConfigsPage
         Detail.Children.Remove(status);
         if (model.Discover.State.Snapshot is null)
         {
+            model.Error(UsageProblem.Directory);
             AddCatalogueStatus("Player Setups is unavailable", "Check your connection and try again.");
             return;
         }
@@ -371,6 +374,8 @@ public sealed partial class ConfigsPage
 
     private async Task ShowSetupAsync(ConfigDirectoryEntry entry, bool fromSaved)
     {
+        model.Opened(UsagePage.PlayerSetup);
+        model.CatalogueEvent(UsageKind.SetupViewed, entry.Id);
         Status.IsOpen = false;
         Detail.Children.Clear();
         ResetDetailScroll();
@@ -413,9 +418,19 @@ public sealed partial class ConfigsPage
 
         async Task ReviewSetupAsync(bool newOnly)
         {
-            var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
-            setupDistance ??= ConfigDiscover.SetupTurnDistance(review, model.DpiFor(model.Studio.ReadActive()));
-            await ReviewAsync(review, entry.Player, newOnly, () => setupDistance);
+            if (newOnly)
+                model.CatalogueEvent(UsageKind.SetupTried, entry.Id);
+            try
+            {
+                var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
+                setupDistance ??= ConfigDiscover.SetupTurnDistance(review, model.DpiFor(model.Studio.ReadActive()));
+                await ReviewAsync(review, entry.Player, newOnly, () => setupDistance, entry.Id);
+            }
+            catch (Exception error) when (error is IOException or ConfigDirectoryException or ConfigImportSessionException)
+            {
+                model.Error(UsageProblem.Import);
+                throw;
+            }
         }
 
         void RenderNotable(double? dpi)

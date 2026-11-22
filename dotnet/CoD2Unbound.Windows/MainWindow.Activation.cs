@@ -45,7 +45,10 @@ public sealed partial class MainWindow
             input.StartsWith("cod2x:", StringComparison.OrdinalIgnoreCase))
         {
             if (ServerLink.Parse(input) is not { } link)
+            {
+                session.ShowError(UsageProblem.ServerLink);
                 throw new FormatException("This link isn’t a server address CoD2 Unbound can open.");
+            }
             await NavigateAsync(LauncherPlace.Servers, refreshServers: false);
             await ((ServersPage)ContentFrame.Content).ConnectLinkAsync(link);
             return;

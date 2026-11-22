@@ -22,6 +22,7 @@
     <!-- The portable projects already lock their own restores. -->
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
     <UpdateBuildProfile Condition="'$(UpdateBuildProfile)' == ''">Public</UpdateBuildProfile>
+    <EnableLocalReportReceivers Condition="'$(EnableLocalReportReceivers)' == ''">false</EnableLocalReportReceivers>
     <EnableLocalUpdateFeed Condition="'$(EnableLocalUpdateFeed)' == ''">false</EnableLocalUpdateFeed>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
@@ -30,13 +31,31 @@
   <PropertyGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalUpdateFeed)' == 'true'">
     <DefineConstants>$(DefineConstants);LOCAL_UPDATE_FEED</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalReportReceivers)' == 'true'">
+    <DefineConstants>$(DefineConstants);LOCAL_REPORT_RECEIVERS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalReportReceivers)' == 'true'">
+    <AssemblyMetadata Include="CoD2Unbound.ReportingFixture" Value="true" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
     <AssemblyMetadata Include="CoD2Unbound.UpdateFixture" Value="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(UpdatePublisherRules)' != ''">
     <AssemblyMetadata Include="UpdatePublisherRules" Value="$(UpdatePublisherRules)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UsagePostHogKey)' != ''">
+    <AssemblyMetadata Include="UsagePostHogKey" Value="$(UsagePostHogKey)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(CrashReportDsn)' != ''">
+    <AssemblyMetadata Include="CrashReportDsn" Value="$(CrashReportDsn)" />
+  </ItemGroup>
   <Target Name="ValidateUpdateBuild" BeforeTargets="CoreCompile">
+    <Error Condition="'$(UpdateBuildProfile)' == 'Public' and ('$(EnableLocalReportReceivers)' != 'false' or $([System.Text.RegularExpressions.Regex]::IsMatch('$(DefineConstants)', '(^|[;, ])LOCAL_REPORT_RECEIVERS($|[;, ])')))"
+           Text="Public launchers cannot include reporting fixture support." />
+    <Error Condition="'$(UsagePostHogKey)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(UsagePostHogKey)', '\Aphc_[A-Za-z0-9_-]{1,200}\z'))"
+           Text="UsagePostHogKey does not match the usage ingestion key format." />
+    <Error Condition="'$(UpdateBuildProfile)' == 'Public' and '$(CrashReportDsn)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(CrashReportDsn)', '\Ahttps://[A-Za-z0-9]{1,64}@[A-Za-z0-9.-]+(?::[0-9]{1,5})?/(?:[A-Za-z0-9_-]+/)*[0-9]{1,20}/?\z'))"
+           Text="CrashReportDsn must be an HTTPS public-key DSN." />
     <Error Condition="'$(UpdateBuildProfile)' != 'Public' and '$(UpdateBuildProfile)' != 'Fixture'"
            Text="UpdateBuildProfile must be Public or Fixture." />
     <Error Condition="'$(UpdateBuildProfile)' == 'Public' and ('$(EnableLocalUpdateFeed)' != 'false' or $([System.Text.RegularExpressions.Regex]::IsMatch('$(DefineConstants)', '(^|[;, ])(LOCAL_UPDATE_FEED|UPDATE_FIXTURES)($|[;, ])')))"

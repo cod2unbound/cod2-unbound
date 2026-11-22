@@ -21,6 +21,15 @@ internal sealed class ConfigsViewModel : IConfigImportStore
         Discover = new(WindowsConfigFetch.Create(session.HomePath, session.TestMaster is not null), Catalog);
     }
 
+    internal void Record(UsageEvent? item) => session.Record(item);
+    internal void Opened(UsagePage page) => session.Opened(page);
+    internal void Error(UsageProblem kind) => session.ShowError(kind);
+    internal void CatalogueEvent(UsageKind kind, string id)
+    {
+        if (Discover.State.Snapshot is { } snapshot)
+            Record(UsageEvent.Catalogue(kind, snapshot, id));
+    }
+
     internal ConfigStudioSession Studio { get; }
     internal ConfigCatalog Catalog { get; }
     internal ConfigStudioModel Model { get; }
@@ -38,8 +47,17 @@ internal sealed class ConfigsViewModel : IConfigImportStore
 
     internal void Create(string name)
     {
-        var created = Studio.Create(NewId(name), name);
-        Studio.Focus(created.Profile.Id);
+        try
+        {
+            var created = Studio.Create(NewId(name), name);
+            Studio.Focus(created.Profile.Id);
+            Record(new(UsageKind.LoadoutMade));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ConfigProfileException)
+        {
+            Error(UsageProblem.SaveLoadout);
+            throw;
+        }
     }
 
     internal void Rename(ConfigProfileRead loadout, string name) => Studio.Mutate(loadout.Profile.Id,

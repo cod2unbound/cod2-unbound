@@ -196,9 +196,12 @@ public sealed partial class ConfigsPage : Page
             return;
         }
 
+        var pages = new[] { UsagePage.Loadout, UsagePage.Binds, UsagePage.Checkup, UsagePage.History };
+        model.Opened(pages[studioTab]);
         var tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, index =>
         {
             studioTab = index;
+            model.Opened(pages[index]);
             if (studioModes is not null)
                 studioModes.Visibility = IsVisible(index == 0);
             RenderStudioBody();
@@ -666,6 +669,7 @@ public sealed partial class ConfigsPage : Page
 
     private Task ShowCheckerAsync()
     {
+        model.Opened(UsagePage.Checker);
         Status.IsOpen = false;
         Loadouts.SelectedItem = null;
         Detail.Children.Clear();
@@ -678,8 +682,18 @@ public sealed partial class ConfigsPage : Page
         var results = new StackPanel { Spacing = 4 };
         var check = Action("Check config", async () =>
         {
-            var report = await ConfigChecker.CheckAsync([.. ConfigDocument.Encode(text.Text.ReplaceLineEndings("\n"))],
-                model.Dialect, null, model.Catalog, null);
+            model.Record(new(UsageKind.CheckRun));
+            ConfigCheckReport report;
+            try
+            {
+                report = await ConfigChecker.CheckAsync([.. ConfigDocument.Encode(text.Text.ReplaceLineEndings("\n"))],
+                    model.Dialect, null, model.Catalog, null);
+            }
+            catch (Exception error) when (error is IOException or ArgumentException)
+            {
+                model.Error(UsageProblem.Check);
+                throw;
+            }
             results.Children.Clear();
             if (report.Findings.IsEmpty)
                 results.Children.Add(Body("No problems found."));
@@ -744,7 +758,7 @@ public sealed partial class ConfigsPage : Page
             _ => true
         };
 
-    private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly, Func<double?>? setupDistance = null)
+    private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly, Func<double?>? setupDistance = null, string? catalogueId = null)
     {
         var name = new TextBox { Header = "Loadout name", Text = initialName, MaxLength = 80 };
         var profiles = model.State.Profiles;
@@ -777,6 +791,7 @@ public sealed partial class ConfigsPage : Page
             catch (Exception error) when (error is IOException or ConfigImportSessionException or UnauthorizedAccessException)
             {
                 args.Cancel = true;
+                model.Error(UsageProblem.Import);
                 problem.Text = error.Message;
             }
             finally { deferral.Complete(); }
@@ -784,6 +799,10 @@ public sealed partial class ConfigsPage : Page
         Fill();
         if (await modal.ShowAsync() == ContentDialogResult.Primary && receipt is not null)
         {
+            if (catalogueId is not null)
+                model.CatalogueEvent(UsageKind.SetupImported, catalogueId);
+            if (target.SelectedIndex == 0)
+                model.Record(new(UsageKind.LoadoutMade));
             model.Studio.Focus(receipt.ProfileId);
             await RefreshStudioAsync();
             Feedback("Config imported.");

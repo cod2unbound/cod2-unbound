@@ -123,11 +123,11 @@ internal static class PagePresentation
         return panel;
     }
 
-    internal static StackPanel Buttons(params Button[] buttons)
+    internal static StackPanel Buttons(params FrameworkElement[] controls)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        foreach (var button in buttons)
-            panel.Children.Add(button);
+        foreach (var control in controls)
+            panel.Children.Add(control);
         return panel;
     }
 

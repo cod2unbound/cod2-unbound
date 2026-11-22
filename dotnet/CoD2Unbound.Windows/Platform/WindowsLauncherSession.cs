@@ -14,6 +14,10 @@ internal sealed class WindowsLauncherSession
     private readonly WindowsSettingsFolder gameFolder;
     private readonly WindowsEngineInventory inventory;
     internal GameLifecycle Game { get; }
+    internal WindowsReports Reports { get; }
+    private (DateTimeOffset Started, GameEdition Edition, int Process, bool CrashConsent)? launchedGame;
+    private const string UsageUpdateReceipt = "usage-update.txt";
+    private (UpdatePhase Phase, string? Version, UpdateFailureStage? Failed, UpdateIssue Issue)? observedUpdate;
     internal ServerQueryClient ServerQuery { get; }
     internal UdpEndpoint[]? TestMaster { get; }
     internal ServerBrowserPreferences ServerPreferences { get; private set; } = ServerBrowserPreferences.Default;
@@ -40,7 +44,9 @@ internal sealed class WindowsLauncherSession
 #endif
         credentials = testHome is null ? new WindowsCredentials() : new ProbeCredentials();
         gameFolder = new WindowsSettingsFolder(testHome ?? Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
-        folder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
+        var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
+        folder = settingsFolder;
+        Reports = new(HomePath, settingsFolder, Version);
         string installRoot = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, ".."));
         inventory = new WindowsEngineInventory(installRoot, files);
         discovery = new WindowsGameDiscovery(inventory);
@@ -51,7 +57,7 @@ internal sealed class WindowsLauncherSession
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
         Hosting = new(HomePath, inventory, files, TestMaster is not null);
         UpdateInstaller = new(installRoot, HomePath, Version, inventory, () => new(Game.State.Running, Hosting.HasActiveServers),
-            () => Settings.FlushAsync());
+            FlushForUpdateAsync);
         Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
             Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin),
             TimeZoneInfo.Local, WindowsReleaseAssets.IsNewer, UpdateInstaller.Log, (version, assets) =>
@@ -83,12 +89,16 @@ internal sealed class WindowsLauncherSession
             await folder.DeleteAsync(RendererFile, default);
         }
         SetupComplete = await folder.ReadAsync(SetupSession.CompletionFile, default) is not null;
+        await Reports.InitializeAsync(Settings.Working, SetupComplete);
+        if (Reports.Usage.Available && Reports.Usage.Consent != Settings.Working.UsageConsent)
+            await UpdateSettingsAsync(Settings.Working.WithUsageConsent(Reports.Usage.Consent));
         string? remembered = await folder.ReadAsync(SetupSession.DataPathFile, default) is { } path
             ? Encoding.UTF8.GetString(path.AsSpan()).Trim()
             : null;
         bool hasKey = SetupSession.KeyTail(await credentials.ReadAsync(SetupSession.KeySecret, default)) is not null;
         Setup = await CreateSetupAsync(remembered, hasKey, SetupStep.Welcome);
         RefreshUpdateOutcome();
+        await RecordInstalledUpdateAsync();
     }
 
     internal string Version => typeof(WindowsLauncherSession).Assembly.GetName().Version!.ToString(3);
@@ -112,11 +122,14 @@ internal sealed class WindowsLauncherSession
         catch (DirectoryNotFoundException) { return []; }
     }
 
-    internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null)
+    internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null, UsageJoin source = UsageJoin.List)
     {
         var result = await LaunchAsync(LaunchLink.Direct(address.Address, address.Password ?? ""), edition);
         if (result == GameStartState.Started)
+        {
+            Record(UsageEvent.Join(source, edition ?? Settings.Working.Engine));
             await SaveLibraryAsync(Library.Joined(address.Address, TimeProvider.System.GetUtcNow()));
+        }
         return result;
     }
 
@@ -133,12 +146,50 @@ internal sealed class WindowsLauncherSession
         if (!await change.ContinueAsync(key))
             return false;
         Setup = new SetupSession(files, folder, credentials, Setup.DataPath, change.HasStoredKey, step: Setup.Step);
+        Record(new(UsageKind.SettingChanged, (int)UsageSetting.CdKey));
         return true;
     }
 
     internal Task DeleteMatchHistoryAsync() => gameFolder.DeleteAsync("main/stats/matches.jsonl", default).AsTask();
     internal string LogsPath => Path.Join(folder.Root, "logs");
-    internal void FinishSetup() => SetupComplete = Setup.Step == SetupStep.Complete;
+    internal async Task FinishSetupAsync()
+    {
+        SetupComplete = Setup.Step == SetupStep.Complete;
+        if (SetupComplete)
+            await Reports.Usage.HoldAsync(false);
+    }
+
+    internal void Record(UsageEvent? item)
+    {
+        if (Reports.Usage is { } usage)
+            _ = usage.RecordAsync(item);
+    }
+
+    internal void Opened(UsagePage page) => Record(UsageEvent.Page(page));
+    internal void ShowError(UsageProblem kind) => Record(UsageEvent.Problem(kind));
+
+    internal async Task SetUsageAsync(bool enabled, UsageSource source)
+    {
+        if (!await Reports.Usage.SetConsentAsync(enabled ? UsageConsent.Yes : UsageConsent.No, source,
+            answer => UpdateSettingsAsync(Settings.Working.WithUsageConsent(answer))))
+            throw new IOException("The usage data choice could not be saved.");
+        if (!enabled)
+            await ClearUsageUpdateAsync();
+    }
+
+    internal async Task ResetUsageAsync()
+    {
+        if (!await Reports.Usage.ResetAsync())
+            throw new IOException("The install number could not be reset.");
+        await ClearUsageUpdateAsync();
+    }
+
+    internal async Task SetCrashAsync(bool enabled)
+    {
+        if (!enabled)
+            Reports.CancelCrash();
+        await UpdateSettingsAsync(Settings.Working with { SendCrashReports = enabled, CrashReportsAsked = true });
+    }
 
     internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
 
@@ -184,10 +235,47 @@ internal sealed class WindowsLauncherSession
             throw new IOException("Wait for the launcher update to finish before opening the game.");
         var settings = Settings.Working;
         var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo };
-        var start = await Game.StartAsync(request, SetupComplete);
+        GameStartState start;
+        try { start = await Game.StartAsync(request, SetupComplete); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or LaunchPlanException or System.ComponentModel.Win32Exception)
+        {
+            ShowError(UsageProblem.GameStart);
+            throw;
+        }
+        if (start is GameStartState.NeedsSetup or GameStartState.MissingData)
+            ShowError(UsageProblem.GameData);
         if (start == GameStartState.Started)
+        {
+            launchedGame = (Game.State.StartedAt ?? DateTimeOffset.UtcNow, request.Edition, Game.State.Games[0].Id,
+                SetupComplete && settings.CrashReportsAsked && settings.SendCrashReports);
+            Record(UsageEvent.Start(request.Edition, Renderer, UsageEvent.ModeFor(settings.Fullscreen)));
             ClientStarted?.Invoke();
+        }
         return start;
+    }
+
+    internal void GameObserved(GameSessionState state)
+    {
+        if (state.Running || state.LastExit is not { } exit || launchedGame is not { } launched)
+            return;
+        launchedGame = null;
+        Record(UsageEvent.End(exit.Unexpected, (int)(DateTimeOffset.UtcNow - launched.Started).TotalMinutes));
+        if (exit.Unexpected)
+        {
+            ShowError(UsageProblem.GameExit);
+            if (launched.CrashConsent && Settings.Working.SendCrashReports)
+                _ = SendCrashAsync(launched.Started, launched.Edition, launched.Process);
+        }
+    }
+
+    private async Task SendCrashAsync(DateTimeOffset since, GameEdition edition, int process)
+    {
+        try
+        {
+            string? key = await credentials.ReadAsync(SetupSession.KeySecret, default);
+            await Reports.SendCrashesAsync(since, edition, process, key, SetupComplete && Settings.Working.SendCrashReports);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { }
     }
 
     internal Task<string?> ReadLatestLogAsync() => ReadLatestLogAsync(LogsPath);
@@ -238,6 +326,61 @@ internal sealed class WindowsLauncherSession
             await SaveLibraryAsync(Library with { Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt });
     }
 
+    internal void ObserveUpdate(LauncherUpdateState state)
+    {
+        var observation = (state.Phase, state.AvailableVersion, state.FailedStage, state.Issue);
+        if (observedUpdate == observation)
+            return;
+        observedUpdate = observation;
+        var kind = state.Phase switch
+        {
+            UpdatePhase.Offered => UsageKind.UpdateOffered,
+            UpdatePhase.Downloading => UsageKind.UpdateDownloading,
+            UpdatePhase.Verifying => UsageKind.UpdateVerifying,
+            UpdatePhase.Ready => UsageKind.UpdateReady,
+            UpdatePhase.Installing => UsageKind.UpdateInstalling,
+            _ => (UsageKind?)null
+        };
+        if (kind is { } usage && state.AvailableVersion is { } to)
+            Record(UsageEvent.Update(usage, Version, to));
+        if (state.FailedStage is { } failure)
+            ShowError(failure == UpdateFailureStage.Check ? UsageProblem.UpdateCheck : UsageProblem.UpdateInstall);
+    }
+
+    private async Task FlushForUpdateAsync()
+    {
+        await Settings.FlushAsync();
+        if (Reports.Usage.InstallNumber is { } install && Updates.State.AvailableVersion is { } to &&
+            UsageEvent.Version(to) is { } tag)
+        {
+            try { await folder.WriteAsync(UsageUpdateReceipt, [.. Encoding.UTF8.GetBytes($"{install:D} {Version} {tag}")], default); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+        }
+        await Reports.Usage.FlushAsync();
+    }
+
+    internal async Task RecordInstalledUpdateAsync()
+    {
+        try
+        {
+            if (await folder.ReadAsync(UsageUpdateReceipt, default) is not { Length: < 85 } bytes)
+                return;
+            var words = Encoding.UTF8.GetString(bytes.AsSpan()).Split(' ');
+            if (lastUpdateOutcome == UpdateOutcome.Installed && words.Length == 3 && words[2] == Version &&
+                Guid.TryParseExact(words[0], "D", out var install) && install == Reports.Usage.InstallNumber)
+                await Reports.Usage.RecordAsync(UsageEvent.Update(UsageKind.UpdateInstalled, words[1], Version));
+            if (lastUpdateOutcome != UpdateOutcome.Waiting)
+                await ClearUsageUpdateAsync();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+    }
+
+    private async Task ClearUsageUpdateAsync()
+    {
+        try { await folder.DeleteAsync(UsageUpdateReceipt, default); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+    }
+
     internal bool CanCheckUpdates => !SetupUpdating &&
         (TestMaster is null || WindowsReleaseSource.Fixture is not null || WindowsReleaseSource.LocalOrigin is not null);
     internal bool CanAutoCheckUpdates => !SetupUpdating && (TestMaster is null || WindowsReleaseSource.LocalOrigin is not null);
@@ -256,10 +399,19 @@ internal sealed class WindowsLauncherSession
         ServerPreferences = preferences;
     }
 
-    internal async Task RefreshServersAsync(IProgress<ServerRefreshState> progress, CancellationToken cancellationToken)
+    internal async Task RefreshServersAsync(ServerScope scope, IProgress<ServerRefreshState> progress, CancellationToken cancellationToken)
     {
-        var next = await Browser.RefreshAsync(Library, Library.Cache, progress, cancellationToken, TestMaster);
-        await SaveLibraryAsync(next);
+        Record(new(UsageKind.ServerListRefreshed, (int)scope));
+        try
+        {
+            var next = await Browser.RefreshAsync(Library, Library.Cache, progress, cancellationToken, TestMaster);
+            await SaveLibraryAsync(next);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Net.Sockets.SocketException)
+        {
+            ShowError(UsageProblem.ServerList);
+            throw;
+        }
     }
 
     internal Task ToggleFavoriteAsync(string address) => SaveLibraryAsync(Library with
@@ -275,8 +427,16 @@ internal sealed class WindowsLauncherSession
 
     internal async Task UpdateSettingsAsync(GameSettings choice)
     {
+        var before = Settings.Saved;
         Settings.Replace(choice);
-        try { await Settings.FlushAsync(); }
+        try
+        {
+            await Settings.FlushAsync();
+            if (!choice.SendCrashReports)
+                Reports.CancelCrash();
+            foreach (var item in UsageEvent.Changed(before, Settings.Saved))
+                Record(item);
+        }
         catch
         {
             Settings.Replace(Settings.Saved);
@@ -294,7 +454,9 @@ internal sealed class WindowsLauncherSession
             return GameArchives.RecoverSelection(files, remembered, installations.Select(install => install.DataPath));
         });
         string initialPath = SetupSession.InitialDataPath(candidates, remembered, SetupComplete);
-        return new SetupSession(files, folder, credentials, initialPath, hasKey, step: step);
+        return new SetupSession(files, folder, credentials, initialPath, hasKey, step: step,
+            hasReportService: Reports.CrashAvailable && !Settings.Working.CrashReportsAsked && !SetupComplete,
+            hasUsageService: Reports.Usage.ShouldAsk && !SetupComplete);
     }
 
     private sealed class ProbeCredentials : ISecretStore

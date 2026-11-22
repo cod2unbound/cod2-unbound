@@ -96,6 +96,7 @@ public sealed partial class ServersPage : Page
         HostingContent.Visibility = NewHost.Visibility = IsVisible(showHosting);
         if (showHosting)
         {
+            session.Opened(UsagePage.Hosting);
             await shell.ShowProblemAsync(async () =>
             {
                 hosting ??= new HostingPage(shell, session);
@@ -394,11 +395,12 @@ public sealed partial class ServersPage : Page
 
     private async void OnConnect(object sender, RoutedEventArgs args) => await ConnectAsync();
 
-    private Task ConnectAsync(string? address = null) => shell.RunAsync(() => ShowConnectAsync(address));
+    private Task ConnectAsync(string? address = null, UsageJoin source = UsageJoin.TypedAddress) =>
+        shell.RunAsync(() => ShowConnectAsync(address, source));
 
-    internal Task ConnectLinkAsync(ServerLink link) => ShowConnectAsync(link.Target.Address, link);
+    internal Task ConnectLinkAsync(ServerLink link) => ShowConnectAsync(link.Target.Address, UsageJoin.Link, link);
 
-    private async Task ShowConnectAsync(string? address, ServerLink? link = null)
+    private async Task ShowConnectAsync(string? address, UsageJoin source, ServerLink? link = null)
     {
         if (dialogOpen)
             return;
@@ -407,7 +409,7 @@ public sealed partial class ServersPage : Page
         {
             var dialog = new ConnectDialog(address, link) { XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Target is { } target)
-                await JoinAsync(target, link?.Edition);
+                await JoinAsync(target, source, link?.Edition);
         }
         finally { dialogOpen = false; }
     }
@@ -416,13 +418,14 @@ public sealed partial class ServersPage : Page
     {
         if (ServerList.SelectedItem is not ServerRow row)
             return;
+        var source = model.Scope == ServerScope.Favorites ? UsageJoin.Favorite : UsageJoin.List;
         if (row.Server.PasswordRequired)
-            await ConnectAsync(row.Server.Address);
+            await ConnectAsync(row.Server.Address, source);
         else
-            await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null)));
+            await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null), source));
     }
 
-    private async Task JoinAsync(ServerAddress address, GameEdition? requestedEdition = null)
+    private async Task JoinAsync(ServerAddress address, UsageJoin source, GameEdition? requestedEdition = null)
     {
         if (model.GameRunning)
         {
@@ -436,6 +439,8 @@ public sealed partial class ServersPage : Page
         if (decision.Problem is { } problem)
         {
             RefreshStatus.Text = problem;
+            session.ShowError(decision.Action == ServerAdmissionAction.MissingCod2x ||
+                requestedEdition is not null ? UsageProblem.ServerVersion : UsageProblem.Join);
             return;
         }
         if (decision.Action == ServerAdmissionAction.ConfirmVersion)
@@ -450,7 +455,7 @@ public sealed partial class ServersPage : Page
                 return;
         }
 
-        RefreshStatus.Text = (await model.JoinAsync(address, decision.Edition)) switch
+        RefreshStatus.Text = (await model.JoinAsync(address, decision.Edition, source)) switch
         {
             GameStartState.Started => "Launching Call of Duty 2…",
             GameStartState.NeedsSetup or GameStartState.MissingData => "Choose a complete game data folder before launching.",

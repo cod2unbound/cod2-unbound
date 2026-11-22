@@ -59,6 +59,7 @@ public sealed partial class MainWindow : Window
         Closed += (_, _) =>
         {
             gameWatcher.Stop();
+            session.Reports.CancelCrash();
             session.Updates.Changed -= OnUpdateChanged;
             if (updateRequest is { } request)
                 request.Cancel();
@@ -75,6 +76,7 @@ public sealed partial class MainWindow : Window
         loaded = true;
         StartupTrace.Mark("root loaded");
         ResizeForDisplay(startup: true);
+        session.Reports.Facts.Window = WinRT.Interop.WindowNative.GetWindowHandle(this);
         UpdateCaptionColors();
         await RunAsync(async () =>
         {
@@ -240,6 +242,14 @@ public sealed partial class MainWindow : Window
             await RefreshPlayerAsync();
             OnPaneChanged(Nav, EventArgs.Empty);
         }
+        if (place is LauncherPlace.Home or LauncherPlace.Servers or LauncherPlace.Library or LauncherPlace.Configs)
+            session.Opened(place switch
+            {
+                LauncherPlace.Home => UsagePage.Home,
+                LauncherPlace.Servers => UsagePage.Servers,
+                LauncherPlace.Library => UsagePage.Library,
+                _ => UsagePage.Configs
+            });
         if (place == LauncherPlace.Setup)
         {
             var page = new SetupPage(this, session);
@@ -368,6 +378,7 @@ public sealed partial class MainWindow : Window
         if (session.SetupUpdating)
         {
             session.RefreshUpdateOutcome();
+            await session.RecordInstalledUpdateAsync();
             RefreshUpdateViews(session.Updates.State);
             return;
         }
@@ -379,6 +390,7 @@ public sealed partial class MainWindow : Window
         {
             await session.Game.ReconcileAsync();
             var state = session.Game.State;
+            session.GameObserved(state);
             if (!state.Running && minimizedForGame)
             {
                 minimizedForGame = false;
@@ -415,7 +427,11 @@ public sealed partial class MainWindow : Window
     }
 
     private void OnUpdateChanged(LauncherUpdateState state) =>
-        DispatcherQueue.TryEnqueue(() => RefreshUpdateViews(state));
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            session.ObserveUpdate(state);
+            RefreshUpdateViews(state);
+        });
 
     private void RefreshUpdateViews(LauncherUpdateState state)
     {
@@ -444,6 +460,7 @@ public sealed partial class MainWindow : Window
                 var result = await session.Updates.InstallAsync(session.UpdateInstaller, request.Token);
                 if (result.Phase == UpdatePhase.Installing)
                 {
+                    await session.Reports.Usage.FlushAsync();
                     flushedForClose = true;
                     Close();
                 }

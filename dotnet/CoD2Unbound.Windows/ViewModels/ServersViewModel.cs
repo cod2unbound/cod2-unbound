@@ -26,11 +26,11 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     }
 
     internal Task RefreshAsync(IProgress<ServerRefreshState> progress, CancellationToken token) =>
-        session.RefreshServersAsync(progress, token);
+        session.RefreshServersAsync(Scope, progress, token);
 
     internal Task SetFiltersAsync(ServerFilters filters) => session.SaveFiltersAsync(filters);
     internal Task FavoriteAsync(GameServer server) => session.ToggleFavoriteAsync(server.Address);
-    internal Task<GameStartState> JoinAsync(ServerAddress address, GameEdition edition) => session.JoinAsync(address, edition);
+    internal Task<GameStartState> JoinAsync(ServerAddress address, GameEdition edition, UsageJoin source) => session.JoinAsync(address, edition, source);
 
     internal async Task<ServerAdmissionResult> CheckAsync(ServerAddress address)
     {
