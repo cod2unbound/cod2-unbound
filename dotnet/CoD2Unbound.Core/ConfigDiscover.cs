@@ -14,6 +14,7 @@ public sealed record ConfigEraShelf(string Era, ImmutableArray<ConfigDirectoryEn
 /// <summary>Player Setups accepts only data returned by a verified directory.</summary>
 public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog catalog)
 {
+    private const double StockYaw = 0.022;
     private readonly SemaphoreSlim gate = new(1);
     private ConfigDiscoverState state = new(ConfigDiscoverPhase.Idle, Saved: []);
     public ConfigDiscoverState State => Volatile.Read(ref state);
@@ -86,6 +87,23 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
             session.SetTarget(new ConfigImportTarget.Existing(active));
         return session;
     }
+
+    public static double? SetupTurnDistance(ConfigImportSession review, double dpi)
+    {
+        var settings = review.Rows.Where(row => row.NewValue is not null && row.Candidate.SelectedByDefault &&
+            (row.CanSelect || (!row.LockedNames.IsEmpty && row.PlatformNote is null)));
+        var sensitivity = settings.LastOrDefault(row => row.Title.Equals("Set sensitivity", StringComparison.OrdinalIgnoreCase));
+        var yaw = settings.LastOrDefault(row => row.Title.Equals("Set m_yaw", StringComparison.OrdinalIgnoreCase));
+        return TurnDistance(dpi, sensitivity?.NewValue, yaw?.NewValue);
+    }
+
+    public static double? LoadoutTurnDistance(ConfigDocument document, double dpi) =>
+        TurnDistance(dpi, document.EffectiveSetting("sensitivity"), document.EffectiveSetting("m_yaw"));
+
+    private static double? TurnDistance(double dpi, string? sensitivity, string? yaw) =>
+        sensitivity is not null && ConfigValues.Number(sensitivity) is { } value
+            ? MouseDistance.Centimetres(dpi, value, yaw is null ? StockYaw : ConfigValues.Number(yaw) ?? 0)
+            : null;
 
     public static ImmutableArray<ConfigSetupFilter> Filters(ImmutableArray<ConfigDirectoryEntry> entries) =>
         [.. Enum.GetValues<ConfigSetupFilter>().Where(filter => entries.Any(entry => Keeps(filter, entry)))];

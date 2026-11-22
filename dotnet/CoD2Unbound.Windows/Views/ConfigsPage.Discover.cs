@@ -254,6 +254,7 @@ public sealed partial class ConfigsPage
         back.Click += async (_, _) => await shell.RunAsync(() => ShowCatalogueAsync(fromSaved));
         Detail.Children.Add(back);
 
+        double? setupDistance = null;
         var attempt = Action("Try this setup", () => ReviewSetupAsync(newOnly: true));
         attempt.Style = StyleFor("LauncherAccentButton");
         var import = Action("Import…", () => ReviewSetupAsync(newOnly: false));
@@ -278,11 +279,12 @@ public sealed partial class ConfigsPage
         var inSetup = new StackPanel { Spacing = 8 };
         var primary = new StackPanel { Spacing = 12, Children = { Panel(story), Panel(changes) } };
         var secondary = new StackPanel { Spacing = 12, Children = { Panel(inSetup) } };
+        var speed = new ContentControl();
         if (SetupFacts(entry).Length > 0 || !entry.StyleTags.IsEmpty)
         {
             var notable = new StackPanel { Spacing = 8, Children = { PanelHeading("Notable settings") } };
-            if (entry.Facts?.Sensitivity is { Length: > 0 } sensitivity)
-                notable.Children.Add(SettingRow("Mouse speed", sensitivity));
+            speed.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            notable.Children.Add(speed);
             if (entry.Facts?.Resolution is { Length: > 0 } resolution)
                 notable.Children.Add(SettingRow("Resolution", resolution));
             if (!entry.StyleTags.IsEmpty)
@@ -301,7 +303,8 @@ public sealed partial class ConfigsPage
         async Task ReviewSetupAsync(bool newOnly)
         {
             var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
-            await ReviewAsync(review, entry.Player, newOnly);
+            setupDistance ??= ConfigDiscover.SetupTurnDistance(review, model.DpiFor(model.Studio.ReadActive()));
+            await ReviewAsync(review, entry.Player, newOnly, () => setupDistance);
         }
 
         async Task ShowPreviewAsync()
@@ -315,6 +318,10 @@ public sealed partial class ConfigsPage
             {
                 var active = model.Studio.ReadActive();
                 var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active);
+                double dpi = model.DpiFor(active);
+                setupDistance = ConfigDiscover.SetupTurnDistance(review, dpi);
+                speed.Content = setupDistance is { } cm ? SettingRow("Mouse speed", Distance(cm)) : null;
+                double? activeDistance = active is null ? null : ConfigDiscover.LoadoutTurnDistance(active.Document, dpi);
                 var specs = model.Model.Specs.ToDictionary(spec => spec.Name, StringComparer.OrdinalIgnoreCase);
                 var rows = review.Rows
                     .Where(row => row.NewValue is not null && row.Title.StartsWith("Set ", StringComparison.Ordinal) &&
@@ -328,8 +335,12 @@ public sealed partial class ConfigsPage
                     .Select(pair =>
                     {
                         var (row, spec) = pair;
-                        string? before = row.OldValue is { } old ? ConfigValues.Display(spec!, old) : null;
-                        return (Title: spec!.Title, Before: before, After: ConfigValues.Display(spec, row.NewValue),
+                        bool mouse = spec!.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase);
+                        string? before = mouse ? (activeDistance is { } current ? Distance(current) : null) :
+                            row.OldValue is { } old ? ConfigValues.Display(spec, old) : null;
+                        string after = mouse ? (setupDistance is { } source ? Distance(source) : "Distance unavailable") :
+                            ConfigValues.Display(spec, row.NewValue);
+                        return (Title: spec.Title, Before: before, After: after,
                             Locked: !row.LockedNames.IsEmpty);
                     }).ToArray();
                 changes.Children.RemoveAt(1);

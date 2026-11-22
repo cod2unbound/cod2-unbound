@@ -79,11 +79,23 @@ internal static partial class Program
             Equal(ConfigImportPlatform.Windows, review.DestinationPlatform);
             Equal(entry.SourceUrl.AbsoluteUri, review.Origin.Source);
             Equal(entry.Credit, review.Origin.Credit);
+            Equal(24.7, Math.Round(ConfigDiscover.SetupTurnDistance(review, 800)!.Value, 1));
+            Equal<double?>(null, ConfigDiscover.SetupTurnDistance(review, 0));
             fetcher.Responses.Clear();
             discover.LoadAsync(retry: true).GetAwaiter().GetResult();
             Equal(ConfigDiscoverPhase.Loaded, discover.State.Phase);
             Equal(true, discover.State.Problem is not null);
             Equal("Removed from Saved.", discover.SetSavedAsync(entry.Id, false).GetAwaiter().GetResult());
+        });
+
+        Check("Setup mouse distance follows the last reviewed sensitivity and the setup yaw", () =>
+        {
+            var catalog = new ConfigImportCatalogAdapter(ConfigCatalog.LoadBundled());
+            var bundle = Sync(new ConfigImportLoader(catalog).LoadAsync(new ConfigImportInput.Paste(
+                ImportBytes("seta sensitivity 2.4\nseta sensitivity 2.1\nseta m_yaw 0.011\n")), ConfigDialect.Stock));
+            var review = new ConfigImportSession(bundle, ConfigDialect.Stock, catalog, "Mouse setup");
+            Equal(49.5, Math.Round(ConfigDiscover.SetupTurnDistance(review, 800)!.Value, 1));
+            Equal(24.7, Math.Round(ConfigDiscover.SetupTurnDistance(review, 1600)!.Value, 1));
         });
 
         Check("zPAM download cancellation returns the same verified offer and retries", () =>

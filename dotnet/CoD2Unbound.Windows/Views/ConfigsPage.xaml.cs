@@ -684,7 +684,7 @@ public sealed partial class ConfigsPage : Page
             _ => true
         };
 
-    private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly)
+    private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly, Func<double?>? setupDistance = null)
     {
         var name = new TextBox { Header = "Loadout name", Text = initialName, MaxLength = 80 };
         var profiles = model.State.Profiles;
@@ -751,7 +751,7 @@ public sealed partial class ConfigsPage : Page
             {
                 if (row.Candidate.Command.Kind is ConfigCommandKind.Empty or ConfigCommandKind.Comment)
                     continue;
-                var (title, detail) = ReviewCopy(row);
+                var (title, detail) = ReviewCopy(row, setupDistance);
                 var select = new CheckBox { Content = title, IsEnabled = row.CanSelect, IsChecked = review.SelectedIds.Contains(row.Id) };
                 select.Checked += (_, _) => { review.Select(row.Id, true); Validate(); };
                 select.Unchecked += (_, _) => { review.Select(row.Id, false); Validate(); };
@@ -765,7 +765,7 @@ public sealed partial class ConfigsPage : Page
         }
     }
 
-    private (string Title, string Detail) ReviewCopy(ConfigImportRow row)
+    private (string Title, string Detail) ReviewCopy(ConfigImportRow row, Func<double?>? setupDistance)
     {
         var candidate = row.Candidate;
         bool credential = candidate.Reasons.Contains(ConfigImportRisk.Credential);
@@ -793,7 +793,9 @@ public sealed partial class ConfigsPage : Page
             reason = "Locked in this loadout";
         if (reason is null && spec is not null && row.NewValue is { } value)
         {
-            if (spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
+            if (spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) && setupDistance is not null)
+                reason = setupDistance() is { } distance ? Distance(distance) : "Distance unavailable";
+            else if (spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
                 ConfigValues.Number(value, spec.Type) is { } number && MouseDistance.Centimetres(model.MouseDpi, number) is { } cm)
                 reason = Distance(cm);
             else
