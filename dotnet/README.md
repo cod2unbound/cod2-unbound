@@ -235,8 +235,21 @@ publishing the launcher.
 
 Omit a property to omit that consent step and Privacy switch. Only an explicit
 yes allows the relevant reports to leave this PC. Usage requests use the EU
-ingestion endpoint without redirects, cookies, or ambient credentials. The
-service configuration retains country only and disables person profiles.
+ingestion endpoint without redirects, cookies, or ambient credentials. With the
+app’s version and your Windows version, usage data includes your PC’s model and
+hardware (processor, memory and graphics card), your display, your system
+language and the country you connect from. It includes the processor’s name and
+logical core count, the PC and launcher architectures (`x64` or `arm64`), and
+installed memory in whole GB, rounded to the nearest GB. When the launcher runs
+emulated, its architecture differs from the PC’s. For the one graphics card
+Windows prefers for high performance it includes the name, dedicated memory in
+whole GB rounded down, and the driver version when available. It includes the
+display’s size and refresh rate. The service works out the country from the
+network address, discards the address, and disables person profiles.
+
+Usage data excludes your name, the PC’s name or serial numbers, the board’s UUID,
+the machine GUID, your CD key, server names and addresses, chat, config contents,
+file paths, disks, the number of displays, network adapters, and anything you type.
 Crash reports use a separate Windows text attachment containing exception
 details, module offsets, and module versions. Local game logs and dumps stay
 on this PC.

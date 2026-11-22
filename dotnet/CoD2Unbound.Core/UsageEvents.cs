@@ -85,7 +85,7 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
         "Resolution", "Sensitivity", "DPI", "Game volume", "Extra launch options", "Reset Warnings", "Game data folder", "CD key"
     ];
 
-    internal string? AddProperties(SortedDictionary<string, object> fields)
+    internal string? AddProperties(SortedDictionary<string, object?> fields)
     {
         var name = Item(Names, (int)Kind);
         switch (Kind)
@@ -224,6 +224,8 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
 public sealed record UsageFacts(string App, string Windows, string PcModel, string Processor, int DisplayWidth,
     int DisplayHeight, int DisplayHz, string Language)
 {
+    public UsageHardware? Hardware { get; init; }
+
     private const string Unknown = "unknown";
     private const string ModelUnavailable = "no model given";
     private const string Manufacturer = @"(?:Acer(?: Inc\.)?|Alienware|Apple(?: Inc\.)?|ASUS(?:TEK COMPUTER INC\.)?|ASRock|Dell(?: Inc\.)?|Fujitsu|Framework|Gigabyte(?: Technology Co\., Ltd\.)?|Google|HP|Hewlett[- ]Packard|Huawei|Intel(?: Corporation)?|Lenovo|LG|MEDION|Micro-Star(?: International Co\., Ltd\.)?|Microsoft(?: Corporation)?|MINISFORUM|MSI|Panasonic|Parallels|QEMU|Razer|Samsung|Sony(?: Corporation)?|Toshiba|VMware(?:, Inc\.)?)";
@@ -255,25 +257,74 @@ public sealed record UsageFacts(string App, string Windows, string PcModel, stri
     public static string SafeWindows(string? value) => value is { Length: <= 21 } &&
         Regex.IsMatch(value, @"\A[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,8}\z", RegexOptions.CultureInvariant) ? value : Unknown;
 
-    private static string Text(string? value, string pattern, string fallback, string[] privateValues) =>
+    public static string SafeGraphics(string? value, params string[] privateValues) =>
+        Text(value?.Trim(' '), GraphicsPattern, Unknown, privateValues, requireDigit: false);
+
+    private const string GraphicsPattern = """
+        (?x)\A(?:
+          NVIDIA(?:\(R\))?\ (?:GeForce\ (?:RTX|GTX|GTS|GT|MX)\ ?[0-9]{2,4}(?:M|\ Ti|\ SUPER|\ Ti\ SUPER)?(?:\ (?:Laptop\ )?GPU)?|
+            (?:Quadro\ (?:RTX\ )?|Tesla\ |RTX\ (?:A|PRO\ )?)[A-Z]?[0-9]{2,4}(?:\ (?:Ada\ Generation|Blackwell(?:\ (?:Workstation|Max-Q|Server)\ Edition)?|Laptop\ GPU))?)|
+          AMD\ Radeon(?:\(TM\))?(?:\ (?:RX|PRO|HD|R[579]|Vega)\ [A-Z]?[0-9]{1,4}(?:M|M?\ (?:XT|XTX|GRE|S))?|(?:\ [0-9]{3}M)?\ Graphics)|
+          Intel(?:\(R\))?\ (?:Arc(?:\(TM\))?(?:\ (?:Pro\ )?[AB][0-9]{2,3}M?)?|UHD|HD|Iris(?:\(R\))?\ (?:Xe(?:\ MAX)?|Plus|Pro))\ Graphics(?:\ [0-9]{3,4})?|
+          Qualcomm(?:\(R\))?\ Adreno(?:\(TM\))?\ X[0-9]-[0-9]{2}(?:\ GPU)?|
+          Microsoft\ Basic\ (?:Render\ Driver|Display\ Adapter)|
+          Parallels\ Display\ Adapter\ \(WDDM\)|
+          VMware\ SVGA\ 3D
+        )\z
+        """;
+
+    private static string Text(string? value, string pattern, string fallback, string[] privateValues, bool requireDigit = true) =>
         value is { Length: <= 64 } && Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase) &&
-        value.Any(char.IsAsciiDigit) && !CrashReporting.ContainsKey(value) &&
+        (!requireDigit || value.Any(char.IsAsciiDigit)) && !CrashReporting.ContainsKey(value) &&
         !Regex.IsMatch(value, @"[a-f0-9]{12,}|[0-9]{9,}|(?:[a-f0-9]{2}-){5}[a-f0-9]{2}|(?:^| )S-[0-9]-|(?:[0-9]{1,3}\.){3}[0-9]{1,3}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
         !privateValues.Any(secret => !string.IsNullOrWhiteSpace(secret) &&
             Regex.IsMatch(value, @"(?<![A-Za-z0-9])" + Regex.Escape(secret) + @"(?![A-Za-z0-9])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             ? value : fallback;
 
-    internal SortedDictionary<string, object> Properties() => new(StringComparer.Ordinal)
+    internal SortedDictionary<string, object?> Properties()
     {
-        ["$lib"] = "cod2unbound-launcher",
-        ["$process_person_profile"] = false,
-        ["app"] = UsageEvent.Version(App) ?? Unknown,
-        ["windows"] = SafeWindows(Windows),
-        ["pc_model"] = SafeModel(PcModel),
-        ["processor"] = SafeProcessor(Processor),
-        ["display_width"] = Math.Clamp(DisplayWidth, 0, 32768),
-        ["display_height"] = Math.Clamp(DisplayHeight, 0, 32768),
-        ["display_hz"] = Math.Clamp(DisplayHz, 0, 1000),
-        ["language"] = Language is { Length: 2 or 3 } && Language.All(c => c is >= 'a' and <= 'z') ? Language : Unknown
-    };
+        var fields = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["$lib"] = "cod2unbound-launcher",
+            ["$process_person_profile"] = false,
+            ["app"] = UsageEvent.Version(App) ?? Unknown,
+            ["windows"] = SafeWindows(Windows),
+            ["pc_model"] = SafeModel(PcModel),
+            ["processor"] = SafeProcessor(Processor),
+            ["display_width"] = Math.Clamp(DisplayWidth, 0, 32768),
+            ["display_height"] = Math.Clamp(DisplayHeight, 0, 32768),
+            ["display_hz"] = Math.Clamp(DisplayHz, 0, 1000),
+            ["language"] = Language is { Length: 2 or 3 } && Language.All(c => c is >= 'a' and <= 'z') ? Language : Unknown
+        };
+        if (Hardware is { } hardware)
+        {
+            fields.Add("processor_cores", Math.Clamp(hardware.ProcessorCores, 1, 1024));
+            fields.Add("pc_arch", UsageHardware.SafeArchitecture(hardware.PcArchitecture));
+            fields.Add("app_arch", UsageHardware.SafeArchitecture(hardware.AppArchitecture));
+            fields.Add("memory_gb", Math.Clamp(hardware.MemoryGb, 1, 4096));
+            fields.Add("graphics", SafeGraphics(hardware.Graphics));
+            fields.Add("graphics_memory_gb", Math.Clamp(hardware.GraphicsMemoryGb, 0, (long)(ulong.MaxValue >> 30)));
+            fields.Add("graphics_driver", UsageHardware.SafeGraphicsDriver(hardware.GraphicsDriver));
+        }
+        return fields;
+    }
+}
+
+public sealed record UsageHardware(int ProcessorCores, string? PcArchitecture, string? AppArchitecture, int MemoryGb,
+    string? Graphics, long GraphicsMemoryGb, string? GraphicsDriver)
+{
+    public static int InstalledMemoryGb(ulong kibibytes)
+    {
+        const ulong kibPerGb = 1024 * 1024;
+        ulong rounded = kibibytes / kibPerGb + (kibibytes % kibPerGb >= kibPerGb / 2 ? 1UL : 0UL);
+        return (int)Math.Clamp(rounded, 1UL, 4096UL);
+    }
+
+    internal static string? SafeArchitecture(string? value) => value is "x64" or "arm64" ? value : null;
+
+    internal static string? SafeGraphicsDriver(string? value) =>
+        value is { Length: >= 7 and <= 23 } &&
+        Regex.IsMatch(value, @"\A[0-9]{1,5}(?:\.[0-9]{1,5}){3}\z", RegexOptions.CultureInvariant) &&
+        value.Split('.').All(part => ushort.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            ? value : null;
 }

@@ -6,16 +6,29 @@ using Microsoft.Win32;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsReportFacts(string version)
+internal sealed class WindowsReportFacts
 {
-    private readonly Lazy<(string Model, string Processor)> machine = new(ReadMachine);
+    private readonly string version;
+    private readonly Lazy<(string Model, string Processor, string[] PrivateValues)> machine = new(ReadMachine);
+    private readonly Lazy<Task<UsageHardware>> hardware;
+
+    internal WindowsReportFacts(string version)
+    {
+        this.version = version;
+        hardware = new(() => Task.Run(ReadHardware));
+    }
+
     internal nint Window { get; set; }
 
-    internal UsageFacts Read()
+    internal async ValueTask<UsageFacts> ReadAsync()
     {
+        var specs = await hardware.Value.ConfigureAwait(false);
         var mode = Display(Window);
         return new(version, Environment.OSVersion.Version.ToString(3), machine.Value.Model, machine.Value.Processor,
-            mode.Width, mode.Height, mode.Hz, Language());
+            mode.Width, mode.Height, mode.Hz, Language())
+        {
+            Hardware = specs
+        };
     }
 
     internal CrashReportFacts Crash()
@@ -25,7 +38,7 @@ internal sealed class WindowsReportFacts(string version)
 
     internal static string[] PrivateNames() => [Environment.UserName, Environment.MachineName];
 
-    private static (string Model, string Processor) ReadMachine()
+    private static (string Model, string Processor, string[] PrivateValues) ReadMachine()
     {
         var (maker, model, serial) = FirmwareModel();
         string[] privateNames = [.. PrivateNames(), serial?.Trim() ?? ""];
@@ -36,7 +49,34 @@ internal sealed class WindowsReportFacts(string version)
                 "ProcessorNameString", null) as string;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
-        return (UsageFacts.Model(maker, model, privateNames), UsageFacts.SafeProcessor(processor, privateNames));
+        return (UsageFacts.Model(maker, model, privateNames), UsageFacts.SafeProcessor(processor, privateNames), privateNames);
+    }
+
+    private UsageHardware ReadHardware()
+    {
+        const ushort allProcessorGroups = 0xffff;
+        uint count = GetActiveProcessorCount(allProcessorGroups);
+        int cores = count == 0 ? Environment.ProcessorCount : (int)Math.Min(count, 1024);
+        var (graphics, bytes, driver) = WindowsGraphicsFacts.Read();
+        return new(cores, ArchitectureName(RuntimeInformation.OSArchitecture),
+            ArchitectureName(RuntimeInformation.ProcessArchitecture), UsageHardware.InstalledMemoryGb(InstalledMemoryKiB()),
+            UsageFacts.SafeGraphics(graphics, machine.Value.PrivateValues), (long)(bytes >> 30), driver);
+    }
+
+    private static string? ArchitectureName(Architecture architecture) => architecture switch
+    {
+        Architecture.X64 => "x64",
+        Architecture.Arm64 => "arm64",
+        _ => null
+    };
+
+    private static ulong InstalledMemoryKiB()
+    {
+        if (GetPhysicallyInstalledSystemMemory(out ulong kibibytes))
+            return kibibytes;
+        // Windows can still report visible physical memory if firmware omits its installed total.
+        var status = new MemoryStatus { Length = (uint)Marshal.SizeOf<MemoryStatus>() };
+        return GlobalMemoryStatusEx(ref status) ? status.TotalPhysicalBytes / 1024 : 0;
     }
 
     private static (string? Maker, string? Model, string? Serial) FirmwareModel()
@@ -113,6 +153,25 @@ internal sealed class WindowsReportFacts(string version)
 
     [DllImport("kernel32.dll", ExactSpelling = true)]
     private static extern uint GetSystemFirmwareTable(uint provider, uint table, [Out] byte[]? data, uint size);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MemoryStatus
+    {
+        internal uint Length, Load;
+        internal ulong TotalPhysicalBytes, AvailablePhysicalBytes, TotalPageFileBytes, AvailablePageFileBytes,
+            TotalVirtualBytes, AvailableVirtualBytes, AvailableExtendedVirtualBytes;
+    }
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    private static extern uint GetActiveProcessorCount(ushort group);
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPhysicallyInstalledSystemMemory(out ulong kibibytes);
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MemoryStatus status);
 
     [DllImport("kernel32.dll", ExactSpelling = true)]
     private static extern int GetUserDefaultUILanguage();

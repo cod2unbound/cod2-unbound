@@ -236,7 +236,7 @@ public sealed partial class SettingsPage : Page
             var usage = PrivacySwitch(PrivacyPresentation.UsageSwitch, reports.Usage.InstallNumber is not null, "U",
                 value => session.SetUsageAsync(value, UsageSource.Settings));
             Row(PrivacyPresentation.UsageSwitch,
-                "Which screens and features you use, with your PC’s model, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
+                "Which screens and features you use, with your PC’s model and hardware, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
                 Buttons(PrivacyPresentation.PreviewButton(false, "W", shell, reports), usage));
             if (reports.Usage.InstallNumber is { } id)
             {

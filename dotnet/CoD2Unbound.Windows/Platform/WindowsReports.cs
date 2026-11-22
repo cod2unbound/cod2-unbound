@@ -18,7 +18,7 @@ internal sealed class WindowsReports(string home, WindowsSettingsFolder folder, 
 
     internal async Task InitializeAsync(GameSettings settings, bool setupComplete)
     {
-        Usage = new(folder, GetUsageEndpoint(), Facts.Read, async (address, body, token) =>
+        Usage = new(folder, GetUsageEndpoint(), Facts.ReadAsync, async (address, body, token) =>
             await transport.PostAsync(address, body, "application/json", "cod2unbound-launcher", null,
                 TimeSpan.FromSeconds(20), token).ConfigureAwait(false) is >= 200 and < 300);
         await Usage.InitializeAsync(settings.UsageConsent, setupActive: !setupComplete);

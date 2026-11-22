@@ -8,7 +8,10 @@ namespace CoD2Unbound.Core.Tests;
 internal static partial class Program
 {
     private static readonly UsageFacts WindowsFacts = new("0.5.0", "10.0.26100", "Lenovo ThinkPad T14",
-        "AMD Ryzen 7 7800X3D", 2560, 1440, 165, "en");
+        "AMD Ryzen 7 7800X3D", 2560, 1440, 165, "en")
+    {
+        Hardware = new(16, "x64", "x64", 32, "NVIDIA GeForce RTX 4070", 12, "32.0.15.6614")
+    };
     private static readonly UsageEndpoint LoopbackUsage = UsageEndpoint.Create("phc_fixture", "http://127.0.0.1:9")!;
 
     private static void UsageCases()
@@ -19,7 +22,7 @@ internal static partial class Program
             var usage = await f.Start();
             await usage.OpenedAsync();
             await usage.RecordAsync(UsageEvent.Page(UsagePage.Home));
-            using var sample = JsonDocument.Parse(usage.Preview()!);
+            using var sample = JsonDocument.Parse((await usage.PreviewAsync())!);
             Equal(Guid.Empty, sample.RootElement.GetProperty("distinct_id").GetGuid());
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.JournalFile, default));
@@ -96,7 +99,7 @@ internal static partial class Program
             Equal(false, usage.Available);
             Equal(false, usage.ShouldAsk);
             Equal(false, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, _ => throw new IOException()));
-            Equal<string?>(null, usage.Preview());
+            Equal<string?>(null, await usage.PreviewAsync());
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             Equal(0, f.Captures.Count);
@@ -219,7 +222,10 @@ internal static partial class Program
             foreach (string value in hostile)
             {
                 Equal<UsageEvent?>(null, UsageEvent.Catalogue(UsageKind.SetupViewed, signed, value));
-                f.Facts = new(value, value, value, value, int.MaxValue, -1, int.MaxValue, value);
+                f.Facts = new(value, value, value, value, int.MaxValue, -1, int.MaxValue, value)
+                {
+                    Hardware = new(-1, value, value, int.MaxValue, value, -1, value)
+                };
                 foreach (var kind in Enum.GetValues<UsageKind>())
                     await usage.RecordAsync(new(kind, int.MaxValue, int.MinValue, -1, value, value));
                 var settings = new GameSettings { Advanced = value, Resolution = value, Fullscreen = value, DismissedWarnings = [value] };
@@ -239,7 +245,7 @@ internal static partial class Program
                 await usage.RecordAsync(item);
             }
             f.ForcedId = Guid.Parse("e2f92677-15c0-4f83-b336-1f0998f4b27b");
-            string preview = usage.Preview()!;
+            string preview = (await usage.PreviewAsync())!;
             f.ForcedId = Guid.Parse("e2f92677-15c0-4f83-b336-1f0998f4b27b");
             await usage.RecordAsync(UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x));
             await usage.HoldAsync(false);
@@ -253,6 +259,14 @@ internal static partial class Program
             using var sample = JsonDocument.Parse(preview);
             var joined = received.Single(item => Name(item) == "server joined");
             Equal(true, JsonElement.DeepEquals(sample.RootElement, joined));
+            var previewFacts = Props(sample.RootElement);
+            Equal(16, previewFacts.GetProperty("processor_cores").GetInt32());
+            Equal("x64", previewFacts.GetProperty("pc_arch").GetString());
+            Equal("x64", previewFacts.GetProperty("app_arch").GetString());
+            Equal(32, previewFacts.GetProperty("memory_gb").GetInt32());
+            Equal("NVIDIA GeForce RTX 4070", previewFacts.GetProperty("graphics").GetString());
+            Equal(12, previewFacts.GetProperty("graphics_memory_gb").GetInt32());
+            Equal("32.0.15.6614", previewFacts.GetProperty("graphics_driver").GetString());
             Equal(true, preview.StartsWith("{\n  \"distinct_id\": ", StringComparison.Ordinal));
             Equal(true, preview.Contains("\n    \"$lib\": \"cod2unbound-launcher\",\n", StringComparison.Ordinal));
             Equal(true, sample.RootElement.EnumerateObject().Select(field => field.Name)
@@ -264,7 +278,8 @@ internal static partial class Program
                 var facts = Props(item);
                 Equal(false, facts.GetProperty("$process_person_profile").GetBoolean());
                 Equal("cod2unbound-launcher", facts.GetProperty("$lib").GetString());
-                Equal(true, new[] { "app", "windows", "pc_model", "processor", "display_width", "display_height", "display_hz", "language" }
+                Equal(true, new[] { "app", "windows", "pc_model", "processor", "processor_cores", "pc_arch", "app_arch",
+                    "memory_gb", "graphics", "graphics_memory_gb", "graphics_driver", "display_width", "display_height", "display_hz", "language" }
                     .All(name => facts.TryGetProperty(name, out _)));
                 Equal(true, item.GetProperty("timestamp").GetString()!.EndsWith(":00Z", StringComparison.Ordinal));
             }
@@ -313,6 +328,82 @@ internal static partial class Program
             Equal("unknown", UsageFacts.SafeProcessor(@"Intel Core i7 C:\Users\player"));
             Equal("unknown", UsageFacts.SafeProcessor("AMD Ryzen 7 player", "player"));
             Equal("unknown", UsageFacts.SafeProcessor("AMD Ryzen 7 PF3CK8HL", "PF3CK8HL"));
+        });
+        Check("usage graphics only accepts recognized adapter names", () =>
+        {
+            foreach (string name in new[]
+            {
+                "NVIDIA GeForce RTX 4070 SUPER", "AMD Radeon RX 7800 XT", "Intel(R) Arc(TM) A750 Graphics",
+                "Intel(R) UHD Graphics 770", "Intel(R) Iris(R) Xe Graphics", "Qualcomm(R) Adreno(TM) X1-85 GPU",
+                "Microsoft Basic Render Driver", "Parallels Display Adapter (WDDM)"
+            })
+                Equal(name, UsageFacts.SafeGraphics(" " + name + " "));
+            foreach (string value in new[]
+            {
+                @"NVIDIA GeForce RTX 4070 C:\Users\private", "AMD Radeon RX 7800 PRIVATE-HANDLE",
+                "Intel(R) Arc(TM) AABBCCDDEEFF Graphics", "Intel(R) UHD Graphics 000000000000000086D3",
+                "Qualcomm(R) Adreno(TM) X1-85\0 GPU", "Microsoft Basic Render Driver\n",
+                "NVIDIA GeForce RTX 4070 " + new string('A', 65)
+            })
+                Equal("unknown", UsageFacts.SafeGraphics(value));
+            Equal("unknown", UsageFacts.SafeGraphics("NVIDIA GeForce RTX 4070 SUPER", "super"));
+            Equal("unknown", UsageFacts.SafeGraphics("Intel(R) UHD Graphics 770", "770"));
+        });
+        Usage("validated hardware values use only supported wire shapes", async () =>
+        {
+            var f = new UsageFixture();
+            var usage = await f.Start();
+            foreach (string value in new[]
+            {
+                @"C:\Users\private", "private", "1234567891011", "000000000000000086D3", "x64\n",
+                "32.0.15.6614\t", new string('8', 65), "32.0.15.65536", "32..15.6614"
+            })
+            {
+                f.Facts = WindowsFacts with { Hardware = new(0, value, value, -1, null, -1, value) };
+                using var sample = JsonDocument.Parse((await usage.PreviewAsync())!);
+                var invalid = Props(sample.RootElement);
+                Equal(JsonValueKind.Null, invalid.GetProperty("pc_arch").ValueKind);
+                Equal(JsonValueKind.Null, invalid.GetProperty("app_arch").ValueKind);
+                Equal(JsonValueKind.Null, invalid.GetProperty("graphics_driver").ValueKind);
+                Equal(1, invalid.GetProperty("processor_cores").GetInt32());
+                Equal(1, invalid.GetProperty("memory_gb").GetInt32());
+                Equal(0L, invalid.GetProperty("graphics_memory_gb").GetInt64());
+            }
+            f.Facts = WindowsFacts with { Hardware = new(int.MaxValue, "arm64", "x64", int.MaxValue, null,
+                long.MaxValue, "65535.65535.65535.65535") };
+            using var capped = JsonDocument.Parse((await usage.PreviewAsync())!);
+            var props = Props(capped.RootElement);
+            Equal("arm64", props.GetProperty("pc_arch").GetString());
+            Equal("x64", props.GetProperty("app_arch").GetString());
+            Equal(1024, props.GetProperty("processor_cores").GetInt32());
+            Equal(4096, props.GetProperty("memory_gb").GetInt32());
+            Equal((long)(ulong.MaxValue >> 30), props.GetProperty("graphics_memory_gb").GetInt64());
+            Equal("65535.65535.65535.65535", props.GetProperty("graphics_driver").GetString());
+            Equal(7, UsageHardware.InstalledMemoryGb(7 * 1024 * 1024 + 512 * 1024 - 1));
+            Equal(8, UsageHardware.InstalledMemoryGb(7 * 1024 * 1024 + 512 * 1024));
+            Equal(1, UsageHardware.InstalledMemoryGb(0));
+            Equal(4096, UsageHardware.InstalledMemoryGb(ulong.MaxValue));
+        });
+        Usage("queued legacy events preserve display facts and add the current hardware", async () =>
+        {
+            var f = new UsageFixture { Facts = WindowsFacts with { Hardware = null, DisplayWidth = 1024 } };
+            var old = await f.Start();
+            await old.OpenedAsync();
+            await old.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist);
+            await old.RecordAsync(UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x));
+            var stored = (await f.Disk.ReadAsync(UsageData.JournalFile, default))!.Value;
+            string legacy = Encoding.UTF8.GetString(stored.AsSpan()).Replace(",\"Hardware\":null", "", StringComparison.Ordinal);
+            await f.Disk.WriteAsync(UsageData.JournalFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+
+            f.Facts = WindowsFacts;
+            var restarted = await f.Start();
+            await restarted.OpenedAsync();
+            await restarted.HoldAsync(false);
+            await Until(() => restarted.QueuedCount == 0);
+            var sent = Props(Events(f.Captures).Single(item => Name(item) == "server joined"));
+            Equal(1024, sent.GetProperty("display_width").GetInt32());
+            Equal(16, sent.GetProperty("processor_cores").GetInt32());
+            Equal("32.0.15.6614", sent.GetProperty("graphics_driver").GetString());
         });
         Check("legacy usage preference and both explicit answers survive reset", () =>
         {
@@ -385,7 +476,7 @@ internal static partial class Program
 
         internal async Task<UsageData> Start(bool setup = true, bool available = true)
         {
-            var usage = new UsageData(Disk, available ? LoopbackUsage : null, () => Facts, (_, bytes, token) =>
+            var usage = new UsageData(Disk, available ? LoopbackUsage : null, () => ValueTask.FromResult(Facts), (_, bytes, token) =>
             {
                 Captures.Enqueue(bytes);
                 return Send(token);

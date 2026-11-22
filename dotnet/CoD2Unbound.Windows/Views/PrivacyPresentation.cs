@@ -33,7 +33,7 @@ internal static class PrivacyPresentation
 
     private static readonly (string, string)[] UsageRows =
     [
-        ("What is sent", "Which screens you open and which features you use, such as setup steps, games started and how they ended, joining servers, player setups viewed or imported, and settings you change, by name. With the app’s version, your Windows version, your PC’s model and processor, your display, your system language and the country you connect from."),
+        ("What is sent", "Which screens you open and which features you use, such as setup steps, games started and how they ended, joining servers, player setups viewed or imported, and settings you change, by name. With the app’s version, your Windows version, your PC’s model and hardware (processor, memory and graphics card), your display, your system language and the country you connect from."),
         ("What never is", Never + " Your network address is used once to work out your country, then discarded; nothing finer than the country is kept."),
         ("Where it goes", "To PostHog, a service hosted in the EU, where only this project can see it. A random install number made on this PC links your sessions; turning this off forgets it.")
     ];
@@ -65,7 +65,17 @@ internal static class PrivacyPresentation
         if (crash)
             button.Click += (_, _) => CrashFlyout(reports).ShowAt(button);
         else
-            button.Click += async (_, _) => await ShowUsageAsync(shell, reports);
+        {
+            bool showing = false;
+            button.Click += async (_, _) =>
+            {
+                if (showing)
+                    return;
+                showing = true;
+                try { await ShowUsageAsync(shell, reports); }
+                finally { showing = false; }
+            };
+        }
         return button;
     }
 
@@ -114,7 +124,7 @@ internal static class PrivacyPresentation
 
     private static async Task ShowUsageAsync(MainWindow shell, WindowsReports reports)
     {
-        if (reports.Usage.Preview() is not { } payload)
+        if (await reports.Usage.PreviewAsync() is not { } payload)
             return;
         var content = new StackPanel { Spacing = 14 };
         content.Children.Add(Body("What the launcher records, and one real example as it would leave this PC."));
@@ -123,9 +133,9 @@ internal static class PrivacyPresentation
         {
             ("Screens and features", "Which screens you open and what you use there: setup steps, games started and how they ended, joining a server and how, player setups viewed, tried or imported, loadouts made, checks run, hosting, updates."),
             ("Settings", "Which settings you change, by the setting’s name. Not what you type into a field."),
-            ("This PC, your country", "The app’s version, your Windows version, your PC’s model and processor, your display’s size and refresh rate, your system language, and the country your connection comes from (worked out from your network address, which is then discarded)."),
+            ("This PC, your country", "The app’s version, your Windows version, your PC’s model, its processor (name, number of cores, and whether the PC is x64 or Arm and the launcher runs emulated), its memory in GB, its graphics card (name, memory in GB and driver version), your display’s size and refresh rate, your system language, and the country your connection comes from (worked out from your network address, which is then discarded)."),
             ("Problems", "Errors the launcher shows you, by kind, such as “the game couldn’t start”."),
-            ("Never", Never)
+            ("Never", "Your name, your PC’s name or serial numbers, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.")
         })
         {
             var row = Columns(12, new(132), new(1, GridUnitType.Star));

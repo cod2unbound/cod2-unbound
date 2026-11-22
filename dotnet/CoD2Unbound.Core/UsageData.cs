@@ -98,8 +98,10 @@ internal sealed record UsageOccurrence(Guid Id, long Minute, UsageEvent Event, U
             {
                 switch (value)
                 {
+                    case null: writer.WriteNull(key); break;
                     case string text: writer.WriteString(key, text); break;
                     case int number: writer.WriteNumber(key, number); break;
+                    case long number: writer.WriteNumber(key, number); break;
                     case bool flag: writer.WriteBoolean(key, flag); break;
                 }
             }
@@ -133,7 +135,7 @@ public sealed partial class UsageData
     private sealed record Answer(UsageConsent Consent, Guid? Install);
     private readonly ISettingsFolder storage;
     private readonly UsageEndpoint? endpoint;
-    private readonly Func<UsageFacts> facts;
+    private readonly Func<ValueTask<UsageFacts>> facts;
     private readonly Func<Uri, byte[], CancellationToken, ValueTask<bool>> send;
     private readonly TimeProvider clock;
     private readonly TimeSpan firstDelay;
@@ -147,7 +149,7 @@ public sealed partial class UsageData
     private bool held = true;
     private bool opened;
 
-    public UsageData(ISettingsFolder storage, UsageEndpoint? endpoint, Func<UsageFacts> facts,
+    public UsageData(ISettingsFolder storage, UsageEndpoint? endpoint, Func<ValueTask<UsageFacts>> facts,
         Func<Uri, byte[], CancellationToken, ValueTask<bool>> send, TimeProvider? clock = null,
         TimeSpan? firstDelay = null, TimeSpan? firstRetry = null, Func<Guid>? newEventId = null)
     {
@@ -194,8 +196,9 @@ public sealed partial class UsageData
             await ClearJournalAsync().ConfigureAwait(false);
     }
 
-    public string? Preview() => Available ? Encoding.UTF8.GetString(new UsageOccurrence(newEventId(), Minute,
-        UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x), facts()).Encode(InstallNumber ?? Guid.Empty, indented: true)!) : null;
+    public async Task<string?> PreviewAsync() => Available ? Encoding.UTF8.GetString(new UsageOccurrence(newEventId(), Minute,
+        UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x), await facts().ConfigureAwait(false))
+        .Encode(InstallNumber ?? Guid.Empty, indented: true)!) : null;
 
     public async Task<bool> SetConsentAsync(UsageConsent choice, UsageSource source, Func<UsageConsent, Task> persist)
     {
@@ -222,7 +225,7 @@ public sealed partial class UsageData
             }
 
             long stamp = Minute;
-            var machine = facts();
+            var machine = await facts().ConfigureAwait(false);
             var candidate = journal with
             {
                 Install = Guid.NewGuid(),
@@ -284,13 +287,17 @@ public sealed partial class UsageData
 
     public async Task OpenedAsync()
     {
-        var machine = InstallNumber is null ? null : facts();
+        var machine = InstallNumber is null ? null : await facts().ConfigureAwait(false);
         await gate.WaitAsync().ConfigureAwait(false);
         try
         {
             opened = true;
             if (InstallNumber is null || machine is null)
                 return;
+            // Events queued before hardware reporting keep their original facts and get the current hardware once.
+            if (machine.Hardware is { } hardware && journal.Events.Any(item => item.Facts.Hardware is null))
+                journal = journal with { Events = Array.ConvertAll(journal.Events, item => item.Facts.Hardware is null
+                    ? item with { Facts = item.Facts with { Hardware = hardware } } : item) };
             journal = AddDailyOpen(journal, Minute, machine);
             await SaveAsync().ConfigureAwait(false);
             Schedule();
@@ -302,7 +309,7 @@ public sealed partial class UsageData
     {
         if (!Available || item is null || item.Kind is UsageKind.AppOpened or UsageKind.TurnedOn)
             return;
-        var machine = InstallNumber is null ? null : facts();
+        var machine = InstallNumber is null ? null : await facts().ConfigureAwait(false);
         await gate.WaitAsync().ConfigureAwait(false);
         try
         {
