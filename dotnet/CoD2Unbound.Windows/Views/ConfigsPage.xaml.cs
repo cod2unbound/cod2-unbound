@@ -83,7 +83,7 @@ public sealed partial class ConfigsPage : Page
             bool selected = ContainingListItem(row)?.IsSelected == true;
             var ink = (SolidColorBrush)ThemeBrush(selected ? "LauncherSelectionPillBrush" : "HeadingBrush", ActualTheme, true);
             var window = (SolidColorBrush)ThemeBrush("PanelBrush", ActualTheme, true);
-            tile.Background = selected && ink.Color == window.Color
+            tile.Background = selected && ContrastRatio(ink.Color, window.Color) < 4.5
                 ? ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, true) : window;
             tile.BorderBrush = initial.Foreground = ink;
         }
@@ -99,6 +99,22 @@ public sealed partial class ConfigsPage : Page
             check.ClearValue(IconElement.ForegroundProperty);
         else
             check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
+
+        static double ContrastRatio(Windows.UI.Color ink, Windows.UI.Color background)
+        {
+            double a = Luminance(ink) + 0.05;
+            double b = Luminance(background) + 0.05;
+            return Math.Max(a, b) / Math.Min(a, b);
+
+            static double Luminance(Windows.UI.Color color) =>
+                0.2126 * Linear(color.R) + 0.7152 * Linear(color.G) + 0.0722 * Linear(color.B);
+
+            static double Linear(byte channel)
+            {
+                double srgb = channel / 255.0;
+                return srgb <= 0.04045 ? srgb / 12.92 : Math.Pow((srgb + 0.055) / 1.055, 2.4);
+            }
+        }
     }
 
     internal void OpenCheckup()
