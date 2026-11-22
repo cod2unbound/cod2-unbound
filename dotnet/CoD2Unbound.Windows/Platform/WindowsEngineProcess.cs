@@ -190,7 +190,8 @@ internal sealed class WindowsSessionLog : IDisposable
             try { File.Delete(System.IO.Path.Join(folder, old)); }
             catch (IOException) { }
         }
-        file = new FileStream(Path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+        // The launcher can read the filtered log while the engine is still running.
+        file = new FileStream(Path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, bufferSize: 1);
         filter = new GameSessionLog(start.LogSecrets, start.HomeDirectory);
     }
 

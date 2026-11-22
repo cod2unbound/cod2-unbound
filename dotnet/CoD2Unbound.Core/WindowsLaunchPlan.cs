@@ -61,7 +61,7 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
         ValidateTail(arguments, binary.Edition, dedicated: true);
         var start = new EngineProcessStart(binary.Path, workingDirectory, homePath, arguments, [])
         {
-            EnvironmentChanges = CrashConsent(enabled: false)
+            EnvironmentChanges = CrashConsent(enabled: false).Add("COD2_CAPTURE_SERVER_CONSOLE", "1")
         };
         return new(start, false);
     }

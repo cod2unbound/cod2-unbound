@@ -326,6 +326,17 @@ void Com_PrintMessage(print_msg_type_t type, const char *msg)
     if (type != 4)
         Sys_Print(msg);
 
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    /* Win32's console window does not forward its text to redirected stdout. */
+    if (type != 4) {
+        const char *captureConsole = getenv("COD2_CAPTURE_SERVER_CONSOLE");
+        if (captureConsole && strcmp(captureConsole, "1") == 0) {
+            fputs(msg, stdout);
+            fflush(stdout);
+        }
+    }
+#endif
+
     if (!com_logfile || !com_logfile->current.integer)
         return;
     if (!FS_Initialized())
