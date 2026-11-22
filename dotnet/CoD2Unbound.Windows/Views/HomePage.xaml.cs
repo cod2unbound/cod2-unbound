@@ -36,38 +36,30 @@ public sealed partial class HomePage : Page
 
     internal void RefreshUpdate(LauncherUpdateState state)
     {
-        bool visible = state.Offer is not null || state.Phase == UpdatePhase.Installed ||
-            state.FailedStage == UpdateFailureStage.Install || session.SetupUpdating;
-        if (state.Phase == UpdatePhase.Downloading && UpdateProgress.Visibility == Visibility.Visible &&
-            state.ProgressPercent is { } progress && !UpdateProgress.IsIndeterminate)
-        {
-            UpdateProgress.Value = progress;
-            return;
-        }
-
+        bool updated = state.Phase == UpdatePhase.Installed;
+        bool failed = state.Issue == UpdateIssue.SetupFailed;
+        bool offered = state.Offer is not null && state.Issue == UpdateIssue.None &&
+            state.Phase is UpdatePhase.Offered or UpdatePhase.Ready;
+        bool visible = !session.SetupUpdating && (updated || failed || offered);
         UpdateBanner.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         UpdateBanner.IsOpen = visible;
         if (!visible)
             return;
-        UpdateBanner.Title = session.SetupUpdating ? "Installing the update…" : state.Message ?? "";
-        UpdateBanner.Severity = state.FailedStage is not null ? InfoBarSeverity.Warning :
-            state.Phase == UpdatePhase.Installed ? InfoBarSeverity.Success : InfoBarSeverity.Informational;
-        UpdateDetails.Content = state.FailedStage is null && state.Offer is not null ? "What’s new" : "Update settings";
-        UpdateButton.Visibility = state.Phase is UpdatePhase.Installing or UpdatePhase.Installed || session.SetupUpdating
-            ? Visibility.Collapsed : Visibility.Visible;
-        UpdateButton.Content = state.CanCancel ? "Cancel" : state.FailedStage is null ? "Install update" : "Try again";
-        UpdateButton.Style = !state.IsBusy && state.Offer is not null ? StyleFor("LauncherAccentButton") : null;
-        UpdateProgress.Visibility = state.Offer is not null && state.IsBusy || session.SetupUpdating
-            ? Visibility.Visible : Visibility.Collapsed;
-        UpdateProgress.IsIndeterminate = state.ProgressPercent is null;
-        UpdateProgress.Value = state.ProgressPercent ?? 0;
+
+        UpdateBanner.Title = updated ? $"CoD2 Unbound is now {session.Version}." :
+            failed ? $"The update didn’t finish. {session.Version} is still installed and works." :
+            $"CoD2 Unbound {state.AvailableVersion} is available.";
+        UpdateBanner.Severity = updated ? InfoBarSeverity.Success : failed ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
+        UpdateButton.Content = updated ? "What’s new" : failed ? "Try again" : "Install update";
     }
 
-    private async void OnUpdateAction(object sender, RoutedEventArgs args) =>
-        await shell.RunUpdateAsync(install: true);
-
-    private async void OnUpdateDetails(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
+    private async void OnUpdateAction(object sender, RoutedEventArgs args)
+    {
+        if (session.Updates.State.Phase == UpdatePhase.Installed)
+            await shell.ShowProblemAsync(() => OpenAsync(WindowsReleaseAssets.NotesPage(session.Version).AbsoluteUri));
+        else
+            await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
+    }
 
     internal async Task RefreshAsync()
     {

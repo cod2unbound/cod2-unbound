@@ -34,7 +34,9 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
+        StartupTrace.Mark("window constructor");
         InitializeComponent();
+        StartupTrace.Mark("window XAML");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(WindowBar);
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
@@ -58,6 +60,10 @@ public sealed partial class MainWindow : Window
         {
             gameWatcher.Stop();
             session.Updates.Changed -= OnUpdateChanged;
+            if (updateRequest is { } request)
+                request.Cancel();
+            else if (session.Updates.State.Phase == UpdatePhase.Ready)
+                _ = session.Updates.DiscardVerifiedAsync();
             windowTheme.Changed -= OnSystemThemeChanged;
         };
     }
@@ -67,19 +73,17 @@ public sealed partial class MainWindow : Window
         if (loaded)
             return;
         loaded = true;
-        if (Nav.SettingsItem is NavigationViewItem settingsItem)
-        {
-            settingsItem.Icon = Fluent("Settings", 20);
-            settingsItem.HighContrastAdjustment = ElementHighContrastAdjustment.None;
-        }
+        StartupTrace.Mark("root loaded");
         ResizeForDisplay(startup: true);
         UpdateCaptionColors();
         await RunAsync(async () =>
         {
             await session.InitializeAsync();
+            StartupTrace.Mark("session initialized");
             ApplyAppearance(session.Settings.Working.Appearance);
             await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
             initialized = true;
+            StartupTrace.Mark("first page ready");
             gameWatcher.Start();
         });
     }
@@ -114,6 +118,8 @@ public sealed partial class MainWindow : Window
                 servers.UpdateContrast();
             else if (ContentFrame.Content is ConfigsPage configs)
                 configs.UpdateContrast();
+            else if (ContentFrame.Content is SettingsPage settings)
+                settings.UpdateContrast();
         });
 
     internal bool IsHighContrast => windowTheme.HighContrast;
@@ -185,7 +191,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnNavigation(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (args.IsSettingsInvoked)
+        if (ReferenceEquals(args.InvokedItemContainer, SettingsItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
         else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
@@ -269,7 +275,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            Nav.SelectedItem = Nav.SettingsItem;
+            Nav.SelectedItem = SettingsItem;
             ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings,
                 openUpdates: place == LauncherPlace.UpdateSettings);
         }
@@ -367,6 +373,8 @@ public sealed partial class MainWindow : Window
         }
         if (!session.SetupComplete)
             return;
+        if (session.Updates.State.Phase == UpdatePhase.Ready)
+            session.Updates.RefreshInstallBlock(session.UpdateInstaller.Observe());
         await RunAsync(async () =>
         {
             await session.Game.ReconcileAsync();
@@ -385,8 +393,9 @@ public sealed partial class MainWindow : Window
                 if (ContentFrame.Content is ServersPage hosting)
                     hosting.UpdateHostingState();
             }
-            if (session.CanAutoCheckUpdates && session.SetupComplete && session.Settings.Working.CheckUpdatesAutomatically &&
-                session.Updates.State.Phase != UpdatePhase.Installed && now >= firstUpdate &&
+            if (session.CanAutoCheckUpdates && session.Settings.Working.CheckUpdatesAutomatically && updateRequest is null &&
+                session.Updates.State.Phase is not (UpdatePhase.Installed or UpdatePhase.Ready or UpdatePhase.Installing) &&
+                now >= firstUpdate &&
                 LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
             {
                 attemptedUpdate = now;
@@ -418,33 +427,31 @@ public sealed partial class MainWindow : Window
 
     internal async Task RunUpdateAsync(bool install)
     {
-        if (session.Updates.State.CanCancel)
+        if (updateRequest is not null)
         {
-            updateRequest?.Cancel();
+            if (session.Updates.State.CanCancel)
+                updateRequest.Cancel();
             return;
         }
-        if (!session.CanCheckUpdates)
+        if (!session.CanCheckUpdates || closing)
             return;
-        await RunAsync(async () =>
+        using var request = new CancellationTokenSource();
+        updateRequest = request;
+        try
         {
-            using var request = new CancellationTokenSource();
-            updateRequest = request;
-            try
+            if (install && session.Updates.State.Offer is not null)
             {
-                if (install && session.Updates.State.Offer is not null)
+                var result = await session.Updates.InstallAsync(session.UpdateInstaller, request.Token);
+                if (result.Phase == UpdatePhase.Installing)
                 {
-                    var result = await session.Updates.InstallAsync(session.UpdateInstaller, session.UpdateInstaller.Observe, request.Token);
-                    if (result.Phase == UpdatePhase.Installing)
-                    {
-                        flushedForClose = true;
-                        Close();
-                    }
+                    flushedForClose = true;
+                    Close();
                 }
-                else
-                    await session.CheckUpdatesAsync(automatic: false, request.Token);
             }
-            finally { updateRequest = null; }
-        });
+            else
+                await session.CheckUpdatesAsync(automatic: false, request.Token);
+        }
+        finally { updateRequest = null; }
     }
 
     internal void ApplyAppearance(LauncherAppearance appearance) => Root.RequestedTheme = appearance switch

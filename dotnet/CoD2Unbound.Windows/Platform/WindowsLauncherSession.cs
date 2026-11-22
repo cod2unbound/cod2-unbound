@@ -50,11 +50,15 @@ internal sealed class WindowsLauncherSession
         ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);
         Hosting = new(HomePath, inventory, files, TestMaster is not null);
-        Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
-            Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin),
-            TimeZoneInfo.Local, WindowsReleaseAssets.IsNewer);
         UpdateInstaller = new(installRoot, HomePath, Version, inventory, () => new(Game.State.Running, Hosting.HasActiveServers),
             () => Settings.FlushAsync());
+        Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
+            Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin),
+            TimeZoneInfo.Local, WindowsReleaseAssets.IsNewer, UpdateInstaller.Log, (version, assets) =>
+            {
+                _ = WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin, out var problem);
+                return problem ?? "The release did not provide a usable update.";
+            });
     }
 
     internal LauncherSettingsSession Settings { get; private set; } = null!;
@@ -242,7 +246,7 @@ internal sealed class WindowsLauncherSession
     {
         lastUpdateOutcome = UpdateInstaller.ReadOutcome();
         if (lastUpdateOutcome is UpdateOutcome.Failed or UpdateOutcome.Installed)
-            Updates.RestoreInstallResult(lastUpdateOutcome == UpdateOutcome.Installed);
+            Updates.RestoreInstallResult(lastUpdateOutcome == UpdateOutcome.Installed, Library.DispatchesCheckedAt);
     }
 
     internal async Task SaveFiltersAsync(ServerFilters filters)

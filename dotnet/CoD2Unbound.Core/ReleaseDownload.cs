@@ -3,7 +3,11 @@ using System.Net;
 
 namespace CoD2Unbound.Core;
 
-public sealed class LauncherUpdateException(string message, Exception? inner = null) : IOException(message, inner);
+public sealed class LauncherUpdateException(string message, Exception? inner = null, UpdateIssue issue = UpdateIssue.Refused)
+    : IOException(message, inner)
+{
+    public UpdateIssue Issue { get; } = issue;
+}
 
 /// <summary>Streams release data without credentials or implicit redirects.</summary>
 public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = null)

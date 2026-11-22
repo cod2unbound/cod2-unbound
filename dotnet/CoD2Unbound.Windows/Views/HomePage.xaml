@@ -14,10 +14,6 @@
                 <InfoBar.ActionButton>
                     <Button x:Name="UpdateButton" Click="OnUpdateAction" />
                 </InfoBar.ActionButton>
-                <StackPanel Spacing="4">
-                    <ProgressBar x:Name="UpdateProgress" AutomationProperties.Name="Update progress" Visibility="Collapsed" />
-                    <Button x:Name="UpdateDetails" Style="{StaticResource SubtleLinkAction}" Click="OnUpdateDetails" />
-                </StackPanel>
             </InfoBar>
             <Grid Grid.Row="1" x:Name="ArtLayer" Height="520" VerticalAlignment="Top" IsHitTestVisible="False"
                   AutomationProperties.AccessibilityView="Raw">

@@ -54,7 +54,7 @@
         <NavigationView x:Name="Nav" Grid.Row="1" PaneDisplayMode="Left" OpenPaneLength="320"
                         CompactPaneLength="48" IsBackButtonVisible="Collapsed" IsPaneVisible="False"
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
-                        ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
+                        IsSettingsVisible="False" ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" HighContrastAdjustment="None">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="20" /></NavigationViewItem.Icon>
@@ -69,6 +69,11 @@
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="20" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="SettingsItem" Content="Settings" AccessKey="T" HighContrastAdjustment="None">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="20" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
             <NavigationView.PaneFooter>
                 <Button x:Name="PlayerPlate" Margin="8,8" HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch" Visibility="Collapsed"

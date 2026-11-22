@@ -1,9 +1,11 @@
+using System.Globalization;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.ApplicationModel.DataTransfer;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -16,6 +18,8 @@ public sealed partial class SettingsPage : Page
     private readonly WindowsLauncherSession session;
     private readonly SettingsViewModel model;
     private CancellationTokenSource? saveDelay;
+    private Border? updateCard;
+    private TextBlock? updateMessage;
     private ProgressBar? updateProgress;
     private LauncherUpdateState? renderedUpdate;
     private (string Mode, WindowsRenderMode? Renderer)? previousDisplay;
@@ -28,8 +32,15 @@ public sealed partial class SettingsPage : Page
         this.session = session;
         model = new(session);
         InitializeComponent();
+        ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
-        Panes.SelectedItem = Panes.Items[openUpdates ? 4 : openGameData ? 2 : 0];
+        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : 0];
+        Panes.SelectedItem = initial;
+        Loaded += (_, _) =>
+        {
+            if (Panes.SelectedItem is null)
+                Panes.SelectedItem = initial;
+        };
     }
 
     private GameSettings Current => model.Settings.Working;
@@ -44,6 +55,7 @@ public sealed partial class SettingsPage : Page
     private void Render()
     {
         Fields.Children.Clear();
+        updateCard = null;
         switch (Panes.Items.IndexOf(Panes.SelectedItem))
         {
             case 0: General(); break;
@@ -214,56 +226,187 @@ public sealed partial class SettingsPage : Page
         Row("Saved match summaries", null, delete);
     }
 
-    private void Updates(LauncherUpdateState? snapshot = null)
+    private void Updates()
     {
-        var state = snapshot ?? session.Updates.State;
-        renderedUpdate = state;
-        updateProgress = null;
-        bool canInstall = state.Offer is not null && state.FailedStage != UpdateFailureStage.Check;
-        bool retry = state.FailedStage is not null;
-        string label = state.CanCancel ? "Cancel" : retry ? "Try again" : canInstall ? "Install and relaunch" : "Check now";
-        var action = Action(label, () => shell.RunUpdateAsync(canInstall), exclusive: false);
-        action.IsEnabled = session.CanCheckUpdates && state.Phase != UpdatePhase.Installing;
-        if (canInstall && !state.IsBusy)
-            action.Style = StyleFor("LauncherAccentButton");
-        string? message = session.SetupUpdating ? "Installing the update…" : state.Message;
-        Row($"CoD2 Unbound {session.Version}", message, action);
-        if (state.Phase is UpdatePhase.Downloading or UpdatePhase.Verifying or UpdatePhase.Ready or UpdatePhase.Installing ||
-            session.SetupUpdating)
-        {
-            updateProgress = new ProgressBar { IsIndeterminate = state.ProgressPercent is null, Value = state.ProgressPercent ?? 0 };
-            AutomationProperties.SetName(updateProgress, "Update progress");
-            Fields.Children.Add(updateProgress);
-        }
-
-        if (state.ReleaseUrl is { } release)
-        {
-            string linkText = state.FailedStage is null ? "What’s new" : "Open download page";
-            var link = Action(linkText, () => OpenAsync(release.AbsoluteUri));
-            link.Style = StyleFor("SubtleLinkAction");
-            Row(state.AvailableVersion is { } version ? $"Release {version}" : "Downloads", null, link);
-        }
-        if (Directory.Exists(session.UpdateInstaller.LogsPath))
-        {
-            var logs = Action("Show in File Explorer", () => OpenAsync(session.UpdateInstaller.LogsPath));
-            logs.Style = StyleFor("SubtleLinkAction");
-            Row("Update logs", null, logs);
-        }
+        updateCard = new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(20, 16, 20, 16) };
+        Fields.Children.Add(updateCard);
+        RenderUpdate(session.Updates.State);
         Switch("Check for updates automatically", "Once a day, when the launcher is open.", Current.CheckUpdatesAutomatically,
             value => ChangeAsync(Current with { CheckUpdatesAutomatically = value }));
     }
 
+    private void RenderUpdate(LauncherUpdateState state)
+    {
+        renderedUpdate = state;
+        updateProgress = null;
+        string current = session.Version;
+        string version = state.AvailableVersion ?? current;
+        string installed = $"CoD2 Unbound {current} is installed";
+        string available = $"CoD2 Unbound {version} is available";
+        string? checkedAt = LastChecked(state.CheckedAt ?? session.Library.DispatchesCheckedAt);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        string title = available;
+        string? message = null;
+        bool showProgress = false;
+
+        if (session.SetupUpdating || state.Phase == UpdatePhase.Installing)
+        {
+            title = session.SetupUpdating ? "Installing the update…" : $"Installing {version}…";
+            message = "The launcher reopens when it’s done.";
+            showProgress = true;
+        }
+        else if (state.Issue == UpdateIssue.Refused)
+        {
+            title = $"CoD2 Unbound {version} wasn’t installed";
+            message = $"This update didn’t pass CoD2 Unbound’s safety checks, so nothing was installed. You can get {version} from the website.";
+            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+        }
+        else if (state.Issue == UpdateIssue.ProtectedLocation)
+        {
+            message = $"This copy can’t update itself, because Windows protects the folder it’s installed in. Download {version} from the website and run it.";
+            AddWhatsNew(version);
+            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+        }
+        else if (state.Issue == UpdateIssue.SetupFailed)
+        {
+            title = "The update didn’t finish.";
+            message = $"{current} is still installed and works.";
+            AddAction("Try again");
+            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+        }
+        else if (state.Issue == UpdateIssue.Interrupted)
+        {
+            message = "The download stopped before it finished.";
+            AddAction("Try again", install: true);
+        }
+        else if (state.Issue == UpdateIssue.Unexpected)
+        {
+            title = state.Offer is null ? installed : available;
+            message = state.Message ?? "The update could not be completed.";
+            AddAction("Try again", install: state.Offer is not null);
+            if (state.Offer is not null)
+                AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+        }
+        else
+        {
+            switch (state.Phase)
+            {
+                case UpdatePhase.Checking:
+                    title = installed;
+                    message = "Checking for updates…";
+                    showProgress = true;
+                    AddAction("Check now", enabled: false);
+                    break;
+                case UpdatePhase.Downloading:
+                    message = DownloadMessage(state);
+                    showProgress = true;
+                    AddAction("Cancel");
+                    break;
+                case UpdatePhase.Verifying:
+                    message = "Checking the download is genuine…";
+                    showProgress = true;
+                    AddAction("Cancel");
+                    break;
+                case UpdatePhase.Ready:
+                    title = $"CoD2 Unbound {version} is ready to install";
+                    message = state.Hold is not null
+                        ? "Close Call of Duty 2 to install it. The update waits until then."
+                        : $"Downloaded, {Megabytes(state.Offer!.Archive.Size)} MB. Installing takes a few seconds and reopens the launcher.";
+                    AddWhatsNew(version);
+                    AddAction("Install and relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
+                    break;
+                case UpdatePhase.Offered:
+                    message = state.Message ?? $"You have {current}. Installing takes a few seconds and reopens the launcher.";
+                    AddWhatsNew(version);
+                    AddAction("Install and relaunch", install: true, primary: true);
+                    break;
+                case UpdatePhase.Installed:
+                    title = $"CoD2 Unbound is now {current}.";
+                    message = checkedAt;
+                    AddWhatsNew(current);
+                    break;
+                default:
+                    title = state.WasChecked || checkedAt is not null ? $"CoD2 Unbound {current} is up to date" : installed;
+                    message = checkedAt;
+                    AddAction("Check now");
+                    break;
+            }
+        }
+
+        var layout = Columns(16, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        Put(layout, 0, new Image
+        {
+            Source = new BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "mark-48.png"))),
+            Width = 48, Height = 48, VerticalAlignment = VerticalAlignment.Center
+        });
+        var words = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        words.Children.Add(new TextBlock { Text = title, Style = StyleFor("CardTitle"), FontSize = 16, TextWrapping = TextWrapping.Wrap });
+        updateMessage = message is null ? null : Body(message);
+        if (updateMessage is not null)
+            words.Children.Add(updateMessage);
+        if (showProgress)
+        {
+            updateProgress = new ProgressBar { Height = 3, Margin = new Thickness(0, 8, 0, 0),
+                IsIndeterminate = state.ProgressPercent is null, Value = state.ProgressPercent ?? 0 };
+            AutomationProperties.SetName(updateProgress, "Update progress");
+            UpdateProgressTheme();
+            words.Children.Add(updateProgress);
+        }
+        Put(layout, 1, words);
+        if (actions.Children.Count != 0)
+            Put(layout, 2, actions);
+        updateCard!.Child = layout;
+
+        void AddAction(string label, bool install = false, bool enabled = true, bool primary = false)
+        {
+            var action = Action(label, () => shell.RunUpdateAsync(install), exclusive: false);
+            action.IsEnabled = enabled && session.CanCheckUpdates;
+            if (primary)
+                action.Style = StyleFor("LauncherAccentButton");
+            actions.Children.Add(action);
+        }
+
+        void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
+        void AddWhatsNew(string release) => AddLink("What’s new", WindowsReleaseAssets.NotesPage(release));
+    }
+
+    private static string? LastChecked(DateTimeOffset? time)
+    {
+        if (time is null)
+            return null;
+        var local = time.Value.ToLocalTime();
+        return local.Date == DateTime.Today ? $"Last checked today at {local:t}." : $"Last checked {local:d} at {local:t}.";
+    }
+
+    private static string Megabytes(long size) => Math.Round(size / 1048576d).ToString(CultureInfo.CurrentCulture);
+    private static string DownloadMessage(LauncherUpdateState state) =>
+        $"Downloading {state.AvailableVersion}… {Megabytes(state.DownloadedBytes)} of {Megabytes(state.Offer!.Archive.Size)} MB";
+
+    private void UpdateProgressTheme()
+    {
+        if (updateProgress is null)
+            return;
+        if (shell.IsHighContrast)
+            updateProgress.ClearValue(ProgressBar.ForegroundProperty);
+        else
+            updateProgress.Foreground = ThemeBrush("LauncherSelectionPillBrush", ActualTheme, false);
+    }
+
+    internal void UpdateContrast() => UpdateProgressTheme();
+
     internal void RefreshUpdates(LauncherUpdateState state)
     {
-        if (!ReferenceEquals(Panes.SelectedItem, Panes.Items[4]))
+        if (updateCard is null || state == renderedUpdate)
             return;
         if (state.Phase == UpdatePhase.Downloading && renderedUpdate?.Phase == UpdatePhase.Downloading && updateProgress is not null)
         {
+            renderedUpdate = state;
             updateProgress.Value = state.ProgressPercent ?? 0;
+            if (updateMessage is not null)
+                updateMessage.Text = DownloadMessage(state);
             return;
         }
-        Fields.Children.Clear();
-        Updates(state);
+        RenderUpdate(state);
     }
 
     private void Advanced()

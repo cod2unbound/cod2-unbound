@@ -23,16 +23,28 @@ internal static partial class Program
             Equal(true, result.State.Offer is not null);
             Equal(clock.GetUtcNow(), result.Library.DispatchesCheckedAt);
             var installer = new TestInstaller(new(false, true));
-            var blocked = updates.InstallAsync(installer, () => new(false, true)).GetAwaiter().GetResult();
-            Equal(UpdateFailureStage.Install, blocked.FailedStage);
-            Equal(0, installer.Downloads);
-            blocked = updates.InstallAsync(installer, () => new(false, false)).GetAwaiter().GetResult();
-            Equal(UpdateFailureStage.Install, blocked.FailedStage);
+            var blocked = updates.InstallAsync(installer).GetAwaiter().GetResult();
+            Equal(UpdatePhase.Ready, blocked.Phase);
+            Equal(UpdateBlock.ServersRunning, blocked.Hold);
             Equal(1, installer.Downloads);
             Equal(1, installer.Verified);
+            Equal(0, installer.Disposed);
             Equal(0, installer.Installed);
+            Equal(false, blocked.CanCancel);
             installer.Busy = new(false, false);
-            Equal(UpdatePhase.Installing, updates.InstallAsync(installer, () => installer.Busy).GetAwaiter().GetResult().Phase);
+            updates.RefreshInstallBlock(installer.Busy);
+            Equal<UpdateBlock?>(null, updates.State.Hold);
+            Equal(0, installer.Installed);
+            installer.Failure = new InvalidOperationException("simulated process start failure");
+            var failedInstall = updates.InstallAsync(installer).GetAwaiter().GetResult();
+            Equal(UpdatePhase.Idle, failedInstall.Phase);
+            Equal(UpdateFailureStage.Install, failedInstall.FailedStage);
+            Equal(false, failedInstall.CanCancel);
+            Equal(1, installer.Downloads);
+            Equal(1, installer.Disposed);
+            installer.Failure = null;
+            Equal(UpdatePhase.Installing, updates.InstallAsync(installer).GetAwaiter().GetResult().Phase);
+            Equal(2, installer.Downloads);
             Equal(1, installer.Installed);
             updates.RestoreInstallResult(installed: true);
             Equal(UpdatePhase.Installed, updates.State.Phase);
@@ -172,13 +184,14 @@ internal static partial class Program
         public ValueTask<ImmutableArray<byte>?> NewsAsync(CancellationToken cancellationToken) => ValueTask.FromResult<ImmutableArray<byte>?>(null);
     }
 
-    private sealed class TestInstaller(LauncherActivity activity) : IWindowsLauncherUpdate, IUpdateInstallLease, IStagedLauncherUpdate
+    private sealed class TestInstaller(LauncherActivity activity) : IWindowsLauncherUpdate, IStagedLauncherUpdate
     {
         public LauncherActivity Busy { get; set; } = activity;
-        public LauncherActivity Activity => Busy;
         public int Downloads { get; private set; }
         public int Verified { get; private set; }
         public int Installed { get; private set; }
+        public int Disposed { get; private set; }
+        public Exception? Failure { get; set; }
         public void CheckInstallLocation() { }
         public ValueTask<IStagedLauncherUpdate> DownloadAsync(ReleaseOffer offer, Action<long> progress, CancellationToken cancellationToken)
         {
@@ -186,10 +199,21 @@ internal static partial class Program
             return ValueTask.FromResult<IStagedLauncherUpdate>(this);
         }
         public ValueTask<IUpdateInstallLease> AcquireInstallLeaseAsync(CancellationToken cancellationToken) =>
-            ValueTask.FromResult<IUpdateInstallLease>(this);
+            ValueTask.FromResult<IUpdateInstallLease>(new TestLease(Busy));
         public ValueTask VerifyAsync(CancellationToken cancellationToken) { Verified++; return ValueTask.CompletedTask; }
-        public ValueTask InstallAsync(CancellationToken cancellationToken) { Installed++; return ValueTask.CompletedTask; }
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask InstallAsync(CancellationToken cancellationToken)
+        {
+            if (Failure is { } error)
+                throw error;
+            Installed++;
+            return ValueTask.CompletedTask;
+        }
+        public ValueTask DisposeAsync() { Disposed++; return ValueTask.CompletedTask; }
+
+        private sealed record TestLease(LauncherActivity Activity) : IUpdateInstallLease
+        {
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     private sealed class TestZpamSource(byte[] bytes, ZpamRelease sample) : IZpamDownloadSource
