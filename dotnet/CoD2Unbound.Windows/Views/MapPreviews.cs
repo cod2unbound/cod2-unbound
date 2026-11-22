@@ -40,7 +40,7 @@ internal sealed class MapPreviews(Func<string, Task<MapPixels?>> read)
 
     private async Task<ImageSource?> ReadAsync(string map)
     {
-        try { return await read(map) is { } pixels ? await MapBitmapAsync(pixels) : null; }
+        try { return await read(map) is { } pixels ? MapBitmap(pixels) : null; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or System.Runtime.InteropServices.COMException)
         {
             return null;

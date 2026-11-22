@@ -4,10 +4,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.Graphics.Imaging;
-using Windows.Security.Cryptography;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace CoD2Unbound.Windows.Views;
 
@@ -169,7 +168,7 @@ internal static class PagePresentation
             : new Border { Style = StyleFor("FieldCard"), Child = layout };
     }
 
-    internal static async Task<SoftwareBitmapSource> MapBitmapAsync(MapPixels art)
+    internal static WriteableBitmap MapBitmap(MapPixels art)
     {
         var bgra = art.Rgba.ToArray();
         for (int i = 0; i < bgra.Length; i += 4)
@@ -177,11 +176,16 @@ internal static class PagePresentation
             (bgra[i], bgra[i + 2]) = (bgra[i + 2], bgra[i]);
             bgra[i + 3] = 255;
         }
-        using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(CryptographicBuffer.CreateFromByteArray(bgra),
-            BitmapPixelFormat.Bgra8, art.Width, art.Height, BitmapAlphaMode.Premultiplied);
-        var image = new SoftwareBitmapSource();
-        await image.SetBitmapAsync(bitmap);
-        return image;
+        return BitmapFromBgra(bgra, art.Width, art.Height);
+    }
+
+    internal static WriteableBitmap BitmapFromBgra(byte[] bgra, int width, int height)
+    {
+        var bitmap = new WriteableBitmap(width, height);
+        using (var pixels = bitmap.PixelBuffer.AsStream())
+            pixels.Write(bgra);
+        bitmap.Invalidate();
+        return bitmap;
     }
 
     internal static Task OpenAsync(string target)

@@ -98,7 +98,7 @@ public sealed partial class HomePage : Page
         RenderMatch();
         RenderNews();
         if (map is not null && await model.ReadArtAsync(map) is { } art)
-            await ApplyArtworkAsync(art);
+            ApplyArtwork(art);
     }
 
     internal void RenderGame(GameSessionState game)
@@ -297,7 +297,7 @@ public sealed partial class HomePage : Page
 
     private void RenderBackdrop()
     {
-        if (HeroArt.Source is not SoftwareBitmapSource)
+        if (HeroArt.Source is not WriteableBitmap)
         {
             string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";
             HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
@@ -340,10 +340,10 @@ public sealed partial class HomePage : Page
     private static Color WithAlpha(Color color, double opacity) =>
         Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
 
-    private async Task ApplyArtworkAsync(MapPixels art)
+    private void ApplyArtwork(MapPixels art)
     {
         artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0, 1);
-        HeroArt.Source = await MapBitmapAsync(art);
+        HeroArt.Source = MapBitmap(art);
         RenderArtScrim();
     }
 
