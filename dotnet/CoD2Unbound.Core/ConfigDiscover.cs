@@ -97,12 +97,12 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
         return TurnDistance(dpi, sensitivity?.NewValue, yaw?.NewValue);
     }
 
-    public static double? LoadoutTurnDistance(ConfigDocument document, double dpi) =>
-        TurnDistance(dpi, document.EffectiveSetting("sensitivity"), document.EffectiveSetting("m_yaw"));
+    public static double? LoadoutTurnDistance(ConfigDocument document, double dpi, string? defaultSensitivity = null) =>
+        TurnDistance(dpi, document.EffectiveSetting("sensitivity") ?? defaultSensitivity, document.EffectiveSetting("m_yaw"));
 
     private static double? TurnDistance(double dpi, string? sensitivity, string? yaw) =>
         sensitivity is not null && ConfigValues.Number(sensitivity) is { } value
-            ? MouseDistance.Centimetres(dpi, value, yaw is null ? StockYaw : ConfigValues.Number(yaw) ?? 0)
+            ? MouseDistance.Centimetres(dpi, value, yaw is null ? StockYaw : Math.Abs(ConfigValues.Number(yaw) ?? 0))
             : null;
 
     public static ImmutableArray<ConfigSetupFilter> Filters(ImmutableArray<ConfigDirectoryEntry> entries) =>

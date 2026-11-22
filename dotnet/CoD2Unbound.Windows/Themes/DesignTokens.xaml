@@ -102,6 +102,11 @@
                 </LinearGradientBrush.GradientStops>
             </LinearGradientBrush>
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
+            <LinearGradientBrush x:Key="SetupHeroScrimBrush" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Offset="0" Color="#FF141711" />
+                <GradientStop Offset="0.5" Color="#E8141711" />
+                <GradientStop Offset="1" Color="#22141711" />
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -206,6 +211,11 @@
                 </LinearGradientBrush.GradientStops>
             </LinearGradientBrush>
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="Transparent" />
+            <LinearGradientBrush x:Key="SetupHeroScrimBrush" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Offset="0" Color="#FFF7F2E6" />
+                <GradientStop Offset="0.5" Color="#E8F7F2E6" />
+                <GradientStop Offset="1" Color="#22F7F2E6" />
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -306,6 +316,7 @@
             <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SetupHeroScrimBrush" Color="Transparent" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource SystemColorWindowColor}" />
         </ResourceDictionary>

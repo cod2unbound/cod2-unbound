@@ -150,6 +150,15 @@ def generate(tokens):
         # The contrast backplate covers text only, leaving the rest of the art visible.
         backplate = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
         ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": "HeroBackplateBrush", "Color": backplate})
+        if theme:
+            panel = xaml_color(tokens["panel"][theme])[-6:]
+            scrim = ET.SubElement(dictionary, "LinearGradientBrush", {
+                "x:Key": "SetupHeroScrimBrush", "StartPoint": "0,0", "EndPoint": "1,0",
+            })
+            for offset, alpha in (("0", "FF"), ("0.5", "E8"), ("1", "22")):
+                ET.SubElement(scrim, "GradientStop", {"Offset": offset, "Color": f"#{alpha}{panel}"})
+        else:
+            ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": "SetupHeroScrimBrush", "Color": "Transparent"})
         frame = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
         for brush in ("FrameContrastBrush", "NavigationViewExpandedPaneBackground"):
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": frame})

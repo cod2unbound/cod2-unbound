@@ -3,7 +3,9 @@ using System.Globalization;
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -18,6 +20,9 @@ public sealed partial class ConfigsPage
     private string? discoverGroup;
     private ImmutableArray<ConfigDirectoryEntry> groupEntries = [];
     private int featuredIndex;
+    private double catalogueDpi;
+    private readonly SemaphoreSlim shelfFetches = new(3);
+    private readonly Dictionary<(string Id, string Hash, double Dpi), Task<double?>> shelfDistances = [];
 
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
@@ -39,11 +44,13 @@ public sealed partial class ConfigsPage
         }
 
         var state = model.Discover.State;
+        catalogueDpi = model.DpiFor(model.Studio.ReadActive());
         var entries = saved ? state.Saved.Select(item => item.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray() : model.Discover.Entries;
         if (retry && !saved)
         {
             featuredIndex = 0;
             discoverGroup = null;
+            shelfDistances.Clear();
         }
 
         var search = new AutoSuggestBox
@@ -54,7 +61,7 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(search, search.PlaceholderText);
         var tools = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         Put(tools, 0, search);
-        var count = Caption(SetupCount(entries.Length) + (state.Fetched is { } date ? $" · Updated {date.LocalDateTime:d}" : ""));
+        var count = Caption(SetupCount(entries.Length) + (state.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : ""));
         count.VerticalAlignment = VerticalAlignment.Center;
         var refresh = Action("Refresh player setups", () => ShowCatalogueAsync(saved, retry: true));
         refresh.Content = Fluent("Refresh", 20);
@@ -120,31 +127,7 @@ public sealed partial class ConfigsPage
 
             var heroes = ConfigDiscover.Heroes(entries);
             if (!heroes.IsEmpty)
-            {
-                featuredIndex = Math.Clamp(featuredIndex, 0, heroes.Length - 1);
-                var hero = heroes[featuredIndex];
-                var carousel = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-                Put(carousel, 0, Caption($"Featured setup {featuredIndex + 1} of {heroes.Length}"));
-                if (heroes.Length > 1)
-                {
-                    var previous = new Button { Content = "‹", Style = StyleFor("IconAction") };
-                    var next = new Button { Content = "›", Style = StyleFor("IconAction") };
-                    AutomationProperties.SetName(previous, "Previous featured setup");
-                    AutomationProperties.SetName(next, "Next featured setup");
-                    previous.Click += (_, _) => Move(-1);
-                    next.Click += (_, _) => Move(1);
-                    Put(carousel, 1, Buttons(previous, next));
-                }
-                var view = Action("See this setup", () => ShowSetupAsync(hero, false));
-                view.Style = StyleFor("LauncherAccentButton");
-                results.Children.Add(carousel);
-                results.Children.Add(SetupHero(hero, view, Bookmark(hero, () => ShowCatalogueAsync(false))));
-                void Move(int delta)
-                {
-                    featuredIndex = (featuredIndex + delta + heroes.Length) % heroes.Length;
-                    Fill();
-                }
-            }
+                results.Children.Add(FeaturedHero(heroes));
 
             var shelves = ConfigDiscover.StyleShelves(entries, CultureInfo.CurrentCulture);
             foreach (var shelf in shelves)
@@ -205,11 +188,70 @@ public sealed partial class ConfigsPage
         }
     }
 
+    private Grid FeaturedHero(ImmutableArray<ConfigDirectoryEntry> entries)
+    {
+        var picture = new ContentControl
+        {
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch
+        };
+        var featured = new Grid { Children = { picture } };
+        featuredIndex = Math.Clamp(featuredIndex, 0, entries.Length - 1);
+        bool hasPager = entries.Length > 1;
+        ShowFeature();
+        if (!hasPager)
+            return featured;
+
+        var pager = new PipsPager
+        {
+            NumberOfPages = entries.Length, MaxVisiblePips = 5, SelectedPageIndex = featuredIndex,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 0, 6)
+        };
+        AutomationProperties.SetName(pager, "Featured setups");
+        pager.SelectedIndexChanged += (sender, _) =>
+        {
+            featuredIndex = sender.SelectedPageIndex;
+            ShowFeature();
+        };
+
+        var arrows = Buttons(Arrow("ChevronLeft", "Previous featured setup", -1),
+            Arrow("ChevronRight", "Next featured setup", 1));
+        arrows.HorizontalAlignment = HorizontalAlignment.Right;
+        arrows.VerticalAlignment = VerticalAlignment.Top;
+        arrows.Margin = new Thickness(12);
+        featured.Children.Add(arrows);
+        featured.Children.Add(new Border { Style = StyleFor("SetupArtBackplate"), Child = pager,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom });
+        return featured;
+
+        Button Arrow(string icon, string label, int offset)
+        {
+            var button = new Button { Content = Fluent(icon, 16), Width = 32, Height = 32, Padding = new Thickness(0) };
+            AutomationProperties.SetName(button, label);
+            ToolTipService.SetToolTip(button, label);
+            button.Click += (_, _) => pager.SelectedPageIndex = (featuredIndex + offset + entries.Length) % entries.Length;
+            return button;
+        }
+
+        void ShowFeature()
+        {
+            var entry = entries[featuredIndex];
+            var view = Action("See this setup", () => ShowSetupAsync(entry, false));
+            view.Style = StyleFor("LauncherAccentButton");
+            picture.Content = SetupHero(entry, $"Featured setup · {entry.Era}", view,
+                Bookmark(entry), hasPager);
+        }
+    }
+
     private FrameworkElement SetupShelf(IEnumerable<ConfigDirectoryEntry> entries, bool inSaved)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         foreach (var entry in entries)
-            row.Children.Add(SetupCard(entry, inSaved));
+        {
+            var card = SetupCard(entry, inSaved);
+            card.Width = 248;
+            row.Children.Add(card);
+        }
         return new ScrollViewer
         {
             Content = row, HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -219,31 +261,113 @@ public sealed partial class ConfigsPage
 
     private FrameworkElement SetupGrid(IEnumerable<ConfigDirectoryEntry> entries, bool inSaved)
     {
-        var grid = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 198, ItemHeight = 170 };
-        foreach (var entry in entries)
-            grid.Children.Add(SetupCard(entry, inSaved));
+        var grid = new Grid { ColumnSpacing = 8, RowSpacing = 8 };
+        var cards = entries.Select(entry => SetupCard(entry, inSaved)).ToArray();
+        foreach (var card in cards)
+            grid.Children.Add(card);
+        int columns = 0;
+        Arrange(Detail.ActualWidth);
+        grid.SizeChanged += (_, args) => Arrange(args.NewSize.Width);
         return grid;
+
+        void Arrange(double width)
+        {
+            int next = Math.Max(1, (int)((width + 8) / 248));
+            if (next == columns)
+                return;
+            columns = next;
+            grid.ColumnDefinitions.Clear();
+            grid.RowDefinitions.Clear();
+            for (int column = 0; column < columns; column++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            for (int index = 0; index < cards.Length; index++)
+            {
+                if (index % columns == 0)
+                    grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                Grid.SetRow(cards[index], index / columns);
+                Grid.SetColumn(cards[index], index % columns);
+            }
+        }
     }
 
     private Button SetupCard(ConfigDirectoryEntry entry, bool inSaved)
     {
-        var body = new StackPanel { Spacing = 4 };
-        body.Children.Add(Artwork(entry, height: 68));
-        body.Children.Add(new TextBlock { Text = entry.Player, Style = StyleFor("BodyStrongTextBlockStyle"),
-            TextTrimming = TextTrimming.CharacterEllipsis });
-        body.Children.Add(OneLine(Identity(entry)));
-        body.Children.Add(OneLine(entry.Feel));
-        if (SetupFacts(entry) is { Length: > 0 } facts)
-            body.Children.Add(MonoCaption(facts));
+        var art = Artwork(entry, new CornerRadius(4, 4, 0, 0));
+        art.Height = 104;
+        art.VerticalAlignment = VerticalAlignment.Top;
+        var avatar = Avatar(entry, 40);
+        avatar.HorizontalAlignment = HorizontalAlignment.Left;
+        avatar.VerticalAlignment = VerticalAlignment.Bottom;
+        avatar.Margin = new Thickness(12, 0, 0, 0);
+        var top = new Grid { Height = 122, Children = { art, avatar } };
+        var mouse = ShelfValue("Mouse speed · per full turn", "");
+        mouse.Visibility = Visibility.Collapsed;
+        var facts = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
+        Put(facts, 0, mouse);
+        if (!string.IsNullOrWhiteSpace(entry.Facts?.Resolution))
+            Put(facts, 1, ShelfValue("Resolution", entry.Facts.Resolution));
+        var info = new StackPanel
+        {
+            Padding = new Thickness(12, 4, 12, 12), Spacing = 4,
+            Children = {
+                OneLine(entry.Player, "BodyStrongTextBlockStyle"), OneLine(Identity(entry)), OneLine(entry.Feel, "SecondaryText"), facts
+            }
+        };
         var open = Action("View setup", () => ShowSetupAsync(entry, inSaved));
-        open.Content = body;
-        open.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-        open.VerticalContentAlignment = VerticalAlignment.Top;
-        open.Width = 190;
-        open.MinHeight = 150;
+        open.Content = new StackPanel { Children = { top, info } };
+        open.Style = StyleFor("SetupCard");
+        open.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(open, $"View setup: {entry.Player}");
+        open.EffectiveViewportChanged += ReadVisibleDistance;
         return open;
+
+        async void ReadVisibleDistance(FrameworkElement sender, EffectiveViewportChangedEventArgs args)
+        {
+            var viewport = args.EffectiveViewport;
+            if (viewport.Right <= 0 || viewport.Bottom <= 0 ||
+                viewport.Left >= sender.ActualWidth || viewport.Top >= sender.ActualHeight)
+                return;
+            open.EffectiveViewportChanged -= ReadVisibleDistance;
+            if (await ReadShelfDistanceAsync(entry, catalogueDpi) is { } cm)
+            {
+                ((TextBlock)mouse.Children[0]).Text = $"{cm:F1} cm";
+                mouse.Visibility = Visibility.Visible;
+            }
+        }
     }
+
+    private Task<double?> ReadShelfDistanceAsync(ConfigDirectoryEntry entry, double dpi)
+    {
+        var key = (entry.Id, entry.Sha256, dpi);
+        if (!shelfDistances.TryGetValue(key, out var result))
+            shelfDistances[key] = result = FetchAsync();
+        return result;
+
+        async Task<double?> FetchAsync()
+        {
+            await shelfFetches.WaitAsync();
+            try
+            {
+                var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
+                return ConfigDiscover.SetupTurnDistance(review, dpi);
+            }
+            catch (Exception error) when (IsSetupReviewProblem(error) || error is InvalidOperationException)
+            {
+                return null;
+            }
+            finally { shelfFetches.Release(); }
+        }
+    }
+
+    private static StackPanel ShelfValue(string label, string value) => new()
+    {
+        Spacing = 2,
+        Children = {
+            new TextBlock { Text = value, Style = StyleFor("BodyLargeTextBlockStyle"),
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+            new TextBlock { Text = label, Style = StyleFor("SetupFactLabel") }
+        }
+    };
 
     private async Task ShowSetupAsync(ConfigDirectoryEntry entry, bool fromSaved)
     {
@@ -258,8 +382,9 @@ public sealed partial class ConfigsPage
         var attempt = Action("Try this setup", () => ReviewSetupAsync(newOnly: true));
         attempt.Style = StyleFor("LauncherAccentButton");
         var import = Action("Import…", () => ReviewSetupAsync(newOnly: false));
+        import.Style = StyleFor("SubtleAction");
         attempt.IsEnabled = import.IsEnabled = !model.Studio.IsReadOnly;
-        Detail.Children.Add(SetupHero(entry, attempt, import, Bookmark(entry, () => ShowSetupAsync(entry, fromSaved))));
+        Detail.Children.Add(SetupHero(entry, Identity(entry), attempt, Bookmark(entry)));
 
         var story = new StackPanel { Spacing = 8, Children = { PanelHeading("Story"), Body(entry.Story) } };
         var facts = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star),
@@ -272,32 +397,18 @@ public sealed partial class ConfigsPage
         story.Children.Add(facts);
         if (entry.FavoriteMap is { } map)
             story.Children.Add(IdentityFact("Favorite map", MapCatalog.DisplayName(map)));
-        story.Children.Add(Caption($"As published by {entry.Provenance.PublishedBy} · Credit: {entry.Credit}"));
-        story.Children.Add(new HyperlinkButton { Content = "Source", NavigateUri = entry.SourceUrl, Padding = new Thickness(0) });
 
+        var notable = new StackPanel { Spacing = 8 };
+        var notableCard = Panel(notable);
         var changes = new StackPanel { Spacing = 8 };
         var inSetup = new StackPanel { Spacing = 8 };
-        var primary = new StackPanel { Spacing = 12, Children = { Panel(story), Panel(changes) } };
-        var secondary = new StackPanel { Spacing = 12, Children = { Panel(inSetup) } };
-        var speed = new ContentControl();
-        if (SetupFacts(entry).Length > 0 || !entry.StyleTags.IsEmpty)
-        {
-            var notable = new StackPanel { Spacing = 8, Children = { PanelHeading("Notable settings") } };
-            speed.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-            notable.Children.Add(speed);
-            if (entry.Facts?.Resolution is { Length: > 0 } resolution)
-                notable.Children.Add(SettingRow("Resolution", resolution));
-            if (!entry.StyleTags.IsEmpty)
-                notable.Children.Add(Caption(string.Join(" · ", entry.StyleTags)));
-            secondary.Children.Insert(0, Panel(notable));
-        }
-        var columns = Columns(12, new GridLength(1.25, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
-        Put(columns, 0, primary);
-        Put(columns, 1, secondary);
+        var columns = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
+        Put(columns, 0, new StackPanel { Spacing = 12, Children = { Panel(story), notableCard } });
+        Put(columns, 1, new StackPanel { Spacing = 12, Children = { Panel(changes), Panel(inSetup) } });
         Detail.Children.Add(columns);
-        var signed = Caption("Signed catalogue entry");
-        signed.Style = StyleFor("PositiveCaption");
-        Detail.Children.Add(signed);
+        Detail.Children.Add(Provenance(entry));
+
+        RenderNotable(null);
         await ShowPreviewAsync();
 
         async Task ReviewSetupAsync(bool newOnly)
@@ -307,12 +418,37 @@ public sealed partial class ConfigsPage
             await ReviewAsync(review, entry.Player, newOnly, () => setupDistance);
         }
 
+        void RenderNotable(double? dpi)
+        {
+            notable.Children.Clear();
+            notable.Children.Add(PanelHeading("Notable settings"));
+            if (setupDistance is { } distance && dpi is { } mouseDpi)
+                AddFact("Mouse speed", $"{distance:F1} cm", $"Mouse travel for one full turn at {mouseDpi:G} DPI.");
+            if (!string.IsNullOrWhiteSpace(entry.Facts?.Resolution))
+                AddFact("Resolution", entry.Facts.Resolution, "The screen size in the published setup.");
+            notableCard.Visibility = IsVisible(notable.Children.Count > 1);
+
+            void AddFact(string label, string value, string detail)
+            {
+                if (notable.Children.Count > 1)
+                    notable.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                var row = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+                Put(row, 0, new TextBlock { Text = label, Style = StyleFor("BodyStrongTextBlockStyle"),
+                    VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap });
+                Put(row, 1, new TextBlock { Text = value, Style = StyleFor("BodyLargeTextBlockStyle"),
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextAlignment = TextAlignment.Right });
+                notable.Children.Add(new StackPanel { Spacing = 2, Children = { row, Caption(detail) } });
+            }
+        }
+
         async Task ShowPreviewAsync()
         {
             changes.Children.Clear();
-            changes.Children.Add(PanelHeading("What changes for you"));
-            changes.Children.Add(Caption("Checking this setup…"));
             inSetup.Children.Clear();
+            var changeTitle = PanelHeading("What changes for you");
+            var compared = Caption("Checking this setup…");
+            var heading = new StackPanel { Spacing = 3, Children = { changeTitle, compared } };
+            changes.Children.Add(heading);
             inSetup.Children.Add(PanelHeading("In this setup"));
             try
             {
@@ -320,13 +456,14 @@ public sealed partial class ConfigsPage
                 var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active);
                 double dpi = model.DpiFor(active);
                 setupDistance = ConfigDiscover.SetupTurnDistance(review, dpi);
-                speed.Content = setupDistance is { } cm ? SettingRow("Mouse speed", Distance(cm)) : null;
-                double? activeDistance = active is null ? null : ConfigDiscover.LoadoutTurnDistance(active.Document, dpi);
+                RenderNotable(dpi);
                 var specs = model.Model.Specs.ToDictionary(spec => spec.Name, StringComparer.OrdinalIgnoreCase);
+                double? activeDistance = active is null ? null : ConfigDiscover.LoadoutTurnDistance(active.Document, dpi,
+                    specs.GetValueOrDefault("sensitivity")?.DefaultText);
                 var rows = review.Rows
                     .Where(row => row.NewValue is not null && row.Title.StartsWith("Set ", StringComparison.Ordinal) &&
-                        (row.CanSelect || !row.LockedNames.IsEmpty) && row.PlatformNote is null &&
-                        !row.Candidate.Reasons.Contains(ConfigImportRisk.Credential))
+                        row.Candidate.SelectedByDefault && (row.CanSelect || !row.LockedNames.IsEmpty) &&
+                        row.PlatformNote is null && !row.Candidate.Reasons.Contains(ConfigImportRisk.Credential))
                     .Select(row => (Row: row, Spec: specs.GetValueOrDefault(row.Title[4..])))
                     .Where(pair => pair.Spec is not null && !pair.Spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase))
                     .GroupBy(pair => pair.Spec!.Name, StringComparer.OrdinalIgnoreCase)
@@ -337,97 +474,178 @@ public sealed partial class ConfigsPage
                         var (row, spec) = pair;
                         bool mouse = spec!.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase);
                         string? before = mouse ? (activeDistance is { } current ? Distance(current) : null) :
-                            row.OldValue is { } old ? ConfigValues.Display(spec, old) : null;
+                            ConfigValues.Display(spec, row.OldValue ?? spec.DefaultText);
                         string after = mouse ? (setupDistance is { } source ? Distance(source) : "Distance unavailable") :
                             ConfigValues.Display(spec, row.NewValue);
-                        return (Title: spec.Title, Before: before, After: after,
-                            Locked: !row.LockedNames.IsEmpty);
+                        return new SetupChange(spec.Title, before, after, !row.LockedNames.IsEmpty, mouse);
                     }).ToArray();
-                changes.Children.RemoveAt(1);
-                if (active is not null)
-                    changes.Children.Add(Caption($"Compared with {active.Profile.DisplayName}"));
+                compared.Text = active is null ? "" : $"Compared with {active.Profile.DisplayName}";
+                compared.Visibility = IsVisible(active is not null);
 
                 var compare = Action("Compare", async () =>
                 {
-                    var all = new StackPanel { Spacing = 6, MinWidth = 340 };
+                    var all = new StackPanel { Spacing = 6, MinWidth = 320 };
                     foreach (var row in rows)
-                        all.Children.Add(SettingRow(row.Title, Comparison(row.Before, row.After, row.Locked)));
-                    var content = new ScrollViewer { Content = all, MaxHeight = 338 };
+                        all.Children.Add(SettingRow(row.Title, Comparison(row)));
                     await new ContentDialog
                     {
-                        XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Compare setups",
-                        Content = content, CloseButtonText = "Close"
+                        XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Compare setups",
+                        Content = new ScrollViewer { Content = all, MaxHeight = 338 }, CloseButtonText = "Close"
                     }.ShowAsync();
                 });
+                compare.Style = StyleFor("SubtleAction");
                 compare.IsEnabled = rows.Length > 0;
-                changes.Children.Add(compare);
+                changes.Children.Add(Buttons(compare, import));
 
-                var different = rows.Where(row => row.Before != row.After).ToArray();
+                var different = rows.Where(row => row.Locked || row.Before != row.After).ToArray();
                 foreach (var row in different.Take(6))
-                    changes.Children.Add(SettingRow(row.Title, Comparison(row.Before, row.After, row.Locked)));
+                    changes.Children.Add(Consequence(row, activeDistance, setupDistance));
                 if (different.Length == 0)
                     changes.Children.Add(Caption(active is null ? "Open Compare to see the settings in this setup." : "No changes to the settings shown here."));
                 if (different.Length > 6)
                     changes.Children.Add(Caption($"{different.Length - 6} more changes"));
+
+                int settings = rows.Count(row => !row.Locked);
                 int bindings = review.Rows.Count(row => row.CanSelect && row.Group == "Bindings");
                 int toReview = review.Rows.Count(row => row.CanSelect && row.Candidate.Classification == ConfigImportClassification.NeedsOk);
-                inSetup.Children.Add(Body($"{rows.Length} {(rows.Length == 1 ? "setting" : "settings")}"));
-                inSetup.Children.Add(Body($"{bindings} {(bindings == 1 ? "key binding" : "key bindings")}"));
-                inSetup.Children.Add(Body($"{toReview} {(toReview == 1 ? "line to review" : "lines to review")}"));
+                if (settings > 0)
+                    inSetup.Children.Add(Body($"{settings} {(settings == 1 ? "setting" : "settings")}"));
+                if (bindings > 0)
+                    inSetup.Children.Add(Body($"{bindings} {(bindings == 1 ? "key binding" : "key bindings")}"));
+                if (toReview > 0)
+                    inSetup.Children.Add(Body(toReview == 1 ? "1 change needs your OK" : $"{toReview} changes need your OK"));
+                if (settings + bindings + toReview == 0)
+                    inSetup.Children.Add(Body("Nothing in this setup needs your OK."));
                 inSetup.Children.Add(Caption("Trying this setup makes a new loadout."));
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ConfigDirectoryException
-                or ConfigFetchHttpException or ConfigImportException)
+            catch (Exception error) when (IsSetupReviewProblem(error))
             {
-                changes.Children.RemoveAt(1);
-                changes.Children.Add(Caption("This setup couldn’t be checked."));
-                changes.Children.Add(Action("Try again", ShowPreviewAsync));
+                compared.Text = "This setup couldn’t be checked.";
+                changes.Children.Add(Buttons(Action("Try again", ShowPreviewAsync), import));
             }
         }
     }
 
-    private Button Bookmark(ConfigDirectoryEntry entry, Func<Task> refresh)
+    private sealed record SetupChange(string Title, string? Before, string After, bool Locked, bool Mouse);
+
+    private static Grid Consequence(SetupChange change, double? current, double? incoming)
     {
-        bool saved = model.Discover.State.Saved.Any(bookmark => bookmark.Id == entry.Id);
-        string label = saved ? "Remove from Saved" : "Save for later";
-        var action = Action(label, async () =>
+        string icon = change.Locked ? "Lock" : change.Mouse ? "Gauge" : "CheckCircle";
+        string title = change.Locked ? $"{change.Title} stays locked" : change.Title;
+        string detail = Comparison(change);
+        if (change.Mouse && incoming is { } after)
         {
-            string? message = await model.Discover.SetSavedAsync(entry.Id, !saved);
-            await refresh();
+            if (change.Locked)
+                detail = $"This setup uses {Distance(after)}. Your loadout keeps its mouse speed.";
+            else if (current is { } before)
+            {
+                title = before < after ? "You’ll turn slower" : "You’ll turn faster";
+                detail = $"A full turn takes {after:F1} cm of mouse travel. Yours takes {before:F1} cm.";
+            }
+            else
+                detail = $"A full turn takes {after:F1} cm of mouse travel.";
+        }
+        else if (!change.Locked && (change.Before is null || change.Before != change.After))
+        {
+            detail = change.Before is null ? $"You’ll use {change.After}." :
+                $"You’ll use {change.After} in place of {change.Before}.";
+        }
+        var row = Columns(8, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+        var glyph = Fluent(icon, 16);
+        glyph.VerticalAlignment = VerticalAlignment.Top;
+        glyph.Margin = new Thickness(0, 2, 0, 0);
+        AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
+        Put(row, 0, glyph);
+        Put(row, 1, new StackPanel { Spacing = 2, Children = {
+            new TextBlock { Text = title, Style = StyleFor("BodyStrongTextBlockStyle"), TextWrapping = TextWrapping.Wrap },
+            Caption(detail)
+        } });
+        return row;
+    }
+
+    private static Grid Provenance(ConfigDirectoryEntry entry)
+    {
+        var signed = IconLabel("ShieldCheckmark", "Signed catalogue entry", 16);
+        ((FontIcon)signed.Children[0]).Style = StyleFor("PositiveIcon");
+        ((TextBlock)signed.Children[1]).Style = StyleFor("PositiveCaption");
+        var source = Caption("");
+        var link = new Hyperlink { NavigateUri = entry.SourceUrl };
+        link.Inlines.Add(new Run { Text = entry.Provenance.PublishedBy });
+        source.Inlines.Add(new Run { Text = "As published by " });
+        source.Inlines.Add(link);
+        source.Inlines.Add(new Run { Text = $". {entry.Provenance.Changes} Credit: {entry.Credit}." });
+        var remove = new HyperlinkButton { Content = "Ask to remove or correct this setup",
+            NavigateUri = ConfigDirectory.RemovalUrl, FontSize = 12, VerticalAlignment = VerticalAlignment.Top };
+        var footer = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        Put(footer, 0, new StackPanel { Spacing = 4, Children = { signed, source } });
+        Put(footer, 1, remove);
+        return footer;
+    }
+
+    private Button Bookmark(ConfigDirectoryEntry entry)
+    {
+        var action = new Button { Width = 36, Height = 36, Padding = new Thickness(0) };
+        Update();
+        action.Click += async (_, _) => await shell.RunAsync(async () =>
+        {
+            string? message = await model.Discover.SetSavedAsync(entry.Id, !IsSaved());
+            Update();
+            UpdateSavedCount();
             if (message is not null)
                 Feedback(message);
         });
-        action.Content = Fluent("Bookmark", 20);
-        action.Style = StyleFor("IconAction");
-        AutomationProperties.SetName(action, label);
-        ToolTipService.SetToolTip(action, label);
         return action;
+
+        bool IsSaved() => model.Discover.State.Saved.Any(bookmark => bookmark.Id == entry.Id);
+
+        void Update()
+        {
+            bool saved = IsSaved();
+            string label = saved ? "Remove from Saved" : "Save for later";
+            action.Content = Fluent(saved ? "BookmarkFilled" : "Bookmark", 20, filled: saved);
+            AutomationProperties.SetName(action, label);
+            ToolTipService.SetToolTip(action, label);
+        }
     }
 
-    private Border SetupHero(ConfigDirectoryEntry entry, params Button[] actions)
+    private Border SetupHero(ConfigDirectoryEntry entry, string eyebrow, Button primary, Button bookmark, bool withPips = false)
     {
-        var artwork = Artwork(entry, height: 200);
-        var layout = new Grid { Children = { artwork } };
-        var text = new StackPanel { Spacing = 3 };
-        text.Children.Add(new TextBlock { Text = Identity(entry).ToUpperInvariant(), Style = StyleFor("Eyebrow") });
-        text.Children.Add(new TextBlock { Text = entry.Player.ToUpperInvariant(), Style = StyleFor("StencilText"),
-            FontSize = 38, TextWrapping = TextWrapping.Wrap });
-        text.Children.Add(Body(entry.Feel));
-        var row = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(row, 0, text);
-        var buttons = Buttons(actions);
-        buttons.VerticalAlignment = VerticalAlignment.Bottom;
-        Put(row, 1, buttons);
-        layout.Children.Add(new Border { Style = StyleFor("SetupHeroFooter"), Child = row });
-        layout.SizeChanged += (_, args) =>
+        var art = Artwork(entry, new CornerRadius(4));
+        var body = new Grid { MinHeight = 240, Children = { art, new Border { Style = StyleFor("SetupHeroScrim") } } };
+        var name = new TextBlock { Text = entry.Player, Style = StyleFor("SetupArtName") };
+        AutomationProperties.SetHeadingLevel(name, AutomationHeadingLevel.Level2);
+        var text = new StackPanel { Spacing = 5, Children = {
+            new TextBlock { Text = eyebrow.ToUpperInvariant(), Style = StyleFor("Eyebrow") }, name,
+            new TextBlock { Text = entry.Feel, Style = StyleFor("SetupArtDescription") }
+        } };
+        var actions = Buttons(primary, bookmark);
+        actions.VerticalAlignment = VerticalAlignment.Bottom;
+        var footer = Columns(12, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        footer.VerticalAlignment = VerticalAlignment.Bottom;
+        footer.Margin = new Thickness(16, 54, 16, withPips ? 42 : 16);
+        Put(footer, 0, Avatar(entry, 72));
+        Put(footer, 1, new Border { Style = StyleFor("SetupArtBackplate"),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Child = text });
+        Put(footer, 2, actions);
+        body.Children.Add(footer);
+        body.SizeChanged += (_, args) => body.MinHeight = args.NewSize.Width >= 850 ? 300 : 240;
+        return new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = body };
+    }
+
+    private static Border Avatar(ConfigDirectoryEntry entry, double diameter)
+    {
+        var avatar = new Border
         {
-            double height = args.NewSize.Width >= 900 ? 260 : args.NewSize.Width >= 700 ? 200 : 172;
-            if (artwork.Height != height)
-                artwork.Height = height;
+            Width = diameter, Height = diameter, CornerRadius = new CornerRadius(diameter / 2),
+            Style = StyleFor("SetupAvatar"), VerticalAlignment = VerticalAlignment.Bottom,
+            Child = new TextBlock
+            {
+                Text = StringInfo.GetNextTextElement(entry.Player).ToUpper(CultureInfo.CurrentCulture),
+                Style = StyleFor("LoadoutInitial"), FontSize = diameter > 40 ? 32 : 20
+            }
         };
-        var panel = Panel(layout);
-        panel.Padding = new Thickness(0);
-        return panel;
+        AutomationProperties.SetAccessibilityView(avatar, AccessibilityView.Raw);
+        return avatar;
     }
 
     private static StackPanel IdentityFact(string label, string value) => new()
@@ -437,18 +655,17 @@ public sealed partial class ConfigsPage
             Style = StyleFor("BodyStrongTextBlockStyle") } }
     };
 
-    private Border Artwork(ConfigDirectoryEntry entry, double height)
+    private Border Artwork(ConfigDirectoryEntry entry, CornerRadius corners)
     {
         string map = entry.FavoriteMap is { Length: > 0 } favorite ? favorite : HostingCatalog.Maps[
             entry.Id.Aggregate(0, (seed, letter) => (seed * 31 + letter) & 0xffff) % HostingCatalog.Maps.Length];
-        var picture = new Image { Stretch = Stretch.UniformToFill };
-        AutomationProperties.SetAccessibilityView(picture, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
-        var art = new Border { Height = height, Style = StyleFor("MediaTile"), Child = picture };
+        var art = new Border { Style = StyleFor("MediaTile"), CornerRadius = corners, IsHitTestVisible = false };
+        AutomationProperties.SetAccessibilityView(art, AccessibilityView.Raw);
         art.Loaded += async (_, _) =>
         {
             var image = await setupArt.GetAsync(map) ?? new SvgImageSource(new Uri(
                 $"ms-appx:///Assets/hero-{(art.ActualTheme == ElementTheme.Light ? "light" : "dark")}.svg"));
-            picture.Source = image;
+            art.Background = new ImageBrush { ImageSource = image, Stretch = Stretch.UniformToFill };
         };
         return art;
     }
@@ -469,16 +686,18 @@ public sealed partial class ConfigsPage
     private static TextBlock PanelHeading(string title) => new() { Text = title, Style = StyleFor("CardTitle"), TextWrapping = TextWrapping.Wrap };
     private static Border Panel(FrameworkElement content) => new() { Style = StyleFor("FieldCard"), Child = content };
     private static string SetupCount(int count) => $"{count} {(count == 1 ? "setup" : "setups")}";
-    private static string Identity(ConfigDirectoryEntry entry) => string.Join(" · ", new[] { entry.Team, entry.Era, entry.Role }.OfType<string>());
-    private static string SetupFacts(ConfigDirectoryEntry entry) =>
-        string.Join(" · ", new[] { entry.Facts?.Sensitivity, entry.Facts?.Resolution }.Where(value => !string.IsNullOrWhiteSpace(value)));
-    private static string Comparison(string? before, string after, bool locked) =>
-        locked ? $"Yours stays {before ?? "as it is"}. This setup uses {after}."
-            : before is null ? $"This setup uses {after}." : $"Yours: {before} · This setup: {after}";
+    private static string Identity(ConfigDirectoryEntry entry) => string.Join(" · ", new[] { entry.Team, entry.Era }.OfType<string>());
+    private static string CatalogueDate(DateTimeOffset fetched) => fetched.LocalDateTime.Date == DateTime.Today
+        ? "today" : fetched.LocalDateTime.ToString("d MMM", CultureInfo.CurrentCulture);
+    private static bool IsSetupReviewProblem(Exception error) => error is IOException or UnauthorizedAccessException or
+        ConfigDirectoryException or ConfigFetchHttpException or ConfigImportException;
+    private static string Comparison(SetupChange change) =>
+        change.Locked ? $"Yours stays {change.Before ?? "as it is"}. This setup uses {change.After}."
+            : change.Before is null ? $"This setup uses {change.After}." : $"Yours: {change.Before} · This setup: {change.After}";
 
-    private static TextBlock OneLine(string value)
+    private static TextBlock OneLine(string value, string? style = null)
     {
-        var text = Caption(value);
+        var text = style is null ? Caption(value) : new TextBlock { Text = value, Style = StyleFor(style) };
         text.TextTrimming = TextTrimming.CharacterEllipsis;
         text.TextWrapping = TextWrapping.NoWrap;
         return text;
