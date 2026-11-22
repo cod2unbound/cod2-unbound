@@ -19,12 +19,16 @@ extension Snapshots {
                                 "configs-rename-sheet", "configs-checkup-match", "configs-checkup-freezes", "configs-checkup-freeze-legacy",
                                 // Discover · Player Setups (the front page, See All, a search) and Check a Config.
                                 "configs-home", "configs-home-end", "configs-home-all", "configs-home-search", "configs-home-nomatch",
+                                // usage data: Player Setups ordered by use (DiscoverSorted), and without figures.
+                                "configs-home-sorted", "configs-home-sorted-viewed", "configs-home-sorted-none",
                                 "configs-checker-empty", "configs-checker", "configs-checker-fixed", "configs-checker-clean",
                                 // share-launcher: Share Your Setup's sheet in each state, See What’s Sent…, Sent, the Stop
-                                // Sharing alert, Player Setups' Share Your Setup… button, and a shared setup's credit.
+                                // Sharing alert, Player Setups' Share Your Setup… button, and a shared setup's page with
+                                // its credit line (the page's footer, scrolled to).
                                 "configs-share-empty", "configs-share-sheet", "configs-share-sending", "configs-share-preview",
                                 "configs-share-offline", "configs-share-limit", "configs-share-already", "configs-share-nothing",
-                                "configs-share-sent", "configs-share-stop-confirm", "configs-home-share", "discover-player-shared"]
+                                "configs-share-sent", "configs-share-stop-confirm", "configs-home-share", "discover-player-shared",
+                                "discover-player-shared-credit"]
 }
 
 /// Synthetic loadouts for the Config Studio screens, written through the real store into a
@@ -216,6 +220,21 @@ extension Snapshots {
             // See All on the Classic era shelf.
             try await fixture()
             discover.showAll(.classic)
+        case "configs-home-sorted", "configs-home-sorted-viewed", "configs-home-sorted-none":
+            // DiscoverSorted board: All setups ordered by use, with the fixture's signed figures
+            // (a setup under 5 and one without a figure keep the catalogue's order). The -none
+            // state has no figures file at all.
+            let figures = Data("""
+                {"schemaVersion":1,"periodDays":30,"generatedDate":"2026-11-21","setups":{
+                  "player-1":{"imports":71,"views":212},"player-2":{"imports":4,"views":38},
+                  "player-3":{"imports":64,"views":150},"player-5":{"imports":38,"views":96}
+                }}
+                """.utf8)
+            discover.use(try DirectoryFixture.directory(cacheURL: home.appendingPathComponent("directory/index.json"),
+                                                        popularity: screen == "configs-home-sorted-none" ? nil : figures))
+            await discover.reload()
+            discover.showAll(.all)
+            discover.setupOrder = screen == "configs-home-sorted-viewed" ? .mostViewed : .mostImported
         case "configs-home-search", "configs-home-nomatch":
             try await fixture()
             discover.query = screen == "configs-home-search" ? "classic" : "quake"
@@ -238,8 +257,8 @@ extension Snapshots {
         case "discover-saved":
             try await fixture()
             discover.setSaved("player-2", true); discover.setSaved("player-4", true)
-        case "discover-player", "configs-expert-player", "discover-player-shared":
-            if screen == "discover-player-shared" {
+        case "discover-player", "configs-expert-player", "discover-player-shared", "discover-player-shared-credit":
+            if screen.hasPrefix("discover-player-shared") {
                 // A setup a player sent from the app: credited as shared, with its day.
                 discover.use(try DirectoryFixture.directory(cacheURL: home.appendingPathComponent("directory/index.json"), shared: ["player-1"]))
                 await discover.reload()
@@ -1340,6 +1359,7 @@ extension Snapshots {
     /// Labels each Config Studio screen must expose, so an empty or unbuilt tree can't pass. Other
     /// units list theirs in their own harness files; `Snapshots.expectedLabels` gathers them all.
     static let expectedLabels: [String: [String]] = [
+        "configs-home-sorted": ["Order"],
         "configs-guided": ["Jump to Any Setting", "Frame rate cap"],
         "configs-binds-list": ["Primary key for Throw frag grenade", "Find an action or key", "Advanced binds"],
         "configs-binds-advanced": ["Key for this bind", "Save Bind", "Step 1"],
@@ -1381,11 +1401,12 @@ extension Snapshots {
         "configs-share-offline": ["Problem: Couldn’t reach cod2unbound.com, so nothing was sent.", "Try Again", "Cancel"],
         "configs-share-limit": ["Problem: Three setups were shared from this network today", "Share Setup", "Cancel"],
         "configs-share-already": ["Problem: This exact setup is already in Player Setups", "Share Setup", "Cancel"],
-        "configs-share-nothing": ["Problem: Main still has the game’s own settings.", "Cancel"],
+        "configs-share-nothing": ["Main still has the game’s own settings.", "Cancel"],
         "configs-share-sent": ["Your setup was sent", "Request address: github.com/cod2unbound/cod2-configs/pull/128", "View Request", "Done"],
         "configs-share-stop-confirm": ["Stop sharing “Main”?", "Stop Sharing", "Cancel"],
         "configs-home-share": ["Share Your Setup", "Add a Config"],
         "discover-player-shared": ["Compare", "Try This Setup"],
+        "discover-player-shared-credit": ["Shared by its player from CoD2 Unbound on", "Ask to remove or correct this setup"],
     ]
 
     /// Every Config Studio screen's accessibility tree in reading order, with unnamed controls as failures.

@@ -106,5 +106,6 @@ build_app() {
         --d3d9metal "$build/d3d9metal/install" \
         --server-engine "$build/client/cod2_macos_ded" --stock-server-engine "$build/client-stock/cod2_macos_ded" \
         --shadergen "$build/client/cod2-shadergen" --vkd3d "$build/vkd3d/install" --version "$version" \
-        ${COD2_SENTRY_DSN:+--sentry-dsn "$COD2_SENTRY_DSN"}
+        ${COD2_SENTRY_DSN:+--sentry-dsn "$COD2_SENTRY_DSN"} \
+        ${COD2_POSTHOG_KEY:+--posthog-key "$COD2_POSTHOG_KEY"}
 }

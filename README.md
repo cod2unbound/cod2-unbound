@@ -25,7 +25,7 @@ does the rest. A Windows 1.3 install's folder works as it is.
 
 ## Status
 
-Version `0.4.0` is playable on original 1.3 and CoD2x 1.4 servers, with a
+Version `0.4.2` is playable on original 1.3 and CoD2x 1.4 servers, with a
 native launcher, server browser and Config Studio. Movement, firing, grenades, mounted
 turrets, HTTP mod downloads and round restarts have been tested, and every
 menu is opened by an automated sweep. The picture is compared with the
@@ -53,7 +53,7 @@ have it installed nowhere, setup can download it for you. See
 ### Prebuilt app
 
 1. Open [GitHub Releases](https://github.com/cod2unbound/cod2-unbound/releases).
-2. Download `CoD2-Unbound-0.4.0-macos-arm64.dmg`. To check it first, download
+2. Download `CoD2-Unbound-0.4.2-macos-arm64.dmg`. To check it first, download
    `SHA256SUMS` into the same folder and run:
 
    ```sh
@@ -266,12 +266,23 @@ all of it before you post, and the app sends nothing itself.
   a person on the released Windows CoD2x. A CoD2x server still hosted from
   CoD2 Unbound 0.3.0 turns 0.3.1 players away until it updates. A server on
   the original 1.3 takes any 1.3 player.
-- Voice chat works with the original 1.3 only; CoD2x turns it off. It records
-  from your microphone only while you hold the voice chat
-  key on a server that has voice on. The sound path was tested with a
-  recording in place of a microphone, not yet with a real one, and the level
-  meter in the options moves only while you are sending. Device changes while
-  talking are not handled.
+- Voice chat works with the original 1.3 only; CoD2x turns it off, as CoD2x
+  does on Windows. It records from your microphone only while you hold the
+  voice chat key on a server that has voice on, and follows a change of
+  input device, even mid-sentence. The sound path was tested with a recording
+  in place of a microphone, not yet with a real one. There is no choice of
+  microphone in the launcher; the game uses the system's input. A server
+  started from the launcher's Hosting page does not offer voice chat yet.
+- PunkBuster is not part of the app, so a server that requires it will not
+  let you stay.
+- On Wi-Fi, macOS pauses the connection for a moment now and then while
+  AirDrop or Handoff is in use, which shows as freezes and jumps, whether
+  you host or just play. A network cable avoids it; the server guide's
+  [Wi-Fi section](docs/server.md#wi-fi-players-who-freeze-and-jump) has the
+  other remedies.
+- Everything here was checked on one Apple silicon Mac with a 5K display.
+  A MacBook's 16:10 screen, a 120 Hz display, a second display and a Mac
+  with 8 GB of memory have not been tried with the Metal engine.
 - The intro videos play once, the first time a new player launches to the
   game menu, as in the original; any key skips each part. `cinematic
   cod_intro` in the console plays the intro film again.
@@ -309,6 +320,12 @@ new performance claims for every release. Verified development results include:
 - 0.3.1 fixed two of the differences 0.3.0 listed (menu panel edges, and fog
   in the Direct3D 7 renderer) and measured a third, the near clip plane, as
   not a difference. [What was tested for 0.3.1](docs/macos-port/release-0.3.1-verification.md)
+- 0.4.1 adds sharing a setup from the launcher and fixes what going over
+  0.4.0 turned up, on Metal and in the launcher.
+  [What was tested for 0.4.1](docs/macos-port/release-0.4.1-verification.md)
+- 0.4.2 asks whether you want to send usage data, which stays off unless you
+  say yes.
+  [What was tested for 0.4.2](docs/macos-port/release-0.4.2-verification.md)
 - 0.4.0 moves the game from OpenGL to Metal and adds a render scale.
   [What was tested for 0.4.0](docs/macos-port/release-0.4.0-verification.md)
 - 0.3.7 gives every launcher screen one look and changes nothing in the game.

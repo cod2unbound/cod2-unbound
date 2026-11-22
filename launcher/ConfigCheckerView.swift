@@ -15,11 +15,14 @@ import UniformTypeIdentifiers
     /// Save as Loadout…: the launcher's import review, given a name and the config text.
     var save: @MainActor (String, Data) -> Void = { _, _ in }
     var notify: @MainActor (String) -> Void = { _ in }
+    var recordUsage: (UsageEvent) -> Void = { _ in }
     @Published private(set) var source: Source?
     @Published private(set) var report: ConfigCheckReport?
     @Published private(set) var applied: Set<Int> = []
     @Published private(set) var checking = false
-    @Published private(set) var failure: String?
+    @Published private(set) var failure: String? {
+        didSet { if failure != nil { recordUsage(.errorShown(.checkConfig)) } }
+    }
     @Published var dialect: ConfigDialect { didSet { if dialect != oldValue { ruleset = nil; recheck() } } }
     /// The server rules to check against; nil checks the game's own limits only.
     @Published var ruleset: String? { didSet { if ruleset != oldValue { recheck() } } }
@@ -89,6 +92,7 @@ import UniformTypeIdentifiers
                 let report = try await ConfigChecker.check(data, dialect: dialect, ruleset: ruleset, catalog: catalog, rules: rules)
                 guard let self, !Task.isCancelled else { return }
                 self.report = report; self.checking = false
+                self.recordUsage(.checkRun)
                 self.studio.announce(self.summary.title + ". " + self.summary.detail)
             } catch is CancellationError {
             } catch {

@@ -10,8 +10,7 @@ import UniformTypeIdentifiers
 /// Discover's pages. Each sits beside the Configs column, like a loadout does.
 enum ConfigDiscoverPage: Hashable { case home, saved, player(String), checker }
 
-/// How Discover groups the player setups. Featured is chosen in the catalogue; nothing is counted about
-/// what people import, so there is no popularity order.
+/// How Discover groups the player setups. Featured is chosen in the catalogue.
 enum ConfigSetupFilter: String, CaseIterable, Identifiable {
     case featured = "Featured", classic = "Classic era", cod2x = "CoD2x era", modern = "Modern", all = "All"
     var id: String { rawValue }
@@ -401,11 +400,15 @@ extension ConfigImportPresentation {
     @Published private(set) var session: ConfigImportSession? { didSet { refreshItems() } }
     @Published private(set) var items: [ConfigImportItem] = []
     @Published var showDetails = false
-    @Published var applyError: String?
+    @Published var applyError: String? {
+        didSet { if applyError != nil { onFailure() } }
+    }
     @Published private(set) var receipt: ConfigImportReceipt?
     private let studio: ConfigStudioModel
     private var task: Task<Void, Never>?
     private var newLoadoutID = ""
+    var onApplied: (Bool) -> Void = { _ in }
+    var onFailure: () -> Void = {}
 
     init(studio: ConfigStudioModel, displayName: String, provenance: ConfigImportProvenance) {
         self.studio = studio; self.displayName = displayName; self.provenance = provenance
@@ -435,7 +438,7 @@ extension ConfigImportPresentation {
             }
         }
     }
-    func fail(_ message: String) { phase = .failed(message) }
+    func fail(_ message: String) { phase = .failed(message); onFailure() }
     func cancel() { task?.cancel(); task = nil }
     /// Review only: the harness and tests install a reviewed session directly.
     func install(_ session: ConfigImportSession) {
@@ -534,6 +537,7 @@ extension ConfigImportPresentation {
             let result = try session.apply(to: live)
             self.session = session
             receipt = result; applyError = nil
+            if case .newLoadout = session.target { onApplied(true) } else { onApplied(false) }
             if case .existing = session.target, let undo {
                 let entry = result.historyEntry, id = result.profileID
                 undo.registerUndo(withTarget: studio) { studio in ConfigImportReviewModel.undoImport(studio: studio, profileID: id, entry: entry) }
@@ -587,13 +591,20 @@ extension ConfigImportPresentation {
 @MainActor final class ConfigDiscoverModel: ObservableObject {
     let studio: ConfigStudioModel
     private(set) var directory: ConfigDirectory
-    @Published var page: ConfigDiscoverPage?
+    @Published var page: ConfigDiscoverPage? {
+        didSet { if page != oldValue { onPageChanged() } }
+    }
+    var onPageChanged: () -> Void = {}
+    var recordUsage: (UsageEvent) -> Void = { _ in }
     @Published private(set) var state: ConfigDirectoryState = .idle
     /// A search looks through every setup, so it leaves Saved or a player's page for the results.
     @Published var query = "" {
         didSet { if searching, let page, page != .home, page != .checker { self.page = .home } }
     }
     @Published var filter: ConfigSetupFilter = .featured
+    @Published var setupOrder: ConfigSetupOrder = .featuredFirst
+    @Published private(set) var popularity: ConfigDirectoryPopularity?
+    private var reloadID = UUID()
     /// Player Setups shows its front page (the featured banner and the shelves) until See All or a
     /// filter is chosen; then it shows that group as a grid.
     @Published var browsing = false
@@ -621,12 +632,14 @@ extension ConfigImportPresentation {
         checker = ConfigCheckerModel(studio: studio)
         checker.save = { [weak self] name, data in self?.importChecked(name: name, data: data) }
         checker.notify = { [weak self] in self?.notify($0) }
+        checker.recordUsage = { [weak self] in self?.recordUsage($0) }
     }
 
     /// The review harness swaps in a signed fixture directory (preview mode only).
     func use(_ directory: ConfigDirectory) {
         detailTask?.cancel()
-        self.directory = directory; state = .idle; saved = []; detail = nil
+        reloadID = UUID()
+        self.directory = directory; state = .idle; saved = []; detail = nil; popularity = nil
     }
 
     var snapshot: ConfigDirectorySnapshot? { if case .loaded(let snapshot, _) = state { return snapshot }; return nil }
@@ -643,12 +656,46 @@ extension ConfigImportPresentation {
     var searching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
     /// The filters that keep at least one setup, so no chip leads to an empty page.
     var filters: [ConfigSetupFilter] { ConfigSetupFilter.allCases.filter { filter in entries.contains(where: filter.keeps) } }
-    /// The grid: a search looks through every setup; otherwise the chosen filter, by name.
+    /// The grid: a search looks through every setup; otherwise the chosen filter.
+    /// Ranked setups come first. Ties and unranked setups keep their relative order in the signed index.
     var setups: [ConfigDirectoryEntry] {
         let chosen = filters.contains(filter) ? filter : .all
         let shown = searching ? matches : entries.filter(chosen.keeps)
-        return shown.sorted { $0.player.localizedCaseInsensitiveCompare($1.player) == .orderedAscending }
+        return ConfigDirectoryPopularity.ordered(shown, by: activeOrder, popularity: popularity)
     }
+    func popularityCount(for id: String, order: ConfigSetupOrder? = nil) -> Int? {
+        guard entry(id) != nil else { return nil }
+        return popularity?.setups[id]?.figure(for: order ?? activeOrder)
+    }
+    /// The orders the published figures can honour: Featured First always, Most Imported or Most
+    /// Viewed only when at least one setup has that figure. Without figures there is nothing to choose.
+    var availableOrders: [ConfigSetupOrder] {
+        let figures = popularity.map { Array($0.setups.values) } ?? []
+        return ConfigSetupOrder.allCases.filter { order in
+            order == .featuredFirst || figures.contains { $0.figure(for: order) != nil }
+        }
+    }
+    /// Player Setups offers the Order pop-up only when there is more than one order to choose.
+    var offersOrder: Bool { availableOrders.count > 1 }
+    /// The order in effect: the chosen one while the figures can honour it, otherwise Featured First,
+    /// so a grid without figures looks exactly as it does without the feature.
+    var activeOrder: ConfigSetupOrder { availableOrders.contains(setupOrder) ? setupOrder : .featuredFirst }
+
+    /// The grid's status line when it is ordered by use (DiscoverSorted board), or nil to keep the
+    /// ordinary line (Featured First, a search, or no figures).
+    func orderStatus(filtered: Bool) -> String? {
+        guard !searching, activeOrder != .featuredFirst, let popularity else { return nil }
+        let total = entries.count, shown = setups.count
+        let setups = total == 1 ? "1 setup" : "\(total) setups"
+        return PopularityWording.status(count: filtered ? "\(shown) of \(setups)" : setups, order: activeOrder, days: popularity.periodDays)
+    }
+    /// A card's figure line when the grid is ordered by it and the setup has a figure (5 or more), or
+    /// nil; the card then names its source.
+    func figureLine(for id: String) -> String? {
+        guard activeOrder != .featuredFirst, let popularity, let count = popularityCount(for: id) else { return nil }
+        return PopularityWording.figure(count, order: activeOrder, days: popularity.periodDays)
+    }
+
     /// The setups the front page's banner pages through: the first featured ones, in the index's order.
     var heroes: [ConfigDirectoryEntry] {
         let featured = entries.filter { $0.featured == true }
@@ -702,28 +749,41 @@ extension ConfigImportPresentation {
     }
 
     func open(_ page: ConfigDiscoverPage) {
+        let changed = self.page != page
         self.page = page
-        if case .player(let id) = page { loadDetail(id) }
+        if case .player(let id) = page {
+            if changed, let publicID = snapshot?.usageID(id) { recordUsage(.playerSetupViewed(publicID)) }
+            loadDetail(id)
+        }
         Task { await loadIfNeeded() }
     }
     func loadIfNeeded() async {
         if case .idle = state { await reload() }
     }
     func reload() async {
-        state = .loading
+        let request = UUID()
+        reloadID = request; state = .loading
         let directory = self.directory
+        async let figures = directory.loadPopularity()
         do {
             let result = try await directory.load()
+            guard reloadID == request, !Task.isCancelled else { return }
             if let snapshot = result.snapshot {
                 fetched = directory.cacheDate
                 state = .loaded(snapshot, refreshError: result.refreshError)
+                if result.refreshError != nil { recordUsage(.errorShown(.directory)) }
                 saved = (try? directory.savedEntries(snapshot: snapshot)) ?? []
+                let fresh = await figures
+                if reloadID == request, !Task.isCancelled { popularity = fresh }
             } else {
                 state = .unavailable(result.unavailableReason ?? "The player directory isn’t available.")
-                saved = []
+                saved = []; popularity = nil
             }
         } catch {
+            guard reloadID == request, !Task.isCancelled else { return }
+            popularity = nil
             state = .failed(ConfigImportReviewModel.message(for: error)); saved = []
+            recordUsage(.errorShown(.directory))
         }
     }
 
@@ -762,6 +822,7 @@ extension ConfigImportPresentation {
             } catch {
                 guard let self, self.detail?.entryID == id else { return }
                 self.detail?.phase = .failed(ConfigImportReviewModel.message(for: error))
+                self.recordUsage(.errorShown(.directory))
             }
         }
     }
@@ -790,10 +851,16 @@ extension ConfigImportPresentation {
 
     /// Opens a review sheet at once; the source is read and reviewed while it shows progress.
     func beginImport(displayName: String, provenance: ConfigImportProvenance, platform: ConfigImportPlatform = .native,
-                     origin: ConfigOrigin? = nil, load: @escaping @Sendable (ConfigImportCatalogAdapter, ConfigDialect) async throws -> ConfigImportBundle) {
+                     origin: ConfigOrigin? = nil, usageID: ConfigDirectoryUsageID? = nil, load: @escaping @Sendable (ConfigImportCatalogAdapter, ConfigDialect) async throws -> ConfigImportBundle) {
         guard studio.session != nil else { notify("Configs aren’t available, so nothing can be imported."); return }
         review?.cancel()
         let review = ConfigImportReviewModel(studio: studio, displayName: displayName, provenance: provenance)
+        review.onApplied = { [weak self] madeLoadout in
+            if let usageID { self?.recordUsage(.playerSetupImported(usageID)) }
+            if madeLoadout { self?.recordUsage(.loadoutMade) }
+        }
+        review.onFailure = { [weak self] in self?.recordUsage(.errorShown(.importConfig)) }
+        if let usageID { recordUsage(.playerSetupTried(usageID)) }
         self.review = review
         step = .review
         guard let catalog = catalog() else { review.fail("The settings catalog is missing or damaged. Reinstall CoD2 Unbound to restore it."); return }
@@ -898,14 +965,14 @@ extension ConfigImportPresentation {
     }
     /// Try this setup: a signed entry, downloaded by its exact digest, reviewed like any other source.
     func tryEntry(_ entry: ConfigDirectoryEntry) {
-        guard let snapshot else { return }
+        guard let snapshot, let usageID = snapshot.usageID(entry.id) else { return }
         let cached = detail?.entryID == entry.id ? detail?.bundle : nil
         let directory = self.directory
         beginImport(displayName: entry.player,
                     provenance: .init(source: "Players catalog", signed: true, credit: entry.credit, publishedBy: entry.provenance.publishedBy,
                                       windows: entry.platform == .windows, symbol: "person.2"),
                     platform: entry.platform == .windows ? .windows : .native,
-                    origin: ConfigOrigin(kind: .imported, source: entry.sourceURL.absoluteString, credit: entry.credit)) { adapter, dialect in
+                    origin: ConfigOrigin(kind: .imported, source: entry.sourceURL.absoluteString, credit: entry.credit), usageID: usageID) { adapter, dialect in
             if let cached { return cached }
             return try await directory.profile(entryID: entry.id, snapshot: snapshot, dialect: dialect, catalog: adapter)
         }
@@ -916,4 +983,23 @@ extension ConfigImportPresentation {
         let name = base.hasSuffix(".cfg") ? String(base.dropLast(4)) : base
         return name.isEmpty || name == "raw" ? "Imported config" : name
     }
+}
+
+/// Every word Player Setups shows about usage figures, in one place (DiscoverSorted board, approved
+/// 2026-11-21). Counts are stated as plain facts: the owner decided on 2026-11-21 that Player Setups
+/// never says where they come from or how they are gathered (no source, no threshold, no menu note).
+/// Usage data itself is only explained in setup, its question sheet, See What’s Sent and Settings › Privacy.
+enum PopularityWording {
+    /// Set false to keep the ordering but show no figure on the cards (each keeps its source line).
+    static let figuresOnCards = true
+    /// “59 setups, the most imported in the last 30 days first”.
+    static func status(count: String, order: ConfigSetupOrder, days: Int) -> String {
+        "\(count), \(order == .mostImported ? "the most imported" : "the most viewed") in the last \(period(days)) first"
+    }
+    /// “Imported 64 times in the last 30 days”, or nil when figures are not shown on cards.
+    static func figure(_ count: Int, order: ConfigSetupOrder, days: Int) -> String? {
+        guard figuresOnCards else { return nil }
+        return "\(order == .mostImported ? "Imported" : "Viewed") \(count) times in the last \(period(days))"
+    }
+    private static func period(_ days: Int) -> String { days == 1 ? "day" : "\(days) days" }
 }

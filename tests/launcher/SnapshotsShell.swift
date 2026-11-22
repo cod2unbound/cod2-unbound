@@ -9,13 +9,14 @@ extension Snapshots {
     static let setupScreens = ["setup-welcome", "setup-data", "setup-data-found", "setup-data-error", "setup-data-unfinished",
                                "setup-steam-unfinished", "setup-steam", "setup-steam-short", "setup-steam-starting", "setup-steam-qr", "setup-steam-not-owned", "setup-steam-downloading",
                                "setup-steam-checking", "setup-steam-stopped", "setup-steam-stopped-details", "setup-steam-sign-in-failed", "setup-steam-done", "setup-key", "setup-key-ok", "setup-key-bad",
-                               "setup-key-stored", "setup-shaders", "setup-shaders-starting", "setup-shaders-done", "setup-shaders-failed", "setup-yours", "setup-crash",
+                               "setup-key-stored", "setup-shaders", "setup-shaders-starting", "setup-shaders-done", "setup-shaders-failed", "setup-yours", "setup-crash", "setup-usage",
                                "setup-ready", "setup-ready-reports", "setup-ready-approximate", "setup-ready-link", "setup-again", "setup-again-data"]
     /// Every ship-shell screen: setup, the player card (HomePlayer), Jump to… (HomeJump), the sidebar
     /// without favourites, the status toasts, the quit alert and The game couldn't start.
     static var shellScreens: [String] {
         setupScreens + ["home-notice", "home-game-running", "home-loadout-player-card", "home-loadout-player-card-no-key", "home-jump", "home-no-favorites",
-                        "home-quit-running", "sheet-game-could-not-start", "sheet-game-could-not-start-other", "sheet-crash-reports-question"]
+                        "home-quit-running", "sheet-game-could-not-start", "sheet-game-could-not-start-other", "sheet-crash-reports-question",
+                        "sheet-usage-question", "sheet-usage-preview"]
     }
     /// Window-driving suites, run by `--suite NAME` (snapshots.py runs every suite `--list-suites` prints).
     static let shellSuites: [Suite] = [Suite(name: "shell-actions", run: ShellPreview.actions), Suite(name: "shell-accessibility", run: ShellPreview.accessibility)]
@@ -443,6 +444,9 @@ extension Snapshots {
         "setup-steam-done": ["Downloaded and checked", "3.70 GB from Steam", "Signed out of Steam."],
         "setup-crash": ["Send crash reports?", "Don’t Send", "See What’s Sent…", "What it never holds"],
         "setup-ready-reports": ["Crash reports", "On"],
+        "setup-usage": ["Send usage data?", "Step 7 of 8, Usage data", "Don’t Send", "Send Usage Data", "See What’s Sent…", "What never is"],
+        "sheet-usage-question": ["Send usage data to CoD2 Unbound?", "Don’t Send", "Send Usage Data", "See What’s Sent…", "Where it goes"],
+        "sheet-usage-preview": ["What is sent", "Screens and features", "This Mac, your country", "The exact text of one event", "Copy", "Done"],
         "sheet-crash-reports-question": ["Send crash reports to CoD2 Unbound?", "Don’t Send", "Send Crash Reports", "See What’s Sent…"],
         "setup-data-found": ["Choose a Different Folder…", "Game data found"],
         "setup-data-error": ["Choose Folder…", "4 of 16 game archives found"],

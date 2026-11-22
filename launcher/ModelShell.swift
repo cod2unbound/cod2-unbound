@@ -122,6 +122,7 @@ enum PlayerNameRules {
         launchProblem = problem
         showMainWindow()
         present(.gameCouldNotStart(reason: problem.message))
+        recordUsage(.errorShown(.gameCouldNotStart))
     }
     /// The Game Couldn't Start sheet's default action.
     func fixLaunchProblem() {
@@ -167,6 +168,9 @@ enum PlayerNameRules {
                 case "cfg": openConfigFile(url)
                 default: break
                 }
+            } else if Self.isSetupLinkScheme(url) {
+                // Website setup links go before the server-link handler: none is a server address.
+                receiveSetupLink(url)
             } else { receiveLink(url.absoluteString) }
         }
     }
@@ -178,6 +182,7 @@ enum PlayerNameRules {
         showMainWindow()
         guard let address = Self.joinAddress(text) else {
             notice = "This link isn’t a server address CoD2 Unbound can open."
+            recordUsage(.errorShown(.serverAddress))
             return
         }
         print("CoD2 Unbound: join link opened Connect to Address (\(address)).")
@@ -185,7 +190,7 @@ enum PlayerNameRules {
         let input = ServerAddressInput.parse(text)?.password == nil ? address : text
         if onboard { pendingJoinAddress = input; return }
         dismissSheet()
-        connectToAddress(input)
+        connectToAddress(input, source: .link)
     }
     /// The server address in a join link, or nil.
     nonisolated static func joinAddress(_ text: String) -> String? {

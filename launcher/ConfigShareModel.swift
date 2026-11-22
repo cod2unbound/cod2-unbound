@@ -16,6 +16,7 @@ import SwiftUI
     /// Loadouts whose Stop Sharing is on its way, so the menu doesn't offer it twice.
     @Published private(set) var withdrawing: Set<String> = []
     var client = ConfigShareClient()
+    var recordUsage: (UsageEvent) -> Void = { _ in }
 
     enum Analysis: Equatable {
         case ready(source: String, ConfigShare.Prepared)
@@ -34,6 +35,7 @@ import SwiftUI
     static func center(for model: LauncherModel) -> ConfigShareCenter {
         if let center = objc_getAssociatedObject(model, &key) as? ConfigShareCenter { return center }
         let center = ConfigShareCenter(home: model.snapshot ? nil : model.home)
+        center.recordUsage = { [weak model] in model?.recordUsage($0) }
         objc_setAssociatedObject(model, &key, center, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return center
     }
@@ -110,8 +112,10 @@ import SwiftUI
             let failure: String?
             switch reply {
             case .withdrawn:
+                recordUsage(.setupWithdrawn)
                 failure = forgetting(profile.id, said: "\(name) is no longer shared.", studio: studio)
             case .removal:
+                recordUsage(.setupWithdrawn)
                 failure = forgetting(profile.id, said: "\(name) comes off Player Setups with the next catalogue update.", studio: studio)
             case .forbidden:
                 failure = "cod2unbound.com doesn’t recognise this request any more, so nothing was taken back. To have the setup removed, use Ask to remove or correct this setup on its page in Player Setups."
@@ -119,6 +123,7 @@ import SwiftUI
                 failure = "Couldn’t reach cod2unbound.com, so the setup is still shared. Check your connection, then choose Stop Sharing again."
             }
             if let failure {
+                recordUsage(.errorShown(.withdraw))
                 studio.notice = nil
                 studio.failure = ConfigStudioFailure(title: "Couldn’t stop sharing \(name)", message: failure, retry: nil)
                 studio.announce("Couldn’t stop sharing \(name). \(failure)")
@@ -228,6 +233,7 @@ struct ConfigShareStart {
             guard !Task.isCancelled else { return }
             switch reply {
             case .sent(let receipt):
+                center.recordUsage(.setupShared)
                 let record = ConfigShareRecord(request: receipt.request, url: receipt.url, token: receipt.token,
                                                sent: ConfigShareRecordFile.day(Date()), sha256: digest, name: name)
                 // The request exists either way; a record that can't be written only loses Stop Sharing.
@@ -235,9 +241,9 @@ struct ConfigShareStart {
                 phase = .ready
                 sent(record)
             case .already: phase = .already
-            case .limit(let everyone): phase = .limit(everyone: everyone)
-            case .tooLarge: phase = .tooLarge
-            case .unreachable: phase = .offline
+            case .limit(let everyone): phase = .limit(everyone: everyone); center.recordUsage(.errorShown(.share))
+            case .tooLarge: phase = .tooLarge; center.recordUsage(.errorShown(.share))
+            case .unreachable: phase = .offline; center.recordUsage(.errorShown(.share))
             case .cancelled: phase = .ready
             }
         }
@@ -306,7 +312,7 @@ struct ConfigShareStart {
             page = .configs; studio.level = .guided; studio.group = .frame
             try? shareCenter.remember(ConfigSharePreview.record, loadout: "Main")
             confirmation = stopSharingConfirmation(ConfigProfile(id: "Main", displayName: "Main", isActive: true))
-        case "configs-home-share", "discover-player-shared": page = .configs; discover.page = .home
+        case "configs-home-share", "discover-player-shared", "discover-player-shared-credit": page = .configs; discover.page = .home
         default: return false
         }
         return true

@@ -94,6 +94,7 @@ import Darwin
             try bulkImportToggle(&homes)
             try await failedApplyKeepsBytes(&homes)
             try await directory(&homes)
+            try await setupLinks(&homes)
             try await readyCheck(&homes)
             try await serverRefresh(&homes)
             try matchPrivacy(&homes)
@@ -272,8 +273,25 @@ import Darwin
         if case .unavailable = discover.state {} else { require(false, "the production directory is honestly unavailable") }
         require(discover.entries.isEmpty && discover.saved.isEmpty && !FileManager.default.fileExists(atPath: cache.path), "no players, no Saved, no cache written")
 
+        // No figures published: Most Imported keeps the catalogue's order and says so; no card has a figure.
+        let bare = ConfigDiscoverModel(studio: home.studio, directory: try DirectoryFixture.directory(cacheURL: home.url.appendingPathComponent("bare/index.json")))
+        await bare.reload()
+        bare.showAll(.all); bare.setupOrder = .mostImported
+        require(bare.popularity == nil && !bare.offersOrder && bare.availableOrders == [.featuredFirst] && bare.activeOrder == .featuredFirst,
+                "without figures there is no Order to choose, and a stored choice falls back to Featured First")
+        let plain = bare.setups.map(\.id)
+        bare.setupOrder = .featuredFirst
+        require(bare.setups.map(\.id) == plain && bare.orderStatus(filtered: false) == nil &&
+                bare.entries.allSatisfy { bare.figureLine(for: $0.id) == nil }, "without figures the grid looks exactly as without the feature")
+
         let fixtureCache = home.url.appendingPathComponent("fixture/index.json")
-        discover.use(try DirectoryFixture.directory(cacheURL: fixtureCache))
+        let popularity = Data("""
+            {"schemaVersion":1,"periodDays":30,"generatedDate":"2026-11-21","setups":{
+              "player-1":{"views":9},"player-2":{"imports":4,"views":9},
+              "player-3":{"imports":12},"player-5":{"imports":7,"views":15}
+            }}
+            """.utf8)
+        discover.use(try DirectoryFixture.directory(cacheURL: fixtureCache, popularity: popularity))
         await discover.reload()
         require(discover.shelves.map(\.id) == ["2005–2008", "2009–2012"], "shelves follow the signed entries' eras")
         // Discover's front page: the banner, a shelf per style, teams, and the picture each card shows.
@@ -282,6 +300,29 @@ import Darwin
         require(discover.styleShelves.first?.entries.map(\.id) == ["player-1", "player-3", "player-2"], "a shelf lists featured setups first, then by name")
         require(discover.teams == [ConfigDirectoryTeam(name: "Team Northwind", count: 4)], "teams with more than one setup")
         require(discover.entry("player-2")?.artMap == "mp_carentan", "a setup's picture is its favourite map when it names one")
+        discover.showAll(.all)
+        require(discover.offersOrder && discover.availableOrders == ConfigSetupOrder.allCases, "published figures offer all three orders")
+        discover.setupOrder = .mostImported
+        require(discover.setups.map(\.id) == ["player-3", "player-5", "player-1", "player-2", "player-4"],
+                "imports rank visible figures first, with catalogue order for everything without a figure")
+        require(discover.popularityCount(for: "player-2") == nil && discover.popularity?.periodDays == 30, "only public import figures are exposed")
+        // DiscoverSorted board: the status line, each card's figure, no figure under 5; nothing says where counts come from.
+        require(discover.orderStatus(filtered: false) == "5 setups, the most imported in the last 30 days first", "the sorted status line")
+        require(discover.figureLine(for: "player-3") == "Imported 12 times in the last 30 days", "a card's figure")
+        require(discover.figureLine(for: "player-2") == nil && discover.figureLine(for: "player-4") == nil, "no figure under 5 or without one")
+        let shown = [discover.orderStatus(filtered: false), discover.figureLine(for: "player-3")].compactMap { $0 }.joined(separator: " ").lowercased()
+        require(!["usage", "players", "share", "posthog", "analytics", "fewer than"].contains { shown.contains($0) }, "counts carry no source or threshold")
+        require(ConfigSetupOrder.allCases.map(\.title) == ["Featured First", "Most Imported", "Most Viewed"], "the Order menu's items")
+        discover.setupOrder = .mostViewed
+        require(discover.setups.map(\.id) == ["player-5", "player-1", "player-2", "player-3", "player-4"],
+                "views use their own counts, with catalogue order for ties")
+        require(discover.orderStatus(filtered: false) == "5 setups, the most viewed in the last 30 days first" &&
+                discover.figureLine(for: "player-5") == "Viewed 15 times in the last 30 days", "Most Viewed's status line and figures")
+        discover.query = "sniper"
+        require(discover.orderStatus(filtered: false) == nil, "a search keeps its own status line")
+        discover.query = ""
+        discover.setupOrder = .featuredFirst
+        require(discover.orderStatus(filtered: false) == nil && discover.figureLine(for: "player-3") == nil, "Featured First shows no figures")
         discover.showAll(.cod2x)
         require(discover.page == .home && discover.browsing && discover.setups.map(\.id) == ["player-4", "player-5"], "See All shows one style")
         discover.page = .saved; discover.query = "sniper"
@@ -352,6 +393,57 @@ import Darwin
                 "the saved credit is shown with the loadout's values")
         studio.compareID = nil
         print("PASS: Compare in Expert uses the reviewed player values or a loadout's saved credit, honours locks and the running game")
+    }
+
+    /// cod2unbound://setup/<id> from the website: the parser refuses anything but one catalogue ID,
+    /// routing opens the setup's page once the verified catalogue is in, never imports, and waits for setup.
+    @MainActor static func setupLinks(_ homes: inout [URL]) async throws {
+        func id(_ text: String) -> String? { URL(string: text).flatMap(LauncherModel.setupLinkID) }
+        require(id("cod2unbound://setup/vargr") == "vargr" && id("cod2unbound://setup/team-north-2/") == "team-north-2" &&
+                id("COD2UNBOUND://SETUP/vargr") == "vargr", "a setup link names one catalogue ID")
+        require(id("cod2unbound://setup/" + String(repeating: "a", count: 64)) != nil &&
+                id("cod2unbound://setup/" + String(repeating: "a", count: 65)) == nil, "IDs are at most 64 characters")
+        for hostile in ["cod2unbound://setup/", "cod2unbound://setup", "cod2unbound://setup/-vargr", "cod2unbound://setup/Vargr",
+                        "cod2unbound://setup/var_gr", "cod2unbound://setup/vargr/extra", "cod2unbound://setup//vargr",
+                        "cod2unbound://setup/..", "cod2unbound://setup/%2e%2e", "cod2unbound://setup/var%67r", "cod2unbound://setup/vargr%2Fx",
+                        "cod2unbound://setup/vargr?import=1", "cod2unbound://setup/vargr#try", "cod2unbound://user@setup/vargr",
+                        "cod2unbound://user:pass@setup/vargr", "cod2unbound://setup:8080/vargr", "cod2unbound://connect/vargr",
+                        "cod2unbound://setups/vargr", "cod2unbound:setup/vargr", "cod2unbound:///setup/vargr", "cod2x://setup/vargr",
+                        "https://cod2unbound.com/setup/vargr", "cod2unbound://setup/vargr;quit", "cod2unbound://setup/vargr%0A",
+                        "cod2unbound://setup/vargr%00", "cod2unbound://evil.example/setup/vargr"] {
+            require(id(hostile) == nil, "refused: \(hostile)")
+        }
+
+        let home = try makeHome("setup-links"); homes.append(home.url)
+        let model = LauncherModel(snapshot: true)
+        model.studio.attach(home.session)
+        model.discover.use(try DirectoryFixture.directory(cacheURL: home.url.appendingPathComponent("links/index.json")))
+        model.onboard = false; model.page = .home
+        func settle() async { for _ in 0..<200 { try? await Task.sleep(for: .milliseconds(10)); if case .loaded = model.discover.state { break } }; try? await Task.sleep(for: .milliseconds(50)) }
+
+        // A cold start: the catalogue isn't loaded yet; the link waits for it, then opens the setup's page.
+        model.open([URL(string: "cod2unbound://setup/player-3")!])
+        await settle()
+        require(model.page == .configs && model.discover.page == .player("player-3") && model.discover.step == nil && model.discover.review == nil,
+                "a setup link opens Configs › Player Setups at that setup and imports nothing")
+        // A warm start with an unknown ID: the list, and a plain message.
+        model.notice = ""
+        model.open([URL(string: "cod2unbound://setup/no-such-setup")!])
+        await settle()
+        require(model.discover.page == .home && model.notice.contains("isn’t in Player Setups"), "an unknown ID shows the list and says so")
+        // A malformed link is never handed to the server-link handler.
+        model.notice = ""
+        model.open([URL(string: "cod2unbound://setup/vargr?connect=192.0.2.1")!])
+        require(model.notice == "This link isn’t a player setup CoD2 Unbound can open." && model.sheet == nil, "a bad setup link says so and opens nothing")
+        // During setup the link waits; finishing setup opens it.
+        model.discover.openFront(); model.page = .home
+        model.onboard = true; model.dataPath = "/Preview/CoD2"
+        model.open([URL(string: "cod2unbound://setup/player-1")!])
+        require(model.pendingSetupLink == "player-1" && model.discover.page == .home, "a link during setup waits")
+        model.finishSetup()
+        await settle()
+        require(model.pendingSetupLink == nil && model.page == .configs && model.discover.page == .player("player-1"), "finishing setup opens the waiting link")
+        print("PASS: setup links: one catalogue ID only (hostile inputs refused), cold and warm routing to the setup's page, unknown IDs, waiting for setup, never an import")
     }
 
     static let matchRow = #"{"schemaVersion":1,"endedAt":"2026-10-12T00:00:00Z","endReason":"disconnect","map":"mp_toujane","mode":"sd","durationSeconds":30,"serverAddress":"192.0.2.1:28960","ruleHints":{},"frameCount":100,"frameTimeP50MS":3,"frameTimeP99MS":7,"frameTimeMaxMS":20,"frameTimeHistogramLimitMS":250,"framesUnderCap":98,"capSampleFrames":100,"capFPS":333,"pingAverageMS":40,"pingMaximumMS":50,"pingSamples":3,"packetsReceived":3,"packetsLost":2,"packetLossPercent":40,"snapshotsReceived":4}"#

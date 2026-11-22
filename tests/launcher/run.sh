@@ -30,6 +30,7 @@ sh "$root/tests/launcher/config_discover.sh"
 sh "$root/tests/launcher/config_share.sh"
 sh "$root/tests/launcher/hosting.sh"
 sh "$root/tests/launcher/steam_download.sh"
+COD2_USAGE_TEST_OUTPUT="${COD2_USAGE_TEST_OUTPUT:-$out/usage.noindex}" sh "$root/tests/launcher/usage_data.sh"
 "$root/scripts/fetch-launcher-fonts.sh" --check
 
 # One shape system: buttons take their style from Theme.swift (capsules, or circles for a lone
@@ -52,10 +53,16 @@ taskpolicy -b nice -n 19 /usr/bin/xcrun swiftc -j 1 -typecheck -swift-version 6 
     -target arm64-apple-macos26 -sdk "$sdk" -import-objc-header "$root/launcher/NativeSetup.h" $views
 echo "PASS: views typecheck without COD2_LIQUID_GLASS (material rendering branch)"
 
+# The snapshot runner's own tests are headless.
+python3 "$root/tests/launcher/test_snapshots_script.py"
+if [ "${COD2_LAUNCHER_SKIP_WINDOWS:-0}" = 1 ]; then
+    echo "SKIP: launcher window phases"
+    exit 0
+fi
+
 # Render every screen in both appearances through the review harness and check the images.
 # COD2_LAUNCHER_SNAPSHOT_GROUP=home|servers|library|configs|settings|shell captures that group only,
 # for a change to one page. A release needs the full run, without it.
-python3 "$root/tests/launcher/test_snapshots_script.py"
 if [ -n "${COD2_LAUNCHER_SNAPSHOT_GROUP:-}" ]; then
     python3 "$root/tests/launcher/snapshots.py" "${COD2_LAUNCHER_SNAPSHOT_OUTPUT:-$out/snapshots}" --group "$COD2_LAUNCHER_SNAPSHOT_GROUP"
 else

@@ -134,7 +134,11 @@ def main():
     parser.add_argument("--replace", action="store_true", help="replace an existing bundle with the same ID after verification")
     parser.add_argument("--sentry-dsn", default="",
                         help="crash report receiver for the launcher (a Sentry DSN); without one the launcher never sends reports")
+    parser.add_argument("--posthog-key", default="",
+                        help="public PostHog project token for the launcher; without one usage data is unavailable")
     args = parser.parse_args()
+    if args.posthog_key and not re.fullmatch(r"phc_[A-Za-z0-9_-]{1,200}", args.posthog_key):
+        parser.error("--posthog-key needs a public PostHog token starting with phc_")
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", args.version):
         parser.error("version must be N.N.N")
     if not args.executable.is_file():
@@ -321,6 +325,11 @@ def main():
             "CFBundleURLName": "CoD2x server link",
             "CFBundleTypeRole": "Viewer",
             "CFBundleURLSchemes": ["cod2x", "cod2"],
+        }, {
+            # The website's "Open in CoD2 Unbound": cod2unbound://setup/<id> opens that player setup.
+            "CFBundleURLName": "CoD2 Unbound setup link",
+            "CFBundleTypeRole": "Viewer",
+            "CFBundleURLSchemes": ["cod2unbound"],
         }],
         # Opening a recording plays it; opening a config shows the import review (only as an
         # alternate handler, so .cfg files keep opening in the player's text editor by default).
@@ -387,6 +396,8 @@ def main():
                     not re.fullmatch(r"http://[A-Za-z0-9]+(:[A-Za-z0-9]*)?@(127\.0\.0\.1|localhost)(:\d+)?/\d+", args.sentry_dsn):
                 parser.error("--sentry-dsn must look like https://<public key>@<host>/<project id>")
             info["CoD2SentryDSN"] = args.sentry_dsn
+        if args.posthog_key:
+            info["CoD2PostHogKey"] = args.posthog_key
         # SIL OFL 1.1 typefaces travel with their licence texts; the launcher also
         # registers them at runtime when run outside a bundle.
         fonts = root / "launcher/Resources/Fonts"

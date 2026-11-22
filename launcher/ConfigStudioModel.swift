@@ -511,7 +511,12 @@ struct ConfigStudioFailure: Identifiable {
     private var catalogLoading = false
     private let catalogSource: @Sendable () throws -> ConfigCatalog
 
-    @Published var tab: ConfigStudioTab = .settings
+    @Published var tab: ConfigStudioTab = .settings {
+        didSet { if tab != oldValue { onTabChanged() } }
+    }
+    var onTabChanged: () -> Void = {}
+    var onLoadoutCreated: () -> Void = {}
+    var onSaveFailure: () -> Void = {}
     @Published var level: ConfigDetailLevel = .guided
     @Published var group: ConfigPurposeGroup = .aim
     @Published var filter: ConfigExpertFilter?
@@ -1050,6 +1055,7 @@ struct ConfigStudioFailure: Identifiable {
     }
 
     private func fail(_ title: String, _ error: Error, retry: (@MainActor () -> Void)? = nil) {
+        onSaveFailure()
         failure = ConfigStudioFailure(title: title, message: error.localizedDescription, retry: retry)
     }
     /// Discards a failed change and re-applies the same intent to the latest disk version.
@@ -1099,6 +1105,7 @@ struct ConfigStudioFailure: Identifiable {
             try session.focus(created.profile.id)
             tab = .settings; snapshotID = nil
             announce("Created \(display).")
+            onLoadoutCreated()
             return true
         } catch { fail("Couldn’t create \(display)", error); return false }
     }

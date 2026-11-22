@@ -21,8 +21,7 @@ when the player or the page asks, through an issue on that repository. Each `ent
   with the page's name, the day the copy was taken, how the name got on it (`self-published`,
   `listed` by a page under that name, or `uploaded` under that name) and a sentence on what was left
   out. `facts` carries the three numbers a card shows, as the config writes them. `featured` marks an
-  entry for the first shelf: the launcher counts nothing about what players import, so there is no
-  popularity ranking. No real names, nationalities or birthdays, even when a page shows them.
+  entry for the first shelf. Omit real names, nationalities and birthdays, even when a page shows them.
 
 From 0.4.1 a player can also share a setup from the launcher. The project's website (repository
 cod2unbound/website, `src/lib/share`) opens a pull request labelled `shared` with an entry credited
@@ -82,6 +81,37 @@ rejects a rollback or changed bytes at an already cached revision. This protects
 only a retained verified cache, not a fresh install from an old correctly signed
 index. No fixture key is a production trust root. CI refuses a present signature
 without a separately reviewed `trust/public-key.ed25519` file.
+
+## Optional popularity figures
+
+Publish `popularity.json` and `popularity.sig` beside `index.json` and `index.sig`. The daily
+publisher should count the launcher's `player setup viewed` and `player setup imported` events
+by their `setup_id` for the previous 30 complete UTC days. `generatedDate` is the publication day
+in UTC and `periodDays` records the length of the measurement window.
+
+```json
+{
+  "schemaVersion": 1,
+  "periodDays": 30,
+  "generatedDate": "2026-11-21",
+  "setups": {
+    "example-one": { "imports": 12, "views": 64 },
+    "example-two": { "views": 11 }
+  }
+}
+```
+
+Follow [popularity.schema.json](popularity.schema.json). Omit each count below 5, including zero.
+Leave out an ID when both counts are below 5. Publish an empty `setups` object when there are no
+public figures. An entry in the file refers to its signed catalogue ID. Keep the JSON under
+256 KiB and sign its exact bytes with the catalogue's Ed25519 key, using the command above with
+`popularity.json` and `popularity.sig`. Publish the JSON and detached raw 64-byte signature together.
+
+The launcher fetches both over the catalogue's HTTPS root and keeps a verified offline copy.
+A later publication day supersedes an earlier one. Reissuing the same day can correct figures.
+The launcher uses catalogue order to break ties and to order setups without a figure after
+ranked setups. A missing or unusable publication can fall back to the last verified copy.
+Publishing a newer signed empty file clears previously published figures on refresh.
 
 Local verification from the engine checkout:
 

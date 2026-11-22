@@ -446,6 +446,24 @@ struct PrivacyPane: View {
                     FormRow("Send CoD2x crash reports to the CoD2x project",
                             detail: "Faults in CoD2x’s own code, sent by CoD2x to the people who make it, as on Windows. They include folder paths and the list of loaded game files.",
                             isOn: $model.settings.sendCoD2xReports)
+                    // Only a build with the sending key offers it; without one nothing is ever sent.
+                    if model.usageAvailable {
+                        FormRow(UsageDataQuestion.switchTitle, detail: UsageDataQuestion.switchDetail) {
+                            Button("See What’s Sent…") { model.present(.usagePreview) }.quietAction()
+                                .help("What usage data holds, and one event exactly as it is sent")
+                            SwitchToggle(UsageDataQuestion.switchTitle, isOn: $model.usageSwitch)
+                        }
+                        if let short = model.usageInstallNumberShort, let full = model.usageInstallNumberFull {
+                            FormRow(UsageDataQuestion.numberTitle, detail: UsageDataQuestion.numberDetail) {
+                                Text(short).font(.typewriter(12)).foregroundStyle(palette.address).fixedSize()
+                                    .help(full)
+                                    .accessibilityLabel("Install number")
+                                    .accessibilityValue(full)
+                                Button(UsageDataQuestion.reset) { model.resetUsageNumber() }.glassAction().controlSize(.large)
+                                    .help("Make a new number, so later sessions don’t link to earlier ones")
+                            }
+                        }
+                    }
                 }
             }
             FormSection("On this Mac") {
@@ -465,7 +483,7 @@ struct PrivacyPane: View {
             }
             FormSection("What CoD2 Unbound contacts") {
                 FormGroup {
-                    ForEach(PrivacyContacts.lines, id: \.who) { line in ContactRow(who: line.who, when: line.when) }
+                    ForEach(model.privacyContacts, id: \.who) { line in ContactRow(who: line.who, when: line.when) }
                 }
             }
         }

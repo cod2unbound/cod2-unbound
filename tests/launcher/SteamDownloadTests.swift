@@ -262,8 +262,10 @@ import Foundation
         model.steamTool = try archive("stall", in: scratch, body: "approve\necho 'Downloading depot 2631'; files\necho \" 25.00% $dir/main/iw_03.iwd\"\nsleep 30")
         model.startSteam()  // Use Another Account
         await wait("the download") { model.steam.phase == .downloading && model.steam.currentFile == "main/iw_03.iwd" }
-        require(model.steam.doneBytes == 3_000_000 && model.steam.totalBytes == 3_702_000_000 && model.setupAlternateTitle == "Stop",
-                "a quarter of the first depot, and Stop is offered: \(model.steam.doneBytes)")
+        // The ticker may sample the fixture’s small disk writes after it receives the file percentage.
+        require((3_000_000...4_000_000).contains(model.steam.doneBytes) &&
+                model.steam.totalBytes == 3_702_000_000 && model.setupAlternateTitle == "Stop",
+                "at least a quarter of the first depot, with only the fixture’s small writes added, and Stop is offered: \(model.steam.doneBytes)")
         await wait("the stall to be noticed") { model.steam.phase == .stopped }
         require(model.steam.stoppedTitle == "The download stopped at 0.00 of 3.70 GB" && model.steam.stoppedDetail.hasPrefix("The connection to Steam was lost.")
                 && model.steam.retryTitle == "Resume", "a lost connection is a stop that can be resumed: \(model.steam.stoppedTitle)")

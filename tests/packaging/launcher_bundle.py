@@ -5,7 +5,7 @@ app = pathlib.Path(sys.argv[1]).resolve()
 info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
 assert info['CFBundleExecutable'] == 'CoD2Launcher'
 assert info['NSHighResolutionCapable'] is True
-assert info['CFBundleURLTypes'][0]['CFBundleURLSchemes'] == ['cod2x', 'cod2']
+assert [item['CFBundleURLSchemes'] for item in info['CFBundleURLTypes']] == [['cod2x', 'cod2'], ['cod2unbound']]
 documents = {item['CFBundleTypeName']: item for item in info['CFBundleDocumentTypes']}
 assert documents['Call of Duty 2 demo']['LSHandlerRank'] == 'Default'
 assert documents['Call of Duty 2 config']['LSHandlerRank'] == 'Alternate'

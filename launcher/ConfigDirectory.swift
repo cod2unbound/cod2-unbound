@@ -55,7 +55,7 @@ struct ConfigDirectoryEntry: Codable, Equatable, Sendable, Identifiable {
     let sourceURL: URL
     let provenance: ConfigDirectoryProvenance
     let facts: ConfigDirectoryFacts?
-    /// Chosen in the catalogue for the first shelf; nothing is counted about what players import.
+    /// Chosen by the catalogue for the first shelf, independently of popularity.
     let featured: Bool?
     let configURL: URL
     let sha256: String
@@ -81,10 +81,32 @@ struct ConfigDirectoryConfiguration: Sendable {
         self.indexURL = indexURL; self.signatureURL = signatureURL; self.publicKey = publicKey
     }
 }
+/// A public slug obtained from the signed index, never from a player or a loadout.
+struct ConfigDirectoryUsageID: Codable, Sendable {
+    let rawValue: String
+
+    fileprivate init(_ rawValue: String) { self.rawValue = rawValue }
+
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+        guard ConfigDirectory.validID(value) else { throw ConfigDirectoryError.invalidCache }
+        rawValue = value
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var value = encoder.singleValueContainer()
+        try value.encode(rawValue)
+    }
+}
+
 struct ConfigDirectorySnapshot: Sendable {
     enum Origin: Sendable { case network, cache }
     let index: ConfigDirectoryIndex
     let origin: Origin
+    func usageID(_ candidate: String) -> ConfigDirectoryUsageID? {
+        index.entries.first { $0.id == candidate }.map { ConfigDirectoryUsageID($0.id) }
+    }
+
     fileprivate let bytes: Data
     fileprivate let signature: Data
     fileprivate let configuration: ConfigDirectoryConfiguration
@@ -92,6 +114,51 @@ struct ConfigDirectorySnapshot: Sendable {
         self.index = index; self.origin = origin; self.bytes = bytes; self.signature = signature; self.configuration = configuration
     }
 }
+enum ConfigSetupOrder: CaseIterable, Identifiable {
+    case featuredFirst, mostImported, mostViewed
+    var id: Self { self }
+    /// The Order pop-up's words (DiscoverSorted board).
+    var title: String {
+        switch self {
+        case .featuredFirst: "Featured First"
+        case .mostImported: "Most Imported"
+        case .mostViewed: "Most Viewed"
+        }
+    }
+}
+
+struct ConfigDirectoryPopularity: Equatable, Sendable {
+    struct Counts: Codable, Equatable, Sendable {
+        let imports: Int?
+        let views: Int?
+
+        func figure(for order: ConfigSetupOrder) -> Int? {
+            switch order {
+            case .featuredFirst: nil
+            case .mostImported: imports
+            case .mostViewed: views
+            }
+        }
+    }
+
+    let periodDays: Int
+    /// Publication day in UTC (YYYY-MM-DD).
+    let generatedDate: String
+    let setups: [String: Counts]
+
+    static func ordered(_ entries: [ConfigDirectoryEntry], by order: ConfigSetupOrder,
+                        popularity: Self?) -> [ConfigDirectoryEntry] {
+        if order == .featuredFirst {
+            return entries.sorted {
+                if ($0.featured == true) != ($1.featured == true) { return $0.featured == true }
+                return $0.player.localizedCaseInsensitiveCompare($1.player) == .orderedAscending
+            }
+        }
+        let counted = entries.enumerated().map { (offset: $0.offset, entry: $0.element, count: popularity?.setups[$0.element.id]?.figure(for: order) ?? 0) }
+        return counted.sorted { $0.count != $1.count ? $0.count > $1.count : $0.offset < $1.offset }.map(\.entry)
+    }
+}
+
 struct ConfigDirectoryLoad: Sendable {
     let snapshot: ConfigDirectorySnapshot?
     let unavailableReason: String?
@@ -123,6 +190,14 @@ struct ConfigDirectory: Sendable {
     var cacheDate: Date? { (try? FileManager.default.attributesOfItem(atPath: cacheURL.path))?[.modificationDate] as? Date }
     var fetcher: any ConfigImportTextFetcher = ConfigImportURLSessionFetcher()
     static let maximumIndexBytes = 1_048_576
+    private static let maximumPopularityBytes = 262_144
+    private var popularityCacheURL: URL { cacheURL.appendingPathExtension("popularity.json") }
+    private struct PublishedPopularity: Decodable {
+        let schemaVersion: Int
+        let periodDays: Int
+        let generatedDate: String
+        let setups: [String: ConfigDirectoryPopularity.Counts]
+    }
     private struct Cache: Codable {
         let schemaVersion: Int
         let indexURL: URL
@@ -213,6 +288,63 @@ struct ConfigDirectory: Sendable {
         return .init(snapshot: result, unavailableReason: nil, refreshError: nil)
     }
 
+    /// The optional public figures follow the catalogue's HTTPS, signature and offline-cache rules.
+    /// Discover can publish the index before this separate request finishes.
+    func loadPopularity() async -> ConfigDirectoryPopularity? {
+        guard let configuration else { return nil }
+        let root = configuration.indexURL.deletingLastPathComponent()
+        let url = root.appendingPathComponent("popularity.json")
+        let signatureURL = root.appendingPathComponent("popularity.sig")
+        let cache = popularityCacheURL
+        func read() -> ConfigDirectoryPopularity? {
+            guard (try? checkCachePath(cache)) != nil, let handle = try? FileHandle(forReadingFrom: cache) else { return nil }
+            defer { try? handle.close() }
+            let maximum = Self.maximumPopularityBytes * 2
+            guard let bytes = try? handle.read(upToCount: maximum + 1), bytes.count <= maximum,
+                  let envelope = try? JSONDecoder().decode(Cache.self, from: bytes), envelope.schemaVersion == 1,
+                  envelope.indexURL == url, envelope.signatureURL == signatureURL,
+                  envelope.publicKey == configuration.publicKey else { return nil }
+            return Self.verifyPopularity(envelope.index, signature: envelope.signature, key: configuration.publicKey)
+        }
+        do {
+            let figures = try await fetcher.fetch(.init(url: url, maximumBytes: Self.maximumPopularityBytes, root: root))
+            let signature = try await fetcher.fetch(.init(url: signatureURL, maximumBytes: 64, root: root))
+            try Task.checkCancellation()
+            guard figures.finalURL == url, signature.finalURL == signatureURL,
+                  let verified = Self.verifyPopularity(figures.data, signature: signature.data, key: configuration.publicKey) else {
+                return read()
+            }
+            // An older job or a delayed request cannot replace the latest day already on disk.
+            // A reissue on the same day can correct a published figure.
+            return (try? withCacheLock {
+                if let cached = read(), cached.generatedDate > verified.generatedDate { return cached }
+                try checkCachePath(cache)
+                let envelope = Cache(schemaVersion: 1, indexURL: url, signatureURL: signatureURL,
+                                     publicKey: configuration.publicKey, index: figures.data, signature: signature.data)
+                try JSONEncoder().encode(envelope).write(to: cache, options: .atomic)
+                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: cache.path)
+                return verified
+            }) ?? verified
+        } catch {
+            return Task.isCancelled ? nil : read()
+        }
+    }
+
+    private static func verifyPopularity(_ bytes: Data, signature: Data, key: Data) -> ConfigDirectoryPopularity? {
+        guard bytes.count <= maximumPopularityBytes, signature.count == 64,
+              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: key),
+              publicKey.isValidSignature(signature, for: bytes),
+              let payload = try? JSONDecoder().decode(PublishedPopularity.self, from: bytes), payload.schemaVersion == 1,
+              (1...366).contains(payload.periodDays), validDate(payload.generatedDate), payload.setups.count <= 2048,
+              payload.setups.keys.allSatisfy(validID) else { return nil }
+        let figures = payload.setups.compactMapValues { counts -> ConfigDirectoryPopularity.Counts? in
+            let imports = counts.imports.flatMap { $0 >= 5 ? $0 : nil }
+            let views = counts.views.flatMap { $0 >= 5 ? $0 : nil }
+            return imports != nil || views != nil ? .init(imports: imports, views: views) : nil
+        }
+        return .init(periodDays: payload.periodDays, generatedDate: payload.generatedDate, setups: figures)
+    }
+
     /// A signed identity proves publication integrity, not script safety. Return
     /// an ordinary I1 bundle for the same review/apply flow as every other source.
     func profile(entryID: String, snapshot: ConfigDirectorySnapshot, dialect: ConfigDialect,
@@ -260,7 +392,7 @@ struct ConfigDirectory: Sendable {
               entry.sha256.utf8.count == 64, entry.sha256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { return false }
         return true
     }
-    private static func validID(_ value: String) -> Bool {
+    fileprivate static func validID(_ value: String) -> Bool {
         let bytes = Array(value.utf8)
         let alphanumeric: (UInt8) -> Bool = { (97...122).contains($0) || (48...57).contains($0) }
         return !bytes.isEmpty && bytes.count <= 64 && alphanumeric(bytes[0]) && bytes.allSatisfy { alphanumeric($0) || $0 == 45 }

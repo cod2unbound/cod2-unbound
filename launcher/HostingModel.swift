@@ -30,6 +30,8 @@ enum ZPAMState: Equatable {
     var gameBundle: URL
     var dataPath: () -> String = { "" }
     var notify: (String) -> Void = { _ in }
+    var onStarted: (HostedServer.Reach, GameEngine) -> Void = { _, _ in }
+    var onFailure: () -> Void = {}
     @Published private(set) var servers: [HostedServer] = []
     @Published var selection: String?
     /// A new server that isn't saved yet. Saved servers save as they are edited.
@@ -157,15 +159,19 @@ enum ZPAMState: Equatable {
         guard !isRunning(server.id) else { return }
         let binary = executable(server.engine), data = dataPath()
         guard FileManager.default.isExecutableFile(atPath: binary.path) else {
+            onFailure()
             phases[server.id] = .failed("This copy of CoD2 Unbound doesn’t include the \(server.engine == .cod2x ? "CoD2x" : "original 1.3") server. Reinstall CoD2 Unbound to restore it."); return
         }
         guard !data.isEmpty, FileManager.default.fileExists(atPath: data + "/main/iw_00.iwd") else {
+            onFailure()
             phases[server.id] = .failed("The server uses your game files, and they aren’t set up yet. Choose your Call of Duty 2 folder in Settings › Game Data."); return
         }
         if server.rules == .zpam, installedZPAM(server.zpamLine) == nil {
+            onFailure()
             phases[server.id] = .failed("This server needs zPAM, which isn’t on this Mac yet. Get it in the server’s settings, then start again."); return
         }
         if !Self.portFree(server.port) {
+            onFailure()
             phases[server.id] = .portBusy(next: HostingConfig.otherPort(for: server, free: Self.portFree)); return
         }
         do {
@@ -195,6 +201,7 @@ enum ZPAMState: Equatable {
             statuses[id] = nil
             startPolling()
         } catch {
+            onFailure()
             phases[server.id] = .failed((error as? LauncherError)?.message ?? "The server couldn’t start. \(error.localizedDescription)")
         }
     }
@@ -244,8 +251,10 @@ enum ZPAMState: Equatable {
         if editing == id { editing = nil }
         refreshLog(id)
         if case .starting = phase(id), status != 0 || signalled {
+            onFailure()
             phases[id] = .failed("The server stopped while starting. Its log, below, says why.")
         } else if status != 0 && !signalled {
+            onFailure()
             phases[id] = .failed("The server stopped with an error. Its log says why.")
         } else {
             phases[id] = .stopped
@@ -283,7 +292,10 @@ enum ZPAMState: Equatable {
             guard processes[id] != nil else { continue }
             if let status = answer.flatMap(HostedStatus.parse) {
                 statuses[id] = status
-                if case .starting = phase(id) { phases[id] = .running(since: Date()) }
+                if case .starting = phase(id) {
+                    phases[id] = .running(since: Date())
+                    onStarted(server.reach, server.engine)
+                }
             }
             refreshLog(id)
         }
