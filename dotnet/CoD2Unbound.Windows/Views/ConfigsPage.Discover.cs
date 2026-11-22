@@ -361,9 +361,11 @@ public sealed partial class ConfigsPage
                     changes.Children.Add(Caption(active is null ? "Open Compare to see the settings in this setup." : "No changes to the settings shown here."));
                 if (different.Length > 6)
                     changes.Children.Add(Caption($"{different.Length - 6} more changes"));
-                inSetup.Children.Add(Body($"{rows.Length} settings"));
-                inSetup.Children.Add(Body($"{review.Rows.Count(row => row.CanSelect && row.Group == "Bindings")} key bindings"));
-                inSetup.Children.Add(Body($"{review.Rows.Count(row => row.CanSelect && row.Candidate.Classification == ConfigImportClassification.NeedsOk)} lines to review"));
+                int bindings = review.Rows.Count(row => row.CanSelect && row.Group == "Bindings");
+                int toReview = review.Rows.Count(row => row.CanSelect && row.Candidate.Classification == ConfigImportClassification.NeedsOk);
+                inSetup.Children.Add(Body($"{rows.Length} {(rows.Length == 1 ? "setting" : "settings")}"));
+                inSetup.Children.Add(Body($"{bindings} {(bindings == 1 ? "key binding" : "key bindings")}"));
+                inSetup.Children.Add(Body($"{toReview} {(toReview == 1 ? "line to review" : "lines to review")}"));
                 inSetup.Children.Add(Caption("Trying this setup makes a new loadout."));
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or ConfigDirectoryException
@@ -416,12 +418,14 @@ public sealed partial class ConfigsPage
     {
         string map = entry.FavoriteMap is { Length: > 0 } favorite ? favorite : HostingCatalog.Maps[
             entry.Id.Aggregate(0, (seed, letter) => (seed * 31 + letter) & 0xffff) % HostingCatalog.Maps.Length];
-        var art = new Border { Height = height, Style = StyleFor("MediaTile") };
+        var picture = new Image { Stretch = Stretch.UniformToFill };
+        AutomationProperties.SetAccessibilityView(picture, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        var art = new Border { Height = height, Style = StyleFor("MediaTile"), Child = picture };
         art.Loaded += async (_, _) =>
         {
             var image = await setupArt.GetAsync(map) ?? new SvgImageSource(new Uri(
                 $"ms-appx:///Assets/hero-{(art.ActualTheme == ElementTheme.Light ? "light" : "dark")}.svg"));
-            art.Background = new ImageBrush { ImageSource = image, Stretch = Stretch.UniformToFill };
+            picture.Source = image;
         };
         return art;
     }
