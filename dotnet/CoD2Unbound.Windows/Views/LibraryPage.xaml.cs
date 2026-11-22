@@ -97,17 +97,31 @@ public sealed partial class LibraryPage : Page
         tile.ClearValue(Border.BackgroundProperty);
         var placeholder = (FontIcon)tile.Child;
         placeholder.Visibility = Visibility.Visible;
-        if (Path.GetExtension(row.Name).Equals(".tga", StringComparison.OrdinalIgnoreCase))
-            return;
         try
         {
-            using var input = files.OpenScreenshot(row.Name);
-            using var source = input.AsRandomAccessStream();
-            var bitmap = new BitmapImage { DecodePixelWidth = 400 };
-            await bitmap.SetSourceAsync(source);
+            ImageSource thumbnail;
+            if (Path.GetExtension(row.Name).Equals(".tga", StringComparison.OrdinalIgnoreCase))
+            {
+                var decoded = await Task.Run(() =>
+                {
+                    using var input = files.OpenScreenshot(row.Name);
+                    return TgaThumbnail.Read(input, 400);
+                });
+                if (!ReferenceEquals(tile.Tag, row))
+                    return;
+                thumbnail = await BgraBitmapAsync(decoded.Bgra, decoded.Width, decoded.Height);
+            }
+            else
+            {
+                using var input = files.OpenScreenshot(row.Name);
+                using var source = input.AsRandomAccessStream();
+                var bitmap = new BitmapImage { DecodePixelWidth = 400 };
+                await bitmap.SetSourceAsync(source);
+                thumbnail = bitmap;
+            }
             if (ReferenceEquals(tile.Tag, row))
             {
-                tile.Background = new ImageBrush { ImageSource = bitmap, Stretch = Stretch.UniformToFill };
+                tile.Background = new ImageBrush { ImageSource = thumbnail, Stretch = Stretch.UniformToFill };
                 placeholder.Visibility = Visibility.Collapsed;
             }
         }

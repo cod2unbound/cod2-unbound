@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static void LibraryCases()
     {
+        TgaCases();
         Check("library lists player configs without exposing launcher-owned config files", () =>
         {
             Equal("main", MediaLibrary.Folder(MediaKind.Config));
