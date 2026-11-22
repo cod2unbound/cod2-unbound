@@ -38,6 +38,15 @@ function New-PreservationFiles {
     return $data
 }
 
+function Stop-SetupServer([string]$Password, [int]$Port) {
+    $socket = [Net.Sockets.UdpClient]::new()
+    try {
+        $socket.Connect([Net.IPAddress]::Loopback, $Port)
+        [byte[]]$packet = @(255, 255, 255, 255) + [Text.Encoding]::ASCII.GetBytes("rcon $Password quit")
+        [void]$socket.Send($packet, $packet.Length)
+    } finally { $socket.Dispose() }
+}
+
 function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $install = Join-Path $Kit 'install'
     $setup = Get-ChildItem -LiteralPath $install -File -Filter 'CoD2-Unbound-*-setup.exe'
@@ -86,21 +95,25 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
         $homePath = New-Folder (Join-Path $entry.Folder 'game')
         $server = Get-Binary 'original' -Server -Root $root
         $oldHash = (Get-FileHash -LiteralPath $server).Hash
-        $arguments = (Get-EngineArgs $homePath $GamePath) + ' +set dedicated 1 +set g_gametype dm +map mp_toujane'
+        $port = 29676
+        $stopPassword = [guid]::NewGuid().ToString('N').Substring(0,20)
+        $arguments = (Get-EngineArgs $homePath $GamePath -Address '127.0.0.1' -Port $port) +
+            " +set rcon_password $stopPassword +set dedicated 1 +set g_gametype dm +map mp_toujane"
         $running = Start-KitProcess $server $arguments $entry.Folder
         try {
-            Save-ServerQueries $running.Process $entry.Evidence 29676 '118'
+            Save-ServerQueries $running.Process $entry.Evidence $port '118'
             $busyExit = Invoke-Setup $setup.FullName 'setup-busy-upgrade' $quiet
             "Setup exit code $busyExit" | Set-Content -LiteralPath (Join-Path $entry.Evidence 'busy-exit.txt')
             if ($busyExit -eq 0 -or $running.Process.HasExited -or (Read-InstalledVersion 'HKCU' $root) -ne $oldVersion -or
                 (Get-FileHash -LiteralPath $server).Hash -ne $oldHash) { throw 'Setup changed the old install while the server was still running.' }
             Write-Host 'Setup left the old install alone while the server was running.'
         } finally {
-            if (-not $running.Process.HasExited) {
-                Write-Host 'Type quit in the CoD2 server console. Setup waits for it to stop.'
+            try {
+                if (-not $running.Process.HasExited) { Stop-SetupServer $stopPassword $port }
+            } finally {
+                $stopped = Complete-KitProcess $running $entry.Evidence 75
+                Save-GameEvidence $homePath $entry.Evidence
             }
-            $stopped = Complete-KitProcess $running $entry.Evidence 75
-            Save-GameEvidence $homePath $entry.Evidence
         }
         if ($stopped.TimedOut -or $stopped.ExitCode -ne 0) { throw 'The installed server did not close cleanly.' }
         if ((Invoke-Setup $setup.FullName 'setup-upgrade' $quiet) -ne 0 -or (Read-InstalledVersion 'HKCU' $root) -ne $newVersion) {
