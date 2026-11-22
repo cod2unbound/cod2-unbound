@@ -1,6 +1,9 @@
 #include "common_types.h"
 #include "imports.h"
 #include <stdio.h>
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_paths.h"
+#endif
 
 extern FILE *FS_FileOpen(const char *filename, const char *mode);
 extern size_t FS_FileRead(void *buffer, size_t size, size_t count, FILE *stream);
@@ -27,13 +30,24 @@ language_t Win_InitLocalization(void)
     localization = 0;
     localized_strings = 0;
 
+#if COD2_WINDOWS_NATIVE
+    fp = FS_FileOpen(WIN_DATA_ROOT "/localization.txt", "r");
+#else
     fp = FS_FileOpen("localization.txt", "r");
+#endif
     if (!fp)
         return (language_t)(0);
 
     FS_FileSeek(fp, 0, 2);
     size = (int)ftell(fp);
     FS_FileSeek(fp, 0, 0);
+#if COD2_WINDOWS_NATIVE
+    /* The Windows data directory can be selected by the user. */
+    if (size < 0 || size >= (int)sizeof(language_buffer)) {
+        FS_FileClose(fp);
+        return (language_t)(0);
+    }
+#endif
 
     localization = language_buffer;
     size = (int)FS_FileRead(language_buffer, 1, (size_t)size, fp);
@@ -43,7 +57,6 @@ language_t Win_InitLocalization(void)
         localization = 0;
         return (language_t)(0);
     }
-
     localization[size] = '\0';
 
     lang = (language_t)(0);
