@@ -358,7 +358,8 @@ public sealed partial class SettingsPage : Page
         else if (state.Issue == UpdateIssue.SetupFailed)
         {
             title = "The update didn’t finish.";
-            message = $"{current} is still installed and works.";
+            message = session.InstallNeedsRepair ? "Run Setup again to repair CoD2 Unbound." :
+                $"{current} is still installed and works.";
             AddAction("Try again");
             AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
         }

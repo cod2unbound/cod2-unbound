@@ -47,7 +47,8 @@ public sealed partial class HomePage : Page
             return;
 
         UpdateBanner.Title = updated ? $"CoD2 Unbound is now {session.Version}." :
-            failed ? $"The update didn’t finish. {session.Version} is still installed and works." :
+            failed ? (session.InstallNeedsRepair ? "The update didn’t finish. Run Setup again to repair CoD2 Unbound." :
+                $"The update didn’t finish. {session.Version} is still installed and works.") :
             $"CoD2 Unbound {state.AvailableVersion} is available.";
         UpdateBanner.Severity = updated ? InfoBarSeverity.Success : failed ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
         UpdateButton.Content = updated ? "What’s new" : failed ? "Try again" : "Install update";

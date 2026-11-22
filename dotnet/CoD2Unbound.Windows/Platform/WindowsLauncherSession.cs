@@ -27,23 +27,33 @@ internal sealed class WindowsLauncherSession
     internal LauncherUpdates Updates { get; }
     internal WindowsLauncherUpdate UpdateInstaller { get; }
     private UpdateOutcome lastUpdateOutcome;
+    internal bool InstallNeedsRepair => UpdateInstaller.InstallNeedsRepair;
     internal bool SetupUpdating => lastUpdateOutcome == UpdateOutcome.Waiting;
     internal WindowsHosting Hosting { get; }
     private const string RendererFile = "windows-renderer.txt";
     internal string HomePath => gameFolder.Root;
     internal event Action? ClientStarted;
 
+    private static string? FixtureHome()
+    {
+#if UPDATE_FIXTURES
+        if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is not null)
+            return Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME");
+#endif
+        return null;
+    }
+
+    internal static string ResolveHome() => FixtureHome() ?? Path.Join(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CoD2 Unbound");
+
     internal WindowsLauncherSession()
     {
-        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string? testHome = null;
 #if UPDATE_FIXTURES
         if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
             TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
-        testHome = TestMaster is not null ? Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME") : null;
 #endif
-        credentials = testHome is null ? new WindowsCredentials() : new ProbeCredentials();
-        gameFolder = new WindowsSettingsFolder(testHome ?? Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
+        credentials = FixtureHome() is null ? new WindowsCredentials() : new ProbeCredentials();
+        gameFolder = new WindowsSettingsFolder(ResolveHome(), allowNestedWrites: true);
         var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         folder = settingsFolder;
         Reports = new(HomePath, settingsFolder, Version);

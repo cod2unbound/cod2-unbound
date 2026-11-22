@@ -1,120 +1,160 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Security.Principal;
+using CoD2Unbound.Core;
+using Microsoft.Win32;
 
 namespace CoD2Unbound.Windows.Platform;
 
 internal static class WindowsInstallRecovery
 {
-    // Keep these sibling names and the mutex in sync with unbound.iss. A previous
-    // directory is the journal. Renaming it to completed is Setup's commit point.
-    private const string MutexName = @"Local\CoD2Unbound.InstallTransaction";
+    // Keep these names in sync with unbound.iss. The previous directory is the journal.
+    private const string TransactionKey = @"Software\CoD2Unbound\InstallTransaction";
     private const string Previous = ".previous-install";
     private const string Incomplete = ".incomplete-install";
+    internal const string RestoreDescription = "CoD2 Unbound Setup with recovery";
+
+    internal static string StandardRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "CoD2 Unbound");
 
     internal static bool NeedsRestore(string root) => Directory.Exists(root + Previous);
 
+    internal static bool RestoreFailed(string root) =>
+        IsStandardRoot(root) && NeedsRestore(root) && ReadTransactionValue("RestoreFailed") == "1";
+
+    private static bool IsStandardRoot(string root) =>
+        string.Equals(root, StandardRoot, StringComparison.OrdinalIgnoreCase);
+
+    private static string? ReadTransactionValue(string name)
+    {
+        using var registry = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+        using var transaction = registry.OpenSubKey(TransactionKey);
+        return transaction?.GetValue(name) as string;
+    }
+
     internal static bool RedirectInterruptedStart()
     {
-        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string root = Path.Combine(local, "Programs", "CoD2 Unbound");
+        string root = StandardRoot;
         string actual = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
-        if (!root.Equals(actual, StringComparison.OrdinalIgnoreCase) ||
-            (!NeedsRestore(root) && !Directory.Exists(root + Incomplete)))
+        if (!IsStandardRoot(actual) || (!NeedsRestore(root) && !Directory.Exists(root + Incomplete)))
             return false;
 
         try
         {
-            using (new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(root)!)) { }
-            using var transaction = new Mutex(false, MutexName);
+            using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(root)!);
+            using var identity = WindowsIdentity.GetCurrent();
+            var sid = identity.User ?? throw new IOException("Windows did not identify the current user.");
+            using var transaction = new Mutex(false, @"Local\CoD2Unbound.InstallTransaction-" + sid.Value);
             try
             {
                 if (!transaction.WaitOne(0))
-                    return true; // Setup or the recovery process will reopen the launcher.
+                    return NeedsRestore(root); // Setup will reopen the launcher.
             }
-            catch (AbandonedMutexException) { } // Ownership was handed to us.
+            catch (AbandonedMutexException) { }
             try
             {
-                using var current = Process.GetCurrentProcess();
-                var system = Environment.GetFolderPath(Environment.SpecialFolder.System);
-                var start = new ProcessStartInfo(Path.Combine(system, "WindowsPowerShell", "v1.0", "powershell.exe"))
-                {
-                    UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(root)!
-                };
-                foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-EncodedCommand",
-                    Convert.ToBase64String(Encoding.Unicode.GetBytes(
-                        "$launcherPid = " + current.Id + "\n$launcherStarted = " +
-                        current.StartTime.ToUniversalTime().ToFileTimeUtc() + "\n" + RestoreScript)) })
-                    start.ArgumentList.Add(argument);
-                using var process = Process.Start(start) ?? throw new IOException("Windows did not start recovery.");
+                CleanIncomplete(root);
+                if (!NeedsRestore(root) || RestoreFailed(root))
+                    return false;
+
+                if (ReadTransactionValue("Attempt") is { } attempt &&
+                    WindowsLauncherUpdate.StartRecovery(root, WindowsLauncherSession.ResolveHome(), attempt))
+                    return true;
             }
             finally { transaction.ReleaseMutex(); }
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or
+            Win32Exception or InvalidOperationException or LauncherUpdateException)
         {
-            _ = MessageBox(0, "CoD2 Unbound needs repair. Close the game and run Setup again.", "CoD2 Unbound", 0x10);
+            if (!NeedsRestore(root))
+                return false;
         }
+        ShowRepairDialog();
         return true;
     }
 
-    private const string RestoreScript = """
-        $ErrorActionPreference = 'Stop'
-        $root = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\CoD2 Unbound'
-        $previous = $root + '.previous-install'
-        $incomplete = $root + '.incomplete-install'
-        $mutex = [Threading.Mutex]::new($false, 'Local\CoD2Unbound.InstallTransaction')
-        $held = $false
-        $restored = $false
-        try {
-            $launcher = Get-Process -Id $launcherPid -ErrorAction SilentlyContinue
-            if ($launcher -and $launcher.StartTime.ToUniversalTime().ToFileTimeUtc() -eq $launcherStarted) {
-                if (!$launcher.WaitForExit(30000)) { throw 'Launcher did not exit.' }
-            }
-            try { $held = $mutex.WaitOne(30000) }
-            catch [Threading.AbandonedMutexException] { $held = $true }
-            if (!$held) { throw 'Another installation is active.' }
-
-            foreach ($path in @((Split-Path -Parent $root), $root, $previous, $incomplete)) {
-                if ((Test-Path -LiteralPath $path) -and
-                    ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                    throw 'Unexpected link in installation.'
-                }
-            }
-            if ([IO.Directory]::Exists($previous)) {
-                if ([IO.Directory]::Exists($root)) { [IO.Directory]::Move($root, $incomplete) }
-                [IO.Directory]::Move($previous, $root)
-            }
-            if ([IO.Directory]::Exists($incomplete)) {
-                $version = [IO.File]::ReadAllText((Join-Path $root 'RELEASE_VERSION')).Trim()
-                if ($version -match '^\d+\.\d+\.\d+$') {
-                    $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Registry64')
-                    try {
-                        $installed = $key.OpenSubKey('Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1', $true)
-                        if ($installed) {
-                            try { $installed.SetValue('DisplayVersion', $version) }
-                            finally { $installed.Dispose() }
-                        }
-                    } finally { $key.Dispose() }
-                }
-                [IO.Directory]::Delete($incomplete, $true)
-                $restored = $true
-            }
-        } catch {
-            Add-Type -AssemblyName System.Windows.Forms
-            [void][Windows.Forms.MessageBox]::Show('CoD2 Unbound needs repair. Close the game and run Setup again.', 'CoD2 Unbound')
-            exit 1
-        } finally {
-            if ($held) { $mutex.ReleaseMutex() }
-            $mutex.Dispose()
+    private static void CleanIncomplete(string root)
+    {
+        string incomplete = root + Incomplete;
+        try { Directory.Delete(incomplete, recursive: true); }
+        catch (DirectoryNotFoundException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            try { Directory.Move(incomplete, incomplete + "-" + Guid.NewGuid().ToString("N")); }
+            catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException) { }
         }
-        if ($restored) {
-            Add-Type -AssemblyName System.Windows.Forms
-            [void][Windows.Forms.MessageBox]::Show('The previous CoD2 Unbound installation was restored.', 'CoD2 Unbound')
-            Start-Process -FilePath (Join-Path $root 'launcher\CoD2Unbound.Windows.exe') -WorkingDirectory $root
-        }
-        """;
+    }
 
-    [DllImport("user32.dll", EntryPoint = "MessageBoxW", CharSet = CharSet.Unicode, ExactSpelling = true)]
-    private static extern int MessageBox(nint owner, string message, string caption, uint type);
+    private static void ShowRepairDialog()
+    {
+        const int download = 100;
+        const int close = 2;
+        nint downloadText = Marshal.StringToHGlobalUni("Open download page");
+        nint closeText = Marshal.StringToHGlobalUni("Close");
+        int buttonSize = Marshal.SizeOf<TaskDialogButton>();
+        nint buttons = Marshal.AllocHGlobal(2 * buttonSize);
+        try
+        {
+            Marshal.StructureToPtr(new TaskDialogButton { Id = download, Text = downloadText }, buttons, false);
+            Marshal.StructureToPtr(new TaskDialogButton { Id = close, Text = closeText }, buttons + buttonSize, false);
+            var dialog = new TaskDialogConfig
+            {
+                Size = (uint)Marshal.SizeOf<TaskDialogConfig>(),
+                Flags = 0x8, // TDF_ALLOW_DIALOG_CANCELLATION
+                Title = "CoD2 Unbound",
+                MainInstruction = "The last update didn't finish.",
+                Content = "Run Setup again to repair CoD2 Unbound.",
+                ButtonCount = 2,
+                Buttons = (nint)buttons,
+                DefaultButton = close
+            };
+            if (TaskDialogIndirect(in dialog, out int button, 0, 0) == 0 && button == download)
+            {
+                try
+                {
+                    using var page = Process.Start(new ProcessStartInfo(WindowsReleaseAssets.ReleasesPage.AbsoluteUri)
+                        { UseShellExecute = true });
+                }
+                catch (Win32Exception) { }
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buttons);
+            Marshal.FreeHGlobal(closeText);
+            Marshal.FreeHGlobal(downloadText);
+        }
+    }
+
+    // CommCtrl.h packs the TaskDialog structures to one byte.
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct TaskDialogButton
+    {
+        internal int Id;
+        internal nint Text;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Unicode)]
+    private struct TaskDialogConfig
+    {
+        internal uint Size;
+        internal nint Parent, Instance;
+        internal uint Flags, CommonButtons;
+        internal string Title;
+        internal nint MainIcon;
+        internal string MainInstruction, Content;
+        internal uint ButtonCount;
+        internal nint Buttons;
+        internal int DefaultButton;
+        internal uint RadioButtonCount;
+        internal nint RadioButtons;
+        internal int DefaultRadioButton;
+        internal nint VerificationText, ExpandedInformation, ExpandedControlText, CollapsedControlText;
+        internal nint FooterIcon, Footer, Callback, CallbackData;
+        internal uint Width;
+    }
+
+    [DllImport("comctl32.dll", ExactSpelling = true)]
+    private static extern int TaskDialogIndirect(in TaskDialogConfig config, out int button, nint radio, nint verified);
 }

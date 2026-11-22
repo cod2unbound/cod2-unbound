@@ -22,12 +22,13 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
     private readonly string staging = Path.Combine(home, "launcher", "updates");
     private string PendingPath => Path.Combine(staging, PendingName);
     internal string LogsPath => Path.Combine(home, "launcher", "logs", "updates");
+    internal bool InstallNeedsRepair => WindowsInstallRecovery.RestoreFailed(target);
     private bool reportedUnreadableMarker;
+    private bool reportedRestoreFailure;
 
     public void CheckInstallLocation()
     {
-        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string standard = Path.Combine(local, "Programs", "CoD2 Unbound");
+        string standard = WindowsInstallRecovery.StandardRoot;
         using var registry = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
         using var installed = registry.OpenSubKey(RegistryPath);
         if (!PathsMatch(target, standard) || installed?.GetValue("InstallLocation") is not string registered ||
@@ -102,6 +103,14 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
 
     internal UpdateOutcome ReadOutcome()
     {
+        if (InstallNeedsRepair)
+        {
+            if (reportedRestoreFailure)
+                return UpdateOutcome.None;
+            reportedRestoreFailure = true;
+            Log("Setup could not restore the previous installation. The backup and update record are retained.");
+            return UpdateOutcome.Failed;
+        }
         if (!Directory.Exists(staging))
             return UpdateOutcome.None;
 
@@ -109,28 +118,17 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
         {
             EnsureStaging();
             using var root = new WindowsFiles.DirectoryHandles(staging);
-            string[] pending;
-            try
-            {
-                using var stream = WindowsFiles.Open(staging, PendingName);
-                if (stream.Length > 256)
-                    throw new IOException("The pending update record was too large.");
-                using var reader = new StreamReader(stream);
-                pending = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            }
+            PendingUpdate pending;
+            try { pending = ReadPending(staging); }
             catch (FileNotFoundException)
             {
                 CleanAttempts();
                 return UpdateOutcome.None;
             }
-            if (pending is [_, _, var process, var fileTime] &&
-                int.TryParse(process, NumberStyles.None, CultureInfo.InvariantCulture, out int pid) &&
-                long.TryParse(fileTime, NumberStyles.None, CultureInfo.InvariantCulture, out long started) &&
-                IsSetupRunning(pid, started))
+            if (pending.Running)
                 return UpdateOutcome.Waiting;
 
-            bool installed = pending.Length is 2 or 4 && Guid.TryParseExact(pending[0], "N", out _) &&
-                currentVersion == pending[1] && !WindowsInstallRecovery.NeedsRestore(target);
+            bool installed = currentVersion == pending.Version && !WindowsInstallRecovery.NeedsRestore(target);
             File.Delete(PendingPath);
             CleanAttempts(includeLegacyBackups: installed);
             Log(installed ? "Setup installed the offered version." : "Setup did not complete the offered update.");
@@ -152,6 +150,92 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
             Log($"Could not read the pending update record ({error.HResult:X8}).");
             return UpdateOutcome.Failed;
         }
+    }
+
+    private sealed record PendingUpdate(string Id, string Version, long Size, string? Checksum, bool Running);
+
+    private static PendingUpdate ReadPending(string folder)
+    {
+        using var stream = WindowsFiles.Open(folder, PendingName);
+        if (stream.Length > 256)
+            throw new IOException("The pending update record was too large.");
+        using var reader = new StreamReader(stream);
+        var fields = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (fields.Length is not (2 or 4 or 6) || !Guid.TryParseExact(fields[0], "N", out _) ||
+            WindowsReleaseAssets.ParseVersion(fields[1]) is null)
+            throw new IOException("The pending update record was invalid.");
+
+        long size = 0;
+        string? checksum = null;
+        if (fields.Length >= 4 && fields[3].Length == 64 && fields[3].All(char.IsAsciiHexDigit) &&
+            long.TryParse(fields[2], NumberStyles.None, CultureInfo.InvariantCulture, out size) &&
+            size is > 0 and <= WindowsReleaseAssets.SetupLimit)
+            checksum = fields[3];
+
+        int process = checksum is null ? 2 : 4;
+        if (fields.Length != process && fields.Length != process + 2)
+            throw new IOException("The pending update record was invalid.");
+        bool running = fields.Length == process + 2 &&
+            int.TryParse(fields[process], NumberStyles.None, CultureInfo.InvariantCulture, out int pid) &&
+            long.TryParse(fields[process + 1], NumberStyles.None, CultureInfo.InvariantCulture, out long started) &&
+            IsSetupRunning(pid, started);
+        return new(fields[0], fields[1], size, checksum, running);
+    }
+
+    internal static bool StartRecovery(string target, string home, string attempt)
+    {
+        string staging = Path.Combine(home, "launcher", "updates");
+        using var root = new WindowsFiles.DirectoryHandles(staging);
+        CheckPrivateDirectory(staging, create: false);
+        var pending = ReadPending(staging);
+        if (pending.Id != attempt || pending.Checksum is null)
+            return false;
+        if (pending.Running)
+            return true;
+
+        string folder = Path.Combine(staging, pending.Id);
+        using var directories = new WindowsFiles.DirectoryHandles(folder);
+        CheckPrivateDirectory(folder, create: false);
+        using var pinned = WindowsFiles.Open(folder, SetupName, FileShare.Read);
+        string path = Path.Combine(folder, SetupName);
+        VerifySetup(path, pinned, pending.Version, pending.Size, pending.Checksum, default, restore: true);
+        string logs = Path.Combine(home, "launcher", "logs", "updates");
+        EnsurePrivateDirectory(logs);
+        using var process = StartSetup(path, target, Path.Combine(logs, $"restore-{pending.Id}.log"), pending.Id, restore: true);
+        return true;
+    }
+
+    private static void VerifySetup(string path, FileStream pinned, string expectedVersion, long size,
+        string checksum, CancellationToken token, bool restore = false)
+    {
+        if (!ReleasePackage.VerifyArchive(pinned, size, checksum, token))
+            throw new LauncherUpdateException("The download did not match the release checksum.");
+
+        token.ThrowIfCancellationRequested();
+        pinned.Position = 0;
+        SetupPublisher.Verify(path, pinned.SafeFileHandle);
+        var details = FileVersionInfo.GetVersionInfo(path);
+        var version = new Version(details.FileMajorPart, details.FileMinorPart, details.FileBuildPart);
+        // Inno reserves room in its version resource by padding the product name.
+        if (details.ProductName?.TrimEnd(' ') != "CoD2 Unbound" || details.FilePrivatePart != 0 ||
+            version != WindowsReleaseAssets.ParseVersion(expectedVersion))
+            throw new LauncherUpdateException("Setup did not contain the offered version of CoD2 Unbound.");
+        if (restore && details.FileDescription?.TrimEnd(' ') != WindowsInstallRecovery.RestoreDescription)
+            throw new LauncherUpdateException("Setup did not advertise restore-only support.");
+    }
+
+    private static Process StartSetup(string path, string target, string log, string attempt, bool restore = false)
+    {
+        using var launcher = Process.GetCurrentProcess();
+        var start = new ProcessStartInfo(path) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(path)! };
+        foreach (string arg in new[] { "/SP-", "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER",
+            "/NOCLOSEAPPLICATIONS", "/NORESTARTAPPLICATIONS", "/UNBOUNDUPDATE=1",
+            $"/UNBOUNDLAUNCHERPID={launcher.Id}", $"/UNBOUNDLAUNCHERSTART={launcher.StartTime.ToUniversalTime().ToFileTimeUtc()}",
+            $"/UNBOUNDATTEMPT={attempt}", $"/DIR={target}", $"/LOG={log}" })
+            start.ArgumentList.Add(arg);
+        if (restore)
+            start.ArgumentList.Add("/UNBOUNDRESTORE=1");
+        return Process.Start(start) ?? throw new IOException("Windows did not start Setup.");
     }
 
     private static bool IsSetupRunning(int pid, long started)
@@ -228,28 +312,38 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
     {
         using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(staging)!, create: true);
         try { EnsurePrivateDirectory(staging); }
-        catch (LauncherUpdateException) when (Directory.Exists(staging))
+        catch (Exception error) when (error is LauncherUpdateException or UnauthorizedAccessException)
         {
-            // Quarantine a changed ACL. Never follow an update folder junction.
-            using (new WindowsFiles.DirectoryHandles(staging)) { }
+            // Move the directory entry itself. Reading its ACL may be denied.
             Directory.Move(staging, staging + ".quarantined-" + Guid.NewGuid().ToString("N"));
             EnsurePrivateDirectory(staging);
             Log("Recreated the private update folder after its permissions changed.");
         }
+
+        using var root = new WindowsFiles.DirectoryHandles(staging);
+        foreach (string path in Directory.EnumerateDirectories(Path.GetDirectoryName(staging)!, "updates.quarantined-*"))
+        {
+            if (!Guid.TryParseExact(Path.GetFileName(path)["updates.quarantined-".Length..], "N", out _))
+                continue;
+            try { Directory.Delete(path, recursive: true); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+        }
     }
 
-    private static void EnsurePrivateDirectory(string path)
+    private static void EnsurePrivateDirectory(string path) => CheckPrivateDirectory(path, create: true);
+
+    private static void CheckPrivateDirectory(string path, bool create)
     {
         using var user = WindowsIdentity.GetCurrent();
         var sid = user.User ?? throw new IOException("Windows did not identify the current user.");
-        using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!, create: true);
+        using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!, create);
         var directory = new DirectoryInfo(path);
         var expected = new DirectorySecurity();
         expected.SetOwner(sid);
         expected.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
         expected.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl,
             InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
-        if (!directory.Exists)
+        if (create && !directory.Exists)
             directory.Create(expected);
         using var opened = new WindowsFiles.DirectoryHandles(path);
         var actual = directory.GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access);
@@ -297,19 +391,9 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
             await CapturePauseAsync(cancellationToken);
             await Task.Run(() =>
             {
-                if (pinned is null || checksum is null ||
-                    !ReleasePackage.VerifyArchive(pinned, offer.Archive.Size, checksum, cancellationToken))
+                if (pinned is null || checksum is null)
                     throw new LauncherUpdateException("The download did not match the release checksum.");
-
-                cancellationToken.ThrowIfCancellationRequested();
-                pinned.Position = 0;
-                SetupPublisher.Verify(PathTo(SetupName), pinned.SafeFileHandle);
-                var details = FileVersionInfo.GetVersionInfo(PathTo(SetupName));
-                var version = new Version(details.FileMajorPart, details.FileMinorPart, details.FileBuildPart);
-                // Inno reserves room in its version resource by padding the product name.
-                if (details.ProductName?.TrimEnd(' ') != "CoD2 Unbound" || details.FilePrivatePart != 0 ||
-                    version != WindowsReleaseAssets.ParseVersion(offer.Version))
-                    throw new LauncherUpdateException("Setup did not contain the offered version of CoD2 Unbound.");
+                VerifySetup(PathTo(SetupName), pinned, offer.Version, offer.Archive.Size, checksum, cancellationToken);
                 verified = true;
             }, cancellationToken);
         }
@@ -326,21 +410,15 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
             if (ReleasePackage.Block(activity.GameRunning, activity.ServersRunning) is { } block)
                 throw new UpdateHeldException(block);
             string log = Path.Combine(owner.LogsPath, $"setup-{id}.log");
-            using var launcher = Process.GetCurrentProcess();
-            var start = new ProcessStartInfo(PathTo(SetupName)) { UseShellExecute = false, WorkingDirectory = Path.Combine(owner.staging, id) };
-            foreach (string arg in new[] { "/SP-", "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER",
-                "/NOCLOSEAPPLICATIONS", "/NORESTARTAPPLICATIONS", "/UNBOUNDUPDATE=1",
-                $"/UNBOUNDLAUNCHERPID={launcher.Id}", $"/UNBOUNDLAUNCHERSTART={launcher.StartTime.ToUniversalTime().ToFileTimeUtc()}",
-                $"/DIR={owner.target}", $"/LOG={log}" })
-                start.ArgumentList.Add(arg);
-            WritePending([id, offer.Version]);
+            string[] pending = [id, offer.Version, offer.Archive.Size.ToString(CultureInfo.InvariantCulture), checksum!];
+            WritePending(pending);
             try
             {
-                using var setup = Process.Start(start) ?? throw new IOException("Windows did not start Setup.");
+                using var setup = StartSetup(PathTo(SetupName), owner.target, log, id);
                 handedOff = true;
                 try
                 {
-                    WritePending([id, offer.Version, setup.Id.ToString(CultureInfo.InvariantCulture),
+                    WritePending([.. pending, setup.Id.ToString(CultureInfo.InvariantCulture),
                         setup.StartTime.ToUniversalTime().ToFileTimeUtc().ToString(CultureInfo.InvariantCulture)]);
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception)
