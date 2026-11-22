@@ -68,11 +68,11 @@ def main():
     release_gate = args.base == 'main'
     options = ['--no-renames', '--diff-filter=DM'] if upstream_mode else ['--diff-filter=M']
     paths = git('diff', *options, '--name-only', args.base, '--', 'src').splitlines()
-    reviewed, listed, _ = read_catalog(ROOT / CATALOG) if upstream_mode else (None, {}, {})
+    reviewed, listed, _ = read_catalog(ROOT / CATALOG) if upstream_mode or release_gate else (None, {}, {})
     failures = []
     intended = Counter()
     restorations = 0
-    for path in sorted(set(paths) | listed.keys()):
+    for path in sorted(set(paths) | (listed.keys() if upstream_mode else set())):
         if not path.endswith(('.c', '.h', '.inc')):
             continue
         # The Metal providers and the Direct3D 9 on Metal glue are native-only.
@@ -89,8 +89,9 @@ def main():
             source = git('show', f'{reviewed}:{path}')
         elif release_gate:
             source = show_if_present(UPSTREAM, path)
-        for name, patch, (before, after, original) in projections(
-                (old, new, source), upstream_mode or release_gate):
+        approved = git('show', f'{reviewed}:{path}') if release_gate and path in listed else None
+        for name, patch, (before, after, original, recorded) in projections(
+                (old, new, source, approved), upstream_mode or release_gate):
             if upstream_mode and original is not None and before != original:
                 if after == original:
                     intended[path] += 1
@@ -105,9 +106,12 @@ def main():
                 if after == original or edits(before, after) <= edits(before, original):
                     restorations += 1
                     continue
+            if release_gate and after == recorded:
+                intended[path] += 1
+                continue
             failures.append((path, name, patch))
     for path, label in listed.items():
-        if not intended[path]:
+        if upstream_mode and not intended[path]:
             failures.append((path, 'stale entry', label))
     print(f'{len(paths)} changed source files; 10 legacy configurations; {len(failures)} mismatches')
     if restorations:

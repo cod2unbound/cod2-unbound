@@ -1,11 +1,11 @@
 # Intended legacy differences from upstream
 
-The reference is opencod2 `410342a`. The owner confirmed the six shared fixes
-on 2026-11-21. The source check also reports seven other differences below.
-The 12 files that differ in all ten include-free configurations account for
-120 comparisons. The Mach-O alias differs in both Apple i386 patch modes,
-bringing the total to 122. Player effects below come from source inspection.
-The compiler controls establish which objects change.
+The reference is opencod2 `410342a`. The owner confirmed the first six shared
+fixes on 2026-11-21. The Windows warning review added the renderer declaration,
+map loader and directory size fixes. Fourteen catalogued files differ in all
+ten include-free configurations. The Mach-O alias differs in both Apple i386
+patch modes, bringing the total to 142. Player effects come from source
+inspection. The compiler controls establish which objects change.
 
 ## Shared fixes
 
@@ -17,6 +17,9 @@ The compiler controls establish which objects change.
 | Favorite selection | [`ui_main_mp.c`](../../src/PC/ui_mp/ui_main_mp.c), `UI_RunMenuScript` for `deleteFavorite` | Copies the selected row before refreshing the count. A rebuild can reset selection while deletion still uses the old index. | Refreshes first, then reads and bounds-checks selection. If the rebuild clears selection, deletion stops before removing a favorite. | Reversing the call order alone reproduces the stripped upstream Linux i386 object. |
 | Fatal exit status | [`mac_main.c`](../../src/Mac/Main/mac_main.c), `Sys_Error`, `Sys_Quit` | Normal cleanup exits with status 0 after a fatal error. | Stores status 1 before fatal cleanup. Launchers, shells and service supervisors can distinguish failure from normal shutdown. Players still get the fatal error message. | Reversing the status change alone reproduces both stripped upstream Linux i386 entry-point objects. These are the client and dedicated compile targets that the ordinary build never reaches. |
 | Specularity prototype | [`r_image_load_obj.c`](../../src/PC/gfx_d3d/r_image_load_obj.c), `Image_Load` and its declaration of `Image_BuildSpecularityMap` | Declares the first parameter as `int` at the call site even though the [definition](../../src/PC/gfx_d3d/r_specularityimage.c) takes `float`. | Declares the same `float` parameter type as the definition. The current call passes zero. The Linux i386 build showed no player-visible change. | Source inspection confirms the type mismatch. The stripped Linux i386 object matches upstream. |
+| Renderer helper declarations | [`D3DXTex.c`](../../src/Mac/DirectX_9/D3DXTex.c), `D3DXTex_SetupView`, and [`r_water.c`](../../src/PC/gfx_d3d/r_water.c), `RB_UploadWaterTexture` | The reconstructed C can call `gluOrtho2D` and `sqrtf` without their declarations in some native builds. | Declares the four-double, void-returning GLU helper and includes the standard prototype for the float-taking, float-returning square root. | Apple arm64 text and relocations match before and after. The include-free legacy projections have no new differences for these declarations. |
+| Map loader prototypes | [`r_loadworld_new.c`](../../src/PC/gfx_d3d/r_loadworld_new.c), `R_LoadWorldInternal` | Calls functions that take `GfxBspLoad *` through a function pointer type that takes `void *`. The `R_LoadCells` declaration also omits the legacy register convention used by its definition. | Calls each loader through its declared type and gives `R_LoadCells` the matching register convention. This removes undefined behavior from loading map geometry. | MinGW diagnoses the incompatible call before the fix. Apple arm64 text and relocations match before and after. |
+| Directory size split | [`MacWin32.c`](../../src/Mac/Tools/MacWin32.c), `FindFirstFileA`, `FindNextFileA` | Shifts the file size right by 32, which is undefined with a 32-bit `st_size`. | Widens the signed size to `int64_t` before the split. Native Windows already reads directories through its Unicode file layer and skips this emulation. | The i686 Windows probe reports the two invalid shifts before the fix. Apple arm64 text and relocations match before and after. |
 
 ## Other differences from the source check
 
@@ -44,7 +47,7 @@ the known upstream build failures.
 ```json
 {
   "upstream": "410342a82da1b2e8286c290274aeb0f1731a6859",
-  "reviewed": "d6674f1a8532a40bc68bb42fa3c9a52d43146f70",
+  "reviewed": "562f612c3b459ba34da5b292e50ecca837c08b81",
   "entries": [
     {
       "id": "Query allocation",
@@ -75,6 +78,16 @@ the known upstream build failures.
       ]
     },
     {"id": "Specularity prototype", "source": "src/PC/gfx_d3d/r_image_load_obj.c"},
+    {
+      "id": "Map loader prototypes",
+      "source": "src/PC/gfx_d3d/r_loadworld_new.c",
+      "objects": ["CMakeFiles/cod2_objs.dir/src/PC/gfx_d3d/r_loadworld_new.c.o"]
+    },
+    {
+      "id": "Directory size split",
+      "source": "src/Mac/Tools/MacWin32.c",
+      "objects": ["CMakeFiles/cod2_objs.dir/src/Mac/Tools/MacWin32.c.o"]
+    },
     {"id": "Directory name alias", "source": "src/Mac/Main/mac_common.c"},
     {"id": "DPVS cell declaration", "source": "src/PC/gfx_d3d/r_dpvs.c"},
     {"id": "Vertex color block", "source": "src/PC/gfx_d3d/rb_shade.c"},
