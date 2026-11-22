@@ -196,3 +196,28 @@ set `COD2_UNBOUND_TEST_UPDATE_ORIGIN` in the launcher process environment to a
 and `SHA256SUMS` at `/releases/download/v<version>/`. Use a test signer trusted
 by the test machine and configure its root and test profile OID in the test
 launcher. The loopback feed uses cache-only revocation retrieval.
+
+### Windows reporting configuration
+
+Pass the two optional MSBuild properties alongside `UpdatePublisherRules` when
+publishing the launcher.
+
+| Property | Release value |
+| --- | --- |
+| `UsagePostHogKey` | `phc_<EU_INGESTION_KEY>` |
+| `CrashReportDsn` | `https://<PUBLIC_KEY>@<SENTRY_INGEST_HOST>/<PROJECT_NUMBER>` |
+
+Omit a property to omit that consent step and Privacy switch. Only an explicit
+yes allows the relevant reports to leave this PC. Usage requests use the EU
+ingestion endpoint without redirects, cookies, or ambient credentials. The
+service configuration retains country only and disables person profiles.
+Crash reports use a separate Windows text attachment containing exception
+details, module offsets, and module versions. Local game logs and dumps stay
+on this PC.
+
+Keep `UpdateBuildProfile=Public` and `EnableLocalReportReceivers=false` for
+releases. Test builds additionally require `UpdateBuildProfile=Fixture` and
+`EnableLocalReportReceivers=true`. Supply dummy property values and point
+`COD2_USAGE_URL` and `COD2_CRASH_URL` at individual receivers on
+`127.0.0.1`. A test build with missing or invalid receiver settings skips the
+affected service. Public compilation and packaging reject fixture support.
