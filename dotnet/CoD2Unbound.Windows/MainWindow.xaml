@@ -56,16 +56,16 @@
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
                         ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H">
+                <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" HighContrastAdjustment="None">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="20" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S">
+                <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S" HighContrastAdjustment="None">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="20" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L">
+                <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L" HighContrastAdjustment="None">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentVideoClip}" FontSize="20" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C">
+                <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C" HighContrastAdjustment="None">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="20" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

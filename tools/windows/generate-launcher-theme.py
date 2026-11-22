@@ -141,10 +141,11 @@ def generate(tokens):
             for token in ("control", "button-stroke"):
                 ET.SubElement(stops, "GradientStop", {"Offset": "1", "Color": xaml_color(tokens[token][theme])})
         else:
-            for state in ("Selected", "SelectedPointerOver", "SelectedPressed"):
-                ET.SubElement(dictionary, "SolidColorBrush", {
-                    "x:Key": f"ListViewItemForeground{state}", "Color": "{ThemeResource SystemColorHighlightTextColor}",
-                })
+            for control in ("ListViewItem", "NavigationViewItem"):
+                for state in ("Selected", "SelectedPointerOver", "SelectedPressed"):
+                    ET.SubElement(dictionary, "SolidColorBrush", {
+                        "x:Key": f"{control}Foreground{state}", "Color": "{ThemeResource SystemColorHighlightTextColor}",
+                    })
         # The contrast backplate covers text only, leaving the rest of the art visible.
         backplate = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
         ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": "HeroBackplateBrush", "Color": backplate})
