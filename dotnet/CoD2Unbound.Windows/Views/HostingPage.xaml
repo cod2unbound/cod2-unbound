@@ -6,7 +6,7 @@
             <ColumnDefinition Width="240" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <ListView x:Name="Servers" SelectionChanged="OnServerChanged"
+        <ListView x:Name="Servers" SelectionChanged="OnServerChanged" ContainerContentChanging="OnServerRowChanged"
                   AutomationProperties.Name="Hosted servers">
             <ListView.Resources>
                 <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>

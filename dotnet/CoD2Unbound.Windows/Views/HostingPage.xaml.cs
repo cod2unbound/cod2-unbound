@@ -48,6 +48,12 @@ public sealed partial class HostingPage : Page
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
+    private void OnServerRowChanged(ListView sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is HostedServer server)
+            AutomationProperties.SetName(args.ItemContainer, server.Name);
+    }
+
     private void OnServerChanged(object sender, SelectionChangedEventArgs args)
     {
         if (!syncing)
