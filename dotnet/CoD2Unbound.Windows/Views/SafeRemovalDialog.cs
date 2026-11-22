@@ -17,7 +17,12 @@ internal sealed class SafeRemovalDialog : ContentDialog
         PrimaryButtonStyle = StyleFor(actionStyle);
         DefaultButton = ContentDialogButton.None;
         IsPrimaryButtonEnabled = false;
-        Opened += (_, _) => DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, FocusCancel);
+        Opened += (_, _) =>
+        {
+            ApplyTemplate();
+            FocusCancel();
+            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, FocusCancel);
+        };
         PreviewKeyDown += (_, args) =>
         {
             if (args.Key == VirtualKey.Enter && GetTemplateChild("PrimaryButton") is Button { FocusState: not FocusState.Unfocused })
@@ -30,10 +35,9 @@ internal sealed class SafeRemovalDialog : ContentDialog
 
     private void FocusCancel()
     {
-        if (GetTemplateChild("CloseButton") is not Button cancel)
-            return;
-        cancel.Focus(FocusState.Keyboard);
+        var cancel = GetTemplateChild("CloseButton") as Button;
+        cancel?.Focus(FocusState.Keyboard);
         IsPrimaryButtonEnabled = true;
-        cancel.Focus(FocusState.Keyboard);
+        cancel?.Focus(FocusState.Keyboard);
     }
 }
