@@ -216,10 +216,14 @@ all of it before you post, and the app sends nothing itself.
 - **With the original 1.3 running**, the game sends nothing to the CoD2x
   project. **Settings → General → Game version** sets your default; joining
   a server can use the other version for that match.
-- **The launcher** contacts GitHub when you check for updates (once a day while
+- **The launcher** asks GitHub when you check for updates (once a day while
   it is open, unless you turn off **Settings → Updates → Check for updates
-  automatically**), install one, or download the CoD2x files. It asks both
-  master servers when you refresh the server list or enable refresh on opening
+  automatically**) and fetches the news on Home. The fallback addresses are
+  `https://cod2unbound.com/update/releases.json` for the check and
+  `https://cod2unbound.com/update/news.json` for news. If you choose to install
+  an update, its files can come from GitHub Releases or
+  `https://cod2unbound.com/releases/`. The CoD2x files come from GitHub.
+  The launcher asks both master servers when you refresh the server list or enable refresh on opening
   Servers, and asks a single server when you type its address in **Connect to
   Address**. Passwords you choose to remember stay in your keychain on this Mac
   and are sent only to that server. **Settings → Privacy** lists these contacts.

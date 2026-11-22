@@ -250,21 +250,28 @@ packets, deduplicates addresses and limits discovery to 2048 endpoints. Queries
 use Network.framework with a maximum of six concurrent endpoints, 40 ms between
 starts, status/info timeouts, cancellation, bounded parsers and a persistent
 last-successful cache. Refresh is explicit unless Settings › General › Refresh the server list
-when Servers opens is on (off by default); opening the app itself never scans the server list. Checking for updates is an HTTPS request to GitHub Releases, on Check Now or, with
+when Servers opens is on (off by default); opening the app itself never scans the server list.
+Checking for updates asks the GitHub Releases API first and falls back to
+`https://cod2unbound.com/update/releases.json`. It runs on Check Now or, with
 Settings › Updates › Check for updates automatically on (the default), at most once a day while
 the launcher is open; an automatic check that fails says nothing, and the review harness and the
 lifecycle tests (`COD2_SETUP_NONINTERACTIVE=1`) never make one. It refreshes the release notes
 and What's New, which lists the newest release's Added, Changed and Fixed notes. The same check fetches
-the project's news file, `docs/news.json` on the main branch (`NewsFeed` in `Presentation.swift`: plain
-text, a `github.com` link or a place in the app to open, at most 64 KiB, days in the future hidden
-until they come), so news needs no new build. Home's What's New card lists releases and news newest
+the project's news file, `docs/news.json` on the main branch, from `raw.githubusercontent.com`.
+If that request fails to return 200 or 404, the launcher tries
+`https://cod2unbound.com/update/news.json`. A 404 from the primary news address means there is no
+news. `NewsFeed` in `Presentation.swift` reads up to 64 KiB of news with plain text and either a
+`github.com` link or a place in the app to open. Future entries appear on their date.
+Home's What's New card lists releases and news newest
 first, always with the running version's line, and what comes next last when the card has room.
 The card never runs past its edge (a title keeps two lines, a summary three, fewer lines before
 any overflow); See All opens `HomeNewsSheet` with every line in full. Home keeps one row of cards at
 every window size: below 980 points of page width What's New leaves the row and becomes a chip.
 Before the first check has answered it holds one built-in line about this version, with no date. When a newer release carries
 `CoD2-Unbound-<version>-macos-arm64.zip` and `SHA256SUMS`, Install Update (only on the player's
-click) downloads both into a folder on the app's volume, refuses any size or SHA-256 mismatch,
+click) downloads both from the URLs in the release list. A failed request for a GitHub file from
+GitHub's list retries that file once at `https://cod2unbound.com/releases/v<version>/<file>`.
+The launcher stages the files on the app's volume, refuses any size or SHA-256 mismatch,
 unpacks with `ditto` and checks the app inside (bundle identifier, offered version,
 `codesign --verify --deep --strict`, and the running app's Team ID when it has one), swaps it into
 the app's place, moves the old app to the Trash and restarts (`AppUpdate` in `Core.swift`). It
