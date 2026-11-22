@@ -279,7 +279,16 @@ public sealed partial class ServersPage : Page
         }
         SetFavorite(FavoriteButton, server);
         _ = ShowReadinessAsync(server);
-        JoinButton.IsEnabled = !model.GameRunning;
+        UpdateJoinButton();
+    }
+
+    private void UpdateJoinButton()
+    {
+        bool isRefreshing = refreshing is not null;
+        JoinButton.IsEnabled = !isRefreshing && !model.GameRunning;
+        string label = isRefreshing ? "Refreshing…" : "Launch";
+        JoinButtonLabel.Text = label;
+        AutomationProperties.SetName(JoinButton, label);
     }
 
     private async Task ShowReadinessAsync(GameServer server)
@@ -381,6 +390,7 @@ public sealed partial class ServersPage : Page
         {
             using var cancellation = new CancellationTokenSource();
             refreshing = cancellation;
+            UpdateJoinButton();
             RefreshGlyph.Glyph = "\uE71A";
             AutomationProperties.SetName(RefreshButton, "Stop refresh");
             ToolTipService.SetToolTip(RefreshButton, "Stop refresh");
@@ -432,7 +442,7 @@ public sealed partial class ServersPage : Page
 
     private async void OnJoin(object sender, RoutedEventArgs args)
     {
-        if (ServerList.SelectedItem is not ServerRow row)
+        if (refreshing is not null || ServerList.SelectedItem is not ServerRow row)
             return;
         var source = model.Scope == ServerScope.Favorites ? UsageJoin.Favorite : UsageJoin.List;
         if (row.Server.PasswordRequired)

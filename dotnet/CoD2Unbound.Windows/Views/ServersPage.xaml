@@ -257,7 +257,7 @@
                                 Style="{StaticResource LauncherAccentButton}" AccessKey="L" Click="OnJoin">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
-                                <TextBlock Text="Launch" VerticalAlignment="Center" />
+                                <TextBlock x:Name="JoinButtonLabel" Text="Launch" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
                         <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" Style="{StaticResource IconAction}" />
