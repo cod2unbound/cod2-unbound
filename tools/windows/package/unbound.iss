@@ -114,6 +114,11 @@ Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; Description: "Launc
 const
 #ifdef HasLauncher
   TransactionKey = 'Software\CoD2Unbound\InstallTransaction';
+  RetryWindowMs = 15000;
+  RetryIntervalMs = 250;
+  ErrorAccessDenied = 5;
+  ErrorSharingViolation = 32;
+  MoveFileWriteThrough = 8;
 #endif
   ArmEmulationNotice = 'CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows'' x64 emulation and may not work as well as on an x64 PC.';
 
@@ -204,6 +209,9 @@ begin
 end;
 
 #ifdef HasLauncher
+function GetTickCount64(): Int64;
+  external 'GetTickCount64@kernel32.dll stdcall';
+
 function IsLauncherUpdate(): Boolean;
 begin
   Result := (not IsAdminInstallMode) and (ExpandConstant('{param:UNBOUNDUPDATE|0}') = '1');
@@ -230,10 +238,38 @@ begin
 end;
 
 function MoveInstall(const Source, Target: String): Boolean;
+var
+  Started, Elapsed: Int64;
+  ErrorCode, Delay: Integer;
+  Retried: Boolean;
 begin
-  Result := MoveFileExW(Source, Target, 8);
-  if not Result then
-    Log(Format('MoveFileExW failed from "%s" to "%s" (Win32 error %d).', [Source, Target, DLLGetLastError]));
+  Started := GetTickCount64();
+  Retried := False;
+  repeat
+    Result := MoveFileExW(Source, Target, MoveFileWriteThrough);
+    if Result then begin
+      if Retried then
+        Log(Format('MoveFileExW succeeded from "%s" to "%s" after %d ms.', [
+          Source, Target, GetTickCount64() - Started]));
+      Exit;
+    end;
+    ErrorCode := DLLGetLastError;
+    Elapsed := GetTickCount64() - Started;
+    Log(Format('MoveFileExW failed from "%s" to "%s" (Win32 error %d, elapsed %d ms).', [
+      Source, Target, ErrorCode, Elapsed]));
+    if (ErrorCode <> ErrorAccessDenied) and (ErrorCode <> ErrorSharingViolation) then Exit;
+
+    { A recently exited launcher or a scanner can still hold the directory. }
+    Elapsed := GetTickCount64() - Started;
+    if Elapsed >= RetryWindowMs then begin
+      Log(Format('MoveFileExW retry window expired after %d ms.', [Elapsed]));
+      Exit;
+    end;
+    Delay := RetryIntervalMs;
+    if RetryWindowMs - Elapsed < Delay then Delay := RetryWindowMs - Elapsed;
+    Sleep(Delay);
+    Retried := True;
+  until False;
 end;
 
 function CopyInstall(const Source, Target: String): Boolean;

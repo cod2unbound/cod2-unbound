@@ -2,12 +2,14 @@
 
 import os
 from pathlib import Path
+import re
 import runpy
 import shutil
 import socket
 import struct
 import subprocess
 import sys
+import time
 import zipfile
 
 from package_installer import windows_path
@@ -128,6 +130,51 @@ def install(env, installer, log, *args):
         raise ValueError("Setup showed the Arm warning on x64")
 
 
+def install_with_folder_lock(env, setup, root, holder, run, release_after=None):
+    run.mkdir()
+    ready = run / "ready"
+    release = run / "release"
+    log = run / "setup.log"
+    lock = re.compile(r"MoveFileExW failed .*Win32 error (?:5|32), elapsed (\d+) ms")
+    args = ("/CURRENTUSER", "/TASKS=links")
+    with subprocess.Popen(["wine", holder, windows_path(root), windows_path(ready), windows_path(release)],
+                          env=env) as control:
+        try:
+            deadline = time.monotonic() + 15
+            while not ready.exists():
+                if control.poll() is not None or time.monotonic() >= deadline:
+                    raise ValueError("The directory lock helper did not start")
+                time.sleep(0.05)
+            with subprocess.Popen(["wine", setup, *SILENT, "/SP-", f"/LOG={windows_path(log)}", *args],
+                                  env=env) as process:
+                try:
+                    if release_after is not None:
+                        deadline = time.monotonic() + 60
+                        while process.poll() is None and time.monotonic() < deadline:
+                            if log.exists() and lock.search(log.read_text(encoding="utf-8-sig", errors="replace")):
+                                time.sleep(release_after)
+                                break
+                            time.sleep(0.05)
+                        release.touch()
+                    status = process.wait(timeout=120)
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                        process.wait()
+        finally:
+            release.touch()
+            try:
+                control.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                control.kill()
+                control.wait()
+                raise
+        if control.returncode:
+            raise ValueError(f"The directory lock helper exited {control.returncode}")
+    receipt = log.read_text(encoding="utf-8-sig")
+    return status, receipt, tuple(int(ms) for ms in lock.findall(receipt))
+
+
 def assert_version(env, root, scope, version):
     key = scope + "\\" + UNINSTALL
     result = wine(env, "reg", "query", key, "/v", "DisplayVersion", "/reg:64")
@@ -196,6 +243,9 @@ def verify_installer(artifacts, work, previous, run):
     subprocess.run(["x86_64-w64-mingw32-gcc", "-DCOD2_WINDOWS_NATIVE=1", "-I/src/src",
                     "-I/src/src/headers", WINDOWS / "path-test-key.c", "/src/src/win32/win_key.c",
                     "-ladvapi32", "-o", helper], check=True)
+    holder = run / "hold-install-directory.exe"
+    subprocess.run(["x86_64-w64-mingw32-gcc", "-municode", WINDOWS / "package/check-folder-lock.c",
+                    "-o", holder], check=True)
     signer = Signer(None, None, work / "test-code.pem", work / "test-tsa.pem",
                     run / "signature-verification.log")
     signer.verify(setup)
@@ -233,8 +283,29 @@ def verify_installer(artifacts, work, previous, run):
         existing_scheme = USER_CLASSES + r"\cod2\shell\open\command"
         wine(env, "reg", "add", existing_scheme, "/ve", "/d", "Third-party link handler",
              "/f", "/reg:64")
-        install(env, setup, run / "upgrade.log", "/CURRENTUSER", "/TASKS=links")
+        status, receipt, refusals = install_with_folder_lock(env, setup, root, holder, run / "persistent-lock")
+        if status == 0 and not refusals and "Completed the CoD2 Unbound installation." in receipt:
+            print("SKIP Wine allowed the rename with an open directory handle; use the Windows lock checks", flush=True)
+        else:
+            expired = re.search(r"MoveFileExW retry window expired after (\d+) ms", receipt)
+            if (status == 0 or len(refusals) < 2 or not expired or int(expired[1]) < 15000
+                    or "Setup could not save the previous installation." not in receipt):
+                raise ValueError("Setup did not exhaust its rename retry window and report the previous-install failure")
+            assert_version(env, root, "HKCU", old_version)
+            if root.with_name(f"{root.name}.previous-install").exists():
+                raise ValueError("The failed rename left a previous-install tree")
+            print(f"PASS persistent directory lock left {old_version} intact after {expired[1]} ms", flush=True)
+
+            status, receipt, refusals = install_with_folder_lock(env, setup, root, holder, run / "passing-lock",
+                                                                 release_after=2)
+            moved = re.search(r"MoveFileExW succeeded .* after (\d+) ms", receipt)
+            if (status != 0 or len(refusals) < 2 or not moved or int(moved[1]) < 2000
+                    or "Completed the CoD2 Unbound installation." not in receipt):
+                raise ValueError("Setup did not complete after the directory lock was released")
+            print(f"PASS passing directory lock cleared after {moved[1]} ms, {len(refusals)} refusals", flush=True)
         assert_version(env, root, "HKCU", version)
+        if ARM_NOTICE in receipt:
+            raise ValueError("Setup showed the Arm warning on x64")
         if ARM_NOTICE not in (root / "README-server.txt").read_text(encoding="utf-8"):
             raise ValueError("The installed Windows README is missing the Arm notice")
         print("PASS x64 Setup omits the Arm page and the installed README includes the notice", flush=True)
