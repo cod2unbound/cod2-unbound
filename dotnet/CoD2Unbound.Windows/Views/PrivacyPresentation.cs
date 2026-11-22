@@ -129,6 +129,8 @@ internal static class PrivacyPresentation
         content.Children.Add(caption);
         var sample = MonoCaption(payload);
         sample.TextWrapping = TextWrapping.Wrap;
+        sample.LineHeight = 18;
+        sample.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
         sample.IsTextSelectionEnabled = true;
         AutomationProperties.SetName(sample, "The exact text of one event");
         content.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(12), Child = sample });
@@ -138,7 +140,7 @@ internal static class PrivacyPresentation
         {
             Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            MaxHeight = Math.Max(160, shell.DialogRoot.Size.Height - 170)
+            MaxHeight = Math.Max(160, shell.DialogRoot.Size.Height - 170), IsTabStop = true
         };
         AutomationProperties.SetName(scroller, "What is sent");
         var dialog = new ContentDialog
@@ -147,6 +149,11 @@ internal static class PrivacyPresentation
             Content = scroller, PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
         };
         AutomationProperties.SetName(dialog, "What is sent");
+        dialog.Opened += (_, _) =>
+        {
+            scroller.Focus(FocusState.Programmatic);
+            scroller.ChangeView(null, 0, null, disableAnimation: true);
+        };
         await dialog.ShowAsync();
     }
 
