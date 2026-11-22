@@ -70,6 +70,8 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $registry = @(Find-RetailPaths) | ConvertTo-Json
     $installed = $false
     $allInstalled = $false
+    $launcherHome = $null
+    $launcherBefore = $null
     try {
         if ($AllUsers) {
             Write-Host 'Approve the User Account Control prompt for this test and its uninstall. Keep the default install folder.'
@@ -77,7 +79,7 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
             if ($allExit -ne 0) { throw 'Setup for all users was cancelled, blocked or failed.' }
             $allInstalled = $true
             if ((Read-InstalledVersion 'HKLM' $allRoot) -ne $newVersion -or
-                @(Get-ChildItem -LiteralPath $commonStart -File -Filter '*.lnk').Count -ne 3) {
+                @(Get-ChildItem -LiteralPath $commonStart -File -Filter '*.lnk').Count -ne 2) {
                 throw 'The install for all users did not appear in Installed apps or Start as expected.'
             }
             Assert-InstalledFiles $allRoot (Join-Path $Kit 'portable')
@@ -122,19 +124,26 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
         $uninstallers = @(Get-ChildItem -LiteralPath $root -File -Filter 'unins*.exe')
         if ($uninstallers.Count -ne 1) { throw 'Expected one uninstaller after upgrade.' }
         Save-Signatures $uninstallers.FullName (Join-Path $Results 'installed-uninstaller-signature.json')
-        $repair = Get-Binary 'cod2x' -Server -Root $root
+        Save-Signatures @(
+            (Join-Path $root 'launcher\CoD2Unbound.Windows.exe')
+            (Join-Path $root 'payload.cat')
+        ) (Join-Path $Results 'installed-launcher-signatures.json')
+        $repair = Join-Path $root 'launcher\CoD2Unbound.Windows.pri'
+        $repairHash = (Get-FileHash -LiteralPath $repair).Hash
         Remove-Item -LiteralPath $repair
-        if ((Invoke-Setup $setup.FullName 'setup-repair' $quiet) -ne 0) { throw 'Repair failed.' }
+        if ((Invoke-Setup $setup.FullName 'setup-repair' $quiet) -ne 0 -or
+            (Get-FileHash -LiteralPath $repair).Hash -ne $repairHash) { throw 'Repair did not restore the launcher file.' }
         Assert-InstalledFiles $root (Join-Path $Kit 'portable')
 
         Write-Host 'The newer version is installed and Setup restored the removed test file.'
-        if (Confirm-Step 'Open both installed editions and load Toujane') {
-            $clientFailed = $false
-            foreach ($edition in 'original','cod2x') {
-                try { Invoke-ClientCheck $edition $GamePath -Label "installed-$edition" -BinaryRoot $root }
-                catch { $clientFailed = $true; Write-Warning $_.Exception.Message }
+        if (Confirm-Step 'Check the launcher from Start and save pictures') {
+            Invoke-Check 'Installed Start shortcut, first-run Setup and launcher pictures' {
+                Invoke-LauncherCheck $root $start $GamePath
             }
-            if ($clientFailed) { throw 'An installed edition did not close normally. See results.' }
+            $launcherHome = Join-Path $Private 'launcher\game'
+            $launcherBefore = (Get-TreeHashes $launcherHome) -join "`n"
+        } else {
+            'SKIPPED launcher' | Add-Content -LiteralPath $summary
         }
     } finally {
         $uninstallFailed = $false
@@ -161,6 +170,9 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
         $after = (Get-TreeHashes $profile) -join "`n"
         if ($before -ne $after -or $registry -ne (@(Find-RetailPaths) | ConvertTo-Json)) {
             throw 'A preservation file or retail InstallPath changed during the installer checks.'
+        }
+        if ($launcherHome -and $launcherBefore -ne ((Get-TreeHashes $launcherHome) -join "`n")) {
+            throw 'Uninstall changed the launcher test loadout or settings.'
         }
         'Uninstall kept the test settings, screenshot, demo and key, and the disc game location.' |
             Add-Content -LiteralPath (Join-Path $Results 'setup-summary.txt')

@@ -8,9 +8,11 @@ Windows PowerShell 5.1 ran the file and key checks, both loopback servers and th
 
 VM-only Setup builds passed current-user install, upgrade blocking, upgrade, repair and uninstall. Installed Original 1.3 switched graphics modes after returning to the menu. Run the kit's shipped Setup on the Windows 11 x64 laptop and record any security warning. The VM reported an untrusted root for the test signature.
 
+The installed launcher opened from Start, finished Setup and started both installed game programs. A Windows Firewall prompt covered the Original 1.3 window. CoD2x showed no game window in this VM, which has no baseboard information. The VM saved launcher pictures at 640 × 480. Use the laptop to check both game menus, the larger layout, Mica and the Windows appearance settings.
+
 ## Part A — The essential sitting
 
-Allow **45–60 minutes**, including **about 15–20 minutes** for the automatic file, key and server checks. This is an estimate for a laptop with the game already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
+Allow **45–60 minutes**, including **about 15–20 minutes** for automatic checks and **8–10 minutes** for the launcher. This assumes the game is already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
 
 The kit reads the installed game files and saves test settings and screenshots in a temporary folder under LocalAppData. CoD2x keeps this run apart from your saved Windows registry settings. The kit creates a temporary test key in **Credential Manager** and removes it and the temporary folder when it finishes. If you already have a key saved for **CoD2 Unbound**, the kit stops before replacing it. Use an account without a saved Unbound key in that case. The Setup check temporarily adds CoD2 Unbound to **Start** and **Installed apps** for your account, then removes it. If CoD2 Unbound is already installed, the Setup check stops before changing it. The dated results folder stays for you to review.
 
@@ -22,7 +24,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Run-All.ps1
 
 The programs have a test signature. If **Windows protected your PC** appears, select **More info**, check the file name, then select **Run anyway** if offered. Record a block such as **Smart App Control has blocked an app that may be unsafe** and leave Windows security settings as they are. [Microsoft SmartScreen guidance](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
 
-Allow about 20–25 minutes for the four portable runs and 10–15 minutes for Setup and packing. Mark each box when it passes. At a script prompt, press Enter to go ahead or type S if it offers a skip. For a failure or skip, write what happened beside the step.
+Allow about 10–15 minutes for the two portable runs and about 10 minutes for Setup and packing. Mark each box when it passes. At a script prompt, press Enter to go ahead or type S if it offers a skip. For a failure or skip, write what happened beside the step.
 
 1. [ ] **Start the checks.** Close CoD2 and Steam, disconnect Wi-Fi, Ethernet and VPN, run the command above and type `TEST`.\
    **Expect (automatic)** The kit confirms the copy is complete and records your Windows version, graphics card, driver and Windows signature results.
@@ -32,19 +34,15 @@ Allow about 20–25 minutes for the four portable runs and 10–15 minutes for S
    **Expect (automatic)** Both servers open Toujane, answer on this PC and close. Both saved matches play back as expected.
 4. [ ] **Original 1.3 · Direct3D 9.** Follow the play instructions below, including the quick controls and display check.\
    **Expect** You can play Toujane, take both pictures and return to PowerShell.
-5. [ ] **Original 1.3 · DirectX 7 mode.** Follow the same play instructions.\
+5. [ ] **CoD2x · Direct3D 9.** Follow the play instructions, including the quick controls and display check.\
    **Expect** You can play Toujane, take both pictures and return to PowerShell.
-6. [ ] **CoD2x · Direct3D 9.** Follow the play instructions, including the quick controls and display check.\
-   **Expect** You can play Toujane, take both pictures and return to PowerShell.
-7. [ ] **CoD2x · DirectX 7 mode.** Follow the same play instructions.\
-   **Expect** You can play Toujane, take both pictures and return to PowerShell.
-8. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only** and keep the default folder. Leave the test server open while the kit checks the blocked upgrade.\
+6. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only** and keep the default folder. Leave the test server open while the kit checks the blocked upgrade.\
    **Expect** Setup installs without asking for administrator approval. The first upgrade attempt leaves the running server alone. The kit then stops that server, upgrades Setup and restores the test file it removes.
-9. [ ] **Play the installed games.** Open Toujane in each installed edition. In one, use `/disconnect` to return to the menu, then enter `/set r_rendererPreference dx7` and `/vid_restart`. Open Toujane again and quit each game.\
-   **Expect** Both installed games find your game files, and the picture returns after changing graphics mode.
-10. [ ] **Uninstall.** Confirm the uninstall prompt, then look for CoD2 Unbound in **Start** and **Installed apps**.\
+7. [ ] **Check the launcher · 8–10 minutes.** Look for **CoD2 Unbound** in Start. At the launcher prompt, press Enter to open the shortcut's app with a test profile. Finish Setup with the game folder you used earlier and the sample key shown in PowerShell. Follow the prompts to picture Home at your usual resolution and at **1440 × 900** if Windows offers it. In **Settings → Personalization → Colors** switch between Light and Dark. Then try one **Settings → Accessibility → Contrast themes** theme. Look at the title bar, the Mica background and the stencil lettering on Home. Restore your usual Windows settings. Use the launcher's **Settings** to choose **Original 1.3** and **CoD2x** in turn. Use **Launch** on Home and quit each game at its menu.\
+   **Expect** Setup opens Home, both game menus open and PowerShell saves pictures to the results folder. Answer **Does anything look wrong or unlike Windows?** in one line.
+8. [ ] **Uninstall.** Confirm the uninstall prompt, then look for CoD2 Unbound in **Start** and **Installed apps**.\
     **Expect** Its entries are gone. The script confirms uninstall kept the test saves and key, then removes its temporary files and test key.
-11. [ ] **Pack the results.** Put your notes in the dated results folder. Review the logs and pictures, then run the packing command below and type `PACK`.\
+9. [ ] **Pack the results.** Put your notes in the dated results folder. Review the logs and pictures, then run the packing command below and type `PACK`.\
     **Expect** A `CoD2-Unbound-results-…zip` file appears next to the scripts. Bring back that ZIP.
 
 ### Play each portable edition
@@ -67,11 +65,13 @@ Each group can be done another day. Record the screen resolution and scaling, ke
 
 ### 1. More checks on this PC · 35–55 minutes
 
+- **DirectX 7 mode.** Open each edition in DirectX 7 mode from the game menu. Play Toujane and take both pictures using the Part A instructions. Check that the picture returns after switching from Direct3D 9 to DirectX 7 mode and back.
 - **Mouse.** Try Original 1.3 with both mouse options on the script menu and CoD2x with `m_rinput` set to 0, 1 and 2. Move between two marks 10 cm apart slowly and quickly. Try changes to Windows pointer speed and **Enhance pointer precision**. Original’s regular mouse should follow Windows settings, and the direct mouse modes should stay consistent. For CoD2x modes 1 and 2, note `m_rinput_hz` and `m_rinput_hz_max` while moving and again while stopped. Try menus in windowed and fullscreen play, reopen a menu to check pointer position, and try both side buttons and slow and fast wheel turns in both directions if your mouse has them. Note missed releases, extra scroll steps, jumps or drift.
 - **Keys and focus.** Try the console key, arrows, **Num Lock**, keypad Enter, left and right modifiers, Backspace held down, and typed and pasted chat. Check saved bindings with `/bindlist`. Switch away while holding a movement key and release it on the desktop. Try the Windows key and Alt+Enter with `developer` set to 0 and 1. Movement should stop when released and saved keys should work after you return.
 - **Display recovery.** Change anti-aliasing to an available value, switch between windowed and fullscreen play, Alt+Tab twice and minimise and restore. Use `/disconnect` to return to the menu before applying graphics changes or running `/vid_restart`. Switch graphics modes with `/set r_rendererPreference dx7` and `/vid_restart`, then reopen the map and repeat with `dx9`. **F10** saves an extra picture. Move the window and restart using the same game menu choice to check its restored position. Note `vid_xpos` and `vid_ypos`. Try resizing CoD2x and running in a window the size of the desktop. Watch for misplaced clicks, black screens and a jump on the first mouse movement after returning. For the Task Manager comparison, note CPU usage over ten seconds active and minimised with the same `r_swapInterval` in both games. Repeat with `com_maxfps 85` and `com_maxfps 125`, then restore both settings.
 - **Sound devices.** Listen to menu music, footsteps and gunfire from the front, side and rear, at two distances and in a room where sounds trail off. In Original, try `snd_khz 44` and `22`, and `snd_stereo 1` and `0` on separate starts. Switch between speakers and a headset if available, unplug the headset, then try starting with no playback device and reconnecting it before `/snd_restart`. Note whether sound returns, how long it takes and whether the game stays usable.
 - **Saved matches with four players.** Accept the script’s offer when you leave the game menu. Both servers should finish the saved movement, weapon and objective cases. This part takes about 10–20 minutes on its own.
+- **More launcher checks.** Try snapping the window, changing display scaling, and moving through Home and Settings with Tab and Narrator. Record what you saw.
 
 ### 2. A second PC on the same network · 15–25 minutes
 
@@ -105,10 +105,6 @@ Use your own Call of Duty 2 version 1.3 disc installation with its original prog
 - **Try other game locations.** Try Steam with CoD2 installed only in a second Steam library. On a lab PC without Steam, test the 32-bit and 64-bit disc install entries separately and together, then try with no valid game files. The 32-bit entry should win when both point to valid installs, and missing game files should get a clear message. Changing the lab entries needs an administrator. Game processes should open as an ordinary user.
 - **Try other Windows folders.** On a spare account with a protected disc install, put a distinctive test profile or loose configuration in its matching `VirtualStore` folder before running. On Toujane use /writeconfig kit-saves.cfg, F12, /record kit-saves and /stoprecord. Check the temporary folder shown in PowerShell before the kit closes. All three files should be there, and the old profile should stay hidden. Try a user folder with spaces and accented characters, game and test paths longer than 260 characters with spaces, accents and a `+`, with Windows’ usual long-path setting. Try OneDrive moving Documents and Desktop, or redirected LocalAppData if available. The game should use Windows’ LocalAppData location and leave the disc files, VirtualStore, Documents and Desktop as they were.
 - **Install for everyone.** Type `A` at the prompt only on a lab PC with administrator approval. **User Account Control** can ask **Do you want to allow this app from an unknown publisher to make changes to your device?** Approve for this Setup and its uninstall. Setup should use **Program Files**, add shared **Start** entries, and remove them when you confirm uninstall. Note the Windows Security, Defender and signing messages you see.
-
-### Launcher checks · when a launcher build is available
-
-The launcher checks are waiting for a separate build. Its checklist covers finding game files, handling saved keys and imported settings, opening and restarting the game, keyboard and Narrator navigation, links and opening saved files, and updating while a game or server is running.
 
 ## If something goes wrong
 

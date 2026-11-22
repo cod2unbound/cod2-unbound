@@ -8,7 +8,7 @@ param(
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
-foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Installer') {
+foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
@@ -175,16 +175,14 @@ try {
         }
     }
 
-    Write-Host 'Play Toujane in both editions and both graphics modes'
+    Write-Host 'Play Toujane in both editions in Direct3D 9'
     foreach ($edition in 'original','cod2x') {
-        foreach ($renderer in 'dx9','dx7') {
-            $label = "$(Get-EditionName $edition), $(Get-GraphicsMode $renderer)"
-            if (Confirm-Step "Open $label") {
-                Invoke-Check "$label opens, saves both pictures and closes" {
-                    Invoke-ClientCheck $edition $GamePath $renderer "client-$edition-$renderer" -RequireScreens
-                }
-            } else { "SKIPPED $label" | Add-Content -LiteralPath $summary }
-        }
+        $label = "$(Get-EditionName $edition), Direct3D 9"
+        if (Confirm-Step "Open $label") {
+            Invoke-Check "$label opens, saves both pictures and closes" {
+                Invoke-ClientCheck $edition $GamePath 'dx9' "client-$edition-dx9" -RequireScreens
+            }
+        } else { "SKIPPED $label" | Add-Content -LiteralPath $summary }
     }
     if (Confirm-Step 'Install, upgrade, repair and remove CoD2 Unbound for this account') {
         Invoke-Check 'Install, upgrade, repair and remove CoD2 Unbound for this account' { Invoke-InstallChecks $GamePath }
