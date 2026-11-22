@@ -659,13 +659,20 @@ public sealed partial class ConfigsPage
     {
         string map = entry.FavoriteMap is { Length: > 0 } favorite ? favorite : HostingCatalog.Maps[
             entry.Id.Aggregate(0, (seed, letter) => (seed * 31 + letter) & 0xffff) % HostingCatalog.Maps.Length];
-        var art = new Border { Style = StyleFor("MediaTile"), CornerRadius = corners, IsHitTestVisible = false };
+        var picture = new Image { Stretch = Stretch.UniformToFill };
+        // Size the art from the card. The bitmap must not set the hero's desired height.
+        var layer = new Canvas { Children = { picture } };
+        layer.SizeChanged += (_, args) =>
+        {
+            picture.Width = args.NewSize.Width;
+            picture.Height = args.NewSize.Height;
+        };
+        var art = new Border { Style = StyleFor("MediaTile"), CornerRadius = corners, IsHitTestVisible = false, Child = layer };
         AutomationProperties.SetAccessibilityView(art, AccessibilityView.Raw);
         art.Loaded += async (_, _) =>
         {
-            var image = await setupArt.GetAsync(map) ?? new SvgImageSource(new Uri(
+            picture.Source = await setupArt.GetAsync(map) ?? new SvgImageSource(new Uri(
                 $"ms-appx:///Assets/hero-{(art.ActualTheme == ElementTheme.Light ? "light" : "dark")}.svg"));
-            art.Background = new ImageBrush { ImageSource = image, Stretch = Stretch.UniformToFill };
         };
         return art;
     }
