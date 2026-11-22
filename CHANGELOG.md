@@ -6,6 +6,33 @@ was called CoD2 Silicon, and the entries from before then still use that name.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-22
+
+One question, asked once.
+
+### Added
+
+- **Usage data, only if you say yes.** The launcher asks once whether you want
+  to send usage data to CoD2 Unbound: as a step in setup, after the question
+  about crash reports, or in a sheet the first time 0.4.2 opens if you were
+  already set up. Neither answer is chosen for you, and nothing is sent unless
+  you press **Send Usage Data**. **See What's Sent…** lists what is recorded
+  and shows one example as it would leave your Mac. What is recorded is which
+  screens and features you use, with your Mac's model, versions and country.
+  Never your name, your CD key, server names and addresses, chat, what is in
+  your configs, file paths or anything you type. Settings › Privacy has the
+  switch, and **Reset Number** there starts a new install number; turning
+  usage data off forgets it.
+- **Order on Player Setups.** Featured First, Most Imported or Most Viewed.
+  The menu is not there yet: it appears once there are figures to order by.
+- Links of the form `cod2unbound://setup/…` open that setup's page in the
+  launcher.
+
+### Fixed
+
+- Sheets use the system's own sheet background, as Apple's apps do, and the
+  faint text on them is readable in Dark.
+
 ## [0.4.1] - 2026-11-21
 
 Fixes found by going over 0.4.0 after it shipped, on Metal and in the

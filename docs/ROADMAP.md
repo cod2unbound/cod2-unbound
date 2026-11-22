@@ -70,6 +70,10 @@ tested and what was not.
 from the launcher. The [0.4.1 verification](macos-port/release-0.4.1-verification.md)
 says what was tested for it.
 
+0.4.2 added usage data that is sent only if the player says yes, and an order
+by use on Player Setups for when there are figures to order by. The [0.4.2 verification](macos-port/release-0.4.2-verification.md)
+says what was tested for it.
+
 ## 0.3.7 — One look across the launcher (released 0.3.7)
 
 - **Every screen follows one set of design rules**: the same titles, labels,
