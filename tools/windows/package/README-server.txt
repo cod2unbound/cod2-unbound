@@ -1,6 +1,8 @@
 CoD2 Unbound dedicated server for Windows 11 x64
 ================================================
 
+On Arm PCs: CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC.
+
 1. Verify the downloaded ZIP, then extract it to a folder you manage. Keep the
    extracted binaries separate from your licensed Call of Duty 2 installation
    and from your writable server files.

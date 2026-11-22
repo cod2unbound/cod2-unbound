@@ -27,8 +27,8 @@ UsePreviousAppDir=no
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 SetupArchitecture=x64
-ArchitecturesAllowed=x64os
-ArchitecturesInstallIn64BitMode=x64os
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.22000
 OutputDir={#Artifacts}
 OutputBaseFilename=CoD2-Unbound-{#ReleaseVersion}-windows-x64-setup
@@ -102,6 +102,30 @@ Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string
 #endif
 
 [Code]
+const
+  ArmEmulationNotice = 'CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows'' x64 emulation and may not work as well as on an x64 PC.';
+
+var
+  ArmNotice: TOutputMsgWizardPage;
+
+procedure InitializeWizard;
+begin
+  if IsArm64 then begin
+    Log(ArmEmulationNotice);
+    if not WizardSilent then
+      ArmNotice := CreateOutputMsgPage(wpWelcome, 'Windows on Arm',
+        'CoD2 Unbound runs through x64 emulation on this PC.',
+        ArmEmulationNotice);
+  end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if ArmNotice = nil then Exit;
+  if CurPageID = ArmNotice.ID then
+    WizardForm.NextButton.Caption := '&Continue';
+end;
+
 function CreateFileW(FileName: String; Access, ShareMode: DWORD; Security: NativeUInt;
   Creation, Flags: DWORD; Template: NativeUInt): NativeInt;
   external 'CreateFileW@kernel32.dll stdcall';

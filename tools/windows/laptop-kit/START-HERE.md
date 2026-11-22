@@ -6,7 +6,7 @@ This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays v
 
 Windows PowerShell 5.1 ran the file and key checks, both loopback servers and the saved matches on a Windows 11 ARM64 VM with x64 emulation and a 640 × 480 software display. The saved matches passed for both editions, including the four-player checks in Part B. Original 1.3 loaded Toujane and saved pictures in both graphics modes. CoD2x stopped before opening a game window because the VM supplied no baseboard information. The laptop still needs both CoD2x runs and the checks for display changes, mouse, keyboard and sound.
 
-VM-only Setup builds passed current-user install, upgrade blocking, upgrade, repair and uninstall. Installed Original 1.3 switched graphics modes after returning to the menu. Run the kit's shipped Setup on the Windows 11 x64 laptop and record any security warning. The VM reported an untrusted root for the test signature.
+Run the kit's Setup on the Windows 11 x64 laptop and record any security warning. On Arm PCs, Setup shows a Windows on Arm page before installation. CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC. The VM reported an untrusted root for the test signature.
 
 The installed launcher opened from Start, finished Setup and started both installed game programs. A Windows Firewall prompt covered the Original 1.3 window. CoD2x showed no game window in this VM, which has no baseboard information. The VM saved launcher pictures at 640 × 480. Use the laptop to check both game menus, the larger layout, Mica and the Windows appearance settings.
 

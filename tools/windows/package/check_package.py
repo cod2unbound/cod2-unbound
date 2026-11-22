@@ -25,6 +25,8 @@ UNINSTALL = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is
 USER_CLASSES = r"HKCU\Software\Classes"
 RETAIL = r"HKLM\Software\Activision\Call of Duty 2"
 SILENT = ("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART")
+ARM_NOTICE = ("CoD2 Unbound has not been tested on Arm PCs. It runs here through "
+              "Windows' x64 emulation and may not work as well as on an x64 PC.")
 
 
 def wine(env, *args, check=True):
@@ -121,6 +123,8 @@ def install(env, installer, log, *args):
     print(f"{installer.name} with {' '.join(args) or 'default scope'} exited {result.returncode}",
           flush=True)
     result.check_returncode()
+    if ARM_NOTICE in log.read_text(encoding="utf-8-sig"):
+        raise ValueError("Setup showed the Arm warning on x64")
 
 
 def assert_version(env, root, scope, version):
@@ -199,6 +203,9 @@ def verify_installer(artifacts, work, previous, run):
              "/f", "/reg:64")
         install(env, setup, run / "upgrade.log", "/CURRENTUSER", "/TASKS=links")
         assert_version(env, root, "HKCU", version)
+        if ARM_NOTICE not in (root / "README-server.txt").read_text(encoding="utf-8"):
+            raise ValueError("The installed Windows README is missing the Arm notice")
+        print("PASS x64 Setup omits the Arm page and the installed README includes the notice", flush=True)
         if len(list(root.glob("unins*.exe"))) != 1:
             raise ValueError("Upgrade did not reuse the single installed uninstaller")
         uninstaller = next(root.glob("unins*.exe"))
