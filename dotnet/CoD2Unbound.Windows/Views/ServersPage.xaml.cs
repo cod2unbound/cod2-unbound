@@ -463,7 +463,7 @@ public sealed partial class ServersPage : Page
         var decision = requestedEdition is { } requested
             ? new ServerAdmissionResult(ServerAdmissionAction.Launch, requested,
                 session.HasClient(requested) ? null : $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(requested)}.")
-            : await model.CheckAsync(address);
+            : await model.CheckAsync(address, refreshCached: source == UsageJoin.TypedAddress);
         if (decision.Problem is { } problem)
         {
             RefreshStatus.Text = problem;
