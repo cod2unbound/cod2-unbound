@@ -19,6 +19,7 @@ function Save-LauncherPicture($Process, [string]$Evidence, [string]$Name) {
 function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePath) {
     Assert-Offline
     Add-Type -AssemblyName System.Windows.Forms,System.Drawing
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     if (-not ('KitLauncherPicture' -as [type])) {
         Add-Type -ReferencedAssemblies System.Drawing,System.Windows.Forms -TypeDefinition @'
 using System;
@@ -113,6 +114,14 @@ public static class KitLauncherPicture
             throw 'The launcher did not finish Setup with the selected game folder.'
         }
         Save-LauncherPicture $process $entry.Evidence '02-home-native'
+        [void](Read-Host 'Double-click Sample config.cfg in the kit folder. If asked, choose Open with CoD2 Unbound. Leave Review import open and press Enter here')
+        $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+        $review = New-Object Windows.Automation.PropertyCondition ([Windows.Automation.AutomationElement]::NameProperty), 'Review import'
+        if (-not $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $review)) {
+            throw 'The sample config did not open Review import in the launcher window already running.'
+        }
+        Save-LauncherPicture $process $entry.Evidence '02b-sample-config'
+        [void](Read-Host 'Cancel the import review in the launcher and press Enter here')
         if (Confirm-Step 'If 1440 x 900 is offered, select it in Windows Display settings, then come back here') {
             Save-LauncherPicture $process $entry.Evidence '03-home-1440x900'
         } else {
