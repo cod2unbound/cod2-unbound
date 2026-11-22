@@ -6,6 +6,7 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.Storage.Pickers;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -640,16 +641,48 @@ public sealed partial class ConfigsPage : Page
     {
         var input = new TextBox { Header = "Paste config text", AcceptsReturn = true, Width = 360, Height = 180, TextWrapping = TextWrapping.Wrap };
         var dialog = Dialog("Add a config", input, "Review");
+        dialog.SecondaryButtonText = "Open file…";
         dialog.IsPrimaryButtonEnabled = false;
         input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(input.Text);
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-            return;
-        var catalog = new ConfigImportCatalogAdapter(model.Catalog);
-        var bundle = await new ConfigImportLoader(catalog).LoadAsync(
-            new ConfigImportInput.Paste([.. ConfigDocument.Encode(input.Text.ReplaceLineEndings("\n"))]), model.Dialect);
-        await ReviewAsync(new ConfigImportSession(bundle, model.Dialect, catalog, "Imported config",
-            ConfigImportPlatform.Windows, ConfigImportPlatform.Windows), "Imported config", newOnly: false);
+        var choice = await dialog.ShowAsync();
+        if (choice == ContentDialogResult.Secondary)
+        {
+            var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Open a config file" };
+            picker.FileTypeFilter.Add(".cfg");
+            if (await picker.PickSingleFileAsync() is { } file)
+                await ReviewFileAsync(file.Path);
+        }
+        else if (choice == ContentDialogResult.Primary)
+        {
+            await ReviewInputAsync(new ConfigImportInput.Paste([.. ConfigDocument.Encode(input.Text.ReplaceLineEndings("\n"))]),
+                "Imported config");
+        }
     });
+
+    internal Task ReviewFileAsync(string path)
+    {
+        if (!Path.GetExtension(path).Equals(".cfg", StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Choose a .cfg config file.");
+        return ReviewInputAsync(new ConfigImportInput.File(new Uri(path)), Path.GetFileNameWithoutExtension(path));
+    }
+
+    private async Task ReviewInputAsync(ConfigImportInput input, string name)
+    {
+        var catalog = new ConfigImportCatalogAdapter(model.Catalog);
+        var bundle = await new ConfigImportLoader(catalog, new WindowsConfigImportFiles()).LoadAsync(input, model.Dialect);
+        var review = new ConfigImportSession(bundle, model.Dialect, catalog, name, ConfigImportPlatform.Windows, ConfigImportPlatform.Windows);
+        if (input is ConfigImportInput.File && !review.Rows.Any(row => IsConfigCommand(row.Candidate.Command, catalog)))
+            throw new IOException("This file contains no Call of Duty 2 config commands.");
+        await ReviewAsync(review, name, newOnly: false);
+    }
+
+    private bool IsConfigCommand(ConfigCommand command, IConfigImportCatalog catalog) =>
+        command.Kind switch
+        {
+            ConfigCommandKind.Empty or ConfigCommandKind.Comment => false,
+            ConfigCommandKind.Unknown => catalog.Command(command.Tokens[0].Text, model.Dialect) is not null,
+            _ => true
+        };
 
     private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly)
     {
@@ -741,6 +774,10 @@ public sealed partial class ConfigsPage : Page
         string title = credential ? "Password or key" : spec?.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase) == true
             ? "Game timing setting" : spec?.Title ?? (row.Group == "Settings" ? "Config setting" :
                 row.Group == "Bindings" ? "Key binding" : RiskSummary(candidate.Reasons.FirstOrDefault(), candidate.Reasons.IsEmpty));
+        if (!credential && spec is null && candidate.Classification == ConfigImportClassification.Blocked &&
+            candidate.Command.Tokens.Length > 0 && candidate.Command.Tokens[0].Text is { Length: > 0 and <= 32 } command &&
+            command.All(character => char.IsAsciiLetterOrDigit(character) || character == '_'))
+            title = command;
         string status = candidate.Classification switch
         {
             ConfigImportClassification.NeedsOk => "Needs your OK",
@@ -779,7 +816,7 @@ public sealed partial class ConfigsPage : Page
 
     private ContentDialog Dialog(string title, object content, string primary) => new()
     {
-        XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content, PrimaryButtonText = primary, CloseButtonText = "Cancel",
+        XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content, PrimaryButtonText = primary, CloseButtonText = "Cancel",
         DefaultButton = ContentDialogButton.Primary, HighContrastAdjustment = ElementHighContrastAdjustment.None
     };
 

@@ -76,6 +76,7 @@ public sealed partial class MainWindow : Window
             await session.InitializeAsync();
             ApplyAppearance(session.Settings.Working.Appearance);
             await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
+            initialized = true;
             gameWatcher.Start();
         });
     }
@@ -114,6 +115,7 @@ public sealed partial class MainWindow : Window
 
     internal bool IsHighContrast => windowTheme.HighContrast;
     internal ElementTheme DialogTheme => Root.RequestedTheme;
+    internal XamlRoot DialogRoot => Root.XamlRoot;
 
     private void UpdateCaptionColors()
     {
@@ -219,7 +221,8 @@ public sealed partial class MainWindow : Window
             configs.OpenCheckup();
     });
 
-    internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null)
+    internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null,
+        bool refreshServers = true)
     {
         Nav.IsPaneVisible = JumpButton.IsEnabled = session.SetupComplete;
         if (Nav.IsPaneVisible)
@@ -245,7 +248,7 @@ public sealed partial class MainWindow : Window
         {
             Nav.SelectedItem = ServersItem;
             var page = new ServersPage(this, session, scope, address);
-            if (session.Settings.Working.RefreshServersOnOpen)
+            if (refreshServers && session.Settings.Working.RefreshServersOnOpen)
                 page.Loaded += OnServersLoaded;
             ContentFrame.Content = page;
         }
@@ -412,7 +415,11 @@ public sealed partial class MainWindow : Window
         if (clearProblem)
             Problem.IsOpen = false;
         try { await ShowProblemAsync(action); }
-        finally { busy = false; }
+        finally
+        {
+            busy = false;
+            ScheduleActivation();
+        }
     }
 
     internal async Task ShowProblemAsync(Func<Task> action)

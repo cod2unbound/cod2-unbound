@@ -4,13 +4,19 @@ namespace CoD2Unbound.Windows;
 
 public partial class App : Application
 {
-    private Window? window;
+    private readonly Action<MainWindow> windowCreated;
+    private MainWindow? window;
 
-    public App() => InitializeComponent();
+    internal App(Action<MainWindow> windowCreated)
+    {
+        this.windowCreated = windowCreated;
+        InitializeComponent();
+    }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window = new MainWindow();
+        windowCreated(window);
         window.Activate();
     }
 }

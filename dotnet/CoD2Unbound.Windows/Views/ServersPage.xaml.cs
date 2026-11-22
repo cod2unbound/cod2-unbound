@@ -394,19 +394,23 @@ public sealed partial class ServersPage : Page
 
     private async void OnConnect(object sender, RoutedEventArgs args) => await ConnectAsync();
 
-    private Task ConnectAsync(string? address = null) => shell.RunAsync(async () =>
+    private Task ConnectAsync(string? address = null) => shell.RunAsync(() => ShowConnectAsync(address));
+
+    internal Task ConnectLinkAsync(ServerLink link) => ShowConnectAsync(link.Target.Address, link);
+
+    private async Task ShowConnectAsync(string? address, ServerLink? link = null)
     {
         if (dialogOpen)
             return;
         dialogOpen = true;
         try
         {
-            var dialog = new ConnectDialog(address) { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme };
+            var dialog = new ConnectDialog(address, link) { XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Target is { } target)
-                await JoinAsync(target);
+                await JoinAsync(target, link?.Edition);
         }
         finally { dialogOpen = false; }
-    });
+    }
 
     private async void OnJoin(object sender, RoutedEventArgs args)
     {
@@ -418,14 +422,17 @@ public sealed partial class ServersPage : Page
             await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null)));
     }
 
-    private async Task JoinAsync(ServerAddress address)
+    private async Task JoinAsync(ServerAddress address, GameEdition? requestedEdition = null)
     {
         if (model.GameRunning)
         {
             RefreshStatus.Text = "Call of Duty 2 is already running.";
             return;
         }
-        var decision = await model.CheckAsync(address);
+        var decision = requestedEdition is { } requested
+            ? new ServerAdmissionResult(ServerAdmissionAction.Launch, requested,
+                session.HasClient(requested) ? null : $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(requested)}.")
+            : await model.CheckAsync(address);
         if (decision.Problem is { } problem)
         {
             RefreshStatus.Text = problem;
@@ -433,7 +440,7 @@ public sealed partial class ServersPage : Page
         }
         if (decision.Action == ServerAdmissionAction.ConfirmVersion)
         {
-            string version = decision.Edition == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3";
+            string version = ConnectDialog.EditionName(decision.Edition);
             var switchEdition = new ContentDialog
             {
                 XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Switch game version?", Content = $"This server runs {version}.",

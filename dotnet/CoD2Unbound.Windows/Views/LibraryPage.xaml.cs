@@ -166,12 +166,48 @@ public sealed partial class LibraryPage : Page
             return;
         }
 
+        await PlayDemoAsync(path, confirm: false);
+    }
+
+    internal Task OfferDemoAsync(string path)
+    {
+        Sections.SelectedItem = Sections.Items[1];
+        return PlayDemoAsync(path, confirm: true);
+    }
+
+    private async Task PlayDemoAsync(string path, bool confirm)
+    {
         if (session.ClientIsRunning)
             throw new IOException("Close the game before playing a demo.");
-        string name = Path.GetFileNameWithoutExtension(path);
-        if (!MediaName.Playable(name))
-            name = await library.PrepareDemoAsync(new Uri(path), row.File.Name);
-        GameStartState result = await session.LaunchAsync(demo: name);
+        string fileName = Path.GetFileName(path);
+        if (!MediaLibrary.Accepts(fileName, MediaKind.Demo))
+            throw new IOException("Choose a .dm_1 demo recording.");
+        string folder = Path.GetDirectoryName(path)!;
+        using var parent = new WindowsFiles.DirectoryHandles(folder);
+        // Keep the reviewed file stable until it has been staged for the engine.
+        using var source = WindowsFiles.Open(folder, fileName, FileShare.Read);
+        if (await Task.Run(() => DemoRecording.ReadEdition(source)) is not { } edition)
+            throw new IOException("This file isn’t a complete Original 1.3 or CoD2x demo.");
+        if (!session.HasClient(edition))
+            throw new IOException($"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(edition)}.");
+
+        if (confirm)
+        {
+            var details = Body($"{fileName}\n{ConnectDialog.EditionName(edition)}");
+            details.TextWrapping = TextWrapping.Wrap;
+            var dialog = new ContentDialog
+            {
+                XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Play this demo?", Content = details,
+                PrimaryButtonText = "Play demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                return;
+        }
+
+        string name = Path.GetFileNameWithoutExtension(fileName);
+        if (confirm || !MediaName.Playable(name))
+            name = await library.PrepareDemoAsync(new Uri(path), fileName);
+        GameStartState result = await session.LaunchAsync(edition: edition, demo: name);
         if (result != GameStartState.Started)
             throw new IOException(result is GameStartState.NeedsSetup or GameStartState.MissingData
                 ? "Set up your game files to play demos." : "Close the game before playing a demo.");

@@ -20,11 +20,11 @@ internal sealed class WindowsFiles : IGameFiles
         }
     }
 
-    internal static FileStream Open(string root, string relative)
+    internal static FileStream Open(string root, string relative, FileShare share = FileShare.ReadWrite | FileShare.Delete)
     {
         string path = Under(root, relative);
         using var parent = new DirectoryHandles(Path.GetDirectoryName(path)!);
-        var handle = OpenHandle(path, directory: false);
+        var handle = OpenHandle(path, directory: false, share);
         try
         {
             return new FileStream(handle, FileAccess.Read);
@@ -109,7 +109,7 @@ internal sealed class WindowsFiles : IGameFiles
         }
     }
 
-    private static SafeFileHandle OpenHandle(string path, bool directory)
+    private static SafeFileHandle OpenHandle(string path, bool directory, FileShare share = FileShare.ReadWrite | FileShare.Delete)
     {
         const uint genericRead = 0x80000000;
         const uint readAttributes = 0x80;
@@ -119,7 +119,7 @@ internal sealed class WindowsFiles : IGameFiles
         const int fileAttributeTagInfo = 9;
 
         var file = CreateFile(@"\\?\" + path, directory ? readAttributes : genericRead,
-            directory ? FileShare.ReadWrite : FileShare.ReadWrite | FileShare.Delete,
+            directory ? FileShare.ReadWrite : share,
             0, openExisting, openReparsePoint | backupSemantics, 0);
         try
         {
