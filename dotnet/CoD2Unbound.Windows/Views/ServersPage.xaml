@@ -68,7 +68,7 @@
                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
                 </AutoSuggestBox.QueryIcon>
                 <AutoSuggestBox.TextBoxStyle>
-                    <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                    <Style TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
                         <Setter Property="MaxLength" Value="256" />
                     </Style>
                 </AutoSuggestBox.TextBoxStyle>

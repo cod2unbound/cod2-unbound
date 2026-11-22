@@ -201,9 +201,14 @@ public sealed partial class ServersPage : Page
     {
         foreach (var button in new[] { SortName, SortPlayers, SortPing })
         {
-            string label = (string)button.Tag;
-            bool active = label == model.Sort.ToString();
-            button.Content = active ? IconLabel(model.Ascending ? "ChevronUp" : "ChevronDown", label, 12) : label;
+            string sort = (string)button.Tag;
+            string label = sort == nameof(ServerSort.Name) ? "Server" : sort;
+            bool active = sort == model.Sort.ToString();
+            button.Content = !active ? label : new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Spacing = 4,
+                Children = { new TextBlock { Text = label }, Fluent(model.Ascending ? "ChevronUp" : "ChevronDown", 12) }
+            };
             AutomationProperties.SetName(button, active ? $"{label}, sorted {(model.Ascending ? "ascending" : "descending")}" : $"Sort by {label}");
         }
     }
