@@ -276,6 +276,7 @@ public sealed partial class SettingsPage : Page
             ("Game servers", "Those in the list when it refreshes, and the one you join. CoD2x servers also get a hash of CoD2x’s ID for this PC."),
             ("The CoD2x project", "With CoD2x, its update check each time the game’s menu opens: your CoD2x version, a hash of your CD key, CoD2x’s IDs for this PC and a short description of it. Mod files a server needs come from its site."),
             ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Nothing about you."),
+            ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you."),
             ("The certificate’s issuer", "When an update’s signature is verified, Windows asks whether it is still valid. Nothing about you."),
             ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers. A CoD2x server asks the CoD2x project about new versions.")
         })
@@ -353,13 +354,13 @@ public sealed partial class SettingsPage : Page
         {
             title = $"CoD2 Unbound {version} wasn’t installed";
             message = $"This update didn’t pass CoD2 Unbound’s safety checks, so nothing was installed. You can get {version} from the website.";
-            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+            AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.ProtectedLocation)
         {
             message = $"This copy can’t update itself, because Windows protects the folder it’s installed in. Download {version} from the website and run it.";
             AddWhatsNew(version);
-            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+            AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.SetupFailed)
         {
@@ -367,7 +368,7 @@ public sealed partial class SettingsPage : Page
             message = session.InstallNeedsRepair ? "Run Setup again to repair CoD2 Unbound." :
                 $"{current} is still installed and works.";
             AddAction("Try again");
-            AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+            AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.Interrupted)
         {
@@ -380,7 +381,7 @@ public sealed partial class SettingsPage : Page
             message = state.Message ?? "The update could not be completed.";
             AddAction("Try again", install: state.Offer is not null);
             if (state.Offer is not null)
-                AddLink("Open download page", WindowsReleaseAssets.ReleasesPage);
+                AddDownloadPage();
         }
         else
         {
@@ -462,7 +463,9 @@ public sealed partial class SettingsPage : Page
         }
 
         void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
-        void AddWhatsNew(string release) => AddLink("What’s new", WindowsReleaseAssets.NotesPage(release));
+        void AddDownloadPage() => AddLink("Open download page", state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage);
+        void AddWhatsNew(string release) => AddLink("What’s new",
+            (state.Offer is null ? null : state.ReleaseUrl) ?? WindowsReleaseAssets.NotesPage(release));
     }
 
     private static string? LastChecked(DateTimeOffset? time)
