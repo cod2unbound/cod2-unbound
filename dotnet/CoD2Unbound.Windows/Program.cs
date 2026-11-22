@@ -12,6 +12,10 @@ internal static class Program
     [STAThread]
     private static int Main()
     {
+        StartupTrace.Mark("managed entry");
+        if (Platform.WindowsInstallRecovery.RedirectInterruptedStart())
+            return 0;
+
         WinRT.ComWrappersSupport.InitializeComWrappers();
         var current = AppInstance.GetCurrent();
         var initial = current.GetActivatedEventArgs();
@@ -26,8 +30,10 @@ internal static class Program
             if (!owner.IsCurrent)
                 return Redirect(owner, initial);
 
+            StartupTrace.Mark("AppLifecycle registration");
             Application.Start(initialization =>
             {
+                StartupTrace.Mark("Application.Start callback");
                 var dispatcher = DispatcherQueue.GetForCurrentThread();
                 SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(dispatcher));
                 _ = new App(window =>

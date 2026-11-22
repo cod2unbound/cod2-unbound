@@ -108,8 +108,10 @@ const
 var
   ArmNotice: TOutputMsgWizardPage;
 #ifdef HasLauncher
-  UpdateBackup: String;
+  TransactionRoot: String;
+  TransactionLock: NativeInt;
   UpdateCommitted: Boolean;
+  LauncherHandoff: Boolean;
 #endif
 
 procedure InitializeWizard;
@@ -139,6 +141,24 @@ function CloseHandle(Handle: NativeInt): Boolean;
 
 function GetFileAttributesW(FileName: String): DWORD;
   external 'GetFileAttributesW@kernel32.dll stdcall';
+
+function MoveFileExW(ExistingFile, NewFile: String; Flags: DWORD): Boolean;
+  external 'MoveFileExW@kernel32.dll stdcall';
+
+function CreateMutexW(Attributes: NativeUInt; InitialOwner: Boolean; Name: String): NativeInt;
+  external 'CreateMutexW@kernel32.dll stdcall';
+
+function WaitForSingleObject(Handle: NativeInt; Milliseconds: DWORD): DWORD;
+  external 'WaitForSingleObject@kernel32.dll stdcall';
+
+function ReleaseMutex(Handle: NativeInt): Boolean;
+  external 'ReleaseMutex@kernel32.dll stdcall';
+
+function OpenProcess(Access: DWORD; InheritHandle: Boolean; ProcessId: DWORD): NativeInt;
+  external 'OpenProcess@kernel32.dll stdcall';
+
+function GetProcessTimes(Handle: NativeInt; var Created, Exited, Kernel, User: Int64): Boolean;
+  external 'GetProcessTimes@kernel32.dll stdcall';
 
 function IsReparsePoint(const Path: String): Boolean;
 var
@@ -177,6 +197,31 @@ begin
   Result := (not IsAdminInstallMode) and (ExpandConstant('{param:UNBOUNDUPDATE|0}') = '1');
 end;
 
+function WaitForLauncher(): Boolean;
+var
+  Handle: NativeInt;
+  ProcessId: Integer;
+  Expected, Created, Exited, Kernel, User: Int64;
+begin
+  Result := True;
+  ProcessId := StrToIntDef(ExpandConstant('{param:UNBOUNDLAUNCHERPID|0}'), 0);
+  Expected := StrToInt64Def(ExpandConstant('{param:UNBOUNDLAUNCHERSTART|0}'), 0);
+  if (ProcessId <= 0) or (Expected <= 0) then Exit;
+  Handle := OpenProcess($101000, False, ProcessId);
+  if Handle = 0 then Exit;
+  try
+    if GetProcessTimes(Handle, Created, Exited, Kernel, User) and (Created = Expected) then
+      Result := WaitForSingleObject(Handle, 45000) = 0;
+  finally
+    CloseHandle(Handle);
+  end;
+end;
+
+function MoveInstall(const Source, Target: String): Boolean;
+begin
+  Result := MoveFileExW(Source, Target, 8);
+end;
+
 function CopyInstall(const Source, Target: String): Boolean;
 var
   Entry: TFindRec;
@@ -202,23 +247,76 @@ begin
   end;
 end;
 
+function AcquireTransaction(): Boolean;
+var
+  Wait: DWORD;
+begin
+  Result := TransactionLock <> 0;
+  if Result then Exit;
+  TransactionLock := CreateMutexW(0, False, 'Local\CoD2Unbound.InstallTransaction');
+  if TransactionLock = 0 then Exit;
+  Wait := WaitForSingleObject(TransactionLock, 0);
+  Result := (Wait = 0) or (Wait = $80);
+  if not Result then begin
+    CloseHandle(TransactionLock);
+    TransactionLock := 0;
+  end;
+end;
+
+function RestorePrevious(const Root: String; var Restored: Boolean): Boolean;
+var
+  Backup, Incomplete: String;
+  Version: AnsiString;
+begin
+  Backup := Root + '.previous-install';
+  Incomplete := Root + '.incomplete-install';
+  Restored := DirExists(Backup) or DirExists(Incomplete);
+  Result := not IsReparsePoint(Backup) and not IsReparsePoint(Incomplete);
+  if not Result then Exit;
+  if DirExists(Backup) then begin
+    if DirExists(Root) then begin
+      Result := not DirExists(Incomplete) and MoveInstall(Root, Incomplete);
+      if not Result then Exit;
+    end;
+    Result := MoveInstall(Backup, Root);
+    if not Result then Exit;
+  end;
+  if Restored then begin
+    Result := DirExists(Root);
+    if not Result then Exit;
+    if LoadStringFromFile(Root + '\RELEASE_VERSION', Version) then
+      RegWriteStringValue(HKCU64, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1',
+        'DisplayVersion', Trim(Version));
+    Log('Restored the previous installation after the update stopped.');
+    if DirExists(Incomplete) and not DelTree(Incomplete, True, True, True) then
+      Log('Could not remove the incomplete installation; the previous installation was restored.');
+  end;
+end;
+
 procedure DeinitializeSetup;
 var
-  Root, Failed: String;
+  Root: String;
+  CanReopen, Restored: Boolean;
+  ResultCode: Integer;
 begin
-  if UpdateCommitted or (UpdateBackup = '') then Exit;
-  Root := ExpandConstant('{app}');
-  Failed := ExpandConstant('{src}\failed-install');
-  if (not DirExists(Root)) or RenameFile(Root, Failed) then begin
-    if RenameFile(UpdateBackup, Root) then
-      Log('Restored the previous installation after the update stopped.')
-    else begin
-      Log('Could not restore the previous installation from ' + UpdateBackup);
-      if not RenameFile(Failed, Root) then
-        Log('Could not put the installation folder back.');
-    end;
-  end else
-    Log('Could not move the incomplete installation. Previous files are at ' + UpdateBackup);
+  Root := TransactionRoot;
+  CanReopen := True;
+  if (Root <> '') and not UpdateCommitted and not RestorePrevious(Root, Restored) then begin
+    CanReopen := False;
+    Log('Could not restore the previous installation. Run Setup again after closing CoD2 Unbound.');
+    SuppressibleMsgBox('CoD2 Unbound needs repair. Close the game and run Setup again.', mbError, MB_OK, IDOK);
+  end;
+  if TransactionLock <> 0 then begin
+    ReleaseMutex(TransactionLock);
+    CloseHandle(TransactionLock);
+    TransactionLock := 0;
+  end;
+  if LauncherHandoff and CanReopen and WaitForLauncher() then begin
+    Root := ExpandConstant('{#InstallDir}');
+    if FileExists(Root + '\launcher\{#Launcher}') and
+      not Exec(Root + '\launcher\{#Launcher}', '', Root, SW_SHOWNORMAL, ewNoWait, ResultCode) then
+      Log('Could not reopen CoD2 Unbound after Setup.');
+  end;
 end;
 #endif
 
@@ -226,43 +324,59 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Root: String;
 #ifdef HasLauncher
-  Attempt: Integer;
-  Backup, Scratch: String;
+  Backup, Completed: String;
+  Restored: Boolean;
 #endif
 begin
   Root := ExpandConstant('{app}');
   Result := '';
   if (CompareText(RemoveBackslashUnlessRoot(Root), ExpandConstant('{#InstallDir}')) <> 0) or
-    IsReparsePoint(Root) or IsReparsePoint(Root + '\original') or
-    IsReparsePoint(Root + '\cod2x') or IsReparsePoint(Root + '\licenses') or
-    IsReparsePoint(Root + '\launcher') then
-    Result := 'Install CoD2 Unbound in its standard Programs folder.'
-  else begin
-#ifdef HasLauncher
-    if IsLauncherUpdate() then
-      for Attempt := 1 to 40 do begin
-        if not Busy(Root + '\launcher\{#Launcher}') then Break;
-        Sleep(200);
-      end;
-#endif
-    if InstalledFilesBusy(Root) then
-      Result := 'Close CoD2 Unbound, the game and any hosted servers, then run Setup again.'
-#ifdef HasLauncher
-    else if IsLauncherUpdate() and (UpdateBackup = '') then begin
-      Backup := ExpandConstant('{src}\previous-install');
-      Scratch := ExpandConstant('{src}\preparing-install');
-      if (not FileExists(Root + '\launcher\{#Launcher}')) or
-        (CompareText(ExtractFileDrive(Root), ExtractFileDrive(Backup)) <> 0) or
-        (CompareText(Copy(Backup, 1, Length(Root) + 1), AddBackslash(Root)) = 0) or
-        DirExists(Backup) or DirExists(Scratch) or (not CopyInstall(Root, Scratch)) or
-        (not RenameFile(Scratch, Backup)) then
-        Result := 'Setup could not save the previous installation.'
-      else
-        UpdateBackup := Backup;
-    end
-#endif
-    ;
+    IsReparsePoint(ExtractFileDir(Root)) or IsReparsePoint(Root) or
+    IsReparsePoint(Root + '\original') or IsReparsePoint(Root + '\cod2x') or
+    IsReparsePoint(Root + '\licenses') or IsReparsePoint(Root + '\launcher') then begin
+    Result := 'Install CoD2 Unbound in its standard Programs folder.';
+    Exit;
   end;
+#ifdef HasLauncher
+  LauncherHandoff := IsLauncherUpdate() and (ExpandConstant('{param:UNBOUNDLAUNCHERPID|0}') <> '0');
+  if LauncherHandoff and not WaitForLauncher() then begin
+    LauncherHandoff := False;
+    Result := 'Close CoD2 Unbound and run Setup again.';
+    Exit;
+  end;
+#endif
+  if InstalledFilesBusy(Root) then begin
+    Result := 'Close CoD2 Unbound, the game and any hosted servers, then run Setup again.';
+    Exit;
+  end;
+#ifdef HasLauncher
+  if IsAdminInstallMode then Exit;
+  if not AcquireTransaction() then begin
+    Result := 'Wait for CoD2 Unbound to finish repairing the installation, then run Setup again.';
+    Exit;
+  end;
+  if not RestorePrevious(Root, Restored) then begin
+    Result := 'The previous CoD2 Unbound installation could not be restored. Close the game and run Setup again.';
+    Exit;
+  end;
+  if Restored then
+    SuppressibleMsgBox('Setup restored the previous CoD2 Unbound installation.', mbInformation, MB_OK, IDOK);
+  Completed := Root + '.completed-install';
+  if IsReparsePoint(Completed) or (DirExists(Completed) and not DelTree(Completed, True, True, True)) or
+    DirExists(Root + '.incomplete-install') then begin
+    Result := 'Setup could not clear its previous repair files.';
+    Exit;
+  end;
+  if not FileExists(Root + '\launcher\{#Launcher}') then Exit;
+  Backup := Root + '.previous-install';
+  if not MoveInstall(Root, Backup) then begin
+    Result := 'Setup could not save the previous installation.';
+    Exit;
+  end;
+  TransactionRoot := Root;
+  if not CopyInstall(Backup, Root) then
+    Result := 'Setup could not prepare the installation. The previous copy will be restored.';
+#endif
 end;
 
 function InitializeUninstall(): Boolean;
@@ -305,20 +419,19 @@ var
   AllowCod2x, AllowCod2: Boolean;
 
 procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
 begin
   if CurStep = ssInstall then begin
     AllowCod2x := CanClaimLink('cod2x');
     AllowCod2 := CanClaimLink('cod2');
   end;
-  if (CurStep = ssDone) and IsLauncherUpdate() then begin
-    UpdateCommitted := True;
-    if not SaveStringToFile(ExpandConstant('{src}\installed.ok'), '{#ReleaseVersion}', False) then
-      Log('Could not record the completed update.');
-    if not Exec(ExpandConstant('{app}\launcher\{#Launcher}'), '', ExpandConstant('{app}'),
-      SW_SHOWNORMAL, ewNoWait, ResultCode) then
-      Log('Could not reopen CoD2 Unbound after the update.');
+  if (CurStep = ssDone) and (TransactionRoot <> '') then begin
+    UpdateCommitted := MoveInstall(TransactionRoot + '.previous-install', TransactionRoot + '.completed-install');
+    if UpdateCommitted then begin
+      Log('Completed the CoD2 Unbound installation.');
+      if not DelTree(TransactionRoot + '.completed-install', True, True, True) then
+        Log('Setup will clear the completed backup on the next run.');
+    end else
+      Log('Could not commit the update. The previous copy will be restored.');
   end;
 end;
 
