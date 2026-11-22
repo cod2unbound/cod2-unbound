@@ -110,6 +110,19 @@
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style x:Key="MediaTile" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="10,3" />
+    </Style>
+    <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />

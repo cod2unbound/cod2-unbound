@@ -13,13 +13,13 @@
                 <Rectangle x:Name="HeroScrim" />
                 <Rectangle x:Name="HeroFade" />
             </Grid>
-            <Grid x:Name="ContentLayout" Padding="48,64,48,32" RowSpacing="20">
+            <Grid x:Name="ContentLayout" Padding="48,72,48,32" RowSpacing="18">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <StackPanel x:Name="Hero" HorizontalAlignment="Left" MaxWidth="768" Spacing="12" Padding="0,0,0,20"
+                <StackPanel x:Name="Hero" HorizontalAlignment="Left" MaxWidth="768" Spacing="16" Padding="0,0,0,4"
                             Background="{ThemeResource HeroBackplateBrush}">
                     <TextBlock x:Name="HeroLead" Text="READY TO PLAY" Style="{StaticResource HeroEyebrow}" />
                     <TextBlock x:Name="HeroTitle" Text="COD2 UNBOUND" Style="{StaticResource HeroTitle}" />
@@ -30,7 +30,7 @@
                                 AutomationProperties.AcceleratorKey="Ctrl+Enter" Height="42" MinWidth="140"
                                 Click="OnLaunch" Style="{StaticResource AccentButtonStyle}" IsEnabled="False">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <SymbolIcon Symbol="Play" />
+                                <FontIcon Glyph="&#x25B6;" FontFamily="Segoe UI Symbol" FontSize="20" />
                                 <TextBlock Text="Launch" />
                             </StackPanel>
                         </Button>
@@ -40,9 +40,12 @@
                                 <TextBlock Text="Find a server" />
                             </StackPanel>
                         </Button>
+                        <TextBlock x:Name="LaunchHint" Style="{StaticResource SecondaryText}" FontSize="12"
+                                   Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
-                    <TextBlock x:Name="LaunchReason" Foreground="{ThemeResource HeroInkBrush}" TextWrapping="Wrap" />
-                    <HyperlinkButton x:Name="OpenGameData" Content="Open Game Data" Click="OnOpenGameData"
+                    <TextBlock x:Name="LaunchReason" Foreground="{ThemeResource HeroInkBrush}" TextWrapping="Wrap"
+                               Visibility="Collapsed" />
+                    <HyperlinkButton x:Name="OpenGameData" Content="Open game data" AutomationProperties.Name="Open Game Data" Click="OnOpenGameData"
                                      Visibility="Collapsed" />
                 </StackPanel>
 
@@ -53,34 +56,43 @@
                               AccessKey="D" MinWidth="128" SelectionChanged="OnDisplayChanged" />
                 </StackPanel>
 
-                <Grid Grid.Row="2" ColumnSpacing="12">
+                <Grid x:Name="Cards" Grid.Row="2" ColumnSpacing="12" RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1.45*" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="NewsColumn" Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Border Style="{StaticResource FieldCard}">
-                        <StackPanel Spacing="8">
+                    <Border x:Name="RecentCard" Style="{StaticResource FieldCard}">
+                        <StackPanel Spacing="6">
                             <Grid>
                                 <TextBlock Text="Jump back in" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
                                 <HyperlinkButton Content="All recent" HorizontalAlignment="Right" Click="OnRecent" />
                             </Grid>
-                            <StackPanel x:Name="RecentRows" Spacing="8" />
+                            <StackPanel x:Name="RecentRows" Spacing="6" />
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="1" Style="{StaticResource FieldCard}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Last match" Style="{StaticResource CardTitle}" />
+                    <Border x:Name="MatchCard" Grid.Column="1" Style="{StaticResource FieldCard}">
+                        <StackPanel Spacing="10">
+                            <Grid>
+                                <TextBlock Text="Last match" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <HyperlinkButton x:Name="AllMatches" Content="All matches" HorizontalAlignment="Right"
+                                                 Click="OnAllMatches" Visibility="Collapsed" />
+                            </Grid>
                             <StackPanel x:Name="MatchRows" Spacing="8" />
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="2" Style="{StaticResource FieldCard}">
+                    <Border x:Name="NewsCard" Grid.Column="2" Style="{StaticResource FieldCard}">
                         <StackPanel Spacing="8">
                             <Grid>
-                                <TextBlock Text="What’s New" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <TextBlock Text="What’s new" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
                                 <HyperlinkButton Content="See all" HorizontalAlignment="Right" Click="OnShowNews" />
                             </Grid>
                             <StackPanel x:Name="NewsRows" Spacing="8" />
+                            <TextBlock x:Name="NewsChecked" Style="{StaticResource SecondaryText}" FontSize="12" />
                         </StackPanel>
                     </Border>
                 </Grid>

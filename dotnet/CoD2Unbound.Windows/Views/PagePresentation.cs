@@ -1,6 +1,10 @@
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
 using Windows.Security.Cryptography;
@@ -18,6 +22,64 @@ internal static class PagePresentation
         new() { Text = text, Style = StyleFor("SecondaryText"), FontSize = 12 };
 
     internal static TextBlock Body(string text) => new() { Text = text, Style = StyleFor("SecondaryText") };
+
+    internal static Grid Columns(double spacing, params GridLength[] widths)
+    {
+        var grid = new Grid { ColumnSpacing = spacing };
+        foreach (var width in widths)
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
+        return grid;
+    }
+
+    internal static void Put(Grid grid, int column, FrameworkElement element)
+    {
+        Grid.SetColumn(element, column);
+        grid.Children.Add(element);
+    }
+
+    internal static TextBlock MonoCaption(string text) => new() { Text = text, Style = StyleFor("MonoCaption") };
+    internal static FontIcon Glyph(string glyph, double size) => new() { Glyph = glyph, FontSize = size };
+
+    internal static Brush ThemeBrush(string key, ElementTheme theme, bool contrast)
+    {
+        string themeKey = contrast ? "HighContrast" : theme == ElementTheme.Light ? "Light" : "Dark";
+        foreach (var resource in Application.Current.Resources.MergedDictionaries)
+        {
+            if (resource.ThemeDictionaries.TryGetValue(themeKey, out object? entry) &&
+                entry is ResourceDictionary dictionary && dictionary.TryGetValue(key, out object? brush))
+                return (Brush)brush!;
+        }
+        throw new InvalidOperationException($"Missing launcher theme brush {key}.");
+    }
+
+    internal static void AddGameName(TextBlock text, string name, bool contrast)
+    {
+        foreach (var color in QuakeColors.Runs(name))
+        {
+            var run = new Run { Text = color.Text, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
+            string? key = color.Code switch
+            {
+                0 => "TertiaryBrush", 1 => "GameRedBrush", 2 => "GameGreenBrush", 3 => "GameYellowBrush",
+                4 => "GameBlueBrush", 5 => "GameCyanBrush", 6 => "GameVioletBrush", _ => null
+            };
+            if (key is not null && !contrast)
+                run.Foreground = ThemeBrush(key, text.ActualTheme, contrast);
+            text.Inlines.Add(run);
+        }
+    }
+
+    internal static StackPanel EmptyState(string glyph, string title, string detail)
+    {
+        var panel = new StackPanel { Spacing = 6, Padding = new Thickness(0, 8, 0, 8) };
+        var icon = Glyph(glyph, 32);
+        icon.HorizontalAlignment = HorizontalAlignment.Left;
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        panel.Children.Add(icon);
+        panel.Children.Add(new TextBlock { Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading") });
+        if (!string.IsNullOrEmpty(detail))
+            panel.Children.Add(Body(detail));
+        return panel;
+    }
 
     internal static StackPanel Buttons(params Button[] buttons)
     {

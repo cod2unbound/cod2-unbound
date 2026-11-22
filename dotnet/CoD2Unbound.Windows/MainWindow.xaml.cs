@@ -196,6 +196,13 @@ public sealed partial class MainWindow : Window
     internal Task OpenServersAsync(ServerScope scope, string? address = null) =>
         RunAsync(() => NavigateAsync(LauncherPlace.Servers, scope, address));
 
+    internal Task OpenCheckupAsync() => RunAsync(async () =>
+    {
+        await NavigateAsync(LauncherPlace.Configs);
+        if (ContentFrame.Content is ConfigsPage configs)
+            configs.OpenCheckup();
+    });
+
     internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null)
     {
         Nav.IsPaneVisible = JumpButton.IsEnabled = session.SetupComplete;

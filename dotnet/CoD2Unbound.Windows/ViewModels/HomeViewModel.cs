@@ -16,15 +16,16 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal ImmutableArray<GameServer> Recent => [.. session.Library.Recent.Take(3).Select(session.ServerForAddress)];
     internal GameServer? LastServer => session.Library.Recent.FirstOrDefault() is { } address
         ? session.ServerForAddress(address) : null;
-    internal string? LastPlayed => LastServer is { } server && session.Library.Played.TryGetValue(server.Address, out var date)
-        ? "Played " + MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: true).ToLowerInvariant()
+    internal string? Played(string address, bool includeTime) => session.Library.Played.TryGetValue(address, out var date)
+        ? MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime)
         : null;
+    internal DateTimeOffset? NewsChecked => session.Library.DispatchesCheckedAt;
     internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext);
     internal ImmutableArray<NewsDispatch> AllNews => NewsFeed.Home(session.Version, session.Library.Dispatches,
         session.Library.News, session.Library.NewsNext, rows: 12);
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
-    internal MatchSummary? LastMatch { get; private set; }
+    internal ImmutableArray<MatchSummary> Matches { get; private set; } = [];
     internal bool UnreadableMatches { get; private set; }
 
     internal async Task RefreshAsync()
@@ -32,9 +33,11 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         session.Setup.ChooseData(session.Setup.DataPath);
         Loadouts = await session.ReadLoadoutChoicesAsync();
         await session.Game.ReconcileAsync();
+        Matches = [];
+        UnreadableMatches = false;
         if (Settings.MatchSummariesEnabled)
         {
-            try { LastMatch = (await Task.Run(session.ReadMatches)).LastOrDefault(); }
+            try { Matches = await Task.Run(session.ReadMatches); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { UnreadableMatches = true; }
         }
     }

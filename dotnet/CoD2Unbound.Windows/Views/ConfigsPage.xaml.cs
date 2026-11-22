@@ -31,6 +31,12 @@ public sealed partial class ConfigsPage : Page
         ShowStudio();
     }
 
+    internal void OpenCheckup()
+    {
+        studioTab = 2;
+        ShowStudio();
+    }
+
     private void RenderLoadouts()
     {
         var state = model.State;

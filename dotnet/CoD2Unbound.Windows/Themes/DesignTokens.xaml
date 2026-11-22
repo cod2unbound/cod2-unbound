@@ -57,6 +57,13 @@
             <SolidColorBrush x:Key="AddressBrush" Color="#B9A982" />
             <SolidColorBrush x:Key="TertiaryBrush" Color="#8F8877" />
             <SolidColorBrush x:Key="ChipIconBrush" Color="#CFC6B1" />
+            <SolidColorBrush x:Key="GameRedBrush" Color="#D9765C" />
+            <SolidColorBrush x:Key="GameGreenBrush" Color="#8FBF7A" />
+            <SolidColorBrush x:Key="GameYellowBrush" Color="#D9B25C" />
+            <SolidColorBrush x:Key="GameBlueBrush" Color="#7FA6E6" />
+            <SolidColorBrush x:Key="GameCyanBrush" Color="#7FB6D9" />
+            <SolidColorBrush x:Key="GameVioletBrush" Color="#C59AD9" />
+            <SolidColorBrush x:Key="EditionStrokeBrush" Color="#73E2BD72" />
             <SolidColorBrush x:Key="LinkBrush" Color="#E2BD72" />
             <SolidColorBrush x:Key="PositiveBrush" Color="#9FC58D" />
             <SolidColorBrush x:Key="ControlFillBrush" Color="#1AFFFFFF" />
@@ -135,6 +142,13 @@
             <SolidColorBrush x:Key="AddressBrush" Color="#7A5A1C" />
             <SolidColorBrush x:Key="TertiaryBrush" Color="#6B6757" />
             <SolidColorBrush x:Key="ChipIconBrush" Color="#55523F" />
+            <SolidColorBrush x:Key="GameRedBrush" Color="#A8412A" />
+            <SolidColorBrush x:Key="GameGreenBrush" Color="#3B7429" />
+            <SolidColorBrush x:Key="GameYellowBrush" Color="#85600C" />
+            <SolidColorBrush x:Key="GameBlueBrush" Color="#2C5BA6" />
+            <SolidColorBrush x:Key="GameCyanBrush" Color="#1C6A90" />
+            <SolidColorBrush x:Key="GameVioletBrush" Color="#77469A" />
+            <SolidColorBrush x:Key="EditionStrokeBrush" Color="#735C6A33" />
             <SolidColorBrush x:Key="LinkBrush" Color="#8A5A12" />
             <SolidColorBrush x:Key="PositiveBrush" Color="#3A7236" />
             <SolidColorBrush x:Key="ControlFillBrush" Color="#8CFFFFFF" />
@@ -213,6 +227,13 @@
             <SolidColorBrush x:Key="AddressBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="TertiaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="ChipIconBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameRedBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameGreenBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameYellowBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameBlueBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameCyanBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="GameVioletBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="EditionStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="LinkBrush" Color="{ThemeResource SystemColorHotlightColor}" />
             <SolidColorBrush x:Key="PositiveBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="ControlFillBrush" Color="{ThemeResource SystemColorButtonFaceColor}" />

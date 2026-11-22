@@ -4,6 +4,7 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -16,6 +17,8 @@ public sealed partial class HomePage : Page
 {
     private readonly MainWindow shell;
     private readonly HomeViewModel model;
+    private readonly MapPreviews previews;
+    private readonly List<Button> recentButtons = [];
     private bool settingDisplay = true;
     private bool settingLoadout = true;
     private (double Low, double High)? artworkLuminance;
@@ -24,8 +27,9 @@ public sealed partial class HomePage : Page
     {
         this.shell = shell;
         model = new(session);
+        previews = new(model.ReadArtAsync);
         InitializeComponent();
-        ActualThemeChanged += (_, _) => RenderBackdrop();
+        ActualThemeChanged += (_, _) => { RenderBackdrop(); RenderHeroDetail(); };
         Loaded += (_, _) => RenderBackdrop();
     }
 
@@ -39,13 +43,8 @@ public sealed partial class HomePage : Page
             HeroLead.Text = string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
             if (map is not null)
                 HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
-            HeroDetail.Text = string.Join(" · ", new[] { QuakeColors.Plain(last.Name),
-                last.GameType != "—" ? GameModes.Long(last.GameType) : null, model.LastPlayed }.OfType<string>());
         }
-        else
-        {
-            HeroDetail.Text = "You’re set up. Pick a server to join your first match, or open the game’s own menu.";
-        }
+        RenderHeroDetail();
 
         var settings = model.Settings;
         settingLoadout = true;
@@ -73,8 +72,8 @@ public sealed partial class HomePage : Page
         DisplayChoice.SelectedIndex = settings.Fullscreen switch { "exclusive" => 1, "windowed" => 2, _ => 0 };
         settingDisplay = false;
 
-        RenderGame(model.Game);
         RenderRecent();
+        RenderGame(model.Game);
         RenderMatch();
         RenderNews();
         if (map is not null && await model.ReadArtAsync(map) is { } art)
@@ -87,27 +86,63 @@ public sealed partial class HomePage : Page
         LaunchButton.IsEnabled = reason is null;
         LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
         OpenGameData.Visibility = IsVisible(reason == "Choose a complete game data folder before launching.");
-        LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe."
-            : model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server");
-        AutomationProperties.SetHelpText(LaunchButton, LaunchReason.Text);
+        LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe." : "");
+        LaunchReason.Visibility = IsVisible(LaunchReason.Text.Length > 0);
+        LaunchHint.Text = model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server";
+        LaunchHint.Visibility = IsVisible(reason is null);
+        AutomationProperties.SetHelpText(LaunchButton, reason ?? LaunchHint.Text);
+        foreach (var button in recentButtons)
+            button.IsEnabled = reason is null;
+    }
+
+    private void RenderHeroDetail()
+    {
+        HeroDetail.Inlines.Clear();
+        if (model.LastServer is not { } last)
+        {
+            HeroDetail.Text = "You’re set up. Pick a server to join your first match, or open the game’s own menu.";
+            return;
+        }
+        AddGameName(HeroDetail, last.Name, shell.IsHighContrast);
+        if (last.GameType != "—")
+            HeroDetail.Inlines.Add(new Run { Text = "   ·   " + GameModes.Long(last.GameType) });
+        if (model.Played(last.Address, includeTime: true) is { } played)
+            HeroDetail.Inlines.Add(new Run { Text = "   ·   Played " + played.ToLowerInvariant() });
     }
 
     private void RenderRecent()
     {
         RecentRows.Children.Clear();
+        recentButtons.Clear();
         if (model.Recent.IsEmpty)
         {
-            AddFact(RecentRows, "Nothing played yet", "Servers you join appear here, ready to rejoin.");
+            RecentRows.Children.Add(EmptyState("\uE774", "Nothing played yet", "Servers you join appear here, ready to rejoin."));
             return;
         }
         foreach (var server in model.Recent)
         {
-            var row = new StackPanel { Spacing = 2 };
-            var link = new HyperlinkButton { Content = QuakeColors.Plain(server.Name), Padding = new Thickness(0) };
-            link.Click += async (_, _) => await shell.OpenServersAsync(ServerScope.Recent, server.Address);
-            row.Children.Add(link);
-            if (MapCatalog.Key(server.Map) is not null)
-                row.Children.Add(Secondary(MapCatalog.DisplayName(server.Map) + " · " + GameModes.Long(server.GameType)));
+            var row = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto);
+            row.Padding = new Thickness(8, 6, 8, 6);
+            Put(row, 0, previews.Tile(server.Map, 64, 44));
+            var lines = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            lines.Children.Add(new TextBlock { Text = QuakeColors.Plain(server.Name), Style = StyleFor("BodyStrongTextBlockStyle"),
+                TextTrimming = TextTrimming.CharacterEllipsis });
+            var description = Caption($"{MapCatalog.DisplayName(server.Map)} · {GameModes.Long(server.GameType)} · " +
+                (server.IsCod2x ? "CoD2x" : "Original 1.3"));
+            description.TextWrapping = TextWrapping.NoWrap;
+            description.TextTrimming = TextTrimming.CharacterEllipsis;
+            lines.Children.Add(description);
+            Put(row, 1, lines);
+            var stamp = MonoCaption(model.Played(server.Address, includeTime: false) ?? "");
+            stamp.VerticalAlignment = VerticalAlignment.Center;
+            Put(row, 2, stamp);
+            var launch = new Button { Style = StyleFor("SmallAction"), VerticalAlignment = VerticalAlignment.Center,
+                Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
+                    Children = { Glyph("\uE768", 14), new TextBlock { Text = "Launch" } } } };
+            AutomationProperties.SetName(launch, $"Launch {QuakeColors.Plain(server.Name)}");
+            launch.Click += async (_, _) => await LaunchAsync(server.Address);
+            recentButtons.Add(launch);
+            Put(row, 3, launch);
             RecentRows.Children.Add(row);
         }
     }
@@ -115,26 +150,73 @@ public sealed partial class HomePage : Page
     private void RenderMatch()
     {
         MatchRows.Children.Clear();
-        if (model.LastMatch is { } match)
+        AllMatches.Visibility = IsVisible(!model.Matches.IsEmpty);
+        if (model.Matches.LastOrDefault() is { } match)
         {
-            AddFact(MatchRows, MapCatalog.DisplayName(match.Map) + " · " + GameModes.Long(match.Mode),
-                MatchFacts.Duration(match.DurationSeconds));
-            if (match.PingAverageMS is { } ping)
-                AddFact(MatchRows, "Ping", $"{ping:F0} ms");
-            AddFact(MatchRows, "Connection", MatchFacts.ConnectionText(
-                MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent)));
+            AddMatch(MatchRows, match);
+            var check = new Button { Content = "Open Check-up", HorizontalAlignment = HorizontalAlignment.Right };
+            check.Click += async (_, _) => await shell.OpenCheckupAsync();
+            MatchRows.Children.Add(check);
         }
         else if (!model.Settings.MatchSummariesEnabled)
-            AddFact(MatchRows, "Match summaries are off", "Turn them on to see how each match ran. They stay on this PC.");
+            MatchRows.Children.Add(EmptyState("\uE9D9", "Match summaries are off", "Turn them on to see how each match ran. They stay on this PC."));
         else if (model.UnreadableMatches)
-            AddFact(MatchRows, "Couldn’t read matches", "Your match summaries couldn’t be read. Try again after your next match.");
+            MatchRows.Children.Add(EmptyState("\uE9D9", "Couldn’t read matches", "Try again after your next match."));
         else
-            AddFact(MatchRows, "Not measured yet", "After your first match, its ping and connection show up here.");
+            MatchRows.Children.Add(EmptyState("\uE9D9", "Not measured yet", "After your first match, its ping and connection show up here."));
     }
+
+    private void AddMatch(StackPanel target, MatchSummary match)
+    {
+        var heading = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star));
+        Put(heading, 0, previews.Tile(match.Map, 64, 44));
+        var title = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        title.Children.Add(new TextBlock { Text = $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}",
+            Style = StyleFor("BodyStrongTextBlockStyle"), TextTrimming = TextTrimming.CharacterEllipsis });
+        string duration = MatchFacts.Duration(match.DurationSeconds).ToUpperInvariant();
+        if (MatchFacts.Date(match.EndedAt) is { } date)
+            duration = MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: false) + " · " + duration;
+        title.Children.Add(MonoCaption(duration));
+        Put(heading, 1, title);
+        target.Children.Add(heading);
+        if (match.PingAverageMS is { } ping)
+            MatchFact("Ping", $"{ping:F0} ms");
+        MatchFact("Connection", MatchFacts.ConnectionText(
+            MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent)));
+
+        void MatchFact(string title, string value)
+        {
+            var row = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+            Put(row, 0, Body(title));
+            Put(row, 1, new TextBlock { Text = value, Style = StyleFor("BodyStrongTextBlockStyle") });
+            target.Children.Add(row);
+        }
+    }
+
+    private async void OnAllMatches(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
+    {
+        var list = new StackPanel { Spacing = 8 };
+        foreach (var match in model.Matches.Reverse())
+        {
+            var row = new StackPanel { Spacing = 6 };
+            AddMatch(row, match);
+            list.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = row });
+        }
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "All matches", CloseButtonText = "Close",
+            Content = new ScrollViewer { MaxHeight = 360, Content = list }
+        };
+        await dialog.ShowAsync();
+    });
 
     private void RenderNews()
     {
         NewsRows.Children.Clear();
+        NewsChecked.Text = model.NewsChecked is { } checkedAt
+            ? "Checked " + MatchFacts.Played(checkedAt, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: true).ToLowerInvariant() + "."
+            : "";
+        NewsChecked.Visibility = IsVisible(NewsChecked.Text.Length > 0);
         foreach (var dispatch in model.News)
         {
             var item = new StackPanel { Spacing = 4 };
@@ -156,7 +238,7 @@ public sealed partial class HomePage : Page
         }
         var dialog = new ContentDialog
         {
-            XamlRoot = XamlRoot, Title = "What’s New", CloseButtonText = "Close",
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "What’s new", CloseButtonText = "Close",
             Content = new ScrollViewer { MaxHeight = 360, Content = rows }
         };
         await dialog.ShowAsync();
@@ -227,11 +309,20 @@ public sealed partial class HomePage : Page
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args)
     {
-        bool wide = args.NewSize.Width >= 1000;
-        ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(28, 28, 28, 24);
+        bool wide = shell.AppWindow.Size.Width / (XamlRoot?.RasterizationScale ?? 1) >= 1200;
+        bool compactCards = args.NewSize.Width < 1000;
+        ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(40, 40, 40, 24);
         HeroTitle.FontSize = wide ? 132 : 112;
         HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
-        ArtLayer.Height = wide ? 560 : 360;
+        ArtLayer.Height = wide ? 560 : 420;
+        NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        Cards.ColumnSpacing = compactCards ? 0 : 12;
+        Cards.RowSpacing = compactCards ? 20 : 0;
+        RecentCard.Margin = compactCards ? new Thickness(0, 0, 12, 0) : new Thickness();
+        Grid.SetColumn(NewsCard, compactCards ? 0 : 2);
+        Grid.SetColumnSpan(NewsCard, compactCards ? 2 : 1);
+        Grid.SetRow(NewsCard, compactCards ? 1 : 0);
+        RecentCard.MinHeight = MatchCard.MinHeight = compactCards ? 226 : 0;
         ContentLayout.MinHeight = args.NewSize.Height;
     }
 
@@ -245,11 +336,11 @@ public sealed partial class HomePage : Page
         await LaunchAsync();
     }
 
-    private Task LaunchAsync() => shell.RunAsync(async () =>
+    private Task LaunchAsync(string? address = null) => shell.RunAsync(async () =>
     {
         if (!model.CanLaunch)
             return;
-        await model.LaunchAsync(model.LastServer?.Address);
+        await model.LaunchAsync(address ?? model.LastServer?.Address);
         RenderGame(model.Game);
     });
 
