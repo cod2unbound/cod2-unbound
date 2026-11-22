@@ -49,7 +49,9 @@ public sealed partial class ServersPage : Page
         ServerList.ItemsSource = rows;
         ServerList.SelectedItem = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
         int count = model.Filters.Count;
-        FilterButton.Content = count == 0 ? "Filters" : $"Filters ({count})";
+        string filters = count == 0 ? "Filters" : $"Filters ({count})";
+        FilterButton.Content = IconLabel("Filter", filters);
+        AutomationProperties.SetName(FilterButton, filters);
         if (refreshing is null)
             RefreshStatus.Text = rows.Length == 0 ? EmptyState() : CountWithAge(rows.Length);
         RenderDetails();
@@ -157,7 +159,7 @@ public sealed partial class ServersPage : Page
     private void SetFavorite(Button button, GameServer server)
     {
         bool favorite = model.IsFavorite(server.Address);
-        button.Content = Glyph(favorite ? "\uE735" : "\uE734", 16);
+        button.Content = Fluent(favorite ? "StarFilled" : "Star", 16, filled: favorite);
         button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
         string action = favorite ? "Remove from Favorites" : "Add to Favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");

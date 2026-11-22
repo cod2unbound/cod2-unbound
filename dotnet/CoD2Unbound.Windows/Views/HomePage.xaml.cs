@@ -116,7 +116,7 @@ public sealed partial class HomePage : Page
         recentButtons.Clear();
         if (model.Recent.IsEmpty)
         {
-            RecentRows.Children.Add(EmptyState("\uE774", "Nothing played yet", "Servers you join appear here, ready to rejoin."));
+            RecentRows.Children.Add(EmptyState("History", "Nothing played yet", "Servers you join appear here, ready to rejoin."));
             return;
         }
         foreach (var server in model.Recent)
@@ -138,7 +138,7 @@ public sealed partial class HomePage : Page
             Put(row, 2, stamp);
             var launch = new Button { Style = StyleFor("SmallAction"), VerticalAlignment = VerticalAlignment.Center,
                 Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
-                    Children = { Glyph("\uE768", 14), new TextBlock { Text = "Launch" } } } };
+                    Children = { Fluent("Play", 16, filled: true), new TextBlock { Text = "Launch" } } } };
             AutomationProperties.SetName(launch, $"Launch {QuakeColors.Plain(server.Name)}");
             launch.Click += async (_, _) => await LaunchAsync(server.Address);
             recentButtons.Add(launch);
@@ -159,11 +159,11 @@ public sealed partial class HomePage : Page
             MatchRows.Children.Add(check);
         }
         else if (!model.Settings.MatchSummariesEnabled)
-            MatchRows.Children.Add(EmptyState("\uE9D9", "Match summaries are off", "Turn them on to see how each match ran. They stay on this PC."));
+            MatchRows.Children.Add(EmptyState("HeartPulse", "Match summaries are off", "Turn them on to see how each match ran. They stay on this PC."));
         else if (model.UnreadableMatches)
-            MatchRows.Children.Add(EmptyState("\uE9D9", "Couldn’t read matches", "Try again after your next match."));
+            MatchRows.Children.Add(EmptyState("HeartPulse", "Couldn’t read matches", "Try again after your next match."));
         else
-            MatchRows.Children.Add(EmptyState("\uE9D9", "Not measured yet", "After your first match, its ping and connection show up here."));
+            MatchRows.Children.Add(EmptyState("HeartPulse", "Not measured yet", "After your first match, its ping and connection show up here."));
     }
 
     private void AddMatch(StackPanel target, MatchSummary match)

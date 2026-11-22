@@ -478,7 +478,7 @@ public sealed partial class ConfigsPage : Page
             measurements: new ConfigCheckupMeasurements(PacketLossPercent: match?.PacketLossPercent));
         studioBody.Children.Add(new TextBlock { Text = "Check-up", Style = StyleFor("SectionTitle") });
         if (match is null)
-            studioBody.Children.Add(EmptyState("\uE9D9", "No matches recorded yet",
+            studioBody.Children.Add(EmptyState("HeartPulse", "No matches recorded yet",
                 "After your next match, the game saves a short summary on this PC and Check-up shows it here."));
         foreach (var dial in report.Dials)
             studioBody.Children.Add(SettingRow(dial.Area.ToString(), dial.Source, Caption(dial.StatusText)));
@@ -501,7 +501,7 @@ public sealed partial class ConfigsPage : Page
     {
         studioBody.Children.Add(new TextBlock { Text = "History", Style = StyleFor("SectionTitle") });
         if (state.History.IsEmpty)
-            studioBody.Children.Add(EmptyState("\uE81C", "No changes recorded yet",
+            studioBody.Children.Add(EmptyState("History", "No changes recorded yet",
                 "Changes to this loadout appear here. Undo anytime from History."));
         foreach (var entry in state.History.Reverse())
         {
@@ -593,7 +593,7 @@ public sealed partial class ConfigsPage : Page
                 results.Children.Add(SettingRow(entry.Player, string.Join(" · ", new[] { entry.Team, entry.Era, entry.Feel }.OfType<string>()),
                     Action("View setup", () => ShowSetupAsync(entry, saved))));
             if (results.Children.Count == 0)
-                results.Children.Add(EmptyState("\uE721", saved && entries.IsEmpty ? "No saved player setups" : "No matching player setups",
+                results.Children.Add(EmptyState("Search", saved && entries.IsEmpty ? "No saved player setups" : "No matching player setups",
                     saved && entries.IsEmpty ? "Setups you save for later appear here." : "Try another search."));
         }
     }

@@ -4,6 +4,42 @@
     <FontFamily x:Key="StencilBold">ms-appx:///Assets/BigShouldersStencilDisplay-Bold.ttf#Big Shoulders Stencil Display</FontFamily>
     <FontFamily x:Key="CourierPrime">ms-appx:///Assets/CourierPrime-Regular.ttf#Courier Prime</FontFamily>
 
+    <!-- Fluent UI System Icons from Microsoft, 6c2c9075cf89 (MIT). -->
+    <FontFamily x:Key="FluentRegular">ms-appx:///Assets/FluentSystemIcons-Regular.ttf#FluentSystemIcons-Regular</FontFamily>
+    <x:String x:Key="FluentHome">&#xF480;</x:String>
+    <x:String x:Key="FluentLive">&#xF4F0;</x:String>
+    <x:String x:Key="FluentVideoClip">&#xEDFF;</x:String>
+    <x:String x:Key="FluentStack">&#xF792;</x:String>
+    <x:String x:Key="FluentSettings">&#xF6A9;</x:String>
+    <x:String x:Key="FluentAdd">&#xF109;</x:String>
+    <x:String x:Key="FluentAddSmall">&#xF108;</x:String>
+    <x:String x:Key="FluentSearch">&#xF68F;</x:String>
+    <x:String x:Key="FluentFilter">&#xF406;</x:String>
+    <x:String x:Key="FluentBookmark">&#xF1F5;</x:String>
+    <x:String x:Key="FluentCopy">&#xF32B;</x:String>
+    <x:String x:Key="FluentRefresh">&#xF13D;</x:String>
+    <x:String x:Key="FluentDesktop">&#xF359;</x:String>
+    <x:String x:Key="FluentCheck">&#xE305;</x:String>
+    <x:String x:Key="FluentCheckCircle">&#xF297;</x:String>
+    <x:String x:Key="FluentChevronDown">&#xF2A2;</x:String>
+    <x:String x:Key="FluentChevronUp">&#xF2B5;</x:String>
+    <x:String x:Key="FluentChevronRight">&#xF2AF;</x:String>
+    <x:String x:Key="FluentPerson">&#xF5BD;</x:String>
+    <x:String x:Key="FluentHistory">&#xE707;</x:String>
+    <x:String x:Key="FluentClipboardCheck">&#xE35E;</x:String>
+    <x:String x:Key="FluentFolder">&#xF418;</x:String>
+    <x:String x:Key="FluentDocumentAdd">&#xE4DA;</x:String>
+    <x:String x:Key="FluentDocument">&#xF378;</x:String>
+    <x:String x:Key="FluentStar">&#xF70F;</x:String>
+    <x:String x:Key="FluentLock">&#xE78E;</x:String>
+    <x:String x:Key="FluentTag">&#xEC70;</x:String>
+    <x:String x:Key="FluentMore">&#xE824;</x:String>
+    <x:String x:Key="FluentImage">&#xF489;</x:String>
+    <x:String x:Key="FluentHeartPulse">&#xE701;</x:String>
+    <FontFamily x:Key="FluentFilled">ms-appx:///Assets/FluentSystemIcons-Filled.ttf#FluentSystemIcons-Filled</FontFamily>
+    <x:String x:Key="FluentPlay">&#xE9A2;</x:String>
+    <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
+
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
         <Setter Property="HighContrastAdjustment" Value="None" />
     </Style>

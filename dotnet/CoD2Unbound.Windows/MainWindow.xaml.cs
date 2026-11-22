@@ -57,6 +57,8 @@ public sealed partial class MainWindow : Window
         if (loaded)
             return;
         loaded = true;
+        if (Nav.SettingsItem is NavigationViewItem settingsItem)
+            settingsItem.Icon = Fluent("Settings", 20);
         ResizeForDisplay(startup: true);
         UpdateCaptionColors();
         await RunAsync(async () =>
@@ -331,7 +333,7 @@ public sealed partial class MainWindow : Window
             Nav.MenuItems.Add(new NavigationViewItem
             {
                 Content = QuakeColors.Plain(favorite.Name), Tag = favorite.Address,
-                Icon = new SymbolIcon(Symbol.Favorite), SelectsOnInvoked = false
+                Icon = Fluent("Star", 20), SelectsOnInvoked = false
             });
         }
     }

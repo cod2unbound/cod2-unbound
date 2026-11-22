@@ -36,7 +36,18 @@ internal static class PagePresentation
     }
 
     internal static TextBlock MonoCaption(string text) => new() { Text = text, Style = StyleFor("MonoCaption") };
-    internal static FontIcon Glyph(string glyph, double size) => new() { Glyph = glyph, FontSize = size };
+    internal static FontIcon Fluent(string icon, double size, bool filled = false) => new()
+    {
+        Glyph = (string)Application.Current.Resources["Fluent" + icon],
+        FontFamily = (FontFamily)Application.Current.Resources[filled ? "FluentFilled" : "FluentRegular"],
+        FontSize = size
+    };
+
+    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false) => new()
+    {
+        Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
+        Children = { Fluent(icon, size, filled), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
+    };
 
     internal static Brush ThemeBrush(string key, ElementTheme theme, bool contrast)
     {
@@ -78,7 +89,9 @@ internal static class PagePresentation
     internal static StackPanel EmptyState(string glyph, string title, string detail)
     {
         var panel = new StackPanel { Spacing = 6, Padding = new Thickness(0, 8, 0, 8) };
-        panel.Children.Add(new FontIcon { Glyph = glyph, Style = StyleFor("EmptyIcon") });
+        var icon = Fluent(glyph, 32);
+        icon.Style = StyleFor("EmptyIcon");
+        panel.Children.Add(icon);
         panel.Children.Add(new TextBlock { Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading") });
         if (!string.IsNullOrEmpty(detail))
             panel.Children.Add(Body(detail));

@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.7.0]" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.26100.7175]" PrivateAssets="all" />
     <ProjectReference Include="../CoD2Unbound.Core/CoD2Unbound.Core.csproj" />
-    <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf;Assets/FluentSystemIcons-*.ttf;Assets/LICENSE-FluentSystemIcons.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../launcher/Resources/Fonts/OFL-BigShouldersStencilDisplay.txt;../../launcher/Resources/Fonts/CourierPrime-*.ttf;../../launcher/Resources/Fonts/OFL-CourierPrime.txt"
              Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/brand/monogram.svg" Link="Assets/monogram.svg"

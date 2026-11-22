@@ -20,7 +20,7 @@
                                   SelectionChanged="OnDiscoverPlaceChanged" ItemContainerStyle="{StaticResource SidebarItem}">
                             <ListViewItem AccessKey="P" AutomationProperties.Name="Player Setups" Style="{StaticResource SidebarItem}">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <FontIcon Glyph="&#xE716;" FontSize="20" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPerson}" FontSize="20" />
                                     <TextBlock Text="Player Setups" VerticalAlignment="Center" />
                                 </StackPanel>
                             </ListViewItem>
@@ -31,7 +31,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <FontIcon Glyph="&#xE8A4;" FontSize="20" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentBookmark}" FontSize="20" />
                                     <TextBlock Grid.Column="1" Text="Saved" VerticalAlignment="Center" />
                                     <TextBlock x:Name="SavedCount" Grid.Column="2" FontSize="12" VerticalAlignment="Center"
                                                />
@@ -39,7 +39,7 @@
                             </ListViewItem>
                             <ListViewItem AutomationProperties.Name="Check a config" Style="{StaticResource SidebarItem}">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <FontIcon Glyph="&#xEA18;" FontSize="20" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentClipboardCheck}" FontSize="20" />
                                     <TextBlock Text="Check a config" VerticalAlignment="Center" />
                                 </StackPanel>
                             </ListViewItem>
@@ -63,7 +63,7 @@
                                             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock x:Name="LoadoutStatus" Text="{Binding Status}" FontSize="12" />
                                         </StackPanel>
-                                        <FontIcon x:Name="LoadoutCheck" Grid.Column="2" Glyph="&#xE73E;" FontSize="16" Visibility="{Binding Checkmark}" />
+                                        <FontIcon x:Name="LoadoutCheck" Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}" FontSize="16" Visibility="{Binding Checkmark}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -71,15 +71,15 @@
                         <Button x:Name="NewLoadout" AccessKey="N" Click="OnNewLoadout" AutomationProperties.Name="New loadout"
                                 Margin="0,4,0,0" Style="{StaticResource SidebarAction}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE710;" FontSize="20" />
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAddSmall}" FontSize="16" />
                                 <TextBlock Text="New loadout" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
                         <Button x:Name="AddConfig" AccessKey="I" AutomationProperties.Name="Add a config" Style="{StaticResource SidebarAction}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE896;" FontSize="20" />
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDocumentAdd}" FontSize="16" />
                                 <TextBlock Text="Add a config" VerticalAlignment="Center" />
-                                <FontIcon Glyph="&#xE70D;" FontSize="12" />
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>

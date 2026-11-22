@@ -63,9 +63,9 @@ public sealed partial class LibraryPage : Page
             return;
         var (icon, heading, detail) = kind switch
         {
-            MediaKind.Screenshot => ("\uEB9F", "No screenshots yet", "Screenshots you take in the game appear here."),
-            MediaKind.Demo => ("\uE786", "No demos yet", "Demos you record in the game appear here."),
-            _ => ("\uE8A5", "No config files yet", "Config files saved in the game folder appear here.")
+            MediaKind.Screenshot => ("Image", "No screenshots yet", "Screenshots you take in the game appear here."),
+            MediaKind.Demo => ("VideoClip", "No demos yet", "Demos you record in the game appear here."),
+            _ => ("Document", "No config files yet", "Config files saved in the game folder appear here.")
         };
         if (!string.IsNullOrWhiteSpace(Search.Text))
             (heading, detail) = ("No matching files", "Try another search.");

@@ -155,7 +155,7 @@ public sealed partial class SettingsPage : Page
         {
             if (!session.HasClient(edition))
                 return;
-            var check = Glyph("\uE73E", 14);
+            var check = Fluent("Check", 14);
             check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, shell.IsHighContrast);
             versions.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
                 Children = { check, new TextBlock { Text = name } } });

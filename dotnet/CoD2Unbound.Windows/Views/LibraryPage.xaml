@@ -42,7 +42,7 @@
                             </Grid.RowDefinitions>
                             <Border Style="{StaticResource MediaTile}">
                                 <Grid>
-                                    <FontIcon Glyph="&#xEB9F;" FontSize="26" Foreground="{ThemeResource TertiaryBrush}" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentImage}" FontSize="24" Foreground="{ThemeResource TertiaryBrush}" />
                                     <Image Stretch="UniformToFill" Loaded="OnScreenshotLoaded" DataContextChanged="OnScreenshotChanged"/>
                                 </Grid>
                             </Border>
@@ -55,7 +55,7 @@
                                            VerticalAlignment="Center" />
                                 <Button Grid.Column="1" Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
                                         AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="{Binding MenuName}">
-                                    <FontIcon Glyph="&#xE712;" FontSize="16" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
                                 </Button>
                             </Grid>
                         </Grid>
@@ -113,7 +113,7 @@
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
                                 <Button Grid.Column="4" Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
                                         VerticalAlignment="Center" Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
-                                    <FontIcon Glyph="&#xE712;" FontSize="16" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
                                 </Button>
                             </Grid>
                         </DataTemplate>
