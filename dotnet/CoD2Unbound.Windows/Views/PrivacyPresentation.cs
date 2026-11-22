@@ -19,6 +19,7 @@ internal static class PrivacyPresentation
     internal const string UsageDetail = "CoD2 Unbound can send the project a record of how the app is used: which screens and features, never who you are. It shows what to fix first, and lets Player Setups show the setups players use most. The choice is yours.";
     internal const string ChangeLater = "Either answer can be changed any time in Settings › Privacy.";
     internal const string CrashSwitch = "Send crash reports to CoD2 Unbound";
+    internal const string Cod2xSwitch = "Send CoD2x crash reports to the CoD2x project";
     internal const string UsageSwitch = "Send usage data to CoD2 Unbound";
     internal const string Never = "Your name, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.";
     internal const string NumberDetail = "Made at random on this PC, it links your usage data from one session to the next. Reset starts a new one; turning usage data off forgets it.";
@@ -39,10 +40,21 @@ internal static class PrivacyPresentation
 
     internal static Border Question(bool crash)
     {
-        var rows = new StackPanel { Spacing = 13 };
-        foreach (var (title, detail) in crash ? CrashRows : UsageRows)
-            rows.Children.Add(TextRow(title, detail, 150));
-        return new Border { Style = StyleFor("FieldCard"), Child = rows };
+        var rows = new StackPanel();
+        string[] icons = ["Eye", "LockClosed", "Share"];
+        var words = crash ? CrashRows : UsageRows;
+        for (int i = 0; i < words.Length; i++)
+        {
+            var (title, detail) = words[i];
+            var row = Columns(12, new(20), new(1, GridUnitType.Star));
+            var icon = Fluent(icons[i], 20);
+            icon.Style = StyleFor("PrivacyQuestionIcon");
+            icon.VerticalAlignment = VerticalAlignment.Top;
+            Put(row, 0, icon);
+            Put(row, 1, new StackPanel { Spacing = 2, Children = { Heading(title), Detail(detail, 13, 19) } });
+            AddRow(rows, row);
+        }
+        return GroupCard(rows);
     }
 
     internal static Button PreviewButton(bool crash, string key, MainWindow shell, WindowsReports reports)
@@ -61,7 +73,11 @@ internal static class PrivacyPresentation
     {
         var info = reports.Facts.Crash();
         var panel = new StackPanel { Width = 388, Spacing = 7 };
-        panel.Children.Add(Heading("What a crash report holds"));
+        var heading = Heading("What a crash report holds");
+        heading.FontSize = 18;
+        heading.LineHeight = 24;
+        heading.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        panel.Children.Add(heading);
         foreach (var (title, detail) in new (string, string)[]
         {
             ("What failed", "The report’s first reason line, such as the error that stopped the game."),
@@ -73,7 +89,9 @@ internal static class PrivacyPresentation
             ("The report", "The crash report the game wrote, with your Windows user name and every command line removed.")
         })
         {
-            var row = TextRow(title, detail, 105);
+            var row = Columns(12, new(105), new(1, GridUnitType.Star));
+            Put(row, 0, Heading(title));
+            Put(row, 1, Body(detail));
             if (title == "The report")
             {
                 string envelope = reports.CrashPreview();
@@ -89,7 +107,7 @@ internal static class PrivacyPresentation
         presenter.Setters.Add(new Setter(Control.IsTabStopProperty, true));
         return new Flyout
         {
-            Content = panel, Placement = FlyoutPlacementMode.Top,
+            Content = panel, Placement = FlyoutPlacementMode.TopEdgeAlignedRight,
             SystemBackdrop = new DesktopAcrylicBackdrop(), FlyoutPresenterStyle = presenter
         };
     }
@@ -98,9 +116,9 @@ internal static class PrivacyPresentation
     {
         if (reports.Usage.Preview() is not { } payload)
             return;
-        var content = new StackPanel { Spacing = 14, Padding = new Thickness(0, 0, 12, 4) };
-        content.Children.Add(Heading("What is sent"));
+        var content = new StackPanel { Spacing = 14 };
         content.Children.Add(Body("What the launcher records, and one real example as it would leave this PC."));
+        var groups = new StackPanel();
         foreach (var (title, detail) in new (string, string)[]
         {
             ("Screens and features", "Which screens you open and what you use there: setup steps, games started and how they ended, joining a server and how, player setups viewed, tried or imported, loadouts made, checks run, hosting, updates."),
@@ -109,60 +127,94 @@ internal static class PrivacyPresentation
             ("Problems", "Errors the launcher shows you, by kind, such as “the game couldn’t start”."),
             ("Never", Never)
         })
-            content.Children.Add(TextRow(title, detail, 132));
+        {
+            var row = Columns(12, new(132), new(1, GridUnitType.Star));
+            Put(row, 0, Heading(title));
+            Put(row, 1, Detail(detail, 12, 17));
+            AddRow(groups, row);
+        }
+        content.Children.Add(GroupCard(groups));
 
-        var copy = new Button { Style = StyleFor("SmallSubtleAction"), Content = "Copy", AccessKey = "C" };
+        var copyLabel = new TextBlock { Text = "Copy" };
+        var copy = new Button { Style = StyleFor("SmallSubtleAction"), AccessKey = "C", IsTabStop = false,
+            Content = Buttons(Fluent("Copy", 14), copyLabel) };
         AutomationProperties.SetName(copy, "Copy the example event");
         copy.Click += (_, _) =>
         {
             var package = new DataPackage();
             package.SetText(payload);
             Clipboard.SetContent(package);
-            copy.Content = "Copied";
+            copyLabel.Text = "Copied";
             AutomationProperties.SetName(copy, "Copied");
             FrameworkElementAutomationPeer.FromElement(copy)?.RaiseNotificationEvent(
                 AutomationNotificationKind.ActionCompleted, AutomationNotificationProcessing.MostRecent, "Copied", "UsagePreviewCopy");
         };
         var caption = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
-        Put(caption, 0, Heading("Example: you joined a server from the list"));
+        var exampleTitle = Heading("Example: you joined a server from the list");
+        exampleTitle.VerticalAlignment = VerticalAlignment.Center;
+        Put(caption, 0, exampleTitle);
         Put(caption, 1, copy);
         content.Children.Add(caption);
         var sample = MonoCaption(payload);
         sample.TextWrapping = TextWrapping.Wrap;
         sample.LineHeight = 18;
         sample.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
-        sample.IsTextSelectionEnabled = true;
         AutomationProperties.SetName(sample, "The exact text of one event");
         content.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(12), Child = sample });
         content.Children.Add(Caption("The install number is made at random on this PC. It links your sessions together, not to you, and is forgotten when you turn usage data off. The server’s name and address are not in it."));
 
-        var scroller = new ScrollViewer
-        {
-            Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            MaxHeight = Math.Max(160, shell.DialogRoot.Size.Height - 170), IsTabStop = true
-        };
-        AutomationProperties.SetName(scroller, "What is sent");
-        var dialog = new ContentDialog
+        var dialog = new UsagePreviewDialog
         {
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme,
-            Content = scroller, PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
+            Title = "What is sent", Content = content, PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
         };
-        AutomationProperties.SetName(dialog, "What is sent");
-        dialog.Opened += (_, _) =>
+        // ContentDialog chooses focusable content ahead of its default button.
+        dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            scroller.Focus(FocusState.Programmatic);
-            scroller.ChangeView(null, 0, null, disableAnimation: true);
-        };
+            copy.IsTabStop = true;
+            sample.IsTextSelectionEnabled = true;
+        });
         await dialog.ShowAsync();
     }
 
-    internal static Grid TextRow(string title, string detail, double titleWidth)
+    internal static Border GroupCard(StackPanel rows) =>
+        new() { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = rows };
+
+    internal static void AddContact(StackPanel contacts, string title, string detail)
     {
-        var row = Columns(12, new(titleWidth), new(1, GridUnitType.Star));
-        Put(row, 0, Heading(title));
-        Put(row, 1, Body(detail));
-        return row;
+        var row = Columns(16, new(190), new(1, GridUnitType.Star));
+        Put(row, 0, new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap });
+        Put(row, 1, Detail(detail, 13, 19));
+        AddRow(contacts, row);
+    }
+
+    private static void AddRow(StackPanel rows, Grid row)
+    {
+        if (rows.Children.Count != 0)
+            rows.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
+        row.Padding = new Thickness(16, 10, 16, 10);
+        rows.Children.Add(row);
+    }
+
+    private static TextBlock Detail(string text, double size, double lineHeight) => new()
+    {
+        Text = text, Style = StyleFor("SecondaryText"), FontSize = size, LineHeight = lineHeight,
+        LineStackingStrategy = LineStackingStrategy.BlockLineHeight
+    };
+
+    private sealed class UsagePreviewDialog : ContentDialog
+    {
+        public UsagePreviewDialog() => DefaultStyleKey = typeof(ContentDialog);
+
+        protected override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            if (GetTemplateChild("ContentScrollViewer") is ScrollViewer scroll)
+            {
+                scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+                AutomationProperties.SetName(scroll, "What is sent");
+            }
+        }
     }
 
     private static TextBlock Heading(string title) => new()

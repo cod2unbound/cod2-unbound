@@ -36,6 +36,9 @@
     <x:String x:Key="FluentDocument">&#xF378;</x:String>
     <x:String x:Key="FluentStar">&#xF70F;</x:String>
     <x:String x:Key="FluentLock">&#xE78E;</x:String>
+    <x:String x:Key="FluentLockClosed">&#xE78F;</x:String>
+    <x:String x:Key="FluentEye">&#xE5F2;</x:String>
+    <x:String x:Key="FluentShare">&#xF6AF;</x:String>
     <x:String x:Key="FluentTag">&#xEC70;</x:String>
     <x:String x:Key="FluentMore">&#xE824;</x:String>
     <x:String x:Key="FluentImage">&#xF489;</x:String>
@@ -47,6 +50,9 @@
 
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
         <Setter Property="HighContrastAdjustment" Value="None" />
+    </Style>
+    <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
 
     <Style x:Key="HeroTitle" TargetType="TextBlock">

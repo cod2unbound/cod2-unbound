@@ -49,10 +49,14 @@ public sealed partial class SetupPage : Page
             {
                 bool crash = setup.Step == SetupStep.CrashReports;
                 PrivacyQuestion.Children.Add(PrivacyPresentation.Question(crash));
-                PrivacyQuestion.Children.Add(Caption(PrivacyPresentation.ChangeLater));
                 var preview = PrivacyPresentation.PreviewButton(crash, "W", shell, session.Reports);
                 preview.TabIndex = 3;
-                PrivacyQuestion.Children.Add(preview);
+                var choices = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
+                var changeLater = Caption(PrivacyPresentation.ChangeLater);
+                changeLater.VerticalAlignment = VerticalAlignment.Center;
+                Put(choices, 0, changeLater);
+                Put(choices, 1, preview);
+                PrivacyQuestion.Children.Add(choices);
                 string send = crash ? "Send crash reports" : "Send usage data";
                 SendReport.Content = send;
                 AutomationProperties.SetName(SendReport, send);

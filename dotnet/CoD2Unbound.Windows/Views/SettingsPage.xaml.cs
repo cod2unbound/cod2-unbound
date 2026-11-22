@@ -220,19 +220,17 @@ public sealed partial class SettingsPage : Page
             IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational
         });
         var reports = session.Reports;
-        if (reports.CrashAvailable || reports.Usage.Available)
-            Group("Sharing");
+        Group("Sharing");
         if (reports.CrashAvailable)
         {
             var crash = PrivacySwitch(PrivacyPresentation.CrashSwitch, Current.SendCrashReports, "H", session.SetCrashAsync);
             Row(PrivacyPresentation.CrashSwitch,
                 "If the game crashes: what failed, your Windows version and PC model, and the game’s report. Never your CD key or your Windows user name.",
                 Buttons(PrivacyPresentation.PreviewButton(true, "F", shell, reports), crash));
-            const string cod2xName = "Send CoD2x crash reports to the CoD2x project";
-            var cod2x = new ToggleSwitch { OffContent = "Off", IsEnabled = false, MinWidth = 0 };
-            AutomationProperties.SetName(cod2x, cod2xName);
-            Row(cod2xName, "CoD2x’s own crash service is separate. This Windows launcher keeps those diagnostics on this PC.", cod2x);
         }
+        Row(PrivacyPresentation.Cod2xSwitch,
+            "Faults in CoD2x’s own code, sent by CoD2x to the people who make it. They include folder paths and the list of loaded game files. Changes apply the next time CoD2x starts.",
+            PrivacySwitch(PrivacyPresentation.Cod2xSwitch, Current.SendCoD2xReports, "X", session.SetCoD2xReportsAsync));
         if (reports.Usage.Available)
         {
             var usage = PrivacySwitch(PrivacyPresentation.UsageSwitch, reports.Usage.InstallNumber is not null, "U",
@@ -271,7 +269,7 @@ public sealed partial class SettingsPage : Page
         Row("Saved match summaries", null, delete);
 
         Group("What CoD2 Unbound contacts");
-        var contacts = new StackPanel { Spacing = 12 };
+        var contacts = new StackPanel();
         foreach (var (who, when) in new (string, string)[]
         {
             ("Master servers", "Activision’s and the CoD2x project’s, when the server list refreshes. The game also asks them and the key server, as the original does."),
@@ -281,34 +279,42 @@ public sealed partial class SettingsPage : Page
             ("The certificate’s issuer", "When an update’s signature is verified, Windows asks whether it is still valid. Nothing about you."),
             ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers. A CoD2x server asks the CoD2x project about new versions.")
         })
-            contacts.Children.Add(PrivacyPresentation.TextRow(who, when, 190));
+            PrivacyPresentation.AddContact(contacts, who, when);
         if (reports.CrashAvailable)
-            contacts.Children.Add(PrivacyPresentation.TextRow("Crash reports", "Only with the crash reports switch above on, once for each crash.", 190));
+            PrivacyPresentation.AddContact(contacts, "Crash reports", "Only with the CoD2 Unbound crash reports switch above on, once for each crash.");
+        PrivacyPresentation.AddContact(contacts, "CoD2x crash reports",
+            "Only with the CoD2x crash reports switch above on when you start CoD2x. CoD2x sends reports about faults in its own code, including any waiting from earlier runs.");
         if (reports.Usage.Available)
-            contacts.Children.Add(PrivacyPresentation.TextRow("PostHog, in the EU", "While you use the launcher, only if usage data is on. What you open and use, never who you are.", 190));
-        Fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = contacts });
+            PrivacyPresentation.AddContact(contacts, "PostHog, in the EU", "While you use the launcher, only if usage data is on. What you open and use, never who you are.");
+        Fields.Children.Add(PrivacyPresentation.GroupCard(contacts));
     }
 
     private ToggleSwitch PrivacySwitch(string name, bool value, string key, Func<bool, Task> save)
     {
         var control = new ToggleSwitch { OnContent = "On", OffContent = "Off", IsOn = value, MinWidth = 0, AccessKey = key };
         AutomationProperties.SetName(control, name);
+        bool restoring = false;
         control.Toggled += async (_, _) =>
         {
-            if (!control.IsEnabled)
+            if (restoring || !control.IsEnabled)
                 return;
             if (shell.IsBusy)
             {
-                control.IsEnabled = false;
+                restoring = true;
                 control.IsOn = value;
-                control.IsEnabled = true;
+                restoring = false;
                 return;
             }
-            control.IsEnabled = false;
             await shell.RunAsync(async () =>
             {
+                control.IsEnabled = false;
                 try { await save(control.IsOn); }
-                finally { if (Panes.SelectedItem == Panes.Items[3]) Render(); }
+                finally
+                {
+                    control.IsEnabled = true;
+                    if (Panes.SelectedItem == Panes.Items[3])
+                        Render();
+                }
             });
         };
         return control;

@@ -201,6 +201,9 @@ internal sealed class WindowsLauncherSession
         await UpdateSettingsAsync(Settings.Working with { SendCrashReports = enabled, CrashReportsAsked = true });
     }
 
+    internal Task SetCoD2xReportsAsync(bool enabled) =>
+        UpdateSettingsAsync(Settings.Working with { SendCoD2xReports = enabled });
+
     internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
 
     internal async Task<ImmutableArray<ConfigProfile>> ReadLoadoutChoicesAsync()
