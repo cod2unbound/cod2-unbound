@@ -138,7 +138,7 @@ public sealed partial class HomePage : Page
         foreach (var dispatch in model.News)
         {
             var item = new StackPanel { Spacing = 4 };
-            item.Children.Add(Secondary(dispatch.Stamp));
+            item.Children.Add(new TextBlock { Text = dispatch.Stamp, Style = StyleFor("MonoCaption") });
             AddFact(item, dispatch.Title, dispatch.Summary);
             NewsRows.Children.Add(item);
         }
@@ -150,7 +150,7 @@ public sealed partial class HomePage : Page
         foreach (var dispatch in model.AllNews)
         {
             var item = new StackPanel { Spacing = 4 };
-            item.Children.Add(Secondary(dispatch.Stamp));
+            item.Children.Add(new TextBlock { Text = dispatch.Stamp, Style = StyleFor("MonoCaption") });
             AddFact(item, dispatch.Title, dispatch.Summary);
             rows.Children.Add(item);
         }
@@ -229,7 +229,8 @@ public sealed partial class HomePage : Page
     {
         bool wide = args.NewSize.Width >= 1000;
         ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(28, 28, 28, 24);
-        HeroTitle.FontSize = wide ? 132 : 84;
+        HeroTitle.FontSize = wide ? 132 : 112;
+        HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
         ArtLayer.Height = wide ? 560 : 360;
         ContentLayout.MinHeight = args.NewSize.Height;
     }

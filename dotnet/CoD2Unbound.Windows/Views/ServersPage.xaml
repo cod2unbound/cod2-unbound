@@ -132,8 +132,7 @@
                             </Border>
                             <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" />
                             <TextBlock x:Name="DetailName" Style="{StaticResource CardTitle}" TextWrapping="Wrap" />
-                            <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" TextWrapping="Wrap"
-                                       FontFamily="Consolas" FontSize="12" />
+                            <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" Style="{StaticResource AddressText}" />
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />

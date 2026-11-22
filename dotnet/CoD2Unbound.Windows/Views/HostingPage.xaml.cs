@@ -138,7 +138,7 @@ public sealed partial class HostingPage : Page
             SelectedIndex = hosting.LoopbackOnly ? 0 : (int)server.Reach, IsEnabled = !hosting.LoopbackOnly };
         var players = new NumberBox { Header = "Player slots", Minimum = 2, Maximum = 64, Value = server.Players,
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact };
-        var port = new NumberBox { Header = "Port", Minimum = 1025, Maximum = 65535, Value = server.Port };
+        var port = new NumberBox { Header = "Port", FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["CourierPrime"], Minimum = 1025, Maximum = 65535, Value = server.Port };
         var gameTypes = HostingCatalog.GameTypes;
         var type = new ComboBox { Header = "Game type", ItemsSource = gameTypes.Select(item => item.Title).ToArray(),
             SelectedItem = HostingCatalog.GameTypeTitle(server.GameType) };
@@ -241,7 +241,7 @@ public sealed partial class HostingPage : Page
     {
         string log = await hosting.ReadLogAsync(server.Id) ?? "No server log yet.";
         var text = new TextBox { Text = log, IsReadOnly = true, AcceptsReturn = true, MinWidth = 360, MaxHeight = 340,
-            FontFamily = new("Consolas"), TextWrapping = TextWrapping.Wrap };
+            Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetName(text, "Server log");
         await new ContentDialog { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Server log", Content = text, CloseButtonText = "Close",
             DefaultButton = ContentDialogButton.Close }.ShowAsync();

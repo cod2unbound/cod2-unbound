@@ -1,5 +1,43 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <FontFamily x:Key="StencilExtraBold">ms-appx:///Assets/BigShouldersStencilDisplay-ExtraBold.ttf#Big Shoulders Stencil Display ExtraBold</FontFamily>
+    <FontFamily x:Key="StencilBold">ms-appx:///Assets/BigShouldersStencilDisplay-Bold.ttf#Big Shoulders Stencil Display</FontFamily>
+    <FontFamily x:Key="CourierPrime">ms-appx:///Assets/CourierPrime-Regular.ttf#Courier Prime</FontFamily>
+    <FontFamily x:Key="CourierPrimeBold">ms-appx:///Assets/CourierPrime-Bold.ttf#Courier Prime</FontFamily>
+
+    <Style x:Key="HeroTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource StencilExtraBold}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="FontSize" Value="132" />
+        <Setter Property="LineHeight" Value="113.52" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+        <!-- The font's ink rises above the shortened line box. -->
+        <Setter Property="Margin" Value="0,24,0,-24" />
+        <Setter Property="CharacterSpacing" Value="20" />
+        <Setter Property="Foreground" Value="{ThemeResource HeroInkBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level1" />
+    </Style>
+    <Style x:Key="StencilText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource StencilBold}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
+    </Style>
+    <Style x:Key="Mono" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style x:Key="MonoCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+        <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
+    </Style>
+    <Style x:Key="AddressText" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+        <Setter Property="Foreground" Value="{ThemeResource AddressBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="MonoField" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
     <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level1" />
@@ -30,11 +68,21 @@
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="0,0,8,0" />
     </Style>
-    <Style x:Key="Eyebrow" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
-        <Setter Property="CharacterSpacing" Value="160" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
+    <Style x:Key="Eyebrow" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="CharacterSpacing" Value="200" />
         <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="HeroEyebrow" TargetType="TextBlock" BasedOn="{StaticResource Eyebrow}">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="CharacterSpacing" Value="340" />
+    </Style>
+    <Style x:Key="EmptyHeading" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="CharacterSpacing" Value="120" />
+        <Setter Property="Foreground" Value="{ThemeResource ChipIconBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
     <Style x:Key="FieldCard" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
