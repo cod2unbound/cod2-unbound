@@ -37,7 +37,7 @@ cod2_generate_typed_blobs(WIN_GEN_C)
 if(COD2_WIN32_CLIENT)
   set(WIN_TARGET cod2_win32)
   set(WIN_TARGET_C ${WIN_C} ${WIN_GEN_C} src/unix/linux_input.c src/win32/gl_loader.c
-    src/win32/win_jpeg.c src/platform/macos_display.c)
+    src/win32/win_jpeg.c src/win32/win_launcher_crash.c src/platform/macos_display.c)
   # Sound is the macOS mixer over SDL, in place of the Mac Miles layer.
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/Mac/Tools/(MacDisplay|CAudioRecorder|MacMSS[^/]*)\\.c$")
   list(FILTER WIN_TARGET_C EXCLUDE REGEX "/stubs/audio_stubs\\.c$")

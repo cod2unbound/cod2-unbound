@@ -563,6 +563,9 @@ static int cr_win_owned(CONTEXT *context)
 
 #if COD2_WINDOWS_NATIVE
 #include "win32/win_files.h"
+#if !defined(DEDICATED)
+#include "win32/win_launcher_crash.h"
+#endif
 #endif
 
 static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
@@ -575,6 +578,13 @@ static void cr_win_do(EXCEPTION_POINTERS *ep, const char *descIn)
     if (cr_inHandler)
         return;
     cr_inHandler = 1;
+
+#if COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+#    if defined(CR_COD2X_DIALOG)
+    if (!cr_win_owned(ep ? ep->ContextRecord : NULL))
+#    endif
+        Win_WriteLauncherCrash(ep);
+#endif
 
     if (ep && ep->ExceptionRecord) {
         DWORD code = ep->ExceptionRecord->ExceptionCode;
