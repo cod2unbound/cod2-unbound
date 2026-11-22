@@ -172,8 +172,8 @@ running game and launcher.
 
 ### Windows launcher updates
 
-Set `UpdateBuildProfile=Public`, `EnableLocalUpdateFeed=false`, and
-`UpdatePublisherRules=<ROOT_SHA256>=<PUBLISHER_PROFILE_EKU_OID>` when publishing.
+Set `UpdateBuildProfile=Public`, `EnableLocalUpdateFeed=false`,
+`EnableLocalReportReceivers=false`, and `UpdatePublisherRules=<ROOT_SHA256>=<PUBLISHER_PROFILE_EKU_OID>` when publishing.
 Use the 64 hex digits of the SHA-256 fingerprint of the root certificate
 Windows accepts for the Setup signer. Use the certificate profile's unique
 extended key usage OID in the private enterprise or UUID namespace. The leaf
@@ -188,6 +188,32 @@ For a root or profile change, first release a transition launcher with
 `UpdatePublisherRules=<OLD_ROOT_SHA256>=<OLD_PROFILE_EKU_OID>|<NEW_ROOT_SHA256>=<NEW_PROFILE_EKU_OID>`.
 Each rule matches a root and profile together. Publish only public releases with
 this signing identity. Sign fixtures and prereleases with a separate identity.
+
+Keep the exact `UpdatePublisherRules` value used for the public publish in an
+untracked file outside the checkout. After signing and before distributing
+Setup, run the publisher check on Windows against the exact signed release
+asset. Use a public certificate from a different publisher on the same signing
+service as the reference so the check can catch shared EKUs.
+
+```powershell
+powershell.exe -NoProfile -File tools/windows/package/verify-publishers.ps1 `
+  --setup '<SIGNED_SETUP_PATH>' --rules-file '<PRIVATE_RULES_FILE>' `
+  --other-publisher '<OTHER_PUBLISHER_CERTIFICATE>' --min-arcs '<MINIMUM_OID_ARCS>'
+```
+
+The minimum defaults to nine arcs. Set it to the minimum for the approved
+profile. Repeat `--setup` with a signed sample for each distinct transitional
+profile. Repeat `--other-publisher` to compare more reference leaves. The
+check fails if any configured OID is short, missing from all supplied Setup
+signer leaves, or present on any supplied reference. Keep the receipt with the
+release checks. It records the OID's SHA-256, arc count, and comparison result.
+Run the check with a reference when one is available. Without one, the receipt
+can establish leaf membership and arc count.
+
+An interrupted launcher update can reopen the same signed Setup in restore-only
+mode if the installed launcher can still start. If the launcher cannot start
+or cannot verify the staged Setup, download and run Setup again to repair the
+installation.
 
 For an offline test build, set `UpdateBuildProfile=Fixture` and
 `EnableLocalUpdateFeed=true` when publishing and
