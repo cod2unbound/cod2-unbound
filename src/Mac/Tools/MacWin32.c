@@ -353,7 +353,7 @@ HANDLE FindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
         slash = strrchr(lpFileName, '/');
         strncpy(lpFindFileData->cFileName, slash ? slash + 1 : lpFileName, 259);
         lpFindFileData->nFileSizeLow = (DWORD)(st.st_size & 0xFFFFFFFF);
-        lpFindFileData->nFileSizeHigh = (DWORD)((uint64_t)st.st_size >> 32);
+        lpFindFileData->nFileSizeHigh = (DWORD)((int64_t)st.st_size >> 32);
 
         return (HANDLE)state;
     }
@@ -398,7 +398,7 @@ BOOL FindNextFileA(HANDLE hFindFile, LPWIN32_FIND_DATAA lpFindFileData)
         if (stat(fullpath, &st) == 0) {
             lpFindFileData->dwFileAttributes = S_ISDIR(st.st_mode) ? 0x10 : 0;
             lpFindFileData->nFileSizeLow = (DWORD)(st.st_size & 0xFFFFFFFF);
-            lpFindFileData->nFileSizeHigh = (DWORD)((uint64_t)st.st_size >> 32);
+            lpFindFileData->nFileSizeHigh = (DWORD)((int64_t)st.st_size >> 32);
         }
         strncpy(lpFindFileData->cFileName, entry->d_name, 259);
         return 1;
