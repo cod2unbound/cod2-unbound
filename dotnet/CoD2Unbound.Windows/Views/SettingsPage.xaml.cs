@@ -350,6 +350,12 @@ public sealed partial class SettingsPage : Page
             message = "The launcher reopens when it’s done.";
             showProgress = true;
         }
+        else if (state.Issue == UpdateIssue.CheckUnavailable)
+        {
+            title = "Couldn’t check for updates";
+            message = state.Message;
+            AddAction("Try again");
+        }
         else if (state.Issue == UpdateIssue.Refused)
         {
             title = $"CoD2 Unbound {version} wasn’t installed";

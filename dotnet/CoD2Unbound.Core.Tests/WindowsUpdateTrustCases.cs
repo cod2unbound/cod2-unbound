@@ -115,6 +115,7 @@ internal static partial class Program
                 Equal(valid, installer.HandedOff);
                 Equal(valid ? UpdatePhase.Installing : UpdatePhase.Idle, state.Phase);
                 Equal(valid ? UpdateIssue.None : UpdateIssue.Refused, state.Issue);
+                Equal<UpdateFailureStage?>(valid ? null : UpdateFailureStage.Install, state.FailedStage);
                 http.AssertRequests(GitHubReleases, MirrorReleases, GitHubNews, MirrorRoot + SumsName, MirrorRoot + SetupName);
             }
         });

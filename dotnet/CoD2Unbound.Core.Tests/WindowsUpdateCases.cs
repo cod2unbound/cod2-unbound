@@ -146,13 +146,21 @@ internal static partial class Program
                 Sequence(["application/vnd.github+json", "", ""], http.Accepts);
             });
 
-        Check("Release check surfaces both list failures", () =>
+        Check("Two unavailable release lists leave the check retryable", () =>
         {
-            using var http = new UpdateHttp(Reply(HttpStatusCode.InternalServerError), Reply(HttpStatusCode.OK, "garbage"));
-            var result = RunCheck(http.Download);
+            using var http = new UpdateHttp(Reply(HttpStatusCode.ServiceUnavailable), Reply(HttpStatusCode.ServiceUnavailable),
+                Reply(HttpStatusCode.OK, UpdateRelease(GitHubRoot, GitHubNotes)), Reply(HttpStatusCode.NotFound));
+            var updates = CreateUpdater(http.Download);
+            var result = updates.CheckAsync(new()).GetAwaiter().GetResult();
             Equal(UpdateFailureStage.Check, result.State.FailedStage);
+            Equal(UpdateIssue.CheckUnavailable, result.State.Issue);
             Equal<ReleaseOffer?>(null, result.State.Offer);
-            http.AssertRequests(GitHubReleases, MirrorReleases);
+            Equal<DateTimeOffset?>(null, result.State.CheckedAt);
+
+            var retry = updates.CheckAsync(result.Library).GetAwaiter().GetResult();
+            Equal(UpdateIssue.None, retry.State.Issue);
+            Equal(UpdatePhase.Offered, retry.State.Phase);
+            http.AssertRequests(GitHubReleases, MirrorReleases, GitHubReleases, GitHubNews);
         });
 
         Check("Release check refuses bad asset metadata from a usable GitHub list", () =>

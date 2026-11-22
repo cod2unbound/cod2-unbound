@@ -5,7 +5,7 @@ namespace CoD2Unbound.Core;
 
 public enum UpdatePhase { Idle, Checking, Offered, Downloading, Verifying, Ready, Installing, Installed }
 public enum UpdateFailureStage { Check, Install }
-public enum UpdateIssue { None, Refused, Interrupted, ProtectedLocation, SetupFailed, Unexpected }
+public enum UpdateIssue { None, Refused, Interrupted, ProtectedLocation, SetupFailed, Unexpected, CheckUnavailable }
 public sealed class UpdateHeldException(UpdateBlock reason) : IOException
 {
     public UpdateBlock Reason { get; } = reason;
@@ -135,7 +135,7 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
         {
             LogError(error);
             Publish(automatic ? before : State with { Phase = UpdatePhase.Idle, FailedStage = UpdateFailureStage.Check,
-                Issue = error is LauncherUpdateException ? UpdateIssue.Refused : UpdateIssue.Unexpected,
+                Issue = UpdateIssue.CheckUnavailable,
                 Message = "The update server didn’t answer. Check your connection and try again. Your current version keeps working." });
             return new(State, library, null);
         }
