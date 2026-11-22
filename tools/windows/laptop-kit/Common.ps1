@@ -39,6 +39,20 @@ function New-Folder([string]$Path) {
     [IO.Directory]::CreateDirectory($Path).FullName
 }
 
+function Remove-KitScratch([string]$Path) {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        if (-not [IO.Directory]::Exists($Path)) { return }
+        try {
+            [IO.Directory]::Delete($Path, $true)
+            return
+        } catch [IO.IOException], [UnauthorizedAccessException] {
+            if ($attempt -eq 3) { throw }
+            # A recently exited Windows executable can still be held open briefly.
+            Start-Sleep -Seconds 1
+        }
+    }
+}
+
 function Get-DataRoot([string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Path)) { return }
     $folder = Get-Item -LiteralPath ($Path.Trim().Trim('"'))

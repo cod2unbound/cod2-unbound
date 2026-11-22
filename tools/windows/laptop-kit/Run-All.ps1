@@ -202,7 +202,7 @@ try {
             try { Invoke-TestKey 'clear' } catch { Write-Warning 'The test key could not be removed. See If something goes wrong in START-HERE.md.' }
         }
         if ($Private) {
-            try { [IO.Directory]::Delete($Private, $true) }
+            try { Remove-KitScratch $Private }
             catch { Write-Warning "The temporary test folder could not be removed. Close any kit programs still open, then delete $Private." }
         }
     } finally {
