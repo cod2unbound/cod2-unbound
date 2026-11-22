@@ -17,6 +17,7 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
     private const double StockYaw = 0.022;
     private readonly SemaphoreSlim gate = new(1);
     private ConfigDiscoverState state = new(ConfigDiscoverPhase.Idle, Saved: []);
+    public Task<ConfigDirectoryPopularity?>? Popularity { get; private set; }
     public ConfigDiscoverState State => Volatile.Read(ref state);
     public ImmutableArray<ConfigDirectoryEntry> Entries => State.Snapshot?.Index.Entries ?? [];
 
@@ -34,6 +35,7 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
                 var result = await directory.LoadAsync(cancellationToken).ConfigureAwait(false);
                 if (result.Snapshot is not { } snapshot)
                 {
+                    Popularity = null;
                     Publish(new(ConfigDiscoverPhase.Unavailable,
                         Problem: result.UnavailableReason ?? "The player directory isn’t available.", Saved: []));
                     return;
@@ -42,6 +44,7 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
                 try { saved = await directory.SavedAsync(snapshot, cancellationToken).ConfigureAwait(false); }
                 catch (Exception error) when (error is IOException or ConfigDirectoryException or UnauthorizedAccessException) { }
                 var fetched = await directory.CacheDateAsync(cancellationToken).ConfigureAwait(false);
+                Popularity = directory.LoadPopularityAsync().AsTask();
                 Publish(new(ConfigDiscoverPhase.Loaded, snapshot, fetched, result.RefreshError, saved));
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -51,6 +54,7 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
             }
             catch (Exception error) when (error is IOException or ConfigDirectoryException or UnauthorizedAccessException)
             {
+                Popularity = null;
                 Publish(new(ConfigDiscoverPhase.Failed, Problem: error.Message, Saved: []));
             }
         }
@@ -120,6 +124,17 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
                 .Any(text => culture.CompareInfo.IndexOf(text, search, CompareOptions.IgnoreCase) >= 0))
             .OrderBy(entry => entry.Player, StringComparer.Create(culture, ignoreCase: true))];
     }
+
+    public static ImmutableArray<ConfigSetupOrder> AvailableOrders(ConfigDirectoryPopularity? popularity) =>
+        [.. Enum.GetValues<ConfigSetupOrder>().Where(order => order == ConfigSetupOrder.FeaturedFirst ||
+            popularity?.Setups.Values.Any(counts => counts.Figure(order) is not null) == true)];
+
+    public static ImmutableArray<ConfigDirectoryEntry> OrderSetups(ImmutableArray<ConfigDirectoryEntry> entries,
+        ConfigSetupOrder order, ConfigDirectoryPopularity? popularity, CultureInfo culture) =>
+        !AvailableOrders(popularity).Contains(order) || order == ConfigSetupOrder.FeaturedFirst
+            ? [.. entries.OrderByDescending(entry => entry.Featured == true)
+                .ThenBy(entry => entry.Player, StringComparer.Create(culture, ignoreCase: true))]
+            : [.. entries.OrderByDescending(entry => popularity?.Setups.GetValueOrDefault(entry.Id)?.Figure(order) ?? 0)];
 
     public static ImmutableArray<ConfigDirectoryEntry> Heroes(ImmutableArray<ConfigDirectoryEntry> entries)
     {

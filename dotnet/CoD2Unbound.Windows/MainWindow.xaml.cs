@@ -124,6 +124,7 @@ public sealed partial class MainWindow : Window
                 settings.UpdateContrast();
         });
 
+    internal ConfigSetupOrder SetupOrder { get; set; }
     internal bool IsHighContrast => windowTheme.HighContrast;
     internal ElementTheme DialogTheme => Root.RequestedTheme;
     internal XamlRoot DialogRoot => Root.XamlRoot;

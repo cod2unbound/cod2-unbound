@@ -7,7 +7,13 @@ namespace CoD2Unbound.Windows.Platform;
 internal sealed class WindowsConfigDirectoryStorage(string root) : IConfigDirectoryStorage
 {
     private readonly WindowsSettingsFolder files = new(root);
-    private static string Name(ConfigDirectoryFile file) => file == ConfigDirectoryFile.Cache ? "directory-cache.json" : "saved-setups.json";
+    private static string Name(ConfigDirectoryFile file) => file switch
+    {
+        ConfigDirectoryFile.Cache => "directory-cache.json",
+        ConfigDirectoryFile.Saved => "saved-setups.json",
+        ConfigDirectoryFile.Popularity => "directory-popularity.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(file))
+    };
 
     public async ValueTask<IAsyncDisposable> AcquireAsync(CancellationToken cancellationToken) =>
         await WindowsGameSessionHost.OpenLeaseAsync(root, ".directory.lock", cancellationToken);
@@ -60,13 +66,19 @@ internal sealed class WindowsConfigFetch : IConfigTextFetcher
             var indexBytes = signed.GetProperty("index").GetBytesFromBase64();
             using var indexJson = JsonDocument.Parse(indexBytes);
             var profile = new Uri(indexJson.RootElement.GetProperty("entries")[0].GetProperty("configURL").GetString()!);
-            return new(new(index, signature, [.. data.GetProperty("publicKey").GetBytesFromBase64()]), storage,
-                new WindowsConfigFetch(new Dictionary<Uri, ImmutableArray<byte>>
-                {
-                    [index] = [.. indexBytes],
-                    [signature] = [.. signed.GetProperty("signature").GetBytesFromBase64()],
-                    [profile] = [.. data.GetProperty("profile").GetBytesFromBase64()]
-                }));
+            var responses = new Dictionary<Uri, ImmutableArray<byte>>
+            {
+                [index] = [.. indexBytes],
+                [signature] = [.. signed.GetProperty("signature").GetBytesFromBase64()],
+                [profile] = [.. data.GetProperty("profile").GetBytesFromBase64()]
+            };
+            if (data.TryGetProperty("popularity", out var figures))
+            {
+                responses[new Uri(index, "popularity.json")] = [.. figures.GetProperty("json").GetBytesFromBase64()];
+                responses[new Uri(index, "popularity.sig")] = [.. figures.GetProperty("signature").GetBytesFromBase64()];
+            }
+            return new(new(index, signature, [.. data.GetProperty("publicKey").GetBytesFromBase64()]),
+                storage, new WindowsConfigFetch(responses));
         }
 #endif
         return new(offline ? null : ConfigDirectory.Production, storage, new WindowsConfigFetch(null));

@@ -8,6 +8,7 @@ internal static partial class Program
 {
     private static void DirectoryCases()
     {
+        SetupDiscoveryCases();
         using var fixture = Fixtures("directory");
         var root = fixture.RootElement;
         var index = new Uri(root.String("indexURL")!);

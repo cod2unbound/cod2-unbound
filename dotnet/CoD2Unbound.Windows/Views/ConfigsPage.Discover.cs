@@ -71,7 +71,10 @@ public sealed partial class ConfigsPage
         refresh.Style = StyleFor("IconAction");
         AutomationProperties.SetName(refresh, "Refresh player setups");
         ToolTipService.SetToolTip(refresh, "Refresh player setups");
-        Put(tools, 1, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { count, refresh } });
+        var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+            HorizontalAlignment = HorizontalAlignment.Left, Children = { count, refresh } };
+        Put(tools, 1, counts);
+        MoveBelowWhenNarrow(tools, counts, 560);
         Detail.Children.Add(tools);
 
         if (state.Problem is not null)
@@ -79,6 +82,8 @@ public sealed partial class ConfigsPage
 
         var results = new StackPanel { Spacing = 14 };
         Detail.Children.Add(results);
+        ConfigDirectoryPopularity? figures = model.Discover.Popularity is { IsCompletedSuccessfully: true } ready
+            ? ready.Result : null;
         search.TextChanged += (_, args) =>
         {
             if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
@@ -93,6 +98,15 @@ public sealed partial class ConfigsPage
             Fill();
         };
         Fill();
+        if (!saved && model.Discover.Popularity is { IsCompleted: false } pending)
+            _ = ShowFiguresAsync(pending);
+
+        async Task ShowFiguresAsync(Task<ConfigDirectoryPopularity?> pending)
+        {
+            figures = await pending;
+            if (figures is not null && Detail.Children.Contains(results) && discoverGroup is not null)
+                Fill();
+        }
 
         void Fill()
         {
@@ -103,8 +117,62 @@ public sealed partial class ConfigsPage
                 var back = new HyperlinkButton { Content = "‹ Player Setups" };
                 back.Click += (_, _) => { discoverGroup = null; Fill(); };
                 results.Children.Add(back);
-                results.Children.Add(ShelfHeading(group, SetupCount(groupEntries.Length)));
-                results.Children.Add(SetupGrid(groupEntries, saved));
+                var caption = Caption("");
+                caption.VerticalAlignment = VerticalAlignment.Bottom;
+                caption.TextWrapping = TextWrapping.Wrap;
+                var gridHeading = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+                Put(gridHeading, 0, new StackPanel { Spacing = 4, Children = { PanelHeading(group), caption } });
+                results.Children.Add(gridHeading);
+                var cards = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
+                results.Children.Add(cards);
+                var orders = ConfigDiscover.AvailableOrders(figures);
+                var order = orders.Contains(shell.SetupOrder) ? shell.SetupOrder : ConfigSetupOrder.FeaturedFirst;
+                if (orders.Length > 1)
+                {
+                    var sort = new ComboBox { MinWidth = 152 };
+                    var label = new TextBlock { Text = "Sort by", VerticalAlignment = VerticalAlignment.Center };
+                    AutomationProperties.SetLabeledBy(sort, label);
+                    ToolTipService.SetToolTip(sort, "Sort the setups");
+                    sort.ItemsSource = orders.Select(value => value switch
+                    {
+                        ConfigSetupOrder.MostImported => "Most imported",
+                        ConfigSetupOrder.MostViewed => "Most viewed",
+                        _ => "Featured first"
+                    }).ToArray();
+                    sort.SelectedIndex = orders.IndexOf(order);
+                    sort.SelectionChanged += (_, _) =>
+                    {
+                        if (sort.SelectedIndex < 0)
+                            return;
+                        shell.SetupOrder = order = orders[sort.SelectedIndex];
+                        FillGrid();
+                    };
+                    var sortRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+                        VerticalAlignment = VerticalAlignment.Bottom, Children = { label, sort } };
+                    Put(gridHeading, 1, sortRow);
+                    MoveBelowWhenNarrow(gridHeading, sortRow, 720);
+                }
+                FillGrid();
+
+                void FillGrid()
+                {
+                    bool ranked = order != ConfigSetupOrder.FeaturedFirst && figures is not null;
+                    string count = SetupCount(entries.Length);
+                    if (groupEntries.Length != entries.Length)
+                        count = $"{groupEntries.Length} of {count}";
+                    caption.Text = ranked
+                        ? $"{count}, the most {(order == ConfigSetupOrder.MostImported ? "imported" : "viewed")} in the last {figures!.Period} first"
+                        : SetupCount(groupEntries.Length);
+                    var ordered = ConfigDiscover.OrderSetups(groupEntries, order, figures, CultureInfo.CurrentCulture);
+                    cards.Content = SetupGrid(ordered, inSaved: false, ranked ? FigureLine : null);
+                }
+
+                string FigureLine(ConfigDirectoryEntry entry)
+                {
+                    long? count = figures?.Setups.GetValueOrDefault(entry.Id)?.Figure(order);
+                    return count is null ? $"As published by {entry.Provenance.PublishedBy}"
+                        : $"{(order == ConfigSetupOrder.MostImported ? "Imported" : "Viewed")} {count} times in the last {figures!.Period}";
+                }
                 return;
             }
 
@@ -152,10 +220,22 @@ public sealed partial class ConfigsPage
             {
                 results.Children.Add(ShelfHeading("Teams", "Browse setups by team"));
                 var teamCards = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal };
+                teamCards.SizeChanged += (_, args) =>
+                {
+                    double width = args.NewSize.Width;
+                    if (width > 0)
+                        teamCards.ItemWidth = Math.Floor(width / Math.Max(1, (int)(width / 200)));
+                };
                 foreach (var team in teams)
                 {
                     var matching = entries.Where(entry => entry.Team == team.Name).ToImmutableArray();
-                    var button = new Button { Content = team.Name + " · " + team.Count, Margin = new Thickness(0, 0, 8, 8) };
+                    var contents = Columns(6, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+                    Put(contents, 0, new TextBlock { Text = team.Name, TextTrimming = TextTrimming.CharacterEllipsis });
+                    Put(contents, 1, new TextBlock { Text = $"· {team.Count}" });
+                    var button = new Button { Content = contents, Margin = new Thickness(0, 0, 8, 8),
+                        HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+                    AutomationProperties.SetName(button, $"{team.Name} · {team.Count}");
+                    ToolTipService.SetToolTip(button, team.Name);
                     button.Click += (_, _) => OpenGroup(team.Name, matching);
                     teamCards.Children.Add(button);
                 }
@@ -165,21 +245,23 @@ public sealed partial class ConfigsPage
             if (shelves.IsEmpty && entries.Select(entry => entry.Era).Distinct().Count() > 1)
                 foreach (var era in ConfigDiscover.EraShelves(entries))
                 {
-                    results.Children.Add(ShelfHeading(era.Era, SetupCount(era.Entries.Length)));
+                    results.Children.Add(ShelfHeading(era.Era, SetupCount(era.Entries.Length), $"See all {era.Entries.Length}",
+                        () => OpenGroup(era.Era, era.Entries)));
                     results.Children.Add(SetupShelf(era.Entries.Take(10), saved));
                 }
 
             if (!entries.IsEmpty)
                 results.Children.Add(ShelfHeading("All setups", SetupCount(entries.Length), "See all", () =>
-                    OpenGroup("All setups", ConfigDiscover.Setups(entries, ConfigSetupFilter.All, "", CultureInfo.CurrentCulture))));
+                    OpenGroup("All setups", entries)));
             else
                 results.Children.Add(EmptyState("Search", "No player setups yet", "Check back later."));
         }
 
-        void OpenGroup(string label, ImmutableArray<ConfigDirectoryEntry> entries)
+        void OpenGroup(string label, ImmutableArray<ConfigDirectoryEntry> matching)
         {
             discoverGroup = label;
-            groupEntries = entries;
+            var ids = matching.Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
+            groupEntries = [.. entries.Where(entry => ids.Contains(entry.Id))];
             Fill();
             ResetDetailScroll();
         }
@@ -262,10 +344,26 @@ public sealed partial class ConfigsPage
         };
     }
 
-    private FrameworkElement SetupGrid(IEnumerable<ConfigDirectoryEntry> entries, bool inSaved)
+    private static void MoveBelowWhenNarrow(Grid header, FrameworkElement right, double threshold)
+    {
+        header.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        header.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        header.SizeChanged += (_, args) =>
+        {
+            bool narrow = args.NewSize.Width < threshold;
+            Grid.SetColumnSpan((FrameworkElement)header.Children[0], narrow ? 2 : 1);
+            Grid.SetRow(right, narrow ? 1 : 0);
+            Grid.SetColumn(right, narrow ? 0 : 1);
+            Grid.SetColumnSpan(right, narrow ? 2 : 1);
+            right.Margin = narrow ? new Thickness(0, 8, 0, 0) : new Thickness(0);
+        };
+    }
+
+    private FrameworkElement SetupGrid(IEnumerable<ConfigDirectoryEntry> entries, bool inSaved,
+        Func<ConfigDirectoryEntry, string>? figureLine = null)
     {
         var grid = new Grid { ColumnSpacing = 8, RowSpacing = 8 };
-        var cards = entries.Select(entry => SetupCard(entry, inSaved)).ToArray();
+        var cards = entries.Select(entry => SetupCard(entry, inSaved, figureLine?.Invoke(entry))).ToArray();
         foreach (var card in cards)
             grid.Children.Add(card);
         int columns = 0;
@@ -293,7 +391,7 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private Button SetupCard(ConfigDirectoryEntry entry, bool inSaved)
+    private Button SetupCard(ConfigDirectoryEntry entry, bool inSaved, string? figureLine = null)
     {
         var art = Artwork(entry, new CornerRadius(4, 4, 0, 0));
         art.Height = 104;
@@ -316,6 +414,12 @@ public sealed partial class ConfigsPage
                 OneLine(entry.Player, "BodyStrongTextBlockStyle"), OneLine(Identity(entry)), OneLine(entry.Feel, "SecondaryText"), facts
             }
         };
+        if (figureLine is not null)
+        {
+            var figure = OneLine(figureLine, "SetupFactLabel");
+            Typography.SetNumeralAlignment(figure, FontNumeralAlignment.Tabular);
+            info.Children.Add(figure);
+        }
         var open = Action("View setup", () => ShowSetupAsync(entry, inSaved));
         open.Content = new StackPanel { Children = { top, info } };
         open.Style = StyleFor("SetupCard");

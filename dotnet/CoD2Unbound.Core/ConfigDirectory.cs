@@ -60,7 +60,7 @@ public sealed class ConfigDirectoryConfiguration
 }
 
 public enum ConfigDirectoryOrigin { Network, Cache }
-public enum ConfigDirectoryFile { Cache, Saved }
+public enum ConfigDirectoryFile { Cache, Saved, Popularity }
 
 public interface IConfigDirectoryStorage
 {
@@ -96,7 +96,7 @@ public sealed class ConfigDirectorySnapshot
 public sealed record ConfigDirectoryLoad(ConfigDirectorySnapshot? Snapshot, string? UnavailableReason = null, string? RefreshError = null);
 public sealed record ConfigDirectorySavedEntry(string Id, ConfigDirectoryEntry? Entry);
 
-public sealed class ConfigDirectory(ConfigDirectoryConfiguration? configuration, IConfigDirectoryStorage storage, IConfigTextFetcher fetcher)
+public sealed partial class ConfigDirectory(ConfigDirectoryConfiguration? configuration, IConfigDirectoryStorage storage, IConfigTextFetcher fetcher)
 {
     public const int MaximumIndexBytes = 1_048_576;
     internal const int MaximumEntries = 2048;
@@ -297,4 +297,5 @@ internal sealed record ConfigDirectorySavedRecord(int SchemaVersion, string[] Id
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ConfigDirectoryCacheRecord))]
 [JsonSerializable(typeof(ConfigDirectorySavedRecord))]
+[JsonSerializable(typeof(ConfigPopularityPublication))]
 internal sealed partial class ConfigDirectoryJson : JsonSerializerContext;
