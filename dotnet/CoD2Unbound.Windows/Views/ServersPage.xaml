@@ -43,7 +43,7 @@
                          Style="{StaticResource AlignedSelector}" SelectionChanged="OnScopeChanged">
                 <SelectorBarItem Text="All" AccessKey="A" />
                 <SelectorBarItem Text="Favorites" AccessKey="V" />
-                <SelectorBarItem Text="Recent" AccessKey="N" />
+                <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
                 <SelectorBarItem Text="Hosting" AccessKey="T" />
             </SelectorBar>
             <TextBox x:Name="SearchBox" Grid.Column="1" PlaceholderText="Search servers, maps or mods"

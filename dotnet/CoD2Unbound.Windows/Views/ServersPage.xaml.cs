@@ -86,6 +86,8 @@ public sealed partial class ServersPage : Page
         if (!ready || index < 0)
             return;
         bool showHosting = index == sender.Items.Count - 1;
+        // New server takes Alt+N while Hosting is active in the shared Servers view.
+        RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility = SearchBox.Visibility = IsVisible(!showHosting);
         HostingContent.Visibility = IsVisible(showHosting);
         if (showHosting)
