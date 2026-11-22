@@ -106,7 +106,7 @@ public sealed partial class MainWindow : Window
         {
             UpdateCaptionColors();
             if (ContentFrame.Content is HomePage home)
-                home.RenderArtScrim();
+                home.UpdateTheme();
             else if (ContentFrame.Content is ServersPage servers)
                 servers.UpdateContrast();
             else if (ContentFrame.Content is ConfigsPage configs)

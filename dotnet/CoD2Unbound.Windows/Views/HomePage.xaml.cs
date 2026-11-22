@@ -28,8 +28,8 @@ public sealed partial class HomePage : Page
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
-        ActualThemeChanged += (_, _) => { RenderBackdrop(); RenderHeroDetail(); };
-        Loaded += (_, _) => RenderBackdrop();
+        ActualThemeChanged += (_, _) => UpdateTheme();
+        Loaded += (_, _) => UpdateTheme();
     }
 
     internal async Task RefreshAsync()
@@ -93,7 +93,7 @@ public sealed partial class HomePage : Page
             HeroDetail.Text = "You’re set up. Pick a server to join your first match, or open the game’s own menu.";
             return;
         }
-        AddGameName(HeroDetail, last.Name, shell.IsHighContrast);
+        AddGameName(HeroDetail, last.Name, ActualTheme, shell.IsHighContrast);
         if (last.GameType != "—")
             HeroDetail.Inlines.Add(new Run { Text = "   ·   " + GameModes.Long(last.GameType) });
         if (model.Played(last.Address, includeTime: true) is { } played)
@@ -257,6 +257,12 @@ public sealed partial class HomePage : Page
         Text = text, Style = (Style)Application.Current.Resources["SecondaryText"]
     };
 
+    internal void UpdateTheme()
+    {
+        RenderBackdrop();
+        RenderHeroDetail();
+    }
+
     private void RenderBackdrop()
     {
         if (HeroArt.Source is not SoftwareBitmapSource)
@@ -267,7 +273,7 @@ public sealed partial class HomePage : Page
         RenderArtScrim();
     }
 
-    internal void RenderArtScrim()
+    private void RenderArtScrim()
     {
         HeroScrim.Fill = null;
         HeroFade.Fill = null;

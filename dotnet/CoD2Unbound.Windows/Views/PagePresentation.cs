@@ -90,7 +90,7 @@ internal static class PagePresentation
             text.Foreground = ThemeBrush(key, text.ActualTheme, false);
     }
 
-    internal static void AddGameName(TextBlock text, string name, bool contrast)
+    internal static void AddGameName(TextBlock text, string name, ElementTheme theme, bool contrast)
     {
         foreach (var color in QuakeColors.Runs(name))
         {
@@ -101,7 +101,7 @@ internal static class PagePresentation
                 4 => "GameBlueBrush", 5 => "GameCyanBrush", 6 => "GameVioletBrush", _ => null
             };
             if (key is not null && !contrast)
-                run.Foreground = ThemeBrush(key, text.ActualTheme, contrast);
+                run.Foreground = ThemeBrush(key, theme, contrast);
             text.Inlines.Add(run);
         }
     }

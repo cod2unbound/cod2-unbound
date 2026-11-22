@@ -134,7 +134,7 @@ public sealed partial class ServersPage : Page
         var facts = ServerFacts.From(server);
         bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
-        AddGameName(name, server.Name, contrast);
+        AddGameName(name, server.Name, ActualTheme, contrast);
         var tag = (Border)row.FindName("RowEdition")!;
         tag.Style = StyleFor(server.IsCod2x ? "Cod2xTag" : "EditionTag");
         var tagText = (TextBlock)row.FindName("RowEditionText")!;
@@ -237,7 +237,7 @@ public sealed partial class ServersPage : Page
         var server = row.Server;
         var facts = ServerFacts.From(server);
         DetailName.Inlines.Clear();
-        AddGameName(DetailName, server.Name, shell.IsHighContrast);
+        AddGameName(DetailName, server.Name, ActualTheme, shell.IsHighContrast);
         DetailMap.Text = (row.Map + " · " + GameModes.Long(server.GameType)).ToUpperInvariant();
         RenderMapArtwork(server.Map);
         DetailAddress.Text = server.Address;
@@ -251,7 +251,7 @@ public sealed partial class ServersPage : Page
             var columns = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(40), new GridLength(40));
             columns.MinHeight = 22;
             var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
-            AddGameName(name, player.Name, shell.IsHighContrast);
+            AddGameName(name, player.Name, ActualTheme, shell.IsHighContrast);
             Put(columns, 0, name);
             Put(columns, 1, new TextBlock { Text = player.Score.ToString(), TextAlignment = TextAlignment.Right,
                 Style = StyleFor("BodyStrongTextBlockStyle") });

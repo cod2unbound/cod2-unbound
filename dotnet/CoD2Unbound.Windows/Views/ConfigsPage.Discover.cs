@@ -219,7 +219,7 @@ public sealed partial class ConfigsPage
 
     private FrameworkElement SetupGrid(IEnumerable<ConfigDirectoryEntry> entries, bool inSaved)
     {
-        var grid = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 198, ItemHeight = 190 };
+        var grid = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 198, ItemHeight = 170 };
         foreach (var entry in entries)
             grid.Children.Add(SetupCard(entry, inSaved));
         return grid;
@@ -240,7 +240,7 @@ public sealed partial class ConfigsPage
         open.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         open.VerticalContentAlignment = VerticalAlignment.Top;
         open.Width = 190;
-        open.Height = 182;
+        open.MinHeight = 150;
         AutomationProperties.SetName(open, $"View setup: {entry.Player}");
         return open;
     }
@@ -410,7 +410,7 @@ public sealed partial class ConfigsPage
         layout.Children.Add(new Border { Style = StyleFor("SetupHeroFooter"), Child = row });
         layout.SizeChanged += (_, args) =>
         {
-            double height = args.NewSize.Width >= 900 ? 260 : 200;
+            double height = args.NewSize.Width >= 900 ? 260 : args.NewSize.Width >= 700 ? 200 : 172;
             if (artwork.Height != height)
                 artwork.Height = height;
         };
