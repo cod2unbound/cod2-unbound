@@ -11,6 +11,7 @@ internal static partial class Program
     {
         ConfigCases();
         WireCases();
+        ActivationCases();
         LaunchCases();
         SettingsCases();
         DirectoryCases();
