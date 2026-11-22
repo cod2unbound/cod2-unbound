@@ -12,6 +12,7 @@ static unsigned char *sShadowCookieMemoryCapacity;
 
 extern int MacDisplay_GetCardType(void);
 extern UINT32 MacOpenGLUtils_GetPCPixelShaderVersion(void);
+extern void gluOrtho2D(double left, double right, double bottom, double top);
 void __ZdlPv(void *ptr);
 
 static void D3DXTex_DisablePrograms(void)
