@@ -102,6 +102,15 @@ def stage_launcher(bundle, tree, work):
           flush=True)
 
 
+def require_public_launcher(bundle):
+    with zipfile.ZipFile(bundle) as archive:
+        assembly = archive.read("CoD2Unbound.Windows.dll")
+    if b"CoD2Unbound.UpdateFixture" in assembly:
+        raise ValueError("The production release requires a launcher without updater fixtures")
+    if b"UpdatePublisherRules" not in assembly:
+        raise ValueError("The production release requires an updater publisher identity")
+
+
 def check_pe(exe, allowed_file):
     header = subprocess.check_output([OBJ + "objdump", "-f", exe], text=True)
     if "file format pei-x86-64\n" not in header:
@@ -246,6 +255,8 @@ def main(mode):
     launcher = Path("/launcher-win-x64.zip")
     if mode != "layout" and not launcher.is_file():
         raise ValueError("A verified x64 launcher publish ZIP is required for Setup")
+    if mode == "azure":
+        require_public_launcher(launcher)
     stage(tree, work, version, company, jobs, launcher if launcher.is_file() else None)
     if mode != "layout":
         from package_installer import release

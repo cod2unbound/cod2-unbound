@@ -21,13 +21,29 @@
     <Product>CoD2 Unbound</Product>
     <!-- The portable projects already lock their own restores. -->
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <UpdateBuildProfile Condition="'$(UpdateBuildProfile)' == ''">Public</UpdateBuildProfile>
+    <EnableLocalUpdateFeed Condition="'$(EnableLocalUpdateFeed)' == ''">false</EnableLocalUpdateFeed>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableLocalUpdateFeed)' == 'true'">
+  <PropertyGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
+    <DefineConstants>$(DefineConstants);UPDATE_FIXTURES</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalUpdateFeed)' == 'true'">
     <DefineConstants>$(DefineConstants);LOCAL_UPDATE_FEED</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(UpdatePublisherCertificateSha256)' != ''">
-    <AssemblyMetadata Include="UpdatePublisherCertificateSha256" Value="$(UpdatePublisherCertificateSha256)" />
+  <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
+    <AssemblyMetadata Include="CoD2Unbound.UpdateFixture" Value="true" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UpdatePublisherRules)' != ''">
+    <AssemblyMetadata Include="UpdatePublisherRules" Value="$(UpdatePublisherRules)" />
+  </ItemGroup>
+  <Target Name="ValidateUpdateBuild" BeforeTargets="CoreCompile">
+    <Error Condition="'$(UpdateBuildProfile)' != 'Public' and '$(UpdateBuildProfile)' != 'Fixture'"
+           Text="UpdateBuildProfile must be Public or Fixture." />
+    <Error Condition="'$(UpdateBuildProfile)' == 'Public' and ('$(EnableLocalUpdateFeed)' != 'false' or $([System.Text.RegularExpressions.Regex]::IsMatch('$(DefineConstants)', '(^|[;, ])(LOCAL_UPDATE_FEED|UPDATE_FIXTURES)($|[;, ])')))"
+           Text="Public launchers cannot include updater fixture support." />
+    <Error Condition="'$(UpdatePublisherRules)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(UpdatePublisherRules)', '\A[0-9a-fA-F]{64}=(?:1\.3\.6\.1\.4\.1|2\.25)(?:\.(?:0|[1-9][0-9]*)){2,}(?:\|[0-9a-fA-F]{64}=(?:1\.3\.6\.1\.4\.1|2\.25)(?:\.(?:0|[1-9][0-9]*)){2,})*\z'))"
+           Text="UpdatePublisherRules must contain | separated SHA-256=publisher OID pairs." />
+  </Target>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="[2.7.0]" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.26100.7175]" PrivateAssets="all" />

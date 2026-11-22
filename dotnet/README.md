@@ -172,22 +172,27 @@ running game and launcher.
 
 ### Windows launcher updates
 
-Set the `UpdatePublisherCertificateSha256` MSBuild property when publishing the
-Windows launcher. Use the SHA-256 fingerprint of the Authenticode signing
-certificate in hex. The launcher requires Windows to trust the Setup signature
-and checks the certificate Windows accepted against this fingerprint. Until a
-publisher is configured, the launcher can check for releases and open the
-download page.
+Set `UpdateBuildProfile=Public`, `EnableLocalUpdateFeed=false`, and
+`UpdatePublisherRules=<ROOT_SHA256>=<PUBLISHER_PROFILE_EKU_OID>` when publishing.
+Use the 64 hex digits of the SHA-256 fingerprint of the root certificate
+Windows accepts for the Setup signer. Use the certificate profile's unique
+extended key usage OID in the private enterprise or UUID namespace. The leaf
+must explicitly carry both this usage and the ordinary Code Signing usage.
+Windows validates the chain, including the intermediate and timestamp. Public
+updates require an available revocation result. Until a publisher is
+configured, the launcher can check for releases and open the download page.
 
-Publish the launcher and Setup with the same three-field version. For a signing
-certificate change, publish a transition launcher with both old and new
-fingerprints in the property, separated by commas, before releasing a Setup
-signed by the new certificate. The new certificate also needs a chain Windows
-trusts.
+Publish the launcher and Setup with the same three-field version. Routine leaf
+or intermediate rotation under the same root and profile needs no rule change.
+For a root or profile change, first release a transition launcher with
+`UpdatePublisherRules=<OLD_ROOT_SHA256>=<OLD_PROFILE_EKU_OID>|<NEW_ROOT_SHA256>=<NEW_PROFILE_EKU_OID>`.
+Each rule matches a root and profile together. Publish only public releases with
+this signing identity. Sign fixtures and prereleases with a separate identity.
 
-For an offline test build, set `EnableLocalUpdateFeed=true` when publishing and
+For an offline test build, set `UpdateBuildProfile=Fixture` and
+`EnableLocalUpdateFeed=true` when publishing and
 set `COD2_UNBOUND_TEST_UPDATE_ORIGIN` in the launcher process environment to a
 `127.0.0.1` origin. Serve the feed at `/releases` and the exact Setup filename
 and `SHA256SUMS` at `/releases/download/v<version>/`. Use a test signer trusted
-by the test machine and configure its fingerprint in the test launcher. Leave
-`EnableLocalUpdateFeed` unset for public builds.
+by the test machine and configure its root and test profile OID in the test
+launcher. The loopback feed uses cache-only revocation retrieval.

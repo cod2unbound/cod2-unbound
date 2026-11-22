@@ -11,7 +11,12 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
 #endif
     internal static Uri? LocalOrigin { get; } = TestOrigin();
     internal static ReleaseDownload Download { get; } = CreateDownload();
-    internal static string? Fixture => Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_RELEASES");
+    internal static string? Fixture =>
+#if UPDATE_FIXTURES
+        Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_RELEASES");
+#else
+        null;
+#endif
 
     public async ValueTask<ImmutableArray<byte>> ReleasesAsync(CancellationToken cancellationToken)
     {

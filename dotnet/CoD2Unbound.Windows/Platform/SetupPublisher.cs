@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 using CoD2Unbound.Core;
 using Microsoft.Win32.SafeHandles;
 
@@ -10,12 +11,32 @@ namespace CoD2Unbound.Windows.Platform;
 internal static class SetupPublisher
 {
     private static readonly Guid Authenticode = new("00AAC56B-CD44-11D0-8CC2-00C04FC295EE");
-    private static readonly string[] Pins = typeof(SetupPublisher).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-        .Where(attribute => attribute.Key == "UpdatePublisherCertificateSha256")
-        .SelectMany(attribute => (attribute.Value ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-        .Where(value => value.Length == 64 && value.All(char.IsAsciiHexDigit)).ToArray();
+    private const string CodeSigning = "1.3.6.1.5.5.7.3.3";
+    private const uint RevocationUnavailable = 0x40 | 0x01000000;
+    private static readonly PublisherRule[] Rules = ReadRules();
 
-    internal static bool Configured => Pins.Length > 0;
+    internal static bool Configured => Rules.Length > 0;
+
+    private static PublisherRule[] ReadRules()
+    {
+        string? configured = typeof(SetupPublisher).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .SingleOrDefault(attribute => attribute.Key == "UpdatePublisherRules")?.Value;
+        if (string.IsNullOrEmpty(configured))
+            return [];
+
+        var rules = new List<PublisherRule>();
+        foreach (string entry in configured.Split('|', StringSplitOptions.TrimEntries))
+        {
+            // Accept profile OIDs in the private enterprise or UUID namespace. Generic
+            // usages (including Code Signing itself and Any EKU) cannot be publisher rules.
+            if (entry.Split('=', StringSplitOptions.TrimEntries) is not [var root, var oid] ||
+                root.Length != 64 || !root.All(char.IsAsciiHexDigit) ||
+                !Regex.IsMatch(oid, @"\A(?:1\.3\.6\.1\.4\.1|2\.25)(?:\.(?:0|[1-9][0-9]*)){2,}\z"))
+                return [];
+            rules.Add(new(root, oid));
+        }
+        return [.. rules];
+    }
 
     internal static void Verify(string path, SafeFileHandle handle)
     {
@@ -40,17 +61,7 @@ internal static class SetupPublisher
                 throw new LauncherUpdateException("Windows could not verify the Setup signature.",
                     new CryptographicException(status));
 
-            nint provider = WTHelperProvDataFromStateData(data.State);
-            nint signer = provider == 0 ? 0 : WTHelperGetProvSignerFromChain(provider, 0, false, 0);
-            nint entry = signer == 0 ? 0 : WTHelperGetProvCertFromChain(signer, 0);
-            nint cert = entry == 0 ? 0 : Marshal.PtrToStructure<ProviderCertificate>(entry).Certificate;
-            if (cert == 0)
-                throw new LauncherUpdateException("Windows could not identify who signed Setup.");
-            // Use the leaf Windows actually accepted, including when the file has multiple signatures.
-            using var certificate = X509CertificateLoader.LoadCertificate(ReadCertificate(cert));
-            string sha256 = certificate.GetCertHashString(HashAlgorithmName.SHA256);
-            if (!Pins.Contains(sha256, StringComparer.OrdinalIgnoreCase))
-                throw new LauncherUpdateException("Setup was signed by an unexpected publisher.");
+            VerifyPublisher(data.State, WindowsReleaseSource.LocalOrigin is not null);
         }
         finally
         {
@@ -61,6 +72,67 @@ internal static class SetupPublisher
             GC.KeepAlive(handle);
         }
     }
+
+    private static void VerifyPublisher(nint state, bool offlineFixture)
+    {
+        nint provider = state == 0 ? 0 : WTHelperProvDataFromStateData(state);
+        nint signerPointer = provider == 0 ? 0 : WTHelperGetProvSignerFromChain(provider, 0, false, 0);
+        if (signerPointer == 0)
+            throw new LauncherUpdateException("Windows did not return Setup's accepted signer.");
+
+        // WinVerifyTrust selected the primary signature. Use its chain while the trust
+        // state is open, without rebuilding it at today's date or examining nested signatures.
+        var signer = Marshal.PtrToStructure<ProviderSigner>(signerPointer);
+        var chain = ReadChain(signer);
+        CheckRevocation(chain, offlineFixture);
+        bool timestamped = false;
+        for (uint index = 0; index < signer.CounterSignerCount; index++)
+        {
+            nint pointer = WTHelperGetProvSignerFromChain(provider, 0, true, index);
+            if (pointer == 0)
+                continue;
+            var counter = Marshal.PtrToStructure<ProviderSigner>(pointer);
+            if (counter.Type != 0x10 || counter.Error != 0 || counter.Chain == 0)
+                continue;
+            CheckRevocation(ReadChain(counter), offlineFixture);
+            timestamped = true;
+            break;
+        }
+        if (!timestamped)
+            throw new LauncherUpdateException("Setup did not have a trusted timestamp.");
+
+        if (chain.Count != 1 || chain.Chains == 0)
+            throw new LauncherUpdateException("Windows did not return a single accepted Setup signing chain.");
+        var path = Marshal.PtrToStructure<SimpleChain>(Marshal.ReadIntPtr(chain.Chains));
+        if (path.Count < 2 || path.Elements == 0)
+            throw new LauncherUpdateException("Setup's signing chain did not lead to a root certificate.");
+        var leaf = Marshal.PtrToStructure<ChainElement>(Marshal.ReadIntPtr(path.Elements));
+        var root = Marshal.PtrToStructure<ChainElement>(
+            Marshal.ReadIntPtr(path.Elements, checked((int)(path.Count - 1) * IntPtr.Size)));
+        if (leaf.Certificate == 0 || root.Certificate == 0 || (root.Status.Info & 0x8) == 0) // CERT_TRUST_IS_SELF_SIGNED
+            throw new LauncherUpdateException("Setup's signing chain did not end at a root certificate.");
+
+        using var leafCertificate = X509CertificateLoader.LoadCertificate(ReadCertificate(leaf.Certificate));
+        using var rootCertificate = X509CertificateLoader.LoadCertificate(ReadCertificate(root.Certificate));
+        string rootHash = rootCertificate.GetCertHashString(HashAlgorithmName.SHA256);
+        var usages = leafCertificate.Extensions.OfType<X509EnhancedKeyUsageExtension>().SingleOrDefault()
+            ?.EnhancedKeyUsages.Cast<Oid>().Select(usage => usage.Value).ToHashSet();
+        if (usages is null || !usages.Contains(CodeSigning) ||
+            !Rules.Any(rule => rootHash.Equals(rule.Root, StringComparison.OrdinalIgnoreCase) && usages.Contains(rule.Oid)))
+            throw new LauncherUpdateException("Setup's accepted signing root or publisher EKU was unexpected.");
+    }
+
+    private static ChainContext ReadChain(ProviderSigner signer) => signer.Chain != 0 && signer.Error == 0
+        ? Marshal.PtrToStructure<ChainContext>(signer.Chain)
+        : throw new LauncherUpdateException("Windows did not return the accepted Setup certificate chain.");
+
+    private static void CheckRevocation(ChainContext chain, bool offlineFixture)
+    {
+        if (!offlineFixture && (chain.Status.Error & RevocationUnavailable) != 0)
+            throw new LauncherUpdateException("Windows could not establish the revocation status of the Setup signature.");
+    }
+
+    private sealed record PublisherRule(string Root, string Oid);
 
     private static byte[] ReadCertificate(nint certificate)
     {
@@ -91,10 +163,46 @@ internal static class SetupPublisher
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct ProviderCertificate
+    private struct ProviderSigner
+    {
+        internal uint Size, VerifyTimeLow, VerifyTimeHigh, CertificateCount;
+        internal nint Certificates;
+        internal uint Type;
+        internal nint Signer;
+        internal uint Error, CounterSignerCount;
+        internal nint CounterSigners, Chain;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TrustStatus
+    {
+        internal uint Error, Info;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ChainContext
+    {
+        internal uint Size;
+        internal TrustStatus Status;
+        internal uint Count;
+        internal nint Chains;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SimpleChain
+    {
+        internal uint Size;
+        internal TrustStatus Status;
+        internal uint Count;
+        internal nint Elements;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ChainElement
     {
         internal uint Size;
         internal nint Certificate;
+        internal TrustStatus Status;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -112,6 +220,4 @@ internal static class SetupPublisher
     [DllImport("wintrust.dll", ExactSpelling = true)]
     private static extern nint WTHelperGetProvSignerFromChain(nint data, uint index,
         [MarshalAs(UnmanagedType.Bool)] bool counterSigner, uint counterIndex);
-    [DllImport("wintrust.dll", ExactSpelling = true)]
-    private static extern nint WTHelperGetProvCertFromChain(nint signer, uint index);
 }

@@ -31,10 +31,13 @@ internal sealed class WindowsLauncherSession
 
     internal WindowsLauncherSession()
     {
+        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string? testHome = null;
+#if UPDATE_FIXTURES
         if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
             TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
-        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string? testHome = TestMaster is not null ? Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME") : null;
+        testHome = TestMaster is not null ? Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME") : null;
+#endif
         credentials = testHome is null ? new WindowsCredentials() : new ProbeCredentials();
         gameFolder = new WindowsSettingsFolder(testHome ?? Path.Join(localData, "CoD2 Unbound"), allowNestedWrites: true);
         folder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));

@@ -5,13 +5,23 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 out="${COD2_WINDOWS_VM_OUTPUT:-$root/output/r05/winvm}"
 export_x64=0
-if [ "$#" -ne 0 ]; then
-    if [ "$#" -ne 1 ] || [ "$1" != --export-x64 ]; then
-        echo "Usage: $0 [--export-x64]" >&2
-        exit 2
-    fi
-    export_x64=1
-fi
+publisher_rules=
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --export-x64) export_x64=1 ;;
+        --publisher-rules)
+            shift
+            if [ "$#" -eq 0 ] || ! printf '%s\n' "$1" | awk '
+                NR != 1 || $0 !~ /^[0123456789abcdefABCDEF.=|]+$/ { invalid = 1 }
+                END { exit invalid || NR != 1 }'; then
+                echo 'Expected SHA-256=publisher OID pairs for --publisher-rules.' >&2
+                exit 2
+            fi
+            publisher_rules=$1 ;;
+        *) echo "Usage: $0 [--export-x64] [--publisher-rules RULES]" >&2; exit 2 ;;
+    esac
+    shift
+done
 mkdir -p "$out"
 
 bounded() {
@@ -88,7 +98,8 @@ git -C "$root" archive --format=zip --output="$scratch/source.zip" "$revision" \
 cat > "$scratch/build.ps1" <<'POWERSHELL'
 param(
     [ValidateSet('core', 'shell')][string]$Phase,
-    [string]$ExportRevision
+    [string]$ExportRevision,
+    [string]$PublisherRules
 )
 
 $ErrorActionPreference = 'Stop'
@@ -147,7 +158,10 @@ try {
             $rid = "win-$($platform.ToLowerInvariant())"
             $output = Join-Path $work $rid
             Invoke-DotNet restore $project -r $rid "-p:Platform=$platform" --source $source '-p:NuGetAudit=false' '-m:4'
-            Invoke-DotNet publish $project --no-restore -c Release -r $rid "-p:Platform=$platform" -o $output '-m:4'
+            Invoke-DotNet publish $project --no-restore -c Release -r $rid "-p:Platform=$platform" `
+                '-p:UpdateBuildProfile=Public' '-p:EnableLocalUpdateFeed=false' "-p:UpdatePublisherRules=$PublisherRules" -o $output '-m:4'
+            $assembly = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes((Join-Path $output 'CoD2Unbound.Windows.dll')))
+            if ($assembly.Contains('CoD2Unbound.UpdateFixture')) { throw "Fixture launcher in public $rid publish." }
             foreach ($name in 'CoD2Unbound.Windows.exe', 'CoD2Unbound.Windows.pri') {
                 if (!(Test-Path -LiteralPath (Join-Path $output $name) -PathType Leaf)) {
                     throw "Missing $rid launcher file: $name"
@@ -225,7 +239,7 @@ run_phase() {
     if [ "$phase" = shell ] && [ "$export_x64" -eq 1 ]; then
         export_arg="-ExportRevision '$revision'"
     fi
-    guest "$seconds" "& '$vmroot\build.ps1' -Phase '$phase' $export_arg; exit \$LASTEXITCODE" > "$scratch/$phase.log" 2>&1 || :
+    guest "$seconds" "& '$vmroot\build.ps1' -Phase '$phase' -PublisherRules '$publisher_rules' $export_arg; exit \$LASTEXITCODE" > "$scratch/$phase.log" 2>&1 || :
     utm 20 file pull --hide cod2-win11 "$vmroot\downloads.csv" > "$scratch/downloads.csv" || :
     if ! utm 12 file pull --hide cod2-win11 "$vmroot\\$phase.ok" > "$scratch/receipt" ||
         [ "$(tr -d '\r\n' < "$scratch/receipt")" != "$phase" ]; then
