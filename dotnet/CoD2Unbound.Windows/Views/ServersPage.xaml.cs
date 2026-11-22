@@ -105,6 +105,8 @@ public sealed partial class ServersPage : Page
         Render();
     }
 
+    internal void UpdateContrast() => Render();
+
     internal void UpdateHostingState() => hosting?.UpdateRunState();
 
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
@@ -119,20 +121,29 @@ public sealed partial class ServersPage : Page
             return;
         var server = entry.Server;
         var facts = ServerFacts.From(server);
+        bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
-        AddGameName(name, server.Name, shell.IsHighContrast);
+        AddGameName(name, server.Name, contrast);
         var tag = (Border)row.FindName("RowEdition")!;
         tag.Style = StyleFor(server.IsCod2x ? "Cod2xTag" : "EditionTag");
         var tagText = (TextBlock)row.FindName("RowEditionText")!;
-        tagText.Foreground = ThemeBrush(server.IsCod2x ? "HeroAccentBrush" : "BodyBrush", ActualTheme, shell.IsHighContrast);
+        var caption = (TextBlock)row.FindName("RowMapMode")!;
+        SetRowTextBrush(tagText, server.IsCod2x ? "HeroAccentBrush" : "BodyBrush", contrast);
+        SetRowTextBrush(caption, "CaptionBrush", contrast);
         var players = (TextBlock)row.FindName("RowPlayers")!;
         players.Inlines.Clear();
-        players.Inlines.Add(new Run { Text = server.MaxPlayers > 0 ? server.PlayerCount.ToString() : "—",
-            FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Foreground = ThemeBrush(facts.Occupancy == ServerOccupancy.Full ? "NegativeBrush" : "BodyBrush", ActualTheme, shell.IsHighContrast) });
+        var used = new Run { Text = server.MaxPlayers > 0 ? server.PlayerCount.ToString() : "—",
+            FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
+        if (!contrast)
+            used.Foreground = ThemeBrush(facts.Occupancy == ServerOccupancy.Full ? "NegativeBrush" : "BodyBrush", ActualTheme, false);
+        players.Inlines.Add(used);
         if (server.MaxPlayers > 0)
-            players.Inlines.Add(new Run { Text = $" / {server.MaxPlayers}", FontSize = 12,
-                Foreground = ThemeBrush("TertiaryBrush", ActualTheme, shell.IsHighContrast) });
+        {
+            var capacity = new Run { Text = $" / {server.MaxPlayers}", FontSize = 12 };
+            if (!contrast)
+                capacity.Foreground = ThemeBrush("TertiaryBrush", ActualTheme, false);
+            players.Inlines.Add(capacity);
+        }
         var signal = (StackPanel)row.FindName("RowSignal")!;
         signal.Children.Clear();
         int level = server.Ping < 0 ? 0 : facts.PingLevel;

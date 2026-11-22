@@ -31,7 +31,9 @@ BRUSHES = {
     "HyperlinkForegroundPressed": ("link", "Hotlight"),
     "InfoBarHyperlinkButtonForeground": ("link", "Hotlight"),
     "InfoBarInformationalSeverityIconForeground": ("control", "WindowText"),
-    "ListViewItemSelectionIndicatorBrush": ("control", "Highlight"),
+    "ListViewItemSelectionIndicatorBrush": ("control", "HighlightText"),
+    "ListViewItemSelectionIndicatorPointerOverBrush": ("control", "HighlightText"),
+    "ListViewItemSelectionIndicatorPressedBrush": ("control", "HighlightText"),
     "TextControlBorderBrushFocused": ("control", "Highlight"),
     "TextControlSelectionHighlightColor": ("selection-stroke", "Highlight"),
     "SliderThumbBackground": ("prominent-bottom", "Highlight"),
@@ -125,6 +127,11 @@ def generate(tokens):
         for brush, (token, system_color) in BRUSHES.items():
             color = xaml_color(tokens[token][theme]) if theme else f"{{ThemeResource SystemColor{system_color}Color}}"
             ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": brush, "Color": color})
+        if theme is None:
+            for state in ("Selected", "SelectedPointerOver", "SelectedPressed"):
+                ET.SubElement(dictionary, "SolidColorBrush", {
+                    "x:Key": f"ListViewItemForeground{state}", "Color": "{ThemeResource SystemColorHighlightTextColor}",
+                })
         # The contrast backplate covers text only, leaving the rest of the art visible.
         backplate = "Transparent" if theme else "{ThemeResource SystemColorWindowColor}"
         ET.SubElement(dictionary, "SolidColorBrush", {"x:Key": "HeroBackplateBrush", "Color": backplate})

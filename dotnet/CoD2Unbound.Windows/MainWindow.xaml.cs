@@ -94,6 +94,10 @@ public sealed partial class MainWindow : Window
             UpdateCaptionColors();
             if (ContentFrame.Content is HomePage home)
                 home.RenderArtScrim();
+            else if (ContentFrame.Content is ServersPage servers)
+                servers.UpdateContrast();
+            else if (ContentFrame.Content is ConfigsPage configs)
+                configs.UpdateContrast();
         });
 
     internal bool IsHighContrast => windowTheme.HighContrast;

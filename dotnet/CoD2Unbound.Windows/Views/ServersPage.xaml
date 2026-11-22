@@ -95,6 +95,7 @@
                           AutomationProperties.Name="Servers">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
+                            <Setter Property="HighContrastAdjustment" Value="None" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         </Style>
                     </ListView.ItemContainerStyle>
@@ -126,7 +127,7 @@
                                             <FontIcon Grid.Column="1" Glyph="&#xE72E;" FontSize="12"
                                                       Visibility="{Binding Lock}" AutomationProperties.Name="Password required" />
                                         </Grid>
-                                        <TextBlock Text="{Binding MapMode}" Style="{StaticResource SecondaryText}" FontSize="12"
+                                        <TextBlock x:Name="RowMapMode" Text="{Binding MapMode}" FontSize="12"
                                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
@@ -215,7 +216,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Button x:Name="JoinButton" Content="Launch" HorizontalAlignment="Stretch"
-                                Style="{StaticResource AccentButtonStyle}" AccessKey="L" Click="OnJoin" />
+                                Style="{StaticResource LauncherAccentButton}" AccessKey="L" Click="OnJoin" />
                         <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" />
                     </Grid>
                 </Grid>

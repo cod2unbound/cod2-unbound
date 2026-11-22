@@ -34,7 +34,7 @@
                                     <FontIcon Glyph="&#xE8A4;" FontSize="20" />
                                     <TextBlock Grid.Column="1" Text="Saved" VerticalAlignment="Center" />
                                     <TextBlock x:Name="SavedCount" Grid.Column="2" FontSize="12" VerticalAlignment="Center"
-                                               Style="{StaticResource SecondaryText}" />
+                                               />
                                 </Grid>
                             </ListViewItem>
                             <ListViewItem AutomationProperties.Name="Check a config" Style="{StaticResource SidebarItem}">
@@ -49,22 +49,21 @@
                                   AutomationProperties.Name="My loadouts" SelectionChanged="OnSelectLoadout">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid MinHeight="52" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}">
+                                    <Grid MinHeight="52" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}" Loaded="OnLoadoutRowLoaded" ActualThemeChanged="OnLoadoutRowThemeChanged">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Style="{StaticResource InitialTile}">
+                                        <Border x:Name="LoadoutTile" Style="{StaticResource InitialTile}">
                                             <TextBlock Text="{Binding Initial}" Style="{StaticResource LoadoutInitial}"
                                                        AutomationProperties.AccessibilityView="Raw" />
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Status}" Style="{StaticResource SecondaryText}" FontSize="12" />
+                                            <TextBlock x:Name="LoadoutStatus" Text="{Binding Status}" FontSize="12" />
                                         </StackPanel>
-                                        <FontIcon Grid.Column="2" Glyph="&#xE73E;" FontSize="16"
-                                                  Foreground="{ThemeResource PositiveBrush}" Visibility="{Binding Checkmark}" />
+                                        <FontIcon x:Name="LoadoutCheck" Grid.Column="2" Glyph="&#xE73E;" FontSize="16" Visibility="{Binding Checkmark}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>

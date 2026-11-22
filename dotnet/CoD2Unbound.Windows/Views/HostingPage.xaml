@@ -11,9 +11,15 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Button Grid.ColumnSpan="2" Content="New server" Click="OnNew" AccessKey="N"
-                HorizontalAlignment="Right" Style="{StaticResource AccentButtonStyle}" />
+                HorizontalAlignment="Right" Style="{StaticResource LauncherAccentButton}" />
         <ListView x:Name="Servers" Grid.Row="1" DisplayMemberPath="Name" SelectionChanged="OnServerChanged"
-                  AutomationProperties.Name="Hosted servers" />
+                  AutomationProperties.Name="Hosted servers">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HighContrastAdjustment" Value="None" />
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
         <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="Details" Spacing="12" />
         </ScrollViewer>

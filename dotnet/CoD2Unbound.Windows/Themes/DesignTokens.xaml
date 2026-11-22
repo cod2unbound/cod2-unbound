@@ -26,6 +26,8 @@
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="#E2BD72" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#C99A4C" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#C99A4C" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#C99A4C" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#C99A4C" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#C99A4C" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#73E2BD72" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="#C4984C" />
@@ -119,6 +121,8 @@
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="#8A5A12" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#55622F" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#55622F" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#55622F" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#55622F" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#55622F" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#735C6A33" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="#46522A" />
@@ -211,7 +215,9 @@
             <SolidColorBrush x:Key="HyperlinkForegroundPressed" Color="{ThemeResource SystemColorHotlightColor}" />
             <SolidColorBrush x:Key="InfoBarHyperlinkButtonForeground" Color="{ThemeResource SystemColorHotlightColor}" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource SystemColorHighlightColor}" />
@@ -276,6 +282,9 @@
             <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ListViewItemForegroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ListViewItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource SystemColorWindowColor}" />

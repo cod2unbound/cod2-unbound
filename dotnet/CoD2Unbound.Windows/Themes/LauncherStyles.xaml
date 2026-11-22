@@ -4,6 +4,10 @@
     <FontFamily x:Key="StencilBold">ms-appx:///Assets/BigShouldersStencilDisplay-Bold.ttf#Big Shoulders Stencil Display</FontFamily>
     <FontFamily x:Key="CourierPrime">ms-appx:///Assets/CourierPrime-Regular.ttf#Courier Prime</FontFamily>
 
+    <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="HighContrastAdjustment" Value="None" />
+    </Style>
+
     <Style x:Key="HeroTitle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource StencilExtraBold}" />
         <Setter Property="FontWeight" Value="ExtraBold" />
@@ -90,6 +94,7 @@
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
     <Style x:Key="SidebarItem" TargetType="ListViewItem">
+        <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="16,0,12,0" />
         <Setter Property="CornerRadius" Value="4" />

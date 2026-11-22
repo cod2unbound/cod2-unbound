@@ -50,6 +50,15 @@ internal static class PagePresentation
         throw new InvalidOperationException($"Missing launcher theme brush {key}.");
     }
 
+    // In contrast mode the native row presenter supplies both the normal and selected ink.
+    internal static void SetRowTextBrush(TextBlock text, string key, bool contrast)
+    {
+        if (contrast)
+            text.ClearValue(TextBlock.ForegroundProperty);
+        else
+            text.Foreground = ThemeBrush(key, text.ActualTheme, false);
+    }
+
     internal static void AddGameName(TextBlock text, string name, bool contrast)
     {
         foreach (var color in QuakeColors.Runs(name))

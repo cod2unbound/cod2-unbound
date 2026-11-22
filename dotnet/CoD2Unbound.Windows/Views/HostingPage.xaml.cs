@@ -173,7 +173,8 @@ public sealed partial class HostingPage : Page
         var dialog = new ContentDialog
         {
             Title = isNew ? "New server" : "Edit server", Content = scroll, XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme,
-            PrimaryButtonText = isNew ? "Create server" : "Save changes", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
+            PrimaryButtonText = isNew ? "Create server" : "Save changes", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary,
+            HighContrastAdjustment = ElementHighContrastAdjustment.None
         };
         name.TextChanged += (_, _) => Validate();
         players.ValueChanged += (_, _) => Validate();

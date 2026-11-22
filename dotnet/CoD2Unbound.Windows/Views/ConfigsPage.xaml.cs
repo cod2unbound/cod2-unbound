@@ -41,6 +41,26 @@ public sealed partial class ConfigsPage : Page
         ShowStudio();
     }
 
+    internal void UpdateContrast() => RenderLoadouts();
+
+    private void OnLoadoutRowLoaded(object sender, RoutedEventArgs args) => ApplyLoadoutRowTheme((Grid)sender);
+
+    private void OnLoadoutRowThemeChanged(FrameworkElement sender, object args) => ApplyLoadoutRowTheme((Grid)sender);
+
+    private void ApplyLoadoutRowTheme(Grid row)
+    {
+        if (row.FindName("LoadoutTile") is not Border tile)
+            return;
+        bool contrast = shell.IsHighContrast;
+        tile.Visibility = IsVisible(!contrast);
+        SetRowTextBrush((TextBlock)row.FindName("LoadoutStatus")!, "CaptionBrush", contrast);
+        var check = (FontIcon)row.FindName("LoadoutCheck")!;
+        if (contrast)
+            check.ClearValue(IconElement.ForegroundProperty);
+        else
+            check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
+    }
+
     internal void OpenCheckup()
     {
         studioTab = 2;
@@ -603,7 +623,7 @@ public sealed partial class ConfigsPage : Page
             return button;
         }
         var attempt = Review("Try this setup", trySetup: true);
-        attempt.Style = StyleFor("AccentButtonStyle");
+        attempt.Style = StyleFor("LauncherAccentButton");
         Detail.Children.Add(Buttons(attempt, Review("Import…", trySetup: false), Action(saved ? "Remove from Saved" : "Save for later", async () =>
         {
             string? message = await model.Discover.SetSavedAsync(entry.Id, !saved);
@@ -758,7 +778,7 @@ public sealed partial class ConfigsPage : Page
     private ContentDialog Dialog(string title, object content, string primary) => new()
     {
         XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content, PrimaryButtonText = primary, CloseButtonText = "Cancel",
-        DefaultButton = ContentDialogButton.Primary
+        DefaultButton = ContentDialogButton.Primary, HighContrastAdjustment = ElementHighContrastAdjustment.None
     };
 
     private void Feedback(string message, Button? action = null)
