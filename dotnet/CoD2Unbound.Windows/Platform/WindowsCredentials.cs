@@ -9,19 +9,69 @@ internal sealed class WindowsCredentials : ISecretStore
     private const uint Generic = 1;
     private const uint LocalMachine = 2; // Persists for this Windows user on this PC.
     private const int NotFound = 1168;
+    private const string EngineCdKey = "CoD2 Unbound/CD Key";
+    private const uint CdKeyBytes = 20;
 
     public ValueTask<string?> ReadAsync(string name, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!CredRead(Target(name), Generic, 0, out nint pointer))
+        string target = Target(name);
+        if (name != SetupSession.KeySecret)
+            return ValueTask.FromResult(Read(target, ascii: false).Value);
+
+        var (found, key) = Read(EngineCdKey, ascii: true);
+        if (found)
+            return ValueTask.FromResult(key is not null && CdKey.IsValid(key) ? key : null);
+
+        // Earlier launchers stored the CD key under the core name in UTF-16.
+        if (Read(target, ascii: false).Value is not { } previous || !CdKey.IsValid(previous))
+            return ValueTask.FromResult<string?>(null);
+
+        key = CdKey.Normalize(previous);
+        Write(EngineCdKey, key, ascii: true);
+        return ValueTask.FromResult<string?>(key);
+    }
+
+    public ValueTask WriteAsync(string name, string? value, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        string target = Target(name);
+        bool cdKey = name == SetupSession.KeySecret;
+        if (value is null)
+        {
+            Delete(target);
+            if (cdKey)
+                Delete(EngineCdKey);
+        }
+        else if (cdKey)
+        {
+            if (!CdKey.IsValid(value))
+                throw new ArgumentException("The CD key is invalid.", nameof(value));
+
+            Write(EngineCdKey, CdKey.Normalize(value), ascii: true);
+        }
+        else
+        {
+            Write(target, value, ascii: false);
+        }
+        return ValueTask.CompletedTask;
+    }
+
+    private static (bool Found, string? Value) Read(string target, bool ascii)
+    {
+        if (!CredRead(target, Generic, 0, out nint pointer))
         {
             int error = Marshal.GetLastPInvokeError();
-            return error == NotFound ? ValueTask.FromResult<string?>(null) : throw Failure(error);
+            return error == NotFound ? (false, null) : throw Failure(error);
         }
         try
         {
             var credential = Marshal.PtrToStructure<Credential>(pointer);
-            return ValueTask.FromResult<string?>(Marshal.PtrToStringUni(credential.Blob, checked((int)credential.BlobSize / 2)));
+            if (!ascii)
+                return (true, Marshal.PtrToStringUni(credential.Blob, checked((int)credential.BlobSize / 2)));
+
+            // The engine requires exactly twenty ASCII bytes without a terminator.
+            return (true, credential.BlobSize == CdKeyBytes ? Marshal.PtrToStringAnsi(credential.Blob, (int)CdKeyBytes) : null);
         }
         finally
         {
@@ -29,27 +79,24 @@ internal sealed class WindowsCredentials : ISecretStore
         }
     }
 
-    public ValueTask WriteAsync(string name, string? value, CancellationToken cancellationToken)
+    private static void Delete(string target)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        string target = Target(name);
-        if (value is null)
+        if (!CredDelete(target, Generic, 0))
         {
-            if (!CredDelete(target, Generic, 0))
-            {
-                int error = Marshal.GetLastPInvokeError();
-                if (error != NotFound)
-                    throw Failure(error);
-            }
-            return ValueTask.CompletedTask;
+            int error = Marshal.GetLastPInvokeError();
+            if (error != NotFound)
+                throw Failure(error);
         }
+    }
 
-        nint blob = Marshal.StringToCoTaskMemUni(value);
+    private static void Write(string target, string value, bool ascii)
+    {
+        nint blob = ascii ? Marshal.StringToCoTaskMemAnsi(value) : Marshal.StringToCoTaskMemUni(value);
         try
         {
             var credential = new Credential
             {
-                Type = Generic, TargetName = target, BlobSize = checked((uint)value.Length * 2),
+                Type = Generic, TargetName = target, BlobSize = ascii ? CdKeyBytes : checked((uint)value.Length * 2),
                 Blob = blob, Persist = LocalMachine,
             };
             if (!CredWrite(in credential, 0))
@@ -57,9 +104,11 @@ internal sealed class WindowsCredentials : ISecretStore
         }
         finally
         {
-            Marshal.ZeroFreeCoTaskMemUnicode(blob);
+            if (ascii)
+                Marshal.ZeroFreeCoTaskMemAnsi(blob);
+            else
+                Marshal.ZeroFreeCoTaskMemUnicode(blob);
         }
-        return ValueTask.CompletedTask;
     }
 
     private static string Target(string name) => "CoD2 Unbound/" + name;
