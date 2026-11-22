@@ -46,6 +46,7 @@ internal sealed class WindowsConfigFetch : IConfigTextFetcher
     internal static ConfigDirectory Create(string root, bool offline)
     {
         var storage = new WindowsConfigDirectoryStorage(Path.Join(root, "catalogue"));
+#if UPDATE_FIXTURES
         string? fixture = Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_CONFIG_DIRECTORY");
         if (offline && fixture is not null)
         {
@@ -67,6 +68,7 @@ internal sealed class WindowsConfigFetch : IConfigTextFetcher
                     [profile] = [.. data.GetProperty("profile").GetBytesFromBase64()]
                 }));
         }
+#endif
         return new(offline ? null : ConfigDirectory.Production, storage, new WindowsConfigFetch(null));
     }
 

@@ -105,7 +105,19 @@ def stage_launcher(bundle, tree, work):
 def require_public_launcher(bundle):
     with zipfile.ZipFile(bundle) as archive:
         assembly = archive.read("CoD2Unbound.Windows.dll")
-    if any(marker in assembly for marker in (b"CoD2Unbound.UpdateFixture", b"CoD2Unbound.ReportingFixture")):
+    markers = (b"CoD2Unbound.UpdateFixture", b"CoD2Unbound.ReportingFixture")
+    fixture_variables = (
+        "COD2_UNBOUND_TEST_UPDATE_ORIGIN",
+        "COD2_UNBOUND_TEST_RELEASES",
+        "COD2_UNBOUND_TEST_MASTER_PORT",
+        "COD2_UNBOUND_TEST_HOME",
+        "COD2_UNBOUND_TEST_UPDATE_VISUAL",
+        "COD2_UNBOUND_TEST_CONFIG_DIRECTORY",
+        "COD2_USAGE_URL",
+        "COD2_CRASH_URL",
+    )
+    if (any(marker in assembly for marker in markers) or
+            any(name.encode("utf-16le") in assembly for name in fixture_variables)):
         raise ValueError("The production release requires a launcher without updater or reporting fixtures")
     if b"UpdatePublisherRules" not in assembly:
         raise ValueError("The production release requires an updater publisher identity")
