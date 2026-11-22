@@ -1,7 +1,7 @@
 import Foundation
 
 @main struct CoreTests {
-    static func main() throws {
+    static func main() async throws {
         try displayResolutions()
         let fixtures = URL(fileURLWithPath: CommandLine.arguments[1])
         precondition(Dispatch.bundled.first?.title == "CoD2 Unbound 0.4.2", "bundled news must describe the shipping release")
@@ -117,6 +117,8 @@ import Foundation
         try crashReporting(scratch: scratch)
         try appUpdate(scratch: scratch)
         print("PASS: install update: the release's archive and SHA256SUMS from this project only, one checksum line, any size or SHA-256 mismatch refused, refusals while a game runs or where the app can't replace itself, synthetic bundles checked for identifier, version, signature and Team ID, and the swap on a copy with the old app kept until the new one is in place")
+        try await updateFeeds()
+        try await updateDownloads(scratch: scratch)
         try presentation(fixtures)
         // The launcher names the CoD2x its engine really is: the engine header's own release string.
         let header = try String(contentsOf: fixtures.appendingPathComponent("../../../src/PC/qcommon/cod2x.h").standardizedFileURL, encoding: .utf8)
@@ -382,6 +384,21 @@ import Foundation
         }
         precondition(AppUpdate.offer(version: "0.4", assets: feed.latestAssets) == nil && AppUpdate.offer(version: "0.4.1", assets: feed.latestAssets) == nil)
 
+        let mirrored = try ReleaseNotes.parse(mirroredReleaseJSON())
+        precondition(mirrored.dispatches.first?.link == "https://cod2unbound.com/whats-new/0.4.3", "website release link")
+        let mirroredOffer = try requireValue(AppUpdate.offer(version: "0.4.3", assets: mirrored.latestAssets))
+        precondition(mirroredOffer.archive.absoluteString == "https://cod2unbound.com/releases/v0.4.3/CoD2-Unbound-0.4.3-macos-arm64.zip")
+        for root in ["https://cod2unbound.com/other/", "http://cod2unbound.com/releases/",
+                     "https://cod2unbound.com.example/releases/", "https://user@cod2unbound.com/releases/"] {
+            let invalid = try ReleaseNotes.parse(mirroredReleaseJSON(root: root))
+            precondition(AppUpdate.offer(version: "0.4.3", assets: invalid.latestAssets) == nil, root)
+        }
+        for link in ["https://cod2unbound.com.example/whats-new/0.4.3", "http://cod2unbound.com/whats-new/0.4.3",
+                     "https://user@cod2unbound.com/whats-new/0.4.3", "https://example.com/whats-new/0.4.3"] {
+            let invalid = try ReleaseNotes.parse(mirroredReleaseJSON(link: link))
+            precondition(invalid.dispatches.first?.link == nil && invalid.latestURL == nil, link)
+        }
+
         // SHA256SUMS: exactly one line for the archive, as shasum writes it.
         let name = offer.archiveName, hex = String(repeating: "ab", count: 32)
         let plain = try AppUpdate.checksum(Data("\(hex)  \(name)\n".utf8), name: name)
@@ -463,6 +480,117 @@ import Foundation
         expect(.install, "nothing to put in place") { try AppUpdate.swap(app, with: staging.appendingPathComponent("missing.app")) { _ in preconditionFailure("discarded") } }
         precondition((try? String(contentsOf: app.appendingPathComponent("Contents/Resources/marker"), encoding: .utf8)) == "new", "a failed swap leaves the app as it was")
         precondition(AppUpdate.message(AppUpdate.Failure.mismatch) == "The download didn’t match the release, so it wasn’t installed.")
+    }
+
+    static func mirroredReleaseJSON(root: String = "https://cod2unbound.com/releases/",
+                                    link: String = "https://cod2unbound.com/whats-new/0.4.3") -> Data {
+        Data(#"""
+            [{"tag_name":"v0.4.3","html_url":"\#(link)","assets":[
+                {"name":"CoD2-Unbound-0.4.3-macos-arm64.zip","size":9,"browser_download_url":"\#(root)v0.4.3/CoD2-Unbound-0.4.3-macos-arm64.zip"},
+                {"name":"SHA256SUMS","size":100,"browser_download_url":"https://cod2unbound.com/releases/v0.4.3/SHA256SUMS"}]}]
+            """#.utf8)
+    }
+
+    static func updateFeeds() async throws {
+        let release = "https://api.github.com/repos/cod2unbound/cod2-unbound/releases?per_page=10"
+        let releaseMirror = "https://cod2unbound.com/update/releases.json"
+        let news = "https://raw.githubusercontent.com/cod2unbound/cod2-unbound/main/docs/news.json"
+        let newsMirror = "https://cod2unbound.com/update/news.json"
+        let github = Data(#"[{"tag_name":"v0.5.0-rc","prerelease":true,"html_url":"https://github.com/preview"},{"tag_name":"v0.4.2","html_url":"https://github.com/stable"}]"#.utf8)
+        let mirrored = mirroredReleaseJSON()
+        let errors: [Result<StandIn.Reply, URLError>] = [
+            .failure(URLError(.timedOut)), .failure(URLError(.cannotConnectToHost)),
+            .success(.init(451)), .success(.init(500)),
+        ]
+        let garbage = Result<StandIn.Reply, URLError>.success(.init(200, "garbage"))
+        let first = FeedStub([release: .success(.init(200, String(decoding: github, as: UTF8.self)))])
+        let feed = try await ReleaseNotes.fetch(using: first.fetch)
+        let primaryRequests = await first.requests
+        precondition(primaryRequests == [release] && feed.latestVersion == "0.4.2" && feed.listedByGitHub)
+        precondition(feed.latestURL?.absoluteString == "https://github.com/stable", "the offered release has its own link")
+
+        for failure in errors + [.success(.init(404)), garbage] {
+            let stub = FeedStub([release: failure, releaseMirror: .success(.init(200, String(decoding: mirrored, as: UTF8.self)))])
+            let feed = try await ReleaseNotes.fetch(using: stub.fetch)
+            let requests = await stub.requests
+            precondition(requests == [release, releaseMirror] && feed.latestVersion == "0.4.3" && !feed.listedByGitHub, "\(failure)")
+            precondition(feed.latestURL?.absoluteString == "https://cod2unbound.com/whats-new/0.4.3")
+            let offer = try requireValue(AppUpdate.offer(version: "0.4.3", assets: feed.latestAssets, listedByGitHub: feed.listedByGitHub))
+            precondition(offer.archive.host == "cod2unbound.com" && offer.sums.host == "cod2unbound.com" && !offer.listedByGitHub)
+        }
+        let unavailable = FeedStub([release: .success(.init(500)), releaseMirror: garbage])
+        do { _ = try await ReleaseNotes.fetch(using: unavailable.fetch); preconditionFailure("both release feeds failed") }
+        catch {
+            let requests = await unavailable.requests
+            precondition(requests == [release, releaseMirror])
+        }
+        print("PASS: release list: GitHub first; timeout, refusal, 404, 451, 500 and garbage fall back; both failures surface; website links and allowed asset roots")
+
+        let originalNews = StandIn.Reply(200, #"{"next":{"title":"From GitHub"}}"#)
+        let mirroredNews = StandIn.Reply(200, #"{"next":{"title":"From the website"}}"#)
+        let cases: [(Result<StandIn.Reply, URLError>, [String], String?, Bool)] = [
+            (.success(originalNews), [news], "From GitHub", true), (.success(.init(404)), [news], nil, true),
+            (garbage, [news], nil, false),
+        ] + errors.map { ($0, [news, newsMirror], "From the website", true) }
+        for (reply, expectedRequests, title, hasFeed) in cases {
+            let stub = FeedStub([news: reply, newsMirror: .success(mirroredNews)])
+            let feed = await NewsFeed.fetch(using: stub.fetch)
+            let requests = await stub.requests
+            precondition(requests == expectedRequests && (feed != nil) == hasFeed && feed?.next?.title == title, "\(reply)")
+        }
+        for mirrorFailure in [StandIn.Reply(404), .init(500), .init(200, "garbage")] {
+            let stub = FeedStub([news: .success(.init(500)), newsMirror: .success(mirrorFailure)])
+            let feed = await NewsFeed.fetch(using: stub.fetch)
+            let requests = await stub.requests
+            precondition(feed == nil && requests == [news, newsMirror])
+        }
+        print("PASS: news: primary 200 or 404 ends the check; transport errors, 451 and 500 use the mirror; unreadable news keeps the existing feed")
+    }
+
+    static func updateDownloads(scratch: URL) async throws {
+        let version = "0.4.3", name = "CoD2-Unbound-0.4.3-macos-arm64.zip", bytes = "zip bytes"
+        let github = "https://github.com/cod2unbound/cod2-unbound/releases/download/"
+        let feed = try ReleaseNotes.parse(mirroredReleaseJSON(root: github))
+        let githubAssets = [feed.latestAssets[0], ReleaseAsset(name: "SHA256SUMS", size: 100, url: URL(string: github + "v\(version)/SHA256SUMS")!)]
+        let offer = try requireValue(AppUpdate.offer(version: version, assets: githubAssets))
+        let websiteList = try requireValue(AppUpdate.offer(version: version, assets: githubAssets, listedByGitHub: false))
+        let mirror = try ReleaseNotes.parse(mirroredReleaseJSON())
+        let websiteAssets = try requireValue(AppUpdate.offer(version: version, assets: mirror.latestAssets, listedByGitHub: false))
+        let sum = StandIn.Reply(200, "\(CoD2xFiles.sha256(Data(bytes.utf8)))  \(name)\n")
+        let zip = StandIn.Reply(200, bytes)
+        let app = scratch.appendingPathComponent("update")
+        let gSum = "/github.com/cod2unbound/cod2-unbound/releases/download/v\(version)/SHA256SUMS"
+        let gZip = "/github.com/cod2unbound/cod2-unbound/releases/download/v\(version)/\(name)"
+        let mSum = "/cod2unbound.com/releases/v\(version)/SHA256SUMS"
+        let mZip = "/cod2unbound.com/releases/v\(version)/\(name)"
+
+        func run(_ offer: AppUpdate.Offer, replies: [StandIn.Reply], paths: [String], failure: AppUpdate.Failure? = nil) async throws {
+            let server = try StandIn(replies: replies)
+            do {
+                let staged = try await AppUpdate.download(offer, beside: app) { session, request in
+                    let url = request.url!
+                    var local = request
+                    local.url = URL(string: "http://127.0.0.1:\(server.port)/\(url.host!)\(url.path)")!
+                    return try await session.download(for: local)
+                }
+                defer { try? FileManager.default.removeItem(at: staged.folder) }
+                try AppUpdate.verify(staged.archive, size: offer.archiveSize, sha256: staged.sha256)
+                precondition(failure == nil, "expected download or verification failure")
+            } catch {
+                precondition(error as? AppUpdate.Failure == failure && failure != nil, "\(error), expected \(String(describing: failure))")
+            }
+            let requests = server.requests.map { String(String(decoding: $0, as: UTF8.self).split(separator: " ")[1]) }
+            precondition(requests == paths, "\(requests), expected \(paths)")
+        }
+        try await run(offer, replies: [.init(404), sum, .init(500), zip], paths: [gSum, mSum, gZip, mZip])
+        try await run(offer, replies: [sum, .init(200, "bad bytes"), zip], paths: [gSum, gZip], failure: .mismatch)
+        try await run(offer, replies: [.init(200, "bad sums"), sum, zip], paths: [gSum], failure: .mismatch)
+        try await run(offer, replies: [sum, .init(200, "too many bytes"), zip], paths: [gSum, gZip], failure: .mismatch)
+        try await run(offer, replies: [sum, .init(404), .init(404)], paths: [gSum, gZip, mZip], failure: .download)
+        try await run(websiteList, replies: [sum, .init(404), zip], paths: [gSum, gZip], failure: .download)
+        try await run(websiteAssets, replies: [sum, zip], paths: [mSum, mZip])
+        try await run(offer, replies: [sum, .init(302, location: "/http-redirect"), zip], paths: [gSum, gZip, mZip])
+        print("PASS: update downloads on 127.0.0.1: retry missing GitHub files once, stop after verification failures, use the website list as offered, block HTTP redirects")
     }
 
     /// Settings › Game › CoD2x files, on synthetic DLLs and releases (no network): CoD2x's archive found by the
@@ -765,15 +893,42 @@ func wait<T: Sendable>(_ work: @escaping @Sendable () async -> T) -> T {
 }
 final class AsyncBox<T>: @unchecked Sendable { var value: T? }
 
+/// Supplies feed responses without contacting either published host.
+private actor FeedStub {
+    let replies: [String: Result<StandIn.Reply, URLError>]
+    private(set) var requests: [String] = []
+
+    init(_ replies: [String: Result<StandIn.Reply, URLError>]) { self.replies = replies }
+
+    func fetch(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        let url = request.url!.absoluteString
+        requests.append(url)
+        guard let result = replies[url] else { throw URLError(.unsupportedURL) }
+        let reply = try result.get()
+        let response = HTTPURLResponse(url: URL(string: "http://127.0.0.1/")!, statusCode: reply.status,
+                                       httpVersion: "HTTP/1.1", headerFields: nil)!
+        return (Data(reply.body.utf8), response)
+    }
+}
+
 /// A stand-in receiver on 127.0.0.1: records each request and answers with the next status (then 200).
 final class StandIn: @unchecked Sendable {
+    struct Reply {
+        let status: Int
+        let body: String
+        let location: String?
+        init(_ status: Int, _ body: String = "{}", location: String? = nil) {
+            self.status = status; self.body = body; self.location = location
+        }
+    }
     let port: Int
     private let lock = NSLock()
-    private var statuses: [Int]
+    private var replies: [Reply]
     private var received: [Data] = []
     var requests: [Data] { lock.lock(); defer { lock.unlock() }; return received }
-    init(statuses: [Int]) throws {
-        self.statuses = statuses
+    convenience init(statuses: [Int]) throws { try self.init(replies: statuses.map { Reply($0) }) }
+    init(replies: [Reply]) throws {
+        self.replies = replies
         let fd = socket(AF_INET, SOCK_STREAM, 0)
         var address = sockaddr_in()
         address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size); address.sin_family = sa_family_t(AF_INET)
@@ -799,9 +954,10 @@ final class StandIn: @unchecked Sendable {
                     if count <= 0 { break }
                     data.append(contentsOf: buffer[0..<count])
                 }
-                lock.lock(); received.append(data); let status = self.statuses.isEmpty ? 200 : self.statuses.removeFirst(); lock.unlock()
-                let reply = "HTTP/1.1 \(status) Stand-in\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}"
-                _ = reply.withCString { write(client, $0, strlen($0)) }
+                lock.lock(); received.append(data); let reply = self.replies.isEmpty ? Reply(200) : self.replies.removeFirst(); lock.unlock()
+                let location = reply.location.map { "Location: \($0)\r\n" } ?? ""
+                let wire = "HTTP/1.1 \(reply.status) Stand-in\r\n\(location)Content-Length: \(reply.body.utf8.count)\r\nConnection: close\r\n\r\n\(reply.body)"
+                _ = wire.withCString { write(client, $0, strlen($0)) }
                 close(client)
             }
         }

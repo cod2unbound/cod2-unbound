@@ -441,7 +441,7 @@ enum CrashReports {
 }
 
 /// Install Update: the release the update check offered, installed only when the player clicks. The
-/// archive and SHA256SUMS come from this project's GitHub release; the archive must match both its listed
+/// archive and SHA256SUMS come from this project's releases; the archive must match both its listed
 /// size and its line in SHA256SUMS. It is unpacked beside the app (same volume), and the app inside must
 /// be this app (bundle identifier), the offered version, pass `codesign --verify --deep --strict`, and,
 /// when this app is signed with a Team ID, carry the same one. Then it takes the app's place in one
@@ -449,11 +449,12 @@ enum CrashReports {
 enum AppUpdate {
     static let releases = URL(string: "https://github.com/cod2unbound/cod2-unbound/releases")!
     static let downloads = "https://github.com/cod2unbound/cod2-unbound/releases/download/"
+    static let mirrorDownloads = "https://cod2unbound.com/releases/"
     /// Where a release's files may come from. GitHub reports the repository's current owner and name in every
     /// download address, so the list also holds the two addresses this project had before it took its
     /// place in the organisation.
     static let downloadRoots = [downloads, "https://github.com/cod2unbound/cod2-silicon/releases/download/",
-                                "https://github.com/STiXzoOR/cod2-silicon/releases/download/"]
+                                "https://github.com/STiXzoOR/cod2-silicon/releases/download/", mirrorDownloads]
     static let archiveLimit = 1 << 30
     static let sumsLimit = 64 * 1024
 
@@ -462,20 +463,39 @@ enum AppUpdate {
         let archive: URL
         let archiveSize: Int
         let sums: URL
+        var listedByGitHub = true
         var archiveName: String { AppUpdate.archiveName(version) }
     }
     static func archiveName(_ version: String) -> String { "CoD2-Unbound-\(version)-macos-arm64.zip" }
     /// The release's archive for this Mac and its SHA256SUMS, each listed once and served from this project's releases.
-    static func offer(version: String, assets: [ReleaseAsset]) -> Offer? {
+    static func offer(version: String, assets: [ReleaseAsset], listedByGitHub: Bool = true) -> Offer? {
         guard version.range(of: "\\A[0-9]+\\.[0-9]+\\.[0-9]+\\z", options: .regularExpression) != nil else { return nil }
         func asset(_ name: String) -> ReleaseAsset? {
             let found = assets.filter { $0.name == name }
-            guard found.count == 1, let one = found.first, one.url.scheme == "https", one.url.host == "github.com",
+            guard found.count == 1, let one = found.first, one.url.user == nil, one.url.password == nil,
                   downloadRoots.contains(where: one.url.absoluteString.hasPrefix) else { return nil }
             return one
         }
         guard let archive = asset(archiveName(version)), (1...archiveLimit).contains(archive.size), let sums = asset("SHA256SUMS") else { return nil }
-        return Offer(version: version, archive: archive.url, archiveSize: archive.size, sums: sums.url)
+        return Offer(version: version, archive: archive.url, archiveSize: archive.size, sums: sums.url, listedByGitHub: listedByGitHub)
+    }
+
+    typealias FeedFetch = @Sendable (URLRequest) async throws -> (Data, URLResponse)
+    static func fetchFeed(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        try await URLSession.shared.data(for: request, delegate: Redirects(download: false))
+    }
+
+    private final class Redirects: NSObject, URLSessionTaskDelegate {
+        let download: Bool
+        init(download: Bool) { self.download = download }
+
+        func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                        newRequest request: URLRequest) async -> URLRequest? {
+            // GitHub and the website both redirect assets to separate file storage hosts. The
+            // roots apply to the listed URLs. Size, SHA-256, bundle ID, version, code signature
+            // and Team ID checks protect installation after the HTTPS transfer.
+            download && request.url?.scheme == "https" ? request : nil
+        }
     }
 
     enum Failure: LocalizedError, Equatable {
@@ -531,7 +551,7 @@ enum AppUpdate {
         guard found.count == 1 else { throw Failure.mismatch }
         return found[0]
     }
-    /// The archive matches the release: the size GitHub lists and its SHA-256 in SHA256SUMS.
+    /// The archive matches the listed size and its SHA-256 in SHA256SUMS.
     static func verify(_ file: URL, size: Int, sha256: String) throws {
         guard let values = try? file.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]), values.isRegularFile == true, values.fileSize == size,
               let handle = try? FileHandle(forReadingFrom: file) else { throw Failure.mismatch }
@@ -543,29 +563,45 @@ enum AppUpdate {
 
     /// Downloads SHA256SUMS and the archive into a new folder on the same volume as `app`, in a private
     /// session with a generic User-Agent. Returns the folder (the caller removes it), the archive and its expected SHA-256.
-    static func download(_ offer: Offer, beside app: URL) async throws -> (folder: URL, archive: URL, sha256: String) {
+    static func download(_ offer: Offer, beside app: URL,
+                         fetch: @Sendable (URLSession, URLRequest) async throws -> (URL, URLResponse) = { try await $0.download(for: $1) }
+    ) async throws -> (folder: URL, archive: URL, sha256: String) {
         let folder: URL
         do { folder = try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: app, create: true) }
         catch { throw Failure.install }
-        let session = URLSession(configuration: .ephemeral)
+        let session = URLSession(configuration: .ephemeral, delegate: Redirects(download: true), delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
-        func get(_ url: URL, limit: Int) async throws -> URL {
+        func fetchFile(_ url: URL) async throws -> URL {
             var request = URLRequest(url: url)
             request.timeoutInterval = 60
             request.setValue("CoD2-Unbound-Launcher", forHTTPHeaderField: "User-Agent")
             let result: (URL, URLResponse)
-            do { result = try await session.download(for: request) } catch { throw Failure.download }
+            do { result = try await fetch(session, request) } catch { throw Failure.download }
+            guard (result.1 as? HTTPURLResponse)?.statusCode == 200 else {
+                try? FileManager.default.removeItem(at: result.0)
+                throw Failure.download
+            }
+            return result.0
+        }
+        func get(_ url: URL, named name: String, limit: Int) async throws -> URL {
+            let file: URL
+            do { file = try await fetchFile(url) }
+            catch {
+                try Task.checkCancellation()
+                guard offer.listedByGitHub, url.host == "github.com" else { throw error }
+                let mirror = URL(string: "\(mirrorDownloads)v\(offer.version)/\(name)")!
+                file = try await fetchFile(mirror)
+            }
             let target = folder.appendingPathComponent(UUID().uuidString)
-            do { try FileManager.default.moveItem(at: result.0, to: target) } catch { throw Failure.download }
-            guard (result.1 as? HTTPURLResponse)?.statusCode == 200 else { throw Failure.download }
+            try FileManager.default.moveItem(at: file, to: target)
             guard let size = try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize, size <= limit else { throw Failure.mismatch }
             return target
         }
         do {
-            let sums = try await get(offer.sums, limit: sumsLimit)
+            let sums = try await get(offer.sums, named: "SHA256SUMS", limit: sumsLimit)
             let expected = try checksum(try Data(contentsOf: sums), name: offer.archiveName)
             let archive = folder.appendingPathComponent(offer.archiveName)
-            try FileManager.default.moveItem(at: try await get(offer.archive, limit: offer.archiveSize), to: archive)
+            try FileManager.default.moveItem(at: try await get(offer.archive, named: offer.archiveName, limit: offer.archiveSize), to: archive)
             return (folder, archive, expected)
         } catch {
             try? FileManager.default.removeItem(at: folder)
