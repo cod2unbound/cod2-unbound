@@ -87,7 +87,7 @@ Type: files; Name: "{group}\CoD2 Unbound (Original 1.3).lnk"
 Type: files; Name: "{group}\CoD2 Unbound (CoD2x).lnk"
 
 [Tasks]
-Name: "links"; Description: "Handle cod2x and cod2 links when no other app handles them"; Flags: unchecked
+Name: "links"; Description: "Handle server and player setup links when no other app handles them"; Flags: unchecked
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo"; ValueType: string; ValueData: "Call of Duty 2 demo"; Flags: uninsdeletekey
@@ -102,6 +102,9 @@ Root: HKA; Subkey: "Software\Classes\cod2x\shell\open\command"; ValueType: strin
 Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('cod2')
 Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2')
 Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2')
+Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueData: "URL:CoD2 Unbound player setup link"; Tasks: links; Check: CanRegisterLink('cod2unbound')
+Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2unbound')
+Root: HKCU64; Subkey: "Software\Classes\cod2unbound\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2unbound')
 #endif
 
 [Code]
@@ -532,9 +535,9 @@ begin
 end;
 
 #ifdef HasLauncher
-function ClassesRoot(): HKEY;
+function LinkClassesRoot(const Scheme: String): HKEY;
 begin
-  if IsAdminInstallMode then Result := HKLM64 else Result := HKCU64;
+  if IsAdminInstallMode and (Scheme <> 'cod2unbound') then Result := HKLM64 else Result := HKCU64;
 end;
 
 function LinkCommand(): String;
@@ -546,7 +549,7 @@ function OwnsLink(const Scheme: String): Boolean;
 var
   Command: String;
 begin
-  Result := RegQueryStringValue(ClassesRoot(), 'Software\Classes\' + Scheme + '\shell\open\command',
+  Result := RegQueryStringValue(LinkClassesRoot(Scheme), 'Software\Classes\' + Scheme + '\shell\open\command',
     '', Command) and (CompareText(Command, LinkCommand()) = 0);
 end;
 
@@ -560,13 +563,14 @@ begin
 end;
 
 var
-  AllowCod2x, AllowCod2: Boolean;
+  AllowCod2x, AllowCod2, AllowSetupLinks: Boolean;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then begin
     AllowCod2x := CanClaimLink('cod2x');
     AllowCod2 := CanClaimLink('cod2');
+    AllowSetupLinks := CanClaimLink('cod2unbound');
   end;
   if (CurStep = ssDone) and (TransactionRoot <> '') then begin
     UpdateCommitted := MoveInstall(TransactionRoot + '.previous-install', TransactionRoot + '.completed-install');
@@ -582,7 +586,9 @@ end;
 
 function CanRegisterLink(const Scheme: String): Boolean;
 begin
-  if Scheme = 'cod2x' then Result := AllowCod2x else Result := AllowCod2;
+  if Scheme = 'cod2x' then Result := AllowCod2x
+  else if Scheme = 'cod2' then Result := AllowCod2
+  else Result := AllowSetupLinks;
 end;
 
 procedure DeleteLink(const Scheme: String);
@@ -591,7 +597,7 @@ var
   Root: HKEY;
 begin
   if not OwnsLink(Scheme) then Exit;
-  Root := ClassesRoot();
+  Root := LinkClassesRoot(Scheme);
   Key := 'Software\Classes\' + Scheme;
   RegDeleteValue(Root, Key + '\shell\open\command', '');
   RegDeleteKeyIfEmpty(Root, Key + '\shell\open\command');
@@ -607,6 +613,7 @@ begin
   if CurUninstallStep = usUninstall then begin
     DeleteLink('cod2x');
     DeleteLink('cod2');
+    DeleteLink('cod2unbound');
   end;
 end;
 #endif

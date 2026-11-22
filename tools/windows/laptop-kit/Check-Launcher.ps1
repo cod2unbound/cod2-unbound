@@ -122,6 +122,20 @@ public static class KitLauncherPicture
         }
         Save-LauncherPicture $process $entry.Evidence '02b-sample-config'
         [void](Read-Host 'Cancel the import review in the launcher and press Enter here')
+        $loadouts = Join-Path $homePath 'main\players'
+        $beforeSetupLink = (Get-TreeHashes $loadouts) -join "`n"
+        Start-Process 'cod2unbound://setup/sample'
+        $deadline = (Get-Date).AddSeconds(20)
+        $detail = New-Object Windows.Automation.PropertyCondition ([Windows.Automation.AutomationElement]::NameProperty), 'Try this setup'
+        do {
+            Start-Sleep -Milliseconds 250
+            $setupPage = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $detail)
+        } until ($setupPage -or (Get-Date) -ge $deadline)
+        if (-not $setupPage -or $beforeSetupLink -ne ((Get-TreeHashes $loadouts) -join "`n")) {
+            throw 'The setup link did not open the setup in the existing window without changing a loadout.'
+        }
+        Save-LauncherPicture $process $entry.Evidence '02c-setup-link'
+        [void](Read-Host 'Return to Home in the launcher and then press Enter here')
         if (Confirm-Step 'If 1440 x 900 is offered, select it in Windows Display settings, then come back here') {
             Save-LauncherPicture $process $entry.Evidence '03-home-1440x900'
         } else {

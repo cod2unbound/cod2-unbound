@@ -41,6 +41,15 @@ public sealed partial class MainWindow
 
     private async Task OpenActivationAsync(string input)
     {
+        if (SetupLink.IsSetupScheme(input))
+        {
+            if (SetupLink.Parse(input) is not { } id)
+                throw new FormatException("This link isn’t a player setup CoD2 Unbound can open.");
+            await NavigateAsync(LauncherPlace.Configs);
+            await ((ConfigsPage)ContentFrame.Content).OpenSetupLinkAsync(id);
+            return;
+        }
+
         if (input.StartsWith("cod2:", StringComparison.OrdinalIgnoreCase) ||
             input.StartsWith("cod2x:", StringComparison.OrdinalIgnoreCase))
         {

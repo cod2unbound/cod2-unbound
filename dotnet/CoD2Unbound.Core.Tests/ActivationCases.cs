@@ -6,6 +6,7 @@ internal static partial class Program
 {
     private static void ActivationCases()
     {
+        SetupLinkCases();
         foreach (var (input, edition, address, password) in new[]
         {
             ("cod2://LOCALhost", GameEdition.Original, "localhost:28960", null),

@@ -144,11 +144,12 @@ def verify_launcher(env, root, start, uninstaller, signer):
     for path in binaries:
         signer.verify(path)
 
-    for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x"):
+    for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x", "cod2unbound"):
         command = wine(env, "reg", "query", f"{USER_CLASSES}\\{key}\\shell\\open\\command",
                        "/ve", "/reg:64").stdout
         if f'\\launcher\\{LAUNCHER_NAME}" "%1"' not in command:
             raise ValueError(f"{key} does not open the installed launcher")
+    wine(env, "reg", "query", f"{USER_CLASSES}\\cod2unbound", "/v", "URL Protocol", "/reg:64")
     for ext, handler in ((".cfg", "CoD2Unbound.Config"), (".dm_1", "CoD2Unbound.Demo")):
         wine(env, "reg", "query", f"{USER_CLASSES}\\{ext}\\OpenWithProgids", "/v", handler,
              "/reg:64")
@@ -232,7 +233,7 @@ def verify_installer(artifacts, work, previous, run):
             raise ValueError("Uninstall left installed files or removed the user's own file")
         if not wine(env, "reg", "query", "HKCU\\" + UNINSTALL, check=False).returncode:
             raise ValueError("Uninstall key still exists")
-        for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x"):
+        for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x", "cod2unbound"):
             if not wine(env, "reg", "query", USER_CLASSES + "\\" + key, "/reg:64",
                         check=False).returncode:
                 raise ValueError(f"Uninstall left the {key} association")

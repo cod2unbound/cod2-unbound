@@ -72,6 +72,8 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $allInstalled = $false
     $launcherHome = $null
     $launcherBefore = $null
+    $setupScheme = 'HKCU:\Software\Classes\cod2unbound'
+    $ownsSetupScheme = $false
     try {
         if ($AllUsers) {
             Write-Host 'Approve the User Account Control prompt for this test and its uninstall. Keep the default install folder.'
@@ -89,8 +91,9 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
         Write-Host 'In Setup choose Install for me only and keep the default folder. Note any Windows warning or permission prompt.'
         if ((Invoke-Setup $prior.FullName 'setup-previous') -ne 0) { throw 'The previous installer was cancelled or blocked.' }
         $installed = $true
+        $priorShortcutCount = if (Test-Path -LiteralPath (Join-Path $root 'launcher\CoD2Unbound.Windows.exe')) { 2 } else { 3 }
         if ((Read-InstalledVersion 'HKCU' $root) -ne $oldVersion -or
-            @(Get-ChildItem -LiteralPath $start -File -Filter '*.lnk').Count -ne 3) {
+            @(Get-ChildItem -LiteralPath $start -File -Filter '*.lnk').Count -ne $priorShortcutCount) {
             throw 'The previous installer did not create the per-user install and Start entries.'
         }
         $entry = New-RunContext 'setup-busy-server'
@@ -118,9 +121,18 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
             }
         }
         if ($stopped.TimedOut -or $stopped.ExitCode -ne 0) { throw 'The installed server did not close cleanly.' }
-        if ((Invoke-Setup $setup.FullName 'setup-upgrade' $quiet) -ne 0 -or (Read-InstalledVersion 'HKCU' $root) -ne $newVersion) {
+        if ((Invoke-Setup $setup.FullName 'setup-upgrade' "$quiet /TASKS=links") -ne 0 -or (Read-InstalledVersion 'HKCU' $root) -ne $newVersion) {
             throw 'The upgrade failed.'
         }
+        $setupCommand = (Get-Item -LiteralPath "$setupScheme\shell\open\command").GetValue('')
+        $expectedCommand = '"{0}" "%1"' -f (Join-Path $root 'launcher\CoD2Unbound.Windows.exe')
+        $ownsSetupScheme = $setupCommand -ieq $expectedCommand
+        if (-not $ownsSetupScheme -or
+            'URL Protocol' -notin (Get-Item -LiteralPath $setupScheme).GetValueNames()) {
+            throw 'Setup did not register player setup links for the current user.'
+        }
+        'PASS registered cod2unbound links for the current user.' |
+            Add-Content -LiteralPath (Join-Path $Results 'setup-summary.txt')
         $uninstallers = @(Get-ChildItem -LiteralPath $root -File -Filter 'unins*.exe')
         if ($uninstallers.Count -ne 1) { throw 'Expected one uninstaller after upgrade.' }
         Save-Signatures $uninstallers.FullName (Join-Path $Results 'installed-uninstaller-signature.json')
@@ -157,6 +169,8 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
                 $uninstaller = Get-ChildItem -LiteralPath $scope.Directory -File -Filter 'unins*.exe' | Select-Object -First 1
                 if (-not $uninstaller -or (Invoke-Setup $uninstaller.FullName $scope.Label) -ne 0 -or
                     (Test-Path -LiteralPath $scope.Key) -or (Test-Path -LiteralPath $scope.Group) -or
+                    ($scope.Label -eq 'uninstall-current-user' -and $ownsSetupScheme -and
+                        (Test-Path -LiteralPath $setupScheme)) -or
                     @(Get-ChildItem -LiteralPath $scope.Directory -Recurse -File -ErrorAction SilentlyContinue).Count) {
                     $uninstallFailed = $true
                     Write-Warning "Check $($scope.Label) in results. Windows may have left some installed files or shortcuts."
