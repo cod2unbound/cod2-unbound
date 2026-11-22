@@ -26,6 +26,7 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal ConfigStudioModel Model { get; }
     internal ConfigDiscover Discover { get; }
     internal double MouseDpi => State.Current?.Metadata.Dpi ?? session.Settings.Working.Dpi;
+    internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
     internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
     public ConfigDialect Dialect => Studio.Dialect;

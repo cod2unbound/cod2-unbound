@@ -28,6 +28,7 @@ public sealed partial class ConfigsPage : Page
     {
         this.shell = shell;
         this.model = model;
+        setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
         SizeChanged += (_, args) =>
         {
@@ -629,81 +630,6 @@ public sealed partial class ConfigsPage : Page
 
     private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0
         ? count.ToString(CultureInfo.CurrentCulture) : "";
-
-    private async Task ShowCatalogueAsync(bool saved, bool retry = false)
-    {
-        Status.IsOpen = false;
-        Detail.Children.Clear();
-        Loadouts.SelectedItem = null;
-        Detail.Children.Add(Heading(saved ? "Saved" : "Player Setups"));
-        Detail.Children.Add(Caption("Loading player setups…"));
-        await model.Discover.LoadAsync(retry);
-        UpdateSavedCount();
-        Detail.Children.RemoveAt(1);
-        if (model.Discover.State.Snapshot is null)
-        {
-            Detail.Children.Add(SettingRow(model.Discover.State.Problem ?? "Player Setups is unavailable.", null,
-                Action("Try again", () => ShowCatalogueAsync(saved, retry: true))));
-            return;
-        }
-
-        var search = new TextBox { PlaceholderText = "Find a player setup", AccessKey = "F" };
-        AutomationProperties.SetName(search, "Find a player setup");
-        var results = new StackPanel { Spacing = 4 };
-        Detail.Children.Add(search);
-        Detail.Children.Add(results);
-        search.TextChanged += (_, _) => Fill();
-        Fill();
-
-        void Fill()
-        {
-            results.Children.Clear();
-            var entries = saved ? model.Discover.State.Saved.Select(bookmark => bookmark.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray()
-                : model.Discover.Entries;
-            foreach (var entry in ConfigDiscover.Setups(entries, ConfigSetupFilter.All, search.Text, CultureInfo.CurrentCulture))
-                results.Children.Add(SettingRow(entry.Player, string.Join(" · ", new[] { entry.Team, entry.Era, entry.Feel }.OfType<string>()),
-                    Action("View setup", () => ShowSetupAsync(entry, saved))));
-            if (results.Children.Count == 0)
-                results.Children.Add(EmptyState("Search", saved && entries.IsEmpty ? "No saved player setups" : "No matching player setups",
-                    saved && entries.IsEmpty ? "Setups you save for later appear here." : "Try another search."));
-        }
-    }
-
-    private Task ShowSetupAsync(ConfigDirectoryEntry entry, bool fromSaved)
-    {
-        bool saved = model.Discover.State.Saved.Any(bookmark => bookmark.Id == entry.Id);
-        Status.IsOpen = false;
-        UpdateSavedCount();
-        Detail.Children.Clear();
-        var back = new HyperlinkButton { Content = fromSaved ? "Back to Saved" : "Back to Player Setups" };
-        back.Click += async (_, _) => await shell.RunAsync(() => ShowCatalogueAsync(fromSaved));
-        Detail.Children.Add(back);
-        Detail.Children.Add(Heading(entry.Player));
-        Detail.Children.Add(Caption(string.Join(" · ", new[] { entry.Team, entry.Era, entry.Role }.OfType<string>())));
-        Detail.Children.Add(Caption(entry.Feel));
-        Detail.Children.Add(SettingRow("About this setup", entry.Story));
-        Detail.Children.Add(SettingRow("Credit", $"{entry.Credit} · {entry.Provenance.PublishedBy}"));
-        Button Review(string label, bool trySetup)
-        {
-            var button = Action(label, async () =>
-            {
-                var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
-                await ReviewAsync(review, entry.Player, newOnly: trySetup);
-            });
-            button.IsEnabled = !model.Studio.IsReadOnly;
-            return button;
-        }
-        var attempt = Review("Try this setup", trySetup: true);
-        attempt.Style = StyleFor("LauncherAccentButton");
-        Detail.Children.Add(Buttons(attempt, Review("Import…", trySetup: false), Action(saved ? "Remove from Saved" : "Save for later", async () =>
-        {
-            string? message = await model.Discover.SetSavedAsync(entry.Id, !saved);
-            await ShowSetupAsync(entry, fromSaved);
-            if (message is not null)
-                Feedback(message);
-        })));
-        return Task.CompletedTask;
-    }
 
     private async void OnAddConfig(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
     {
