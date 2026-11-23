@@ -44,13 +44,13 @@ internal static partial class Program
             string feed = origin + "releases";
             string root = origin + "releases/download/v0.5.1/";
             using var http = new UpdateHttp(Reply(HttpStatusCode.OK, UpdateRelease(root, GitHubNotes)),
-                Reply(HttpStatusCode.OK, SetupSums), Reply(HttpStatusCode.NotFound));
+                Reply(HttpStatusCode.NotFound), Reply(HttpStatusCode.OK, SetupSums), Reply(HttpStatusCode.NotFound));
             var result = RunCheck(http.Loopback(origin), PriorNews(), origin);
             Equal("Cached", result.Library.NewsNext?.Title);
             Equal(false, result.State.Offer?.ListedByGitHub);
             Equal(root + SetupName, result.State.Offer?.Archive.Url.AbsoluteUri);
             RefusedUpdate(() => DownloadAndCheck(http.Loopback(origin), result.State.Offer!));
-            http.AssertRequests(feed, root + SumsName, root + SetupName);
+            http.AssertRequests(feed, origin + "news.json", root + SumsName, root + SetupName);
 
             using var down = new UpdateHttp(Reply(HttpStatusCode.InternalServerError));
             Equal(UpdateFailureStage.Check, RunCheck(down.Loopback(origin), loopbackOrigin: origin).State.FailedStage);
