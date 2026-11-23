@@ -198,6 +198,15 @@ public sealed partial class ConfigStudioSession
         return result;
     }
 
+    public ConfigMigrationResult? MigrateLegacySettings(GameSettings settings)
+    {
+        CheckWritable(rejectDraft: true);
+        var result = store.MigrateLegacySettings(settings);
+        if (result is { AlreadyCompleted: false })
+            Refresh();
+        return result;
+    }
+
     // The adapter holds a cross-process launch/activation lease across PrepareLaunch and process
     // creation. Keep the lease through commit or cancel and use the same lease for recovery.
     public ConfigStudioLaunch? PrepareLaunch(LaunchLink? link = null, string? connectionProfileId = null,

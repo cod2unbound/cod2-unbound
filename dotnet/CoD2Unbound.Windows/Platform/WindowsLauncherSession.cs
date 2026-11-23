@@ -13,7 +13,9 @@ internal sealed class WindowsLauncherSession
     private readonly WindowsGameDiscovery discovery;
     private readonly WindowsSettingsFolder gameFolder;
     private readonly WindowsEngineInventory inventory;
+    private readonly WindowsGameSessionHost gameHost;
     internal GameLifecycle Game { get; }
+    internal string? MigrationProblem => gameHost.MigrationProblem;
     internal WindowsReports Reports { get; }
     internal ConfigShareSession Share { get; }
     private (DateTimeOffset Started, GameEdition Edition, int Process, bool CrashConsent, Task<UsageGameStart?> UsageStart)? launchedGame;
@@ -68,7 +70,7 @@ internal sealed class WindowsLauncherSession
         inventory = new WindowsEngineInventory(installRoot, files);
         discovery = new WindowsGameDiscovery(inventory);
         var processes = new WindowsProcessSupervisor(inventory, Path.Join(folder.Root, "logs"));
-        var gameHost = new WindowsGameSessionHost(inventory, files, HomePath, () => Settings.Working.Engine, () => Renderer, SaveIntroAsync);
+        gameHost = new(inventory, files, HomePath, () => Settings.Working, () => Renderer, SaveIntroAsync);
         Game = new GameLifecycle(processes, gameHost, files, TimeProvider.System);
         ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);

@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
     private double sizedAtScale;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer gameWatcher;
     private GameSessionState? lastGame;
+    private string? lastMigrationProblem;
     private bool minimizedForGame;
     private bool flushedForClose;
     private bool closing;
@@ -101,8 +102,11 @@ public sealed partial class MainWindow : Window
             await session.InitializeAsync();
             StartupTrace.Mark("session initialized");
             ApplyAppearance(session.Settings.Working.Appearance);
+            if (!session.SetupUpdating)
+                await ShowProblemAsync(() => Task.Run(() => session.Game.ReconcileAsync()));
             await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
             initialized = true;
+            ShowMigrationProblem();
             StartupTrace.Mark("first page ready");
 #if UPDATE_FIXTURES
             CompositionTarget.Rendered += OnFirstContentRendered;
@@ -433,6 +437,7 @@ public sealed partial class MainWindow : Window
         await RunAsync(async () =>
         {
             await session.Game.ReconcileAsync();
+            ShowMigrationProblem();
             var state = session.Game.State;
             session.GameObserved(state);
             if (!state.Running && minimizedForGame)
@@ -478,6 +483,21 @@ public sealed partial class MainWindow : Window
             if (ContentFrame.Content is ConfigsPage configs)
                 configs.UpdateGameState(ended);
         }, clearProblem: false);
+    }
+
+    private void ShowMigrationProblem()
+    {
+        string? problem = session.MigrationProblem;
+        if (problem == lastMigrationProblem)
+            return;
+        if (problem is not null)
+        {
+            Problem.Message = problem;
+            Problem.IsOpen = true;
+        }
+        else if (Problem.Message == lastMigrationProblem)
+            Problem.IsOpen = false;
+        lastMigrationProblem = problem;
     }
 
     private void OnUpdateChanged(LauncherUpdateState state) =>

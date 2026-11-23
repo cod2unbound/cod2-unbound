@@ -57,6 +57,38 @@ public sealed partial class ConfigProfileStore
         using var lease = files.Acquire(default);
         CheckWritable();
         var record = files.Read(MigrationJournal) is { } saved ? ConfigProfileFormat.Migration(saved) : StartMigration(input);
+        return CompleteMigration(record);
+    }
+
+    internal ConfigMigrationResult? MigrateLegacySettings(GameSettings settings)
+    {
+        using var lease = files.Acquire(default);
+        CheckWritable();
+        if (files.Read(MigrationJournal) is { } saved)
+            return CompleteMigration(ConfigProfileFormat.Migration(saved));
+
+        var selection = Selection();
+        ConfigProfileRead? profile = selection.ProfileId is { } id ? ReadLocked(id) : null;
+        // The native launcher could already create Studio loadouts before first-run migration was wired.
+        if (profile?.Version.Metadata is not null)
+            return null;
+
+        var dvars = settings.Dvars();
+        if (Dialect == ConfigDialect.Stock && dvars.Any(pair => pair.Name == "fs_game" && pair.Value.Length != 0))
+            throw new ConfigProfileException(ConfigProfileFailure.InvalidMigration);
+        var personal = new ConfigPersonalValues(dvars, settings.Dpi);
+        ConfigMigrationInput input;
+        if (Dialect == ConfigDialect.Cod2x && files.Read("main" + ConfigName) is { } flat)
+            input = new(new ConfigMigrationSource.FlattenedLegacy(), flat, personal);
+        else if (profile is not null)
+            input = new(new ConfigMigrationSource.Profile(profile.Profile.Id), profile.Version.Config, personal);
+        else
+            input = new(new ConfigMigrationSource.EmptyHome(), [], personal);
+        return CompleteMigration(StartMigration(input));
+    }
+
+    private ConfigMigrationResult CompleteMigration(ConfigMigrationRecord record)
+    {
         if (!SameBytes(files.Read(MigrationBackup), record.Original) || !ValidIdentifier(record.TargetId))
             throw new ConfigProfileException(ConfigProfileFailure.InvalidMigration);
         if (record.Completed)

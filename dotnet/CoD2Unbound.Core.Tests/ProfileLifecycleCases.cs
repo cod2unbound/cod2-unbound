@@ -37,6 +37,36 @@ internal static partial class Program
             Sequence(original, snapshot.Before.Config);
         });
 
+        Check("launcher migration uses legacy bytes and leaves managed loadouts in place", () =>
+        {
+            var files = new FixtureProfileFiles();
+            var clock = new FixedClock();
+            var studio = new ConfigStudioSession(files, ConfigDialect.Cod2x, () => false, clock);
+            var original = ImportBytes("// kept\r\nseta sensitivity 3\r\n");
+            files.Files["main/config_mp.cfg"] = original;
+            var settings = new GameSettings { Sensitivity = 6, Dpi = 1200, Advanced = "cg_drawcrosshair 3" };
+            Equal("Main", studio.MigrateLegacySettings(settings)?.ProfileId);
+            Equal("6", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
+            Equal("3", studio.ReadActive()?.Document.EffectiveSetting("cg_drawcrosshair"));
+            Equal(1200, studio.ReadActive()?.Metadata.Dpi);
+            var store = new ConfigProfileStore(files, ConfigDialect.Cod2x);
+            Sequence(original, store.OriginalMigrationBackup()!.Value);
+            Sequence(original, files.Files["main/config_mp.cfg"]);
+            var changedSettings = settings with { Sensitivity = 8 };
+            Equal(true, studio.MigrateLegacySettings(changedSettings)?.AlreadyCompleted);
+            Equal("6", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
+
+            files = new FixtureProfileFiles();
+            store = new(files, ConfigDialect.Stock);
+            var existing = store.Create("Custom", "Custom", new("seta sensitivity 4\n"u8, ConfigDialect.Stock));
+            store.Select(existing.Profile.Id, null);
+            studio = new(files, ConfigDialect.Stock, () => false, clock);
+            Equal(null, studio.MigrateLegacySettings(settings));
+            Equal("Custom", studio.ReadActive()?.Profile.Id);
+            Equal("4", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
+            Equal(null, store.OriginalMigrationBackup());
+        });
+
         Check("connection cleanup checks origin and restores only its own active bytes", () =>
         {
             var files = new FixtureProfileFiles();

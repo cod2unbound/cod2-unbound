@@ -6,11 +6,13 @@ using CoD2Unbound.Core;
 namespace CoD2Unbound.Windows.Platform;
 
 internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, IGameFiles files, string home,
-    Func<GameEdition> defaultEdition, Func<WindowsRenderMode> renderer, Func<ValueTask> saveIntro) : IGameSessionHost
+    Func<GameSettings> settings, Func<WindowsRenderMode> renderer, Func<ValueTask> saveIntro) : IGameSessionHost
 {
     private string? latestLog;
     private ImmutableHashSet<GameProcessIdentity>? reconciledGames;
     private bool reserving;
+    private bool migrationComplete;
+    internal string? MigrationProblem { get; private set; }
 
     public ValueTask<ImmutableArray<GameProcessIdentity>> FindClientsAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult(inventory.FindRunning(EngineRole.Client, cancellationToken));
@@ -33,6 +35,7 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
             var binary = inventory.Installed.FirstOrDefault(binary =>
                 binary.Role == EngineRole.Client && binary.Edition == request.Edition)
                 ?? throw new IOException("The game executable is missing.");
+            TryMigrate(profileLease);
             studio = OpenStudio(request.Edition, profileLease);
             request = studio.PrepareClientLaunch(request);
             var plan = WindowsLaunchPlan.Client(request, binary, home, renderer(), files);
@@ -85,8 +88,30 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         await using var launch = await OpenLeaseAsync(home, ".launcher-start.lock", cancellationToken).ConfigureAwait(false);
         await using var profile = await OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken).ConfigureAwait(false);
         var verified = games.ToImmutableHashSet().Union(inventory.FindRunning(EngineRole.Client, cancellationToken));
-        OpenStudio(defaultEdition(), profile).ReconcileGames([.. verified]);
+        OpenStudio(settings().Engine, profile).ReconcileGames([.. verified]);
+        if (verified.IsEmpty)
+            TryMigrate(profile);
         reconciledGames = verified;
+    }
+
+    private void TryMigrate(FileStream profileLease)
+    {
+        if (migrationComplete)
+            return;
+        var current = settings();
+        try
+        {
+            var studio = OpenStudio(current.Engine, profileLease);
+            if (studio.IsReadOnly)
+                return;
+            studio.MigrateLegacySettings(current);
+            migrationComplete = true;
+            MigrationProblem = null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or LaunchPlanException)
+        {
+            MigrationProblem = $"Couldn’t move existing settings into a loadout. {error.Message}";
+        }
     }
 
     public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken) =>
