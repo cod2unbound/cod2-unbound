@@ -21,6 +21,16 @@ function Set-KitEdit([IntPtr]$Window, [string]$Value, [string]$Text, [switch]$Na
     $action.SetValue($Text)
 }
 
+function Find-KitHostedServer([string]$Name) {
+    $savedHosts = Join-Path $LauncherHome 'hosting\hosted-servers.json'
+    if (Test-Path -LiteralPath $savedHosts) {
+        $configured = Get-Content -LiteralPath $savedHosts -Raw | ConvertFrom-Json
+        foreach ($saved in $configured) {
+            if ($saved.Name -eq $Name) { return $saved }
+        }
+    }
+}
+
 function Get-KitOwnedGame([string]$Edition, [DateTime]$Since, [int]$Session) {
     $exe = Get-Binary $Edition -Root $InstallRoot
     Wait-KitCondition {
@@ -114,6 +124,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     $port = 29791
     $settings = Get-KitLauncherSettings
     $launcher = $server = $master = $game = $null
+    $hostName = "Kit $Edition"
     $window = [IntPtr]::Zero
     $password = 'kit' + [guid]::NewGuid().ToString('N')
     try {
@@ -165,18 +176,10 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             'hosting' {
                 Invoke-KitControl $app 'Hosting' -Name
                 Invoke-KitControl $app 'New Server' -Name
-                $hostName = "Kit $Edition"
                 Set-KitEdit $app 'Server name' $hostName -Name
                 Invoke-KitControl $app 'Start Server' -Name
-                $savedHosts = Join-Path $LauncherHome 'hosting\hosted-servers.json'
-                $port = Wait-KitCondition {
-                    if (Test-Path -LiteralPath $savedHosts) {
-                        $configured = Get-Content -LiteralPath $savedHosts -Raw | ConvertFrom-Json
-                        foreach ($saved in $configured) {
-                            if ($saved.Name -eq $hostName) { return $saved.Port }
-                        }
-                    }
-                } 15 'the saved Hosting port'
+                $hosted = Wait-KitCondition { Find-KitHostedServer $hostName } 15 'the saved Hosting entry'
+                $port = $hosted.Port
                 $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
                 Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match $hostnameField } 45 'the launcher-hosted server' | Out-Null
                 Invoke-KitControl $app 'Join' -Name
@@ -217,6 +220,19 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         Save-GameEvidence $LauncherHome $Results
         if ($launcher) { Stop-KitLauncher $launcher $Results }
         if ($Route -eq 'hosting') {
+            # If a failed join left the fixture server alive after the launcher
+            # closed, quit that host using its own generated loopback password.
+            $hosted = Find-KitHostedServer $hostName
+            $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
+            if ($hosted -and $hosted.AdminPassword -match '^[a-z0-9]{16}$' -and
+                (Request-KitServer $hosted.Port 'getstatus Kit') -match $hostnameField) {
+                Stop-SetupServer $hosted.AdminPassword $hosted.Port
+                Wait-KitCondition {
+                    (Request-KitServer $hosted.Port 'getstatus Kit') -notmatch $hostnameField
+                } 10 'the test Hosting server to stop' | Out-Null
+                'The kit closed its remaining Hosting server over loopback.' |
+                    Set-Content -LiteralPath (Join-Path $Results 'hosting-cleanup.txt')
+            }
             $logs = Join-Path $LauncherHome 'hosting\servers'
             foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
                 if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $Results $file.Name) }
