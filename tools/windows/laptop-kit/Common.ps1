@@ -70,7 +70,15 @@ function Remove-KitScratch([string]$Path) {
 
 function Get-DataRoot([string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Path)) { return }
-    $folder = Get-Item -LiteralPath ($Path.Trim().Trim('"'))
+    $selected = $Path.Trim().Trim('"')
+    # The native engine reports a resolved Win32 device path. PowerShell 5.1
+    # cannot use that prefix with Join-Path or hand it to the launcher.
+    if ($selected.StartsWith('\\?\UNC\', [StringComparison]::OrdinalIgnoreCase)) {
+        $selected = '\\' + $selected.Substring(8)
+    } elseif ($selected -match '^\\\\\?\\[a-zA-Z]:\\') {
+        $selected = $selected.Substring(4)
+    }
+    $folder = Get-Item -LiteralPath $selected
     if ($folder.Name -ieq 'main') { $folder = $folder.Parent }
     foreach ($index in 0..15) {
         $archive = Join-Path $folder.FullName ('main\iw_{0:00}.iwd' -f $index)

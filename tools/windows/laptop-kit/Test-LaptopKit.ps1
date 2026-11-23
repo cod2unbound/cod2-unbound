@@ -58,6 +58,14 @@ try {
     if ($inventory.Count -ne 1 -or $inventory[0] -notmatch 'main[/\\]iw_00\.iwd$') {
         throw 'The inventory must contain only archive names and sizes.'
     }
+    if ($env:OS -eq 'Windows_NT' -and $root -match '^[a-zA-Z]:\\') {
+        foreach ($index in 1..15) {
+            [IO.File]::WriteAllText((Join-Path $main ('iw_{0:00}.iwd' -f $index)), 'fixture archive')
+        }
+        if ((Get-DataRoot ('\\?\' + $root)) -ne (Get-DataRoot $root)) {
+            throw 'Engine discovery must return an ordinary Windows game path.'
+        }
+    }
     $timing = @(
         '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:00:00Z","frameCount":120}',
         '{"serverAddress":"127.0.0.1:28961","endedAt":"2026-11-23T14:05:00Z","frameCount":120}',
