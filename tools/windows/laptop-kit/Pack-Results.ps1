@@ -8,8 +8,8 @@ if (-not (Test-Path -LiteralPath $results)) { throw 'There are no results to pac
 $files = @(Get-ChildItem -LiteralPath $results -Force -Recurse)
 if (-not $files) { throw 'There are no results to pack.' }
 foreach ($item in $files) {
-    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint -or $item.Extension -in '.dmp','.exe','.dll','.iwd') {
-        throw 'Remove links, programs, game archives and raw memory dumps from results.'
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint -or $item.Extension -in '.exe','.dll','.iwd') {
+        throw 'Remove links, programs and game archives from results.'
     }
 }
 $files = @($files | Where-Object { -not $_.PSIsContainer })
@@ -23,14 +23,14 @@ try {
         New-Folder (Split-Path $destination -Parent) | Out-Null
         if ($file.Extension -in '.cfg','.csv','.json','.jsonl','.log','.tsv','.txt','.xml') {
             Save-Text $file.FullName $destination
-        } elseif ($file.Extension -in '.bin','.dm_1','.jpg','.jpeg','.png','.tga','.wav') {
+        } elseif ($file.Extension -in '.bin','.dm_1','.dmp','.jpg','.jpeg','.png','.tga','.wav') {
             Copy-Item -LiteralPath $file.FullName -Destination $destination
         } else {
             throw "The results contain an unexpected file type. Review $relative before packing."
         }
         Write-Host $relative
     }
-    Write-Host 'Review the listed pictures, demos and sound clips for anything personal.'
+    Write-Host 'Review the listed pictures, demos, sound clips and any raw memory dumps before sharing.'
     if ((Read-Host 'Type PACK to make the ZIP') -cne 'PACK') { return }
     [AppContext]::SetSwitch('Switch.System.IO.Compression.ZipFile.UseBackslash', $false)
     Add-Type -AssemblyName System.IO.Compression.FileSystem

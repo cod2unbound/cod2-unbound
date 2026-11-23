@@ -22,11 +22,14 @@ function Save-KitEvents {
     $dumpPath = Join-Path $LocalData 'CrashDumps'
     if (Test-Path -LiteralPath $dumpPath -PathType Container) {
         $dumps = @(Get-ChildItem -LiteralPath $dumpPath -File -Filter '*.dmp' | Where-Object {
-            $_.CreationTime -ge $start -and $_.Name -match '^(cod2_win32(_ded)?|CoD2Unbound\.Windows)\.exe\.\d+\.dmp$'
+            $_.CreationTime -ge $start -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+                $_.Name -match '^(cod2_win32(_ded)?|CoD2Unbound\.Windows|CoD2-Unbound-[0-9.]+-windows-x64-setup)\.exe\.\d+\.dmp$'
         })
         foreach ($dump in $dumps) {
-            "$($dump.Name) $($dump.Length) bytes. Windows kept the original in LocalAppData\CrashDumps." |
+            "$($dump.Name) $($dump.Length) bytes. Raw memory. Review before sharing." |
                 Add-Content -LiteralPath (Join-Path $Results 'crash-dumps.txt')
+            try { Copy-Item -LiteralPath $dump.FullName -Destination $Results }
+            catch { $alerts += "Windows could not copy $($dump.Name)" }
         }
     }
     if ($alerts.Count) { throw ($alerts -join '; ') }

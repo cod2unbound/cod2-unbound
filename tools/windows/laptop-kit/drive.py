@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import plistlib
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -245,7 +246,7 @@ def pack(folder):
         with zipfile.ZipFile(path) as packet:
             for item in packet.infolist():
                 print(f"{item.filename} ({item.file_size} bytes)")
-    if input("Review the pictures, sound and demos. Type PACK to make one ZIP.\n> ").strip() != "PACK":
+    if input("Review the pictures, sound, demos and any raw memory dumps. Type PACK to make one ZIP.\n> ").strip() != "PACK":
         return
     result = folder / "CoD2-Unbound-results.zip"
     pending = result.with_suffix(".partial")
@@ -254,7 +255,8 @@ def pack(folder):
             with zipfile.ZipFile(path) as packet:
                 for item in packet.infolist():
                     if not item.is_dir():
-                        combined.writestr(item.filename, packet.read(item))
+                        with packet.open(item) as contents, combined.open(item.filename, "w", force_zip64=True) as dest:
+                            shutil.copyfileobj(contents, dest)
     pending.replace(result)
     print(f"Results ZIP {result}")
 

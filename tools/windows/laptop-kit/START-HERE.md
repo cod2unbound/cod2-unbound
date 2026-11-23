@@ -53,8 +53,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Pack-Results.ps1 -RunI
 ```
 
 The packer removes common private identifiers from text. Check the pictures,
-demos and sound clips yourself. If Windows wrote a memory dump, the results
-list its name and size. Review the original separately before sharing it.
+demos and sound clips yourself. If Windows wrote a crash dump for the kit's
+programs, the packer lists it as raw memory. Review it before sharing.
 
 ## Let the Mac drive
 
