@@ -2792,9 +2792,11 @@ void Com_Init_Try_Block_Function(char *commandLine)
 #else
 #if defined(__APPLE__) && defined(COD2_X64)
     Com_Printf("%s %s build %s %s\n", "CoD2 MP", COD2_VERSION_SHORT, "macOS-arm64", COD2_BANNER_DATE);
-#elif (defined(COD2_X64) || COD2_WINDOWS_NATIVE) && COD2_IS_PATCH_13
+#elif defined(COD2_X64) && COD2_IS_PATCH_13
     /* Windows and Linux print the platform text of their own shipped binaries. */
     Com_Printf("%s %s build %s %s\n", "CoD2 MP", COD2_VERSION_SHORT, COD2_BUILD_PLATFORM, COD2_BANNER_DATE);
+#elif COD2_APPLE_SDK && COD2_IS_PATCH_13
+    Com_Printf("%s %s build %s %s\n", "CoD2 MP", COD2_VERSION_SHORT, "MacOSXS-i386", COD2_BANNER_DATE);
 #else
     Com_Printf("%s %s build %s %s\n", "CoD2 MP", COD2_VERSION_SHORT, "MacOSXS-i386", COD2_VERSION_DATE);
 #endif
