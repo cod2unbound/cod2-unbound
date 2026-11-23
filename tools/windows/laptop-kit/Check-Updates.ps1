@@ -1,6 +1,7 @@
-function Save-KitUpdateLogs([string]$Label) {
+function Save-KitUpdateLogs([string]$Label, [DateTime]$Since) {
     $updateLogs = Join-Path $LauncherHome 'launcher\logs\updates'
     foreach ($log in Get-ChildItem -LiteralPath $updateLogs -File -Filter '*.log' -ErrorAction SilentlyContinue) {
+        if ($log.LastWriteTime -lt $Since) { continue }
         Save-Text $log.FullName (Join-Path $Results "$Label-$($log.Name)")
         $text = Read-KitText $log.FullName
         $refusals = [regex]::Matches($text, 'Win32 error (\d+), elapsed (\d+) ms')
@@ -96,7 +97,7 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
         Assert-InstalledFiles $InstallRoot (Join-Path $Kit 'portable')
         if (Test-Path -LiteralPath $KeyMarker) { Invoke-TestKey 'verify' }
     } finally {
-        Save-KitUpdateLogs 'update'
+        Save-KitUpdateLogs 'update' $launched
         if ($launcher) { Stop-KitLauncher $launcher $Results }
         foreach ($relaunch in Get-Process -Name 'CoD2Unbound.Windows' -ErrorAction SilentlyContinue |
             Where-Object { $_.Path -ieq $exe -and $_.StartTime -ge $launched }) {
@@ -117,6 +118,7 @@ function Invoke-KitRestore {
     if ($before -eq $boot) { throw 'Windows has not restarted since the interruption.' }
     $exe = Get-KitStartTarget
     $settings = Get-KitLauncherSettings
+    $started = Get-Date
     $run = Start-KitProcess $exe '' $LauncherHome $settings -WorkingDirectory (Join-Path $env:SystemRoot 'System32')
     try {
         Wait-KitCondition {
@@ -125,7 +127,7 @@ function Invoke-KitRestore {
         } 150 'the old version to be restored' | Out-Null
         Invoke-TestKey 'verify'
     } finally {
-        Save-KitUpdateLogs 'restore'
+        Save-KitUpdateLogs 'restore' $started
         Stop-KitLauncher $run $Results
     }
 }
