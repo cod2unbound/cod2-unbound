@@ -109,6 +109,24 @@ internal static partial class Program
             Equal(TimeSpan.FromMilliseconds(500), clock.GetElapsedTime(0));
         });
 
+        Check("Game close's ten-second grace includes time spent checking the process", () =>
+        {
+            var clock = new AdvancingClock();
+            var processes = new TestProcessSupervisor();
+            var files = new MemoryPlatform("C:/data");
+            foreach (string archive in GameArchives.Required)
+                files.PutFile(archive);
+            var host = new TestGameHost(processes, clock);
+            var lifecycle = new GameLifecycle(processes, host, files, clock);
+            var request = new ClientLaunchRequest(GameEdition.Original, new GameSettings(), "C:/data", "C:/home");
+            Equal(GameStartState.Started, lifecycle.StartAsync(request, true).GetAwaiter().GetResult());
+            var started = clock.GetUtcNow();
+            host.FindCost = TimeSpan.FromMilliseconds(250);
+            Equal(true, lifecycle.QuitGameAsync(lifecycle.State.Games.Single()).GetAwaiter().GetResult());
+            var grace = host.ForcedAt!.Value - started;
+            Equal(true, grace >= TimeSpan.FromSeconds(10) && grace <= TimeSpan.FromMilliseconds(10_250));
+        });
+
         Check("Studio launch records game-written settings once and releases a failed reservation", () =>
         {
             var files = new FixtureProfileFiles();
@@ -238,8 +256,15 @@ internal static partial class Program
         public int Deliveries { get; private set; }
         public List<bool> QuitCalls { get; } = [];
         public int? GracefulOnAttempt { get; init; }
+        public TimeSpan FindCost { get; set; }
+        public DateTimeOffset? ForcedAt { get; private set; }
         public ImmutableArray<GameProcessIdentity> Observed { get; set; } = [];
-        public ValueTask<ImmutableArray<GameProcessIdentity>> FindClientsAsync(CancellationToken cancellationToken) => ValueTask.FromResult(Observed);
+        public ValueTask<ImmutableArray<GameProcessIdentity>> FindClientsAsync(CancellationToken cancellationToken)
+        {
+            if (clock is AdvancingClock advancing)
+                advancing.Advance(FindCost);
+            return ValueTask.FromResult(Observed);
+        }
         public GameProcessIdentity IdentityOf(IEngineProcess process) => new(process.Id, clock.GetUtcNow());
         public ValueTask<IGameLaunchReservation> ReserveAsync(ClientLaunchRequest request, CancellationToken cancellationToken)
         {
@@ -260,6 +285,8 @@ internal static partial class Program
         public ValueTask<bool> RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
         {
             QuitCalls.Add(force);
+            if (force)
+                ForcedAt = clock.GetUtcNow();
             if (force || QuitCalls.Count == GracefulOnAttempt)
                 processes.Process!.Complete(0);
             return ValueTask.FromResult(GracefulOnAttempt is null || force || QuitCalls.Count >= GracefulOnAttempt);
@@ -314,6 +341,7 @@ internal static partial class Program
         public override DateTimeOffset GetUtcNow() => DateTimeOffset.UnixEpoch.AddTicks(GetTimestamp());
         public override long TimestampFrequency => TimeSpan.TicksPerSecond;
         public override long GetTimestamp() => Interlocked.Read(ref ticks);
+        internal void Advance(TimeSpan time) => Interlocked.Add(ref ticks, time.Ticks);
 
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {

@@ -189,18 +189,33 @@ public sealed class GameLifecycle(IProcessSupervisor processes, IGameSessionHost
             return false;
         try
         {
+            long started = clock.GetTimestamp();
+            var grace = TimeSpan.FromSeconds(10);
+            var deadline = TimeSpan.FromSeconds(20);
+            var interval = TimeSpan.FromMilliseconds(250);
             bool requested = false;
-            for (int tick = 0; tick <= 80; tick++)
+            bool forced = false;
+            while (true)
             {
                 await ReconcileAsync(cancellationToken).ConfigureAwait(false);
                 if (!State.Games.Contains(target))
                     return true;
-                if (tick == 40 || (tick < 40 && !requested))
-                    requested = await host.RequestQuitAsync(target, force: tick == 40, cancellationToken).ConfigureAwait(false);
-                if (tick < 80)
-                    await Task.Delay(TimeSpan.FromMilliseconds(250), clock, cancellationToken).ConfigureAwait(false);
+
+                var elapsed = clock.GetElapsedTime(started);
+                if (!forced && elapsed >= grace)
+                {
+                    await host.RequestQuitAsync(target, force: true, cancellationToken).ConfigureAwait(false);
+                    forced = true;
+                }
+                else if (!requested && elapsed < grace)
+                    requested = await host.RequestQuitAsync(target, force: false, cancellationToken).ConfigureAwait(false);
+                if (elapsed >= deadline)
+                    return false;
+
+                var untilBoundary = (forced ? deadline : grace) - clock.GetElapsedTime(started);
+                if (untilBoundary > TimeSpan.Zero)
+                    await Task.Delay(untilBoundary < interval ? untilBoundary : interval, clock, cancellationToken).ConfigureAwait(false);
             }
-            return false;
         }
         finally { Volatile.Write(ref quitting, 0); }
     }
