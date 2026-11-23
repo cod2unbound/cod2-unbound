@@ -606,7 +606,9 @@ public sealed partial class SettingsPage : Page
             "Call of Duty 2 multiplayer, on every platform. Free and open source. You bring your own copy of the game.");
         Row("Release notes", null, Action("Release notes for every version", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases")));
         Row("Support", null, Buttons(Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound")),
-            Action("Report a problem…", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/issues"))));
+            Action("Report a problem…", ReportProblemFromShellAsync)));
+        Row("Help", null, Action("Open help", () => OpenAsync("https://cod2unbound.com/help")));
+        Row("Keyboard shortcuts", null, Action("Show", () => KeyboardShortcutsDialog.ShowAsync(shell)));
         Row("Updates", null, Action("Check for updates…", () =>
         {
             Panes.SelectedItem = Panes.Items[4];

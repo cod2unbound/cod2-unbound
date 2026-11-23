@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Windows.Storage.Pickers;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -131,14 +130,18 @@ public sealed partial class ConfigsPage : Page
         });
     }
 
-    private async void OnNewLoadout(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
+    private async void OnNewLoadout(object sender, RoutedEventArgs args) => await shell.RunAsync(CreateFromShellAsync);
+
+    internal async Task CreateFromShellAsync()
     {
+        if (!CanCreateFromShell)
+            return;
         if (await AskNameAsync("New loadout", "Create loadout", "") is { } name)
         {
             model.Create(name);
             await RefreshStudioAsync();
         }
-    });
+    }
 
     private async Task<string?> AskNameAsync(string title, string action, string initial, string? except = null)
     {
@@ -331,7 +334,13 @@ public sealed partial class ConfigsPage : Page
         if (expert)
         {
             var search = new TextBox { Header = "Find a setting", Text = query };
-            search.TextChanged += (_, _) => { query = search.Text; RenderRows(); };
+            studioFind = search;
+            search.TextChanged += (_, _) =>
+            {
+                jumpSetting = null;
+                query = search.Text;
+                RenderRows();
+            };
             studioBody.Children.Add(search);
             var filters = new ComboBox { Header = "Show", ItemsSource = new[] { "Selected group", "Changed", "Locked" }, SelectedIndex = 0 };
             filters.SelectionChanged += (_, _) =>
@@ -384,7 +393,8 @@ public sealed partial class ConfigsPage : Page
             if (expert)
             {
                 foreach (var section in model.Model.Expert(group, filter, query, model.State.Current?.Document, model.State.Current?.Metadata))
-                    AddGroup(section.Group, section.Rows);
+                    AddGroup(section.Group, jumpSetting == query
+                        ? section.Rows.Where(spec => spec.Name == jumpSetting) : section.Rows);
             }
             else
                 AddGroup(group, model.Model.Guided(group));
@@ -394,7 +404,7 @@ public sealed partial class ConfigsPage : Page
 
         void AddGroup(string group, IEnumerable<ConfigSettingSpec> settings)
         {
-            var specs = settings.Where(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)).ToArray();
+            var specs = settings.Where(spec => !IsHiddenFromExpert(spec)).ToArray();
             if (specs.Length == 0)
                 return;
             var groupTitle = groups.First(item => item.Id == group).Title;
@@ -405,7 +415,7 @@ public sealed partial class ConfigsPage : Page
             if (!expert)
             {
                 int total = model.Model.Expert(group, ConfigExpertFilter.Group, "", profile.Document, profile.Metadata)
-                    .Sum(section => section.Rows.Count(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)));
+                    .Sum(section => section.Rows.Count(spec => !IsHiddenFromExpert(spec)));
                 var link = new HyperlinkButton { Content = $"Show all {total} in Expert ›", VerticalAlignment = VerticalAlignment.Top };
                 link.Click += (_, _) =>
                 {
@@ -566,7 +576,10 @@ public sealed partial class ConfigsPage : Page
                 var secondary = KeyButton(row.Secondary, ConfigBindingSlot.Secondary);
                 string? help = action.Summary.Trim().TrimEnd('.').Equals(action.Title, StringComparison.OrdinalIgnoreCase)
                     ? null : action.Summary;
-                studioBody.Children.Add(SettingRow(action.Title, help, Buttons(primary, secondary)));
+                var binding = SettingRow(action.Title, help, Buttons(primary, secondary));
+                studioBody.Children.Add(binding);
+                if (action.Name == jumpBinding)
+                    jumpBindingRow = binding;
 
                 Button KeyButton(EngineKey? key, ConfigBindingSlot slot)
                 {
@@ -744,12 +757,7 @@ public sealed partial class ConfigsPage : Page
         input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(input.Text);
         var choice = await dialog.ShowAsync();
         if (choice == ContentDialogResult.Secondary)
-        {
-            var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Open a config file" };
-            picker.FileTypeFilter.Add(".cfg");
-            if (await picker.PickSingleFileAsync() is { } file)
-                await ReviewFileAsync(file.Path);
-        }
+            await ImportFromShellAsync();
         else if (choice == ContentDialogResult.Primary)
         {
             await ReviewInputAsync(new ConfigImportInput.Paste([.. ConfigDocument.Encode(input.Text.ReplaceLineEndings("\n"))]),

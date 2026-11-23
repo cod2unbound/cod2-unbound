@@ -40,6 +40,8 @@ public sealed partial class LibraryPage : Page
     };
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args) => TryRender();
+    internal bool FocusShellSearch() => Search.Focus(FocusState.Keyboard);
+
     private void OnSearch(object sender, TextChangedEventArgs args) => TryRender();
 
     private async void TryRender()

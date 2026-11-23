@@ -4,10 +4,8 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Shapes;
-using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -46,6 +44,8 @@ public sealed partial class ServersPage : Page
     {
         address ??= (ServerList.SelectedItem as ServerRow)?.Server.Address;
         var rows = model.Visible(live).Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
+        if (revealedJumpAddress is { } revealed && !rows.Any(row => row.Server.Address == revealed))
+            rows = [new ServerRow(session.ServerForAddress(revealed), model.IsFavorite(revealed)), .. rows];
         ServerList.ItemsSource = rows;
         ServerList.SelectedItem = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
         int count = model.Filters.Count;
@@ -103,6 +103,7 @@ public sealed partial class ServersPage : Page
             });
             return;
         }
+        revealedJumpAddress = null;
         model.Scope = (ServerScope)index;
         Render();
     }
@@ -194,12 +195,7 @@ public sealed partial class ServersPage : Page
 
     private async void OnCopyAddress(object sender, RoutedEventArgs args) => await shell.ShowProblemAsync(() =>
     {
-        if (ServerList.SelectedItem is ServerRow row)
-        {
-            var data = new DataPackage();
-            data.SetText(row.Server.Address);
-            Clipboard.SetContent(data);
-        }
+        CopyShellAddress();
         return Task.CompletedTask;
     });
 
@@ -207,6 +203,7 @@ public sealed partial class ServersPage : Page
     {
         if (!ready)
             return;
+        revealedJumpAddress = null;
         model.Search = SearchBox.Text;
         Render();
     }
@@ -351,6 +348,7 @@ public sealed partial class ServersPage : Page
         var filters = new ServerFilters((ServerEditionFilter)FilterEdition.SelectedIndex,
             (FilterMode.SelectedItem as ComboBoxItem)?.Tag as string, (FilterPing.SelectedItem as ComboBoxItem)?.Tag as int?,
             HideEmpty.IsChecked == true, HideFull.IsChecked == true, HidePassworded.IsChecked == true);
+        revealedJumpAddress = null;
         await model.SetFiltersAsync(filters);
         FilterButton.Flyout.Hide();
         Render();
@@ -456,18 +454,4 @@ public sealed partial class ServersPage : Page
         return UpdateHostingStateAsync();
     }
 
-    private async void OnRefreshShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        args.Handled = true;
-        await RefreshAsync();
-    }
-
-    private void OnSearchShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) =>
-        args.Handled = SearchBox.Focus(FocusState.Keyboard);
-
-    private async void OnConnectShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        args.Handled = true;
-        await ConnectAsync();
-    }
 }

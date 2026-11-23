@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Color = global::Windows.UI.Color;
@@ -342,9 +341,9 @@ public sealed partial class HomePage : Page
         HeroTitle.FontSize = wide ? 132 : 112;
         HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
         ArtLayer.Height = wide ? 560 : 420;
+        NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
         NewsCard.Visibility = IsVisible(!compactCards);
         NarrowNews.Visibility = IsVisible(compactCards);
-        NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
         Cards.ColumnSpacing = compactCards ? 0 : 12;
         Cards.RowSpacing = compactCards ? 20 : 0;
         RecentCard.Margin = compactCards ? new Thickness(0, 0, 12, 0) : new Thickness();
@@ -353,14 +352,6 @@ public sealed partial class HomePage : Page
     }
 
     private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync();
-
-    private async void OnLaunchShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!LaunchButton.IsEnabled)
-            return;
-        args.Handled = true;
-        await LaunchAsync();
-    }
 
     private Task LaunchAsync(string? address = null) => shell.RunAsync(async () =>
     {

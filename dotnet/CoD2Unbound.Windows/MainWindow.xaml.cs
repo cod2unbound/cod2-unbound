@@ -40,6 +40,7 @@ public sealed partial class MainWindow : Window
         StartupTrace.Mark("window constructor");
         InitializeComponent();
         StartupTrace.Mark("window XAML");
+        InitializeJumpTo();
         bool windows11 = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
         if (windows11 && MicaController.IsSupported())
         {
@@ -131,8 +132,8 @@ public sealed partial class MainWindow : Window
             CompositionTarget.Rendered += OnFirstContentRendered;
 #endif
             gameWatcher.Start();
-        });
             _ = RemoveInstalledNotificationsAsync();
+        });
     }
 
 #if UPDATE_FIXTURES
@@ -156,10 +157,10 @@ public sealed partial class MainWindow : Window
         // The native title and caption buttons reserve different widths on each side.
         double hostLeft = JumpHost.TransformToVisual(WindowBar).TransformPoint(default).X;
         double hostWidth = args.NewSize.Width;
-        double availableOffset = Math.Max(0, (hostWidth - JumpButton.Width) / 2);
+        double availableOffset = Math.Max(0, (hostWidth - JumpBox.Width) / 2);
         double centerOffset = WindowBar.ActualWidth / 2 - hostLeft - hostWidth / 2;
         double offset = Math.Clamp(centerOffset, -availableOffset, availableOffset);
-        JumpButton.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
+        JumpBox.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
     }
 
     private void OnAppThemeChanged(FrameworkElement sender, object args) =>
@@ -241,15 +242,6 @@ public sealed partial class MainWindow : Window
         args.Handled = true;
     }
 
-    private void OnJumpShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (JumpButton.IsEnabled)
-        {
-            JumpMenu.ShowAt(JumpButton);
-            args.Handled = true;
-        }
-    }
-
     private async void OnNavigation(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
         if (args.IsSettingsInvoked)
@@ -265,21 +257,6 @@ public sealed partial class MainWindow : Window
         else if (args.InvokedItemContainer?.Tag is string address)
             await OpenServersAsync(ServerScope.Favorites, address);
     }
-
-    private async void OnHomeInvoked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => NavigateAsync(LauncherPlace.Home));
-
-    private async void OnSettingsInvoked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
-
-    private async void OnServersInvoked(object sender, RoutedEventArgs args) =>
-        await OpenServersAsync(ServerScope.All);
-
-    private async void OnLibraryInvoked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => NavigateAsync(LauncherPlace.Library));
-
-    private async void OnConfigsInvoked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
 
     internal Task OpenServersAsync(ServerScope scope, string? address = null) =>
         RunAsync(() => NavigateAsync(LauncherPlace.Servers, scope, address));
@@ -301,7 +278,8 @@ public sealed partial class MainWindow : Window
     internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null,
         bool refreshServers = true, LauncherPlace cancelSetupTo = LauncherPlace.GameDataSettings)
     {
-        Nav.IsPaneVisible = JumpButton.IsEnabled = !session.SetupActive && place != LauncherPlace.Setup;
+        CloseJumpTo(restoreFocus: false);
+        Nav.IsPaneVisible = JumpBox.IsEnabled = !session.SetupActive && place != LauncherPlace.Setup;
         JumpHost.Visibility = Nav.IsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
         if (Nav.IsPaneVisible)
         {
@@ -531,8 +509,6 @@ public sealed partial class MainWindow : Window
         else if (Problem.Message == lastMigrationProblem)
             Problem.IsOpen = false;
         lastMigrationProblem = problem;
-        if (!cancellationToken.IsCancellationRequested)
-            await NotifyUpdateAsync(version);
     }
 
     private void OnUpdateChanged(LauncherUpdateState state) =>
@@ -555,6 +531,8 @@ public sealed partial class MainWindow : Window
         string? version = await session.CheckUpdatesAsync(automatic, cancellationToken);
         if (ContentFrame.Content is HomePage home)
             home.RenderNews();
+        if (!cancellationToken.IsCancellationRequested)
+            await NotifyUpdateAsync(version);
     }
 
     internal async Task RunUpdateAsync(bool install)

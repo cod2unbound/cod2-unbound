@@ -63,6 +63,7 @@ public sealed partial class ConfigsPage
             PlaceholderText = "Search players, teams or styles", Text = saved ? savedQuery : discoverQuery,
             AccessKey = "F", QueryIcon = Fluent("Search", 20)
         };
+        catalogueFind = search;
         AutomationProperties.SetName(search, search.PlaceholderText);
         var tools = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         Put(tools, 0, search);
