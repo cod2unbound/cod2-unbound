@@ -17,9 +17,9 @@ enum SetupStep: Int, CaseIterable, Identifiable {
 /// What the crash reports question says, in Setup and in the one-time sheet (SetupCrash and SheetCrashAsk boards).
 enum CrashReportsQuestion {
     static let rows: [(symbol: String, title: String, detail: String)] = [
-        ("doc.text", "What a report holds", "What failed, the app’s version, your macOS version, your Mac’s model and the report the game wrote when it stopped."),
-        ("lock", "What it never holds", "No name, no account and no CD key. Your Mac’s user name and every command line are taken out first, and where the report came from is not recorded."),
-        ("globe", "Where it goes", "To this project’s report service, Sentry, hosted in the EU. Nothing is sent unless the game crashes or freezes, and each report is sent once."),
+        ("doc.text", "What a report holds", "What failed and when, which game version crashed, the app’s version, your macOS version, your Mac’s model and the report the game wrote when it stopped."),
+        ("lock", "What is removed", "Your Mac’s home folder is shortened to ~ and command-line entries are removed. Reports that may contain a CD key stay on this Mac. The service is asked to leave out your network address."),
+        ("globe", "Where it goes", "To this project’s report service, Sentry, hosted in the EU. Nothing is sent unless the game crashes or freezes. The launcher remembers reports the service accepted."),
     ]
     static let changeLater = "Either answer can be changed any time in Settings › Privacy."
 

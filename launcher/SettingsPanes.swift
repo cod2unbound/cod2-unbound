@@ -431,20 +431,20 @@ struct PrivacyPane: View {
     @Environment(\.palette) private var palette
     var body: some View {
         SettingsPaneScroll {
-            Banner(.tip, symbol: "lock", message: "CoD2 Unbound has no account and sends nothing about you unless you turn it on here.")
+            Banner(.tip, symbol: "lock", message: "Choose which reports and usage data to share. The game and launcher also contact the services listed below.")
             FormSection("Sharing") {
                 FormGroup {
                     // Only a build with a report receiver offers it; without one nothing is ever sent.
                     if model.crashReportService != nil {
                         FormRow("Send crash reports to CoD2 Unbound",
-                                detail: "If the game crashes or freezes: what failed, your macOS version and Mac model, and the game’s report. Never your CD key or your Mac’s user name.") {
+                                detail: "If the game crashes or freezes: what failed and when, the game version, your macOS version and Mac model, and the game’s report. Reports that may contain your CD key stay on this Mac.") {
                             Button("See What’s Sent…") { model.privacyDetailsShown = true }.quietAction()
                                 .popover(isPresented: $model.privacyDetailsShown, arrowEdge: .bottom) { CrashReportContents(model: model) }
                             SwitchToggle("Send crash reports to CoD2 Unbound", isOn: $model.settings.sendCrashReports)
                         }
                     }
                     FormRow("Send CoD2x crash reports to the CoD2x project",
-                            detail: "Faults in CoD2x’s own code, sent by CoD2x to the people who make it, as on Windows. They include folder paths and the list of loaded game files.",
+                            detail: "Errors and faults in CoD2x’s own code, sent by CoD2x to the people who make it. Reports can include recent CoD2x log text. A crash or freeze report also includes folder paths, loaded libraries and part of the game’s memory. Changes apply the next time CoD2x starts.",
                             isOn: $model.settings.sendCoD2xReports)
                     // Only a build with the sending key offers it; without one nothing is ever sent.
                     if model.usageAvailable {
@@ -476,7 +476,7 @@ struct PrivacyPane: View {
                 }
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Game logs stay on this Mac: up to 10 sessions and 20 MiB. Passwords and CD keys are removed. Find them in Advanced › Logs.")
+                    Text("The launcher keeps up to 10 local game session logs, up to 20 MiB in total. Passwords and CD keys are removed. Find them in Advanced › Logs.")
                     Text(summaryCount)
                     SettingsFeedbackLine(model: model, pane: .privacy).padding(.horizontal, -6)
                 }
@@ -485,6 +485,9 @@ struct PrivacyPane: View {
                 FormGroup {
                     ForEach(model.privacyContacts, id: \.who) { line in ContactRow(who: line.who, when: line.when) }
                 }
+            } footer: {
+                Link(PrivacyContacts.noticeTitle, destination: PrivacyContacts.noticeURL)
+                    .font(.system(size: 13)).foregroundStyle(palette.link)
             }
         }
         .onAppear { model.refreshMatchCount() }
@@ -531,7 +534,7 @@ struct CrashReportContents: View {
                     .accessibilityElement(children: .combine).accessibilityAddTraits(.isStaticText)
                 }
             }
-            Text("No account, name or CD key goes with it, and a report that seems to hold a CD key is never sent. The report service is told not to record where it came from. Each report is sent once.")
+            Text("Reports that may contain a CD key stay on this Mac. The service is asked to leave out your network address. The launcher remembers reports the service accepted.")
                 .font(.system(size: 12)).foregroundStyle(palette.tertiary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(18)

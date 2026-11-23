@@ -59,7 +59,7 @@ struct QuestionFactRow: View {
     }
 }
 
-/// See What’s Sent… (SheetUsagePreview board): what is recorded, in five groups, then one event as the
+/// See What’s Sent… (SheetUsagePreview board): what is recorded, then one event as the
 /// sender encodes it, with this Mac's facts and its install number (all zeros before a yes).
 struct UsagePreviewSheet: View {
     @ObservedObject var model: LauncherModel
@@ -68,7 +68,7 @@ struct UsagePreviewSheet: View {
     @State private var copied = false
     var body: some View {
         let sample = model.usageSampleJSON ?? ""
-        SheetScaffold(icon: .symbol("doc.text"), title: UsageDataQuestion.previewTitle, message: UsageDataQuestion.previewDetail, width: 600,
+        SheetScaffold(icon: .symbol("doc.text"), title: UsageDataQuestion.previewTitle, message: UsageDataQuestion.previewDetail, width: 600, scrollHeight: 500,
                       actions: [SheetAction(title: copied ? "Copied" : "Copy", role: .leading, enabled: !sample.isEmpty) { copy(sample) },
                                 SheetAction(title: "Done", role: .primary, initialFocus: true) { done() }]) {
             VStack(alignment: .leading, spacing: 14) {
@@ -90,27 +90,24 @@ struct UsagePreviewSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(UsageDataQuestion.exampleCaption).font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.secondary)
                         .padding(.leading, 4).accessibilityAddTraits(.isHeader)
-                    ScrollView {
-                        Text(sample).font(.typewriter(12)).foregroundStyle(palette.secondary).lineSpacing(3)
-                            .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 14).padding(.vertical, 12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            // Selectable text keeps its own words as its name, so the well says what it
-                            // is, then reads the text.
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel("The exact text of one event")
-                            .accessibilityValue(sample)
-                            .accessibilityAddTraits(.isStaticText)
-                    }
-                    .frame(height: 236)
-                    .background(palette.well, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(palette.wellStroke, lineWidth: 1))
-                    .shapeAudit(.container, .rounded(12), "event well")
+                    Text(sample).font(.typewriter(12)).foregroundStyle(palette.secondary).lineSpacing(3)
+                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 14).padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("The exact text of one event")
+                        .accessibilityValue(sample)
+                        .accessibilityAddTraits(.isStaticText)
+                        .background(palette.well, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(palette.wellStroke, lineWidth: 1))
+                        .shapeAudit(.container, .rounded(12), "event well")
                 }
                 Text(UsageDataQuestion.previewNote).font(.system(size: 12)).foregroundStyle(palette.tertiary)
                     .fixedSize(horizontal: false, vertical: true).padding(.leading, 6)
+                Link(PrivacyContacts.noticeTitle, destination: PrivacyContacts.noticeURL)
+                    .font(.system(size: 12)).foregroundStyle(palette.link).padding(.leading, 6).padding(.bottom, 2)
             }
-        } note: { EmptyView() }
+        }
     }
     private func copy(_ text: String) {
         NSPasteboard.general.clearContents()

@@ -138,25 +138,8 @@ enum UsageSetting: Codable, Sendable {
 }
 
 enum UsagePreviewGroup: String, CaseIterable, Identifiable {
-    case screensAndFeatures, settings, macAndCountry, problems, never
+    case screens, setup, games, servers, playerSetups, hosting, updates, settings, problems, macAndCountry, everyEvent, never
     var id: Self { self }
-
-    /// Stable content keys for the copy on the preview sheet.
-    enum Item {
-        case screens, setup, play, servers, configs, share, hosting, updates
-        case settingNames, fixedChoices, appVersion, macOSVersion, macModel, chip, display, language, country
-        case errorKinds, playerName, cdKey, serverIdentity, chat, configsText, paths, typedText
-    }
-
-    var items: [Item] {
-        switch self {
-        case .screensAndFeatures: [.screens, .setup, .play, .servers, .configs, .share, .hosting, .updates]
-        case .settings: [.settingNames, .fixedChoices]
-        case .macAndCountry: [.appVersion, .macOSVersion, .macModel, .chip, .display, .language, .country]
-        case .problems: [.errorKinds]
-        case .never: [.playerName, .cdKey, .serverIdentity, .chat, .configsText, .paths, .typedText]
-        }
-    }
 }
 
 /// The only public recording input. Case payloads contain fixed choices, numbers or a slug from the signed catalogue.
@@ -182,13 +165,6 @@ enum UsageEvent: Codable, Sendable {
     case settingChanged(UsageSetting)
     case errorShown(UsageError)
     case usageDataTurnedOn(UsageConsentSource)
-
-    var isSetupStep: Bool {
-        switch self {
-        case .setupStepReached, .setupStepSkipped: true
-        default: false
-        }
-    }
 
     fileprivate var payload: (name: String, fields: [String: UsageProperty]) {
         switch self {
