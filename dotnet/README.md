@@ -255,9 +255,10 @@ Usage requests use the PostHog EU ingestion endpoint without redirects, cookies,
 or ambient credentials. The launcher records app opens at most once per UTC day,
 screen opens, and setup steps reached or skipped. A confirmed game folder gets
 the `own files` marker only if the player picked it in setup. The launcher
-records game starts with edition, renderer and display mode, game exits with
-normal or unexpected exit and runtime in whole minutes, and server list refreshes
-with the active tab. Join attempts record method and edition when the launcher
+records game starts with edition, renderer and display mode, and server list
+refreshes with the active tab. It records the exit type and runtime in whole
+minutes only if the game’s start was recorded under the same install number.
+Join attempts record method and edition when the launcher
 starts the game. It also records public player setup catalogue IDs for views,
 tries and imports, loadouts and config checks, hosting reach and edition,
 update stages and versions, setting names and encoded choices, and error kinds.
@@ -273,8 +274,8 @@ whole GB, rounded to the nearest GB. A difference in architecture indicates
 emulation. For the one graphics card
 Windows prefers for high performance it includes the name, dedicated memory in
 whole GB rounded down, and the driver version when available. It includes the
-display’s size and refresh rate. The launcher requests that PostHog skip person
-profiles and leaves the network address out of event fields. The project’s
+display’s size and refresh rate. Each event asks PostHog not to build a person
+profile from it and leaves the network address out of its fields. The project’s
 PostHog settings discard the connection address after working out the country
 from it, and a second step there blanks every finer location field, so only the
 country is kept. Those are service settings, not code: check them in the
