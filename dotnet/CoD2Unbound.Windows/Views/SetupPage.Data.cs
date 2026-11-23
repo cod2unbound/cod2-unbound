@@ -3,6 +3,8 @@ using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
@@ -87,13 +89,21 @@ public sealed partial class SetupPage
             StepContent.Children.Add(new InfoBar { IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Error, Message = dropError });
         if (steamWatch is null)
         {
-            StepContent.Children.Add(SettingRow("Steam", "In Steam, right-click the game, then Manage › Browse local files."));
-            StepContent.Children.Add(SettingRow("Disc or other store", @"Usually C:\Program Files (x86)\Activision\Call of Duty 2."));
-            StepContent.Children.Add(SettingRow("Mac 1.3", "Copy the Call of Duty 2 folder from the Mac to this PC."));
+            var sources = new StackPanel();
+            sources.Children.Add(DataSourceRow("Steam", "In Steam, right-click the game, then Manage › Browse local files."));
+            sources.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
+            sources.Children.Add(DataSourceRow("Disc or other store", @"Usually C:\Program Files (x86)\Activision\Call of Duty 2."));
+            sources.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
+            sources.Children.Add(DataSourceRow("Mac 1.3", "Copy the Call of Duty 2 folder from the Mac to this PC."));
+            StepContent.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = sources });
             var install = new Button { Content = "Install with Steam" };
             install.Click += OnInstallWithSteam;
-            StepContent.Children.Add(DataCard(SettingRow("Own it on Steam, but not installed?",
-                "Steam installs it. CoD2 Unbound finds the files when Steam finishes.", install)));
+            var steam = Columns(12, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
+            Put(steam, 0, Fluent("ArrowDownload", 20));
+            Put(steam, 1, ChoiceContent("Own it on Steam, but not installed?",
+                "Steam installs it. CoD2 Unbound finds the files when Steam finishes."));
+            Put(steam, 2, install);
+            StepContent.Children.Add(DataCard(steam));
         }
         else
         {
@@ -111,6 +121,18 @@ public sealed partial class SetupPage
                 "Steam shows the download. Setup continues when all 16 game archives are present."));
             StepContent.Children.Add(DataCard(waiting, stop));
         }
+    }
+
+    private static Grid DataSourceRow(string label, string detail)
+    {
+        var row = Columns(12, new GridLength(150), new(1, GridUnitType.Star));
+        row.Padding = new Thickness(12, 16, 12, 16);
+        var title = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
+        var description = Caption(detail);
+        description.VerticalAlignment = VerticalAlignment.Center;
+        Put(row, 0, title);
+        Put(row, 1, description);
+        return row;
     }
 
     private static string FoundDetail(GameInstallSource source) => (source switch
@@ -139,22 +161,34 @@ public sealed partial class SetupPage
         return button;
     }
 
-    private Border DropZone()
+    private Grid DropZone()
     {
         const string prompt = "Drag your Call of Duty 2 folder here";
         var title = new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center };
         var choose = FolderButton("Choose a folder…");
         choose.HorizontalAlignment = HorizontalAlignment.Center;
-        var zone = DataCard(title, Caption("It’s the folder that contains “main”. Windows or Mac 1.3 data both work."), choose);
+        var hint = Caption("It’s the folder that contains “main”. Windows or Mac 1.3 data both work.");
+        hint.TextAlignment = TextAlignment.Center;
+        var card = DataCard(Fluent("Folder", 24), title, hint, choose);
+        card.Padding = new Thickness(20, 22, 20, 22);
+        card.BorderThickness = new Thickness(0);
+        card.CornerRadius = new CornerRadius(8);
+        var outline = new Rectangle
+        {
+            RadiusX = 8, RadiusY = 8, StrokeThickness = 1, IsHitTestVisible = false,
+            StrokeDashArray = new DoubleCollection { 2, 2 },
+            Stroke = ThemeBrush("PanelStrokeBrush", ActualTheme, shell.IsHighContrast)
+        };
+        var zone = new Grid { Children = { card, outline } };
         zone.AllowDrop = true;
-        var normal = ThemeBrush("PanelStrokeBrush", ActualTheme, shell.IsHighContrast);
+        zone.ActualThemeChanged += (_, _) => Reset();
         zone.DragOver += (_, args) =>
         {
             bool accepts = args.DataView.Contains(StandardDataFormats.StorageItems) && !shell.IsBusy;
             args.AcceptedOperation = accepts ? DataPackageOperation.Copy : DataPackageOperation.None;
             if (accepts)
             {
-                zone.BorderBrush = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast);
+                outline.Stroke = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast);
                 title.Text = "Drop to use this folder";
                 args.DragUIOverride.Caption = title.Text;
             }
@@ -187,7 +221,7 @@ public sealed partial class SetupPage
 
         void Reset()
         {
-            zone.BorderBrush = normal;
+            outline.Stroke = ThemeBrush("PanelStrokeBrush", ActualTheme, shell.IsHighContrast);
             title.Text = prompt;
         }
     }
