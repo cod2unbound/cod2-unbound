@@ -2,9 +2,9 @@ namespace CoD2Unbound.Core;
 
 public static class UpdateNotification
 {
-    public static bool ShouldShow(string? automaticOffer, bool foreground, bool gameRunning, bool available,
+    public static bool ShouldShow(string? automaticOffer, bool foreground, LauncherActivity activity, bool available,
         IEnumerable<string> notified) =>
-        IsVersion(automaticOffer) && !foreground && !gameRunning && available &&
+        IsVersion(automaticOffer) && !foreground && !activity.GameRunning && !activity.ServersRunning && available &&
         !notified.Contains(automaticOffer, StringComparer.Ordinal);
 
     public static string Tag(string version) => $"update-{version}";

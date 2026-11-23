@@ -13,9 +13,8 @@ public sealed partial class MainWindow
         if (version is null || UpdateNotifications is not { } notifications || closing)
             return;
         bool foreground = WinRT.Interop.WindowNative.GetWindowHandle(this) == GetForegroundWindow();
-        if (UpdateNotification.ShouldShow(version, foreground, session.Game.State.Running, notifications.IsEnabled,
-                session.Library.NotifiedUpdates) &&
-            !session.UpdateInstaller.Observe().GameRunning && notifications.Show(version))
+        if (UpdateNotification.ShouldShow(version, foreground, session.UpdateInstaller.Observe(), notifications.IsEnabled,
+                session.Library.NotifiedUpdates) && notifications.Show(version))
             await session.RememberUpdateNotificationAsync(version);
     }
 

@@ -65,13 +65,16 @@ internal static partial class Program
         Check("Update notification is automatic, background, idle, available and once per version", () =>
         {
             var saved = LauncherLibrary.Read(new LauncherLibrary { NotifiedUpdates = ["0.6.0"] }.Write().AsMemory());
-            bool Show(string? version = "0.7.0", bool foreground = false, bool running = false, bool available = true) =>
-                UpdateNotification.ShouldShow(version, foreground, running, available, saved.NotifiedUpdates);
+            bool Show(string? version = "0.7.0", bool foreground = false, bool running = false, bool hosting = false,
+                bool available = true) =>
+                UpdateNotification.ShouldShow(version, foreground, new LauncherActivity(running, hosting), available,
+                    saved.NotifiedUpdates);
             Equal(true, Show());
             Equal(false, Show(version: null));
             Equal(false, Show(version: "0.6.0"));
             Equal(false, Show(foreground: true));
             Equal(false, Show(running: true));
+            Equal(false, Show(hosting: true));
             Equal(false, Show(available: false));
             Equal("update-0.7.0", UpdateNotification.Tag("0.7.0"));
             Equal(false, UpdateNotification.IsVersion("0.7.0&action=other"));
