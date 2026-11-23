@@ -94,12 +94,13 @@ function Invoke-KitOpenDemo([string]$Edition) {
         Invoke-KitControl $app 'Play demo' -Name
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
-        $boot = Enable-KitGameConsole $window $LauncherHome $Results
-        $console = Join-Path $LauncherHome 'main\console_mp.log'
         Wait-KitCondition {
-            Select-String -LiteralPath @($boot,$console) -SimpleMatch 'CL_InitCGame:' -Quiet
-        } 40 'game demo playback' | Out-Null
-        Save-KitFrame $window $LauncherHome $Results 'kit-shell-demo'
+            (Test-Path -LiteralPath $console) -and
+                (Select-String -LiteralPath $console -SimpleMatch "demos/kit-match-$Edition.dm_1" -Quiet) -and
+                (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
+        } 65 'game demo playback' | Out-Null
+        Focus-KitWindow $window
+        Save-KitDesktop $window (Join-Path $Results 'kit-shell-demo-desktop.png')
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
