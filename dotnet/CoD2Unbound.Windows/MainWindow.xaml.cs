@@ -461,7 +461,8 @@ public sealed partial class MainWindow : Window
                 if (ContentFrame.Content is ServersPage hosting)
                     await hosting.UpdateHostingStateAsync();
             }
-            if (session.CanAutoCheckUpdates && session.Settings.Working.CheckUpdatesAutomatically && updateRequest is null &&
+            if (lastGame?.Running == state.Running && session.CanAutoCheckUpdates &&
+                session.Settings.Working.CheckUpdatesAutomatically && updateRequest is null &&
                 session.Updates.State.Phase is not (UpdatePhase.Installed or UpdatePhase.Ready or UpdatePhase.Installing) &&
                 now >= firstUpdate &&
                 LauncherUpdates.AutoCheckDue(now, attemptedUpdate, session.Library.DispatchesCheckedAt, state.Running))
