@@ -354,7 +354,7 @@ public sealed partial class ConfigsPage
                 modal.IsPrimaryButtonEnabled = writable && !blockedTarget && count > 0;
                 into.IsEnabled = writable;
                 var blocker = !CanEdit ? (model.Studio.IsReadOnly
-                    ? "Configs are read-only while Call of Duty 2 is running." : "Finish the pending loadout change before importing.")
+                    ? ConfigProfileException.ReadOnlyWhilePlaying : "Finish the pending loadout change before importing.")
                     : count == 0 ? "Tick at least one change to import." : "";
                 problem.Text = blocker;
                 problem.Visibility = IsVisible(blocker.Length != 0);

@@ -20,12 +20,14 @@ public sealed class ConfigProfileException(ConfigProfileFailure failure) : IOExc
     ConfigProfileFailure.InUse => "This loadout is the one your next game uses. Choose another loadout for your next game first.",
     ConfigProfileFailure.CannotTrash => "The loadout couldn’t be moved to the Trash. Nothing was removed.",
     ConfigProfileFailure.Conflict => "The config, metadata or selection changed on disk. Refresh before saving.",
-    ConfigProfileFailure.GameRunning => "Quit the game before changing loadouts.",
+    ConfigProfileFailure.GameRunning => ReadOnlyWhilePlaying,
     ConfigProfileFailure.InvalidMetadata => "This loadout's metadata is invalid or uses an unsupported version.",
     ConfigProfileFailure.CannotPublish => "Cannot publish this loadout.",
     _ => throw new ArgumentOutOfRangeException(nameof(failure))
 })
 {
+    public const string ReadOnlyWhilePlaying = "Configs are read-only while Call of Duty 2 is running.";
+
     public ConfigProfileFailure Failure { get; } = failure;
 }
 

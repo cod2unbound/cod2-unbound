@@ -108,7 +108,7 @@ public sealed partial class ConfigsPage
         ToolTipService.SetToolTip(another, "Close this check.");
         checkerAnother = another;
         Detail.Children.Add(CheckPair(pickers, another, 590, rightAuto: true));
-        var readOnly = Caption("Configs are read-only while Call of Duty 2 is running.");
+        var readOnly = Caption(ConfigProfileException.ReadOnlyWhilePlaying);
         checkerReadOnly = readOnly;
         Detail.Children.Add(readOnly);
         Detail.Children.Add(checkerBody);

@@ -129,6 +129,7 @@ internal sealed class PlayerCard : StackPanel
         editor.IsEnabled = !gameRunning && profileId is not null;
         changeKey.IsEnabled = !gameRunning;
         loadout.IsEnabled = !gameRunning && loadout.Items.Count != 0;
+        AutomationProperties.SetHelpText(loadout, gameRunning ? ConfigProfileException.ReadOnlyWhilePlaying : "");
     }
 
     internal async Task FlushNameAsync()

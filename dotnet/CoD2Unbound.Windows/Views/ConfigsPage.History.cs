@@ -47,7 +47,7 @@ public sealed partial class ConfigsPage
         historySnapshotTarget!.Visibility = IsVisible(studioTab == 3);
         button.IsEnabled = CanEdit;
         ToolTipService.SetToolTip(historySnapshotTarget, model.State.ReadOnly
-            ? "Configs are read-only while Call of Duty 2 is running."
+            ? ConfigProfileException.ReadOnlyWhilePlaying
             : "Save how this loadout is set up now as a snapshot");
     }
 

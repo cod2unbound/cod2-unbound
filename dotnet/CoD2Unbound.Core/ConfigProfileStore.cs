@@ -64,7 +64,7 @@ public static class LoadoutName
     public static string? Problem(string name, IEnumerable<string> existing, bool readOnly)
     {
         if (readOnly)
-            return "Configs are read-only while Call of Duty 2 is running.";
+            return ConfigProfileException.ReadOnlyWhilePlaying;
         string trimmed = name.Trim();
         if (trimmed.Length == 0)
             return "Type a name for the loadout.";

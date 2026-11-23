@@ -11,7 +11,6 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class ServersPage
 {
-    private const string ReadOnlyReason = "Loadouts are read-only while Call of Duty 2 is running.";
     private const string DiscardChanges = "Anything you change in the game during this connection is discarded when you leave.";
     private ServerReadySession? readyCheck;
     private GameServer? readyServer;
@@ -250,8 +249,8 @@ public sealed partial class ServersPage
             AutomationProperties.SetName(button, name);
         if (blocked)
         {
-            AutomationProperties.SetHelpText(button, ReadOnlyReason);
-            ToolTipService.SetToolTip(button, ReadOnlyReason);
+            AutomationProperties.SetHelpText(button, ConfigProfileException.ReadOnlyWhilePlaying);
+            ToolTipService.SetToolTip(button, ConfigProfileException.ReadOnlyWhilePlaying);
         }
         else if (tooltip is not null)
             ToolTipService.SetToolTip(button, tooltip);

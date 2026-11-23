@@ -248,7 +248,7 @@ public sealed class ConfigStudioModel
     public string? TakeTheirsBlock(ConfigSettingSpec spec, ConfigStudioState state, ConfigRules? rules,
         ImmutableArray<string> selectedRules, string ruleLabel)
     {
-        if (state.ReadOnly) return "Configs are read-only while Call of Duty 2 is running.";
+        if (state.ReadOnly) return ConfigProfileException.ReadOnlyWhilePlaying;
         if (spec.LauncherOwned) return "CoD2 Unbound sets this from Settings each time the game starts.";
         if (State(spec, state.Current?.Document, state.Current?.Metadata).Locked) return "Locked, so it stays yours.";
         if (spec.Setting.Variant(Mode)?.ServerControlled == true) return "The server sets this when you join, so it stays yours.";
@@ -294,7 +294,7 @@ public sealed class ConfigStudioModel
     {
         var profile = id is null ? null : state?.Profiles.FirstOrDefault(item => item.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         if (profile is null) return "There’s no loadout to delete.";
-        if (state!.ReadOnly) return "Configs are read-only while Call of Duty 2 is running.";
+        if (state!.ReadOnly) return ConfigProfileException.ReadOnlyWhilePlaying;
         return profile.IsActive ? $"{profile.DisplayName} is in use for your next game. Choose another loadout for your next game first." : null;
     }
 

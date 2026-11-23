@@ -110,7 +110,7 @@ public sealed partial class HomePage
             "Ctrl+Enter launches and rejoins this server. Ctrl+Shift+Enter opens the game menu.";
         RenderGameHint(game.Running, shell.AppWindow.Size.Width / (XamlRoot?.RasterizationScale ?? 1) >= 1200);
         AutomationProperties.SetHelpText(LaunchButton, reason ?? "More ways to launch. Press Alt+Down to open the menu.");
-        AutomationProperties.SetHelpText(LoadoutChoice, game.Running ? PlayingHint : "");
+        AutomationProperties.SetHelpText(LoadoutChoice, game.Running ? ConfigProfileException.ReadOnlyWhilePlaying : "");
         AutomationProperties.SetHelpText(DisplayChoice, game.Running ? PlayingHint : "");
         foreach (var button in recentButtons)
         {

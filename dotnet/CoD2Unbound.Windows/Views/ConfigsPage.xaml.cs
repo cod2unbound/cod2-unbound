@@ -283,7 +283,7 @@ public sealed partial class ConfigsPage : Page
         Put(header, 0, title);
         Put(header, 1, right);
         Detail.Children.Add(header);
-        var readOnlyNotice = Caption("Configs are read-only while Call of Duty 2 is running.");
+        var readOnlyNotice = Caption(ConfigProfileException.ReadOnlyWhilePlaying);
         Detail.Children.Add(readOnlyNotice);
         Detail.Children.Add(LoadoutShareActions(profile.Profile, readOnlyNotice, shareNotice));
         if (studioBody.Parent is Panel old)
