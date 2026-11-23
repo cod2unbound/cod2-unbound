@@ -133,9 +133,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-    if ($Route -eq 'fullscreen') {
-        Set-KitLauncherProfile $Edition 'dx9' 'exclusive' ([KitDesktop]::CurrentMode())
-    } else { Set-KitLauncherProfile $Edition 'dx9' }
+    Set-KitLauncherProfile $Edition 'dx9'
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
     $demoName = "kit-match-$Edition"
@@ -196,7 +194,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         Invoke-KitControl $app 'ServersItem'
         $since = Get-Date
         switch ($Route) {
-            { $_ -in 'connect','fullscreen' } {
+            'connect' {
                 Invoke-KitControl $app ('Connect to address' + [char]0x2026) -Name
                 Set-KitEdit $app 'AddressBox' "127.0.0.1:$port"
                 Invoke-KitControl $app 'PrimaryButton'
@@ -274,7 +272,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             if ($status -match '(?m)^-?\d+ +(\d+) +"[^"\r\n]+"\r?$' -and [int]$Matches[1] -lt 999) { $status }
         } 75 'a named, active player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
-        if ($Route -in 'connect','hosting','fullscreen','handoff') {
+        if ($Route -in 'connect','hosting','handoff') {
             # The server can report an active slot before the client accepts game input.
             Wait-KitCondition {
                 (Test-Path -LiteralPath $console) -and
@@ -285,24 +283,6 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         if ($Route -eq 'handoff') {
             Invoke-KitSecondServer $app $game $port $secondPort $joinPassword
-        }
-        if ($Route -eq 'fullscreen') {
-            Invoke-KitTaskSwitch $window $LauncherHome $Results 'kit-match'
-            $position = Join-Path $Results 'position.txt'
-            $viewPattern = '(?m)^\( *-?\d+(?:\.\d+)? +[^\r\n]+?\)(?: *:.*)?$'
-            Send-KitCommand $window '/toggleconsole; viewpos'
-            $before = [regex]::Matches((Read-KitText $console), $viewPattern) | Select-Object -Last 1
-            if (-not $before) { throw 'The game did not report its position after returning.' }
-            [KitDesktop]::KeyEvent(87, $false)
-            try { Start-Sleep -Milliseconds 850 } finally { [KitDesktop]::KeyEvent(87, $true) }
-            Send-KitCommand $window '/toggleconsole; viewpos'
-            $after = [regex]::Matches((Read-KitText $console), $viewPattern) | Select-Object -Last 1
-            @($before.Value, $after.Value) | Set-Content -LiteralPath $position
-            if (-not $after -or $before.Value -eq $after.Value -or -not (Get-KitNamedPlayer $port)) {
-                throw 'The named player did not move after returning to the match.'
-            }
-            Select-String -LiteralPath $console -Pattern 'lost device|device lost|recover.*device' |
-                ForEach-Object Line | Set-Content -LiteralPath (Join-Path $Results 'device-recovery.txt')
         }
         if ($Route -eq 'connect') {
             $summaryPath = Join-Path $LauncherHome 'main\stats\matches.jsonl'
@@ -531,4 +511,63 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     Invoke-KitControl $App 'Close game' -Name
     if (-not $Game.WaitForExit(18000)) { throw 'Close game did not stop the test game.' }
     'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
+}
+
+function Invoke-KitFullscreenMatch([string]$Edition) {
+    Initialize-KitDesktop
+    $serverEntry = New-RunContext 'fullscreen-server'
+    $clientEntry = New-RunContext 'fullscreen-client'
+    $desktop = [KitDesktop]::CurrentMode()
+    $port = if ($Edition -eq 'original') { 29803 } else { 29804 }
+    $admin = 'kit' + [guid]::NewGuid().ToString('N')
+    $serverArgs = (Get-EngineArgs $serverEntry.Folder $GamePath -Port $port) +
+        " +set dedicated 1 +set g_gametype dm +set rcon_password $admin +map mp_toujane"
+    New-TestProfile $clientEntry.Folder
+    'bind w "+forward"' | Add-Content -LiteralPath (Join-Path $clientEntry.Folder 'main\players\kit\config_mp.cfg') -Encoding ASCII
+    $clientArgs = (Get-EngineArgs $clientEntry.Folder $GamePath -Port ($port+100)) +
+        " +set r_rendererPreference dx9 +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
+        " +set com_introPlayed 1 +set cl_allowDownload 0 +connect 127.0.0.1:$port"
+    $run = $null
+    $window = [IntPtr]::Zero
+    $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder -NoWindow
+    try {
+        Wait-KitCondition {
+            (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
+        } 45 'the exclusive match server' | Out-Null
+        $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder
+        $window = Get-KitGameWindow $run.Process
+        Wait-KitCondition { Get-KitNamedPlayer $port } 65 'Kit Player to join the exclusive match' | Out-Null
+        $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
+        Wait-KitCondition {
+            (Test-Path $log) -and (Select-String -LiteralPath $log -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
+        } 35 'the joined client to finish loading' | Out-Null
+        Enter-KitPlay $window
+        Save-KitFrame $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
+        Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
+        $viewPattern = '(?m)^\( *-?\d+ +-?\d+ +-?\d+\) *: *-?\d+'
+        Send-KitCommand $window '/toggleconsole; viewpos'
+        $before = [regex]::Matches((Read-KitText $log), $viewPattern) | Select-Object -Last 1
+        if (-not $before) { throw 'The game did not report its position after returning.' }
+        [KitDesktop]::KeyEvent(87, $false)
+        try { Start-Sleep -Milliseconds 850 } finally { [KitDesktop]::KeyEvent(87, $true) }
+        Send-KitCommand $window '/toggleconsole; viewpos'
+        $after = [regex]::Matches((Read-KitText $log), $viewPattern) | Select-Object -Last 1
+        @($before.Value, $after.Value) | Set-Content -LiteralPath (Join-Path $clientEntry.Evidence 'position.txt')
+        if (-not $after -or $before.Value -eq $after.Value -or -not (Get-KitNamedPlayer $port)) {
+            throw 'The named player did not move after returning to the match.'
+        }
+        $recovery = @(Select-String -LiteralPath $log -Pattern 'lost device|device lost|recover.*device' | ForEach-Object Line)
+        if (-not $recovery) { $recovery = 'The restored game rendered without a lost-device line in the log.' }
+        $recovery | Set-Content -LiteralPath (Join-Path $clientEntry.Evidence 'device-recovery.txt')
+    } finally {
+        if ($run) {
+            Stop-KitOwnedGame $run.Process $window
+            Complete-KitProcess $run $clientEntry.Evidence 8 | Out-Null
+            Save-GameEvidence $clientEntry.Folder $clientEntry.Evidence
+        }
+        if (-not $server.Process.HasExited) { Stop-SetupServer $admin $port }
+        Complete-KitProcess $server $serverEntry.Evidence 8 | Out-Null
+        Save-GameEvidence $serverEntry.Folder $serverEntry.Evidence
+    }
+    if ([KitDesktop]::CurrentMode() -ne $desktop) { throw 'Windows did not return to the desktop resolution.' }
 }

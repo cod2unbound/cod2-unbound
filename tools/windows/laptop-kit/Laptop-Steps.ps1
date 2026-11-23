@@ -299,12 +299,17 @@ $Steps = @(
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
-        foreach ($route in 'connect','link','list','hosting','handoff','fullscreen') {
+        foreach ($route in 'connect','link','list','hosting','handoff') {
             Add-KitStep "match-$edition-$route" "$name loopback through $route" {
                 param($step)
                 Invoke-KitLoopback $step.Edition $step.Variant
             } -Edition $edition -Variant $route
         }
+        Add-KitStep "match-$edition-fullscreen" "$name exclusive full-screen match and Alt+Tab" {
+            param($step)
+            Stop-KitIfNoGame
+            Invoke-KitFullscreenMatch $step.Edition
+        } -Edition $edition
     }
     foreach ($edition in 'original','cod2x') {
         Add-KitStep "open-demo-$edition" "Open the $(Get-EditionName $edition) demo through Windows" {

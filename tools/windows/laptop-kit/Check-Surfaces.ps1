@@ -34,6 +34,7 @@ function Invoke-KitSurface([string]$Page) {
             Set-Content -LiteralPath (Join-Path $stats 'matches.jsonl') -Encoding ASCII
     }
     $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    $hostedProcess = $null
     try {
         $app = Get-KitLauncherWindow $run.Process
         Wait-KitHome $app
@@ -66,6 +67,18 @@ function Invoke-KitSurface([string]$Page) {
                 Invoke-KitControl $app 'Start server' -Name
                 $room = Wait-KitCondition { Find-KitHostedServer 'Kit Export' } 20 'the disposable Hosting room'
                 Wait-KitCondition { (Request-KitServer $room.Port 'getstatus Kit') -match 'Kit Export' } 45 'the Hosting room to start' | Out-Null
+                $dedicated = Get-Binary 'original' -Server -Root $InstallRoot
+                $child = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($run.Process.Id)" |
+                    Where-Object { $_.ExecutablePath -ieq $dedicated -and $_.CommandLine -like "*$($room.Id)*" } |
+                    Select-Object -First 1
+                if ($child) {
+                    $candidate = [Diagnostics.Process]::GetProcessById($child.ProcessId)
+                    $null = $candidate.Handle
+                    if ($candidate.Path -ieq $dedicated -and
+                        [Math]::Abs(($candidate.StartTime - $child.CreationDate).TotalMilliseconds) -lt 1) {
+                        $hostedProcess = $candidate
+                    } else { $candidate.Dispose() }
+                }
                 $export = 'Export for another machine' + [char]0x2026
                 $row = Wait-KitCondition { Find-KitControl $app 'Kit Export' -Name } 12 'the saved Hosting row'
                 $row.SetFocus()
@@ -75,8 +88,13 @@ function Invoke-KitSurface([string]$Page) {
                 Invoke-KitControl $app $export -Name
                 Save-KitSurface $app 'hosting-export' @('Cancel')
                 Invoke-KitControl $app 'Cancel' -Name
-                Invoke-KitControl $app 'Stop server' -Name
-                Wait-KitCondition { -not (Request-KitServer $room.Port 'getstatus Kit') } 20 'the Hosting room to stop' | Out-Null
+                Wait-KitCondition { -not (Find-KitControl $app 'Cancel' -Name) } 12 'the export dialog to close' | Out-Null
+                Focus-KitWindow $app
+                [KitDesktop]::Chord(18, 115)
+                Invoke-KitControl $app 'Stop and quit' -Name
+                Wait-KitCondition {
+                    $run.Process.HasExited -and -not (Request-KitServer $room.Port 'getstatus Kit')
+                } 20 'the Hosting room and launcher to stop' | Out-Null
             }
             'configs' {
                 Invoke-KitControl $app 'ConfigsItem'
@@ -125,6 +143,16 @@ function Invoke-KitSurface([string]$Page) {
                 }
             }
         }
-        Stop-KitLauncher $run $Results
+        try { Stop-KitLauncher $run $Results }
+        finally {
+            if ($hostedProcess) {
+                try {
+                    if (-not $hostedProcess.HasExited) {
+                        $hostedProcess.Kill()
+                        [void]$hostedProcess.WaitForExit(5000)
+                    }
+                } finally { $hostedProcess.Dispose() }
+            }
+        }
     }
 }
