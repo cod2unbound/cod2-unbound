@@ -148,8 +148,22 @@ public sealed class ConfigBindings
     {
         ValidateSource(profile);
         var row = Row(action) ?? throw new ConfigBindingException(ConfigBindingFailure.UnavailableAction);
-        ValidateKey(key);
         var old = slot == ConfigBindingSlot.Primary ? row.Primary : row.Secondary;
+        return PrepareRow(profile, row, old, key);
+    }
+
+    public ConfigBindingEdit PrepareAdditional(ConfigProfileRead profile, string action, EngineKey old, EngineKey key)
+    {
+        ValidateSource(profile);
+        var row = Row(action) ?? throw new ConfigBindingException(ConfigBindingFailure.UnavailableAction);
+        if (!row.Keys.Contains(old))
+            throw new ConfigProfileException(ConfigProfileFailure.Conflict);
+        return PrepareRow(profile, row, old, key);
+    }
+
+    private ConfigBindingEdit PrepareRow(ConfigProfileRead profile, ConfigBindingRow row, EngineKey? old, EngineKey? key)
+    {
+        ValidateKey(key);
         if (key is { } chosen && key != old && row.Keys.Contains(chosen))
             throw new ConfigBindingException(ConfigBindingFailure.DuplicateActionKey);
 
@@ -163,6 +177,22 @@ public sealed class ConfigBindings
         }
         var edit = new ConfigBindingEdit(profile.Profile.Id, row.Action, old, key,
             key == old ? null : Entries.FirstOrDefault(entry => entry.Key == key), profile.Version, changed);
+        CheckLocks(edit, profile);
+        return edit;
+    }
+
+    public ConfigBindingEdit PrepareMove(ConfigProfileRead profile, EngineKey old, EngineKey key)
+    {
+        ValidateSource(profile);
+        ValidateKey(key);
+        var previous = Entries.FirstOrDefault(entry => entry.Key == old) ??
+            throw new ConfigProfileException(ConfigProfileFailure.Conflict);
+        var action = previous.Action is { } name ? Row(name) : null;
+        if (action is not null)
+            return PrepareRow(profile, action, old, key);
+        var updated = key == old ? document : document.RemoveBind(old.Spelling).SetBind(key.Spelling, previous.Bytes.AsSpan());
+        var edit = new ConfigBindingEdit(profile.Profile.Id, null, old, key,
+            key == old ? null : Entries.FirstOrDefault(entry => entry.Key == key), profile.Version, updated);
         CheckLocks(edit, profile);
         return edit;
     }

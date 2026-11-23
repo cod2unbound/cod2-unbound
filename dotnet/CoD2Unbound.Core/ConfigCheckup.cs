@@ -155,8 +155,16 @@ public sealed class ConfigCheckup(ConfigCatalog catalog, ConfigRules rules, Conf
             policy.Add(evaluation);
         }
 
-        return new(profile.Profile.Id, profile.Version, rulesetIds, tuneFor, mode, suggestions.ToImmutable(), Dials(measurements),
+        return new(profile.Profile.Id, profile.Version, rulesetIds, tuneFor, mode, suggestions.ToImmutable(), Dials(measurements, AimDistance()),
             policy.ToImmutable(), limitations.ToImmutable(), script.Unresolved);
+
+        string? AimDistance()
+        {
+            var sensitivity = catalog.Setting("sensitivity") is { } setting
+                ? ConfigSettingSpec.Create(setting, mode)?.DefaultText : null;
+            return ConfigDiscover.LoadoutTurnDistance(profile.Document, ConfigMouseDpi.For(profile), sensitivity) is { } cm
+                ? $"{cm:F1} cm per full turn from this loadout’s DPI" : null;
+        }
 
         bool CanChange(string name, string proposed) => !profile.Metadata.Locks.Contains(name, StringComparer.OrdinalIgnoreCase) &&
             !script.ChangedSettings.Contains(name.ToLowerInvariant()) && !rules.IsServerOwned(name, rulesetIds) &&
@@ -213,11 +221,12 @@ public sealed class ConfigCheckup(ConfigCatalog catalog, ConfigRules rules, Conf
     private static ConfigCatalogMode Mode(ConfigDialect dialect) =>
         dialect == ConfigDialect.Cod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock;
 
-    private static ImmutableArray<ConfigCheckupDial> Dials(ConfigCheckupMeasurements data)
+    private static ImmutableArray<ConfigCheckupDial> Dials(ConfigCheckupMeasurements data, string? aimDistance)
     {
         string? source = string.IsNullOrWhiteSpace(data.Source) ? null : data.Source;
         return [new(ConfigCheckupArea.Movement, Measured(data.FrameTimeP99MS, true), "ms (p99)", source),
-            new(ConfigCheckupArea.Aim, Measured(data.MousePollingHz, true), "Hz", source),
+            new(ConfigCheckupArea.Aim, Measured(data.MousePollingHz, true), "Hz",
+                string.Join(" · ", new[] { source, aimDistance }.OfType<string>()) is { Length: > 0 } aim ? aim : null),
             new(ConfigCheckupArea.Connection, Measured(data.PingMS, false), "ms (ping)", source),
             new(ConfigCheckupArea.Visibility, null, null, null)];
 
