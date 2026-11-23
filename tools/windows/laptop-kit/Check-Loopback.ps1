@@ -154,6 +154,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings
         $app = Get-KitLauncherWindow $launcher.Process
+        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
         Invoke-KitControl $app 'ServersItem'
         $since = Get-Date
         switch ($Route) {
@@ -246,17 +247,27 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             Save-KitDesktop $app (Join-Path $Results 'launcher-match.png')
         }
         if ($Route -eq 'hosting') {
+            $closeTrace = Join-Path $Results 'hosting-close.txt'
             [void]$launcher.Process.CloseMainWindow()
-            Invoke-KitControl $app 'Cancel' -Name
+            Wait-KitCondition { Find-KitControl $app 'Stop and quit' -Name } 12 'the hosted server close confirmation' | Out-Null
+            Focus-KitWindow $app
+            [KitDesktop]::Tap(27)
             Wait-KitCondition {
-                (Request-KitServer $port 'getstatus Kit') -match $hostnameField
-            } 8 'the hosted server to stay up after Cancel' | Out-Null
+                -not (Find-KitControl $app 'Stop and quit' -Name) -and
+                    (Request-KitServer $port 'getstatus Kit') -match $hostnameField
+            } 12 'the confirmation to close and the server to stay up after Cancel' | Out-Null
+            'Cancel dismissed the confirmation and the server still answered.' | Set-Content -LiteralPath $closeTrace
             [void]$launcher.Process.CloseMainWindow()
             Invoke-KitControl $app 'Stop and quit' -Name
+            'Confirmed Stop and quit.' | Add-Content -LiteralPath $closeTrace
             Wait-KitCondition {
                 $launcher.Process.HasExited -and -not (Request-KitServer $port 'getstatus Kit')
             } 20 'the launcher and its hosted server to stop' | Out-Null
+            'The launcher exited and the hosted server stopped answering.' | Add-Content -LiteralPath $closeTrace
         }
+    } catch {
+        Protect-KitText $_.Exception.Message | Set-Content -LiteralPath (Join-Path $Results 'operation-error.txt') -Encoding UTF8
+        throw
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
