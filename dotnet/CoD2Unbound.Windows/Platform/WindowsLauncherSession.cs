@@ -48,11 +48,14 @@ internal sealed class WindowsLauncherSession
 
     internal WindowsLauncherSession()
     {
+        bool useWindowsCredentials = FixtureHome() is null;
 #if UPDATE_FIXTURES
         if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
             TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
+        useWindowsCredentials |= TestMaster is { Length: > 0 } &&
+            Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS") == "1";
 #endif
-        credentials = FixtureHome() is null ? new WindowsCredentials() : new ProbeCredentials();
+        credentials = useWindowsCredentials ? new WindowsCredentials() : new ProbeCredentials();
         gameFolder = new WindowsSettingsFolder(ResolveHome(), allowNestedWrites: true);
         var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         folder = settingsFolder;
