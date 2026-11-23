@@ -5,7 +5,7 @@ using CoD2Unbound.Windows.Platform;
 
 namespace CoD2Unbound.Windows.ViewModels;
 
-internal sealed class ConfigsViewModel : IConfigImportStore
+internal sealed partial class ConfigsViewModel : IConfigImportStore
 {
     private readonly WindowsConfigProfiles files;
     private readonly WindowsLauncherSession session;

@@ -174,7 +174,10 @@ public sealed partial class ConfigsPage : Page
         updateDialogGameState?.Invoke();
         RenderRecovery();
         if (DiscoverPlaces.SelectedItem is not null)
+        {
+            UpdateCheckerAvailability();
             return;
+        }
         if (ended)
             ShowStudio();
         else
@@ -631,48 +634,6 @@ public sealed partial class ConfigsPage : Page
         RecoveryStatus.IsOpen = false;
         ExportStatus.Visibility = Visibility.Collapsed;
         await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
-    }
-
-    private Task ShowCheckerAsync()
-    {
-        refreshSharing = null;
-        model.Opened(UsagePage.Checker);
-        Status.IsOpen = false;
-        Loadouts.SelectedItem = null;
-        Detail.Children.Clear();
-        Detail.Children.Add(Heading("Check a config"));
-        var text = new TextBox
-        {
-            Header = "Paste config text", AcceptsReturn = true, Height = 150,
-            Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap
-        };
-        var results = new StackPanel { Spacing = 4 };
-        var check = Action("Check config", async () =>
-        {
-            model.Record(new(UsageKind.CheckRun));
-            ConfigCheckReport report;
-            try
-            {
-                report = await ConfigChecker.CheckAsync([.. ConfigDocument.Encode(text.Text.ReplaceLineEndings("\n"))],
-                    model.Dialect, null, model.Catalog, null);
-            }
-            catch (Exception error) when (error is IOException or ArgumentException)
-            {
-                model.Error(UsageProblem.Check);
-                throw;
-            }
-            results.Children.Clear();
-            if (report.Findings.IsEmpty)
-                results.Children.Add(Body("No problems found."));
-            foreach (var finding in report.Findings)
-                results.Children.Add(SettingRow(finding.Title, finding.Detail));
-        });
-        check.IsEnabled = false;
-        text.TextChanged += (_, _) => check.IsEnabled = !string.IsNullOrWhiteSpace(text.Text);
-        Detail.Children.Add(text);
-        Detail.Children.Add(check);
-        Detail.Children.Add(results);
-        return Task.CompletedTask;
     }
 
     private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0

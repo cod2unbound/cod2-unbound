@@ -26,6 +26,41 @@
                            FontSize="12" />
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="CheckerLine">
+            <Border Padding="8,4" Loaded="OnCheckerLineLoaded" DataContextChanged="OnCheckerLineContextChanged"
+                    ActualThemeChanged="OnCheckerLineThemeChanged" AutomationProperties.Name="{Binding AccessibleName}">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Id}" Style="{StaticResource MonoCaption}" />
+                    <TextBlock x:Name="LineMark" Grid.Column="1" Text="{Binding Icon}" />
+                    <TextBlock x:Name="LineCode" Grid.Column="2" Text="{Binding Text}" Style="{StaticResource MonoCaption}"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Text}" />
+                    <TextBlock x:Name="LineNote" Grid.Column="3" Text="{Binding Note}" Style="{StaticResource SecondaryText}" FontSize="12"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Note}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <DataTemplate x:Key="CheckerFinding">
+            <Grid ColumnSpacing="8" Padding="0,6" AutomationProperties.Name="{Binding AccessibleName}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Line}" Style="{StaticResource MonoCaption}" Margin="0,3,0,0" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryText}" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="{Binding FixLabel}" Visibility="{Binding FixVisibility}"
+                        AutomationProperties.Name="{Binding FixName}" Click="OnCheckerFix" />
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
     <Grid x:Name="ConfigSurface" AllowDrop="True" Background="Transparent">
         <Grid.ColumnDefinitions>

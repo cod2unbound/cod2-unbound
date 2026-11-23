@@ -125,7 +125,7 @@ public sealed partial class ConfigsPage
 
     private void OnImportDragOver(object sender, DragEventArgs args)
     {
-        if (!CanEdit || !(args.DataView.Contains(StandardDataFormats.StorageItems) || args.DataView.Contains(StandardDataFormats.Text)))
+        if (CheckingConfig || !CanEdit || !(args.DataView.Contains(StandardDataFormats.StorageItems) || args.DataView.Contains(StandardDataFormats.Text)))
         {
             ImportDropCue.Visibility = Visibility.Collapsed;
             return;
@@ -141,7 +141,7 @@ public sealed partial class ConfigsPage
     private async void OnImportDrop(object sender, DragEventArgs args)
     {
         ImportDropCue.Visibility = Visibility.Collapsed;
-        if (!CanEdit)
+        if (CheckingConfig || !CanEdit)
             return;
         args.Handled = true;
         var deferral = args.GetDeferral();
