@@ -1,4 +1,5 @@
 #if defined(COD2_X64) && !defined(DEDICATED)
+#include "cod2_platform.h"
 #include "match_summary.h"
 #include "frame_activity.h"
 #include "common_types.h"
@@ -16,6 +17,9 @@
 #include <unistd.h>
 #if defined(_WIN32)
 #define gmtime_r(timer, result) (gmtime_s((result), (timer)) ? NULL : (result))
+#endif
+#if COD2_WINDOWS_NATIVE
+#include "win32/win_files.h"
 #endif
 #if defined(__APPLE__)
 #include <mach/mach.h>
@@ -350,23 +354,48 @@ static void MatchSummary_Record(FILE *file, const char *reason)
     fputs("]}\n", file);
 }
 
-#if defined(_WIN32)
-/* The history file is written with POSIX directory handles and a file lock.
- * Windows has no reader for it yet, so a match ends without a record there. */
+/* Callers hold the history lock until the replacement is published. */
+static int MatchSummary_CopyHistory(FILE *input, FILE *output, const char *reason)
+{
+    char (*lines)[MATCH_LINE_LIMIT] = malloc(MATCH_RECORD_LIMIT * MATCH_LINE_LIMIT);
+    unsigned count = 0, i, keep;
+    if (!lines) return 0;
+    if (input) {
+        while (fgets(lines[count % MATCH_RECORD_LIMIT], MATCH_LINE_LIMIT, input)) {
+            size_t length = strlen(lines[count % MATCH_RECORD_LIMIT]);
+            if (length && lines[count % MATCH_RECORD_LIMIT][length - 1] == '\n')
+                ++count;
+            else {
+                int c;
+                while ((c = fgetc(input)) != EOF && c != '\n') {}
+            }
+        }
+        if (ferror(input)) {
+            free(lines);
+            return 0;
+        }
+    }
+    keep = count < MATCH_RECORD_LIMIT - 1 ? count : MATCH_RECORD_LIMIT - 1;
+    for (i = count - keep; i < count; ++i)
+        fputs(lines[i % MATCH_RECORD_LIMIT], output);
+    MatchSummary_Record(output, reason);
+    free(lines);
+    return !ferror(output);
+}
+
+#if COD2_WINDOWS_NATIVE
 void MatchSummary_Finish(const char *reason)
 {
-    (void)reason;
-    (void)MatchSummary_Record;
+    if (!matchEnabled || !match.active) return;
     match.active = 0;
+    Win_RewriteMatchHistory(MatchSummary_CopyHistory, reason);
 }
 #else
 void MatchSummary_Finish(const char *reason)
 {
     char temporary[96];
-    char (*lines)[MATCH_LINE_LIMIT];
     FILE *input, *output;
     struct stat status;
-    unsigned count = 0, i, keep;
     int homeFD, mainFD, statsFD, lockFD, fd, complete;
     if (!matchEnabled || !match.active)
         return;
@@ -392,51 +421,31 @@ void MatchSummary_Finish(const char *reason)
         fchmod(lockFD, 0600) || flock(lockFD, LOCK_EX)) {
         close(lockFD); close(statsFD); return;
     }
-    lines = malloc(MATCH_RECORD_LIMIT * MATCH_LINE_LIMIT);
-    if (!lines) {
-        close(lockFD);
-        close(statsFD);
-        return;
-    }
     fd = openat(statsFD, "matches.jsonl", O_RDONLY | O_NOFOLLOW | O_NONBLOCK);
     if (fd < 0 && errno != ENOENT) {
-        free(lines); close(lockFD); close(statsFD); return;
+        close(lockFD); close(statsFD); return;
     }
     if (fd >= 0 && (fstat(fd, &status) || !S_ISREG(status.st_mode))) {
-        close(fd); free(lines); close(lockFD); close(statsFD); return;
+        close(fd); close(lockFD); close(statsFD); return;
     }
     input = fd < 0 ? NULL : fdopen(fd, "r");
-    if (fd >= 0 && !input) close(fd);
-    if (input) {
-        while (fgets(lines[count % MATCH_RECORD_LIMIT], MATCH_LINE_LIMIT, input)) {
-            size_t length = strlen(lines[count % MATCH_RECORD_LIMIT]);
-            if (length && lines[count % MATCH_RECORD_LIMIT][length - 1] == '\n')
-                ++count;
-            else {
-                int c;
-                while ((c = fgetc(input)) != EOF && c != '\n') {}
-            }
-        }
-        fclose(input);
+    if (fd >= 0 && !input) {
+        close(fd); close(lockFD); close(statsFD); return;
     }
     snprintf(temporary, sizeof(temporary), ".matches-%ld-%llu.tmp", (long)getpid(), (unsigned long long)MatchSummary_Milliseconds());
     fd = openat(statsFD, temporary, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
     output = fd < 0 ? NULL : fdopen(fd, "w");
     if (output) {
-        keep = count < MATCH_RECORD_LIMIT - 1 ? count : MATCH_RECORD_LIMIT - 1;
-        for (i = count - keep; i < count; ++i)
-            fputs(lines[i % MATCH_RECORD_LIMIT], output);
-        MatchSummary_Record(output, reason);
-        complete = !ferror(output);
+        complete = MatchSummary_CopyHistory(input, output, reason);
         if (fclose(output)) complete = 0;
         if (complete) renameat(statsFD, temporary, statsFD, "matches.jsonl");
     } else if (fd >= 0) {
         close(fd);
     }
     if (fd >= 0) unlinkat(statsFD, temporary, 0);
+    if (input) fclose(input);
     close(lockFD);
     close(statsFD);
-    free(lines);
 }
 #endif
 #endif

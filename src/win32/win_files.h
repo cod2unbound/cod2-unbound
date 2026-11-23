@@ -22,4 +22,5 @@ int Win_Remove(const char *path);
 int Win_Move(const char *from, const char *to, unsigned long flags);
 int Win_Rename(const char *from, const char *to);
 int Win_MakeWritable(const char *path);
+void Win_RewriteMatchHistory(int (*writeHistory)(FILE *, FILE *, const char *), const char *reason);
 #endif
