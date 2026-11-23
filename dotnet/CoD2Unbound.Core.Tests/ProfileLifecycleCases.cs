@@ -46,7 +46,7 @@ internal static partial class Program
             files.Files["main/config_mp.cfg"] = original;
             var settings = new GameSettings { Sensitivity = 6, Dpi = 1200, Advanced = "cg_drawcrosshair 3" };
             Equal("Main", studio.MigrateLegacySettings(settings)?.ProfileId);
-            Equal("6", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
+            Equal("6.0", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
             Equal("3", studio.ReadActive()?.Document.EffectiveSetting("cg_drawcrosshair"));
             Equal(1200, studio.ReadActive()?.Metadata.Dpi);
             var store = new ConfigProfileStore(files, ConfigDialect.Cod2x);
@@ -54,7 +54,7 @@ internal static partial class Program
             Sequence(original, files.Files["main/config_mp.cfg"]);
             var changedSettings = settings with { Sensitivity = 8 };
             Equal(true, studio.MigrateLegacySettings(changedSettings)?.AlreadyCompleted);
-            Equal("6", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
+            Equal("6.0", studio.ReadActive()?.Document.EffectiveSetting("sensitivity"));
 
             files = new FixtureProfileFiles();
             store = new(files, ConfigDialect.Stock);
