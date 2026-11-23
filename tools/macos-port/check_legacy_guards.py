@@ -24,6 +24,7 @@ def body(source, defines, *, preserve_literals=False):
     source = re.sub(r'^\s*#\s*(?:include|import)\b[^\n]*', '', source, flags=re.M)
     result = subprocess.run(
         ['clang', '-E', '-P', '-x', 'c', '-undef', '-DCOD2_APPLE_SDK=0',
+         '-DCOD2_FEATURE_MODERN_LIBS=0',  # cod2_feature_config.h default
          '-D__LINE__=1', '-D__DATE__="Jan  1 2000"', '-D__TIME__="00:00:00"',
          '-DSDL_VERSION_ATLEAST(x,y,z)=1', '-Wno-builtin-macro-redefined',
          *('-D' + value for value in defines), '-'],

@@ -39,16 +39,8 @@ extern const char *zlibVersion(void);
 }
 #endif
 
-#ifdef COD2_FEATURE_MODERN_LIBS
-/* Hardened .iwd reader: bind inflate to whatever system zlib is actually linked
- * (modern, security-maintained: e.g. 1.3.x has the CVE-2022-37434 fix). The
- * bundled z_stream layout in common_types.h is ABI-identical to system zlib's,
- * so we only need the runtime version string for inflateInit2_'s compat check
- * instead of the hardcoded "1.1.4" the bundled 1998-era headers assumed. */
+/* Match the version of the linked zlib, including the bundled copy. */
 #define UNZ_ZLIB_VERSION (zlibVersion())
-#else
-#define UNZ_ZLIB_VERSION "1.1.4"
-#endif
 
 unzFile unzReOpen(const char *path, unzFile file);
 int unzGetGlobalInfo(unzFile file, unz_global_info *pglobal_info);
