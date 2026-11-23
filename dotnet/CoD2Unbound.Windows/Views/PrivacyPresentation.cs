@@ -44,7 +44,7 @@ internal static class PrivacyPresentation
         ("Setup", "Each step you reach or skip after you say yes, and whether you picked your game folder yourself."),
         ("Games", "Each game you start, with its game version (CoD2x or Original 1.3), graphics (Direct3D 9 or DirectX 7) and display mode; when it ends, whether it closed normally or unexpectedly, and how many whole minutes it ran."),
         ("Servers", "Refreshing the list, and which list was open: All, Favorites or Recent. Starting the game to join a server, counted before the server accepts you: how you chose it (from the list, a favorite, a link or a typed address) and its game version, never which server."),
-        ("Player setups", "The catalogue ID of each player setup you view, try or import: the short public name in its link, such as “harrow” in cod2unbound.com/setups/harrow. That you made a loadout or checked a config, nothing more."),
+        ("Player setups", "The catalogue ID of each player setup you view, try or import: the short public name in its link, such as “harrow” in cod2unbound.com/setups/harrow. That you made a loadout, checked a config, or shared or withdrew a setup, nothing more."),
         ("Hosting", "Starting a server: for your network or the internet, and its game version."),
         ("Updates", "Each update offered, and each step as it downloads, is checked, becomes ready and installs, with the version you had and the new one."),
         ("Settings", "Which settings you change, by name. For some settings with a set list of choices, such as a switch, the game version, appearance, display mode or graphics, also the choice you pick. Never what you type into a field."),

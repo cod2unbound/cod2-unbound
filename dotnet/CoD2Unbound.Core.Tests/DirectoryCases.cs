@@ -47,6 +47,10 @@ internal static partial class Program
             Equal(null, Sync(directory.CacheDateAsync()));
             var snapshot = Load(directory).Snapshot!;
             Equal(DateTimeOffset.UnixEpoch, Sync(directory.CacheDateAsync()));
+            var cachedOnly = new ConfigDirectory(trust, storage, new GatedDirectoryFetcher([]));
+            var cached = Sync(cachedOnly.ReadCachedSnapshotAsync())!;
+            Equal(ConfigDirectoryOrigin.Cache, cached.Origin);
+            Equal(snapshot.Index.Revision, cached.Index.Revision);
             var entry = snapshot.Index.Entries.Single();
             Equal(ConfigDirectoryAttribution.SelfPublished, entry.Provenance.Attribution);
             Equal(ConfigDirectoryPlatform.Native, entry.Platform);

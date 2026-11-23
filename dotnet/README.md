@@ -74,8 +74,8 @@ work. Windows adapters should supply the following services.
 | `IConfigProfileFiles` | Scope paths to the private engine home. Hold `LockFileEx` on `main/players/.studio.lock`. Apply the same reparse-point and private-ACL rules as the directory cache. Use buffered writes followed by `FlushFileBuffers` and atomic publication. Move a completed staging directory within the same volume with `MoveFileExW`, without replacement. Test interrupted publishes of the journal, history, cfg, metadata and companion across real process restarts. Verify case-insensitive collisions, reserved filenames, read-only installs and concurrent game ownership. |
 | `IConfigProfileTrash` | Use Shell `IFileOperation` with `FOFX_RECYCLEONDELETE` and capture the recycled item's identity from `PostDeleteItem`. Test Recycle Bin availability, aborted moves, exclusive restoration and restoring a profile's companion. Retain the profile if recovery cannot be guaranteed. |
 | `IConfigImportStore` | Hold the launcher session's draft and engine ownership interlocks and the profile store lease during version comparison and transactional commit. Preserve `active.txt` and return the receipt of an already-published import. Test two launcher processes, a game save racing an import, an unsaved draft, and a failed write followed by retry. |
-| `IConfigShareStorage` | Use the user-only settings folder and an exclusive `LockFileEx` lease for `shared-setups.json`. Keep the file across settings reset or profile Trash. Preserve withdrawal tokens across restart and upgrades, refuse unsafe paths, and omit tokens from logs and diagnostics. |
-| `IConfigShareTransport` | Use the tested portable `HttpConfigShareTransport` with `SocketsHttpHandler`. On Windows, prove POST, validation, cancellation, whole-response deadlines and redirect refusal against a local service. |
+| `IConfigShareStorage` | Windows uses the private launcher folder and the verified exclusive-file lease for `shared-setups.json`. The launcher stores the receipt across settings reset, profile Recycle Bin, restart and upgrades. Withdrawal tokens stay within the core and this file. |
+| `IConfigShareTransport` | Windows uses the portable `HttpConfigShareTransport` with `SocketsHttpHandler`. Public builds use `https://cod2unbound.com`. Fixture builds accept `COD2_SHARE_URL` at `127.0.0.1` and default to a closed loopback port. |
 | `IZpamPackageStorage` | Accept one private staging directory per validated release. Create regular files exclusively and publish the complete directory on the same volume. Preserve a previous package if publish fails, and remove only the unpublished stage on cancellation. Test interrupted replacement, access denied and reparse-point substitution on NTFS. |
 | `ISecretStore` | Use user-scoped Credential Manager entries for the CD key and remembered server passwords. Route a key to the engine through its Windows key contract and keep credentials out of logs and process arguments. |
 | `IGameFiles` | Resolve validated relative paths under the selected engine home and verify readable regular files without traversing junctions or symlinks. Check the sixteen licensed archives from both Steam and retail paths as a standard user. |
@@ -119,11 +119,19 @@ receipt from history.
 [MoveFileExW](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-movefileexw)
 [PostDeleteItem](https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileoperationprogresssink-postdeleteitem)
 
-`ConfigShareService` sends only prepared, validated setup text and records the
-withdrawal token from a successful reply. If saving fails, it returns the
-receipt so the caller can retry the private write. A confirmed withdrawal clears
-the matching receipt. The portable HTTP adapter uses a whole-request deadline
-and refuses redirects.
+`ConfigShareSession` coordinates the Configs and Player Setups share actions.
+It prepares the saved loadout and companion binds for review. The dialog previews
+the exact config sent and the omitted lines with their reasons. The service also
+receives the typed credit name, the game and app versions, and the omitted-line
+count and reason kinds. The Windows launcher saves accepted receipts under
+`%LOCALAPPDATA%\CoD2 Unbound\launcher\shared-setups.json` with source-generated
+JSON. If a local save fails, the current session still has the receipt for Stop
+sharing. A confirmed withdrawal clears the matching receipt. The listed badge
+matches the request URL and prepared config SHA-256 against the verified catalogue
+already held by the launcher. The portable HTTP adapter uses a whole-request
+deadline and refuses redirects. The two opt-in usage events, `setup shared` and
+`setup withdrawn`, add no event-specific properties. Share and stop failures use
+the two fixed kinds under Problems in the usage preview.
 [HttpClient completion and deadlines](https://learn.microsoft.com/dotnet/api/system.net.http.httpcompletionoption?view=net-10.0)
 [Redirect behavior](https://learn.microsoft.com/dotnet/api/system.net.http.socketshttphandler.allowautoredirect?view=net-10.0)
 

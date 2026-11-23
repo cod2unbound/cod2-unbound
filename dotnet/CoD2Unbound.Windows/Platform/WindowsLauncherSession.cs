@@ -15,6 +15,7 @@ internal sealed class WindowsLauncherSession
     private readonly WindowsEngineInventory inventory;
     internal GameLifecycle Game { get; }
     internal WindowsReports Reports { get; }
+    internal ConfigShareSession Share { get; }
     private (DateTimeOffset Started, GameEdition Edition, int Process, bool CrashConsent, Task<UsageGameStart?> UsageStart)? launchedGame;
     private const string UsageUpdateReceipt = "usage-update.txt";
     private (UpdatePhase Phase, string? Version, UpdateFailureStage? Failed, UpdateIssue Issue)? observedUpdate;
@@ -60,6 +61,8 @@ internal sealed class WindowsLauncherSession
         var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         folder = settingsFolder;
         Reports = new(HomePath, settingsFolder, Version);
+        var shares = new ConfigShareRecords(new WindowsConfigShareStorage(settingsFolder));
+        Share = new(new(new(new HttpConfigShareTransport(), WindowsConfigShareStorage.ServiceAddress()), shares), shares, Record);
         string installRoot = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, ".."));
         inventory = new WindowsEngineInventory(installRoot, files);
         discovery = new WindowsGameDiscovery(inventory);

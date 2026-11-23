@@ -8,6 +8,8 @@ internal sealed class ConfigsViewModel : IConfigImportStore
 {
     private readonly WindowsConfigProfiles files;
     private readonly WindowsLauncherSession session;
+    private readonly ConfigDirectory directory;
+    private ConfigDirectorySnapshot? cachedCatalogue;
 
     internal ConfigsViewModel(WindowsLauncherSession session, nint owner)
     {
@@ -18,8 +20,26 @@ internal sealed class ConfigsViewModel : IConfigImportStore
         Studio.Refresh();
         Catalog = ConfigCatalog.LoadBundled();
         Model = new(Catalog, Dialect == ConfigDialect.Cod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock, CultureInfo.CurrentCulture);
-        Discover = new(WindowsConfigFetch.Create(session.HomePath, session.TestMaster is not null), Catalog);
+        directory = WindowsConfigFetch.Create(session.HomePath, session.TestMaster is not null);
+        Discover = new(directory, Catalog);
     }
+
+    internal async Task LoadSharingAsync()
+    {
+        await Share.LoadAsync();
+        if (!State.Profiles.Any(profile => Share.CanStop(profile.Id)))
+            return;
+        try { cachedCatalogue = await directory.ReadCachedSnapshotAsync(); }
+        catch (Exception error) when (error is ConfigDirectoryException or IOException or UnauthorizedAccessException) { }
+    }
+
+    internal ConfigShareSession Share => session.Share;
+    internal ConfigDirectorySnapshot? ShareCatalogue => Discover.State.Snapshot ?? cachedCatalogue;
+    internal void RememberVerifiedCatalogue() => cachedCatalogue = ShareCatalogue;
+    internal string AppVersion => session.Version;
+
+    internal Task<ConfigShareForm> PrepareShareAsync(ConfigProfile profile) => Task.Run(() =>
+        Share.PrepareAsync(profile, () => Studio.ReadProfile(profile.Id), new ConfigImportCatalogAdapter(Catalog)));
 
     internal void Record(UsageEvent? item) => session.Record(item);
     internal void Opened(UsagePage page) => session.Opened(page);

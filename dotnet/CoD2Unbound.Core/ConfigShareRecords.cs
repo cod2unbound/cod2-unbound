@@ -28,7 +28,9 @@ public sealed class ConfigShareRecords(IConfigShareStorage storage)
     public async ValueTask<ConfigShareRecordFile> LoadAsync(CancellationToken cancellationToken = default)
     {
         await using var lease = await storage.AcquireAsync(cancellationToken).ConfigureAwait(false);
-        var (file, _) = await ReadLockedAsync(cancellationToken).ConfigureAwait(false);
+        var (file, valid) = await ReadLockedAsync(cancellationToken).ConfigureAwait(false);
+        if (!valid)
+            throw new InvalidDataException("The saved shared setup records could not be read.");
         return file;
     }
 

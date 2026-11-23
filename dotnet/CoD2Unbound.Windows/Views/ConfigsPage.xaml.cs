@@ -161,6 +161,7 @@ public sealed partial class ConfigsPage : Page
         Detail.Children.Clear();
         studioBody.Children.Clear();
         var state = model.State;
+        refreshSharing = null;
         if (state.Current is not { } profile)
         {
             Detail.Children.Add(Heading("My loadouts"));
@@ -168,6 +169,14 @@ public sealed partial class ConfigsPage : Page
             return;
         }
 
+        var shareNotice = new InfoBar { IsClosable = true };
+        shareNotice.Closed += (_, args) =>
+        {
+            if (args.Reason == InfoBarCloseReason.CloseButton)
+                model.Share.DismissStopProblem(profile.Profile.Id);
+        };
+        ShowShareNotice(shareNotice, model.Share.StopProblem(profile.Profile.Id));
+        Detail.Children.Add(shareNotice);
         var pages = new[] { UsagePage.Loadout, UsagePage.Binds, UsagePage.Checkup, UsagePage.History };
         model.Opened(pages[studioTab]);
         var tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, index =>
@@ -228,13 +237,9 @@ public sealed partial class ConfigsPage : Page
             }
         });
         var delete = Action("Delete loadout…", () => DeleteAsync(profile.Profile));
-        var actions = Buttons(next, rename, delete);
-        next.IsEnabled = !state.ReadOnly && !profile.Profile.IsActive;
-        rename.IsEnabled = !state.ReadOnly;
-        delete.IsEnabled = ConfigStudioModel.DeleteBlock(state, profile.Profile.Id) is null;
-        if (state.ReadOnly)
-            Detail.Children.Add(Caption("Configs are read-only while Call of Duty 2 is running."));
-        Detail.Children.Add(actions);
+        var readOnlyNotice = Caption("Configs are read-only while Call of Duty 2 is running.");
+        Detail.Children.Add(readOnlyNotice);
+        Detail.Children.Add(LoadoutShareActions(profile.Profile, next, rename, delete, readOnlyNotice, shareNotice));
         if (studioBody.Parent is Panel old)
             old.Children.Remove(studioBody);
         Detail.Children.Add(studioBody);
@@ -646,13 +651,14 @@ public sealed partial class ConfigsPage : Page
     private async void OnDiscoverPlaceChanged(object sender, SelectionChangedEventArgs args)
     {
         int place = DiscoverPlaces.SelectedIndex;
-        if (place < 0)
+        if (syncing || place < 0)
             return;
         await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
     }
 
     private Task ShowCheckerAsync()
     {
+        refreshSharing = null;
         model.Opened(UsagePage.Checker);
         Status.IsOpen = false;
         Loadouts.SelectedItem = null;

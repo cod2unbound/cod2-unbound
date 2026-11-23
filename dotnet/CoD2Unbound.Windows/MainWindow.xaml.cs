@@ -315,7 +315,12 @@ public sealed partial class MainWindow : Window
         else if (place == LauncherPlace.Configs)
         {
             nint owner = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var model = await Task.Run(() => new ConfigsViewModel(session, owner));
+            var model = await Task.Run(async () =>
+            {
+                var configs = new ConfigsViewModel(session, owner);
+                await configs.LoadSharingAsync();
+                return configs;
+            });
             Nav.SelectedItem = ConfigsItem;
             ContentFrame.Content = new ConfigsPage(this, model);
         }
@@ -462,6 +467,8 @@ public sealed partial class MainWindow : Window
                 home.RenderGame(state);
             if (ContentFrame.Content is ServersPage servers)
                 await servers.UpdateGameStateAsync();
+            if (ContentFrame.Content is ConfigsPage configs)
+                configs.UpdateSharingAvailability();
         }, clearProblem: false);
     }
 

@@ -168,7 +168,7 @@ internal static class ConfigShareReasons
         ("chat", "Chat or a message to other players"),
         ("connect", "Joins or leaves a server"),
         ("remoteConsole", "A command for a server’s admin"),
-        ("filesystemPath", "A file path on your Mac"),
+        ("filesystemPath", "A file path on your PC"),
         ("hosting", "A setting for hosting a server"),
         ("macro", "A key that runs timed steps"),
         ("quit", "Closes the game"),

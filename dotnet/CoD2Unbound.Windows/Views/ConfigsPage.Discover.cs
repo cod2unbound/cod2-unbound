@@ -26,6 +26,7 @@ public sealed partial class ConfigsPage
 
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
+        refreshSharing = null;
         if (!retry)
             model.Opened(saved ? UsagePage.Saved : UsagePage.Setups);
         Status.IsOpen = false;
@@ -33,10 +34,11 @@ public sealed partial class ConfigsPage
         Detail.Children.Clear();
         ResetDetailScroll();
         var title = Heading(saved ? "Saved" : "Player Setups");
-        Detail.Children.Add(title);
+        Detail.Children.Add(saved ? title : PlayerSetupsHeading(title));
         var status = Caption("Loading player setups…");
         Detail.Children.Add(status);
         await model.Discover.LoadAsync(retry);
+        model.RememberVerifiedCatalogue();
         UpdateSavedCount();
         Detail.Children.Remove(status);
         if (model.Discover.State.Snapshot is null)
@@ -478,6 +480,7 @@ public sealed partial class ConfigsPage
 
     private async Task ShowSetupAsync(ConfigDirectoryEntry entry, bool fromSaved)
     {
+        refreshSharing = null;
         model.Opened(UsagePage.PlayerSetup);
         model.CatalogueEvent(UsageKind.SetupViewed, entry.Id);
         Status.IsOpen = false;
