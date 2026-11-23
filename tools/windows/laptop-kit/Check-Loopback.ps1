@@ -247,6 +247,9 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         Stop-KitOwnedGame $game $window
         if ($Route -eq 'connect') {
             Invoke-KitControl $app 'HomeItem'
+            # Quitting on Harbor can add a newer summary. Home shows the last
+            # match, so open the history to find the completed Toujane match.
+            Invoke-KitControl $app 'All matches' -Name
             Wait-KitCondition { Find-KitControl $app 'Toujane · Deathmatch' -Name } 20 'the Toujane match in the launcher' | Out-Null
             Focus-KitWindow $app
             Save-KitDesktop $app (Join-Path $Results 'launcher-match.png')
