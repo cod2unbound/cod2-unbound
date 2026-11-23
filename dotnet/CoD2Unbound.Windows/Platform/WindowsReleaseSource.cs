@@ -33,7 +33,8 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
     }
 
     public ValueTask<ImmutableArray<byte>?> NewsAsync(CancellationToken cancellationToken) =>
-        testMode ? ValueTask.FromResult<ImmutableArray<byte>?>(null) : NewsFeed.FetchAsync(Download, cancellationToken);
+        LocalOrigin is not null || !testMode ? NewsFeed.FetchAsync(Download, cancellationToken) :
+            ValueTask.FromResult<ImmutableArray<byte>?>(null);
 
     private static Uri? TestOrigin()
     {

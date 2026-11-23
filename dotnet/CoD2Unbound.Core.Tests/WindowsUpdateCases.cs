@@ -190,6 +190,21 @@ internal static partial class Program
 
     private static void UpdateNewsCases()
     {
+        Check("Loopback update checks load news without using public hosts", () =>
+        {
+            var origin = new Uri("http://127.0.0.1:18081/");
+            using var http = new UpdateHttp(Reply(HttpStatusCode.OK, "[]"), Reply(HttpStatusCode.OK,
+                """{"items":[{"title":"Local news","date":"2026-01-01"}],"next":{"title":"Local next"}}"""),
+                Reply(HttpStatusCode.OK, "[]"), Reply(HttpStatusCode.NotFound));
+            var result = RunCheck(http.Loopback(origin), PriorNews(), origin);
+            Equal("Local news", result.Library.News.Single().Title);
+            Equal("Local next", result.Library.NewsNext?.Title);
+            var fallback = RunCheck(http.Loopback(origin), result.Library, origin);
+            Equal("Local next", fallback.Library.NewsNext?.Title);
+            http.AssertRequests("http://127.0.0.1:18081/releases", "http://127.0.0.1:18081/news.json",
+                "http://127.0.0.1:18081/releases", "http://127.0.0.1:18081/news.json");
+        });
+
         foreach (var (reason, response) in FeedErrors())
             Check($"News uses the website after {reason}", () =>
             {

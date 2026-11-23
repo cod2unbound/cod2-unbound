@@ -131,9 +131,8 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
 
     public static async ValueTask<ImmutableArray<byte>?> FetchAsync(ReleaseDownload download, CancellationToken cancellationToken)
     {
-        if (download.LoopbackOrigin is not null)
-            return null;
-        foreach (var source in new[] { Url, MirrorUrl })
+        Uri[] sources = download.LoopbackOrigin is { } origin ? [new(origin, "news.json")] : [Url, MirrorUrl];
+        foreach (var source in sources)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
