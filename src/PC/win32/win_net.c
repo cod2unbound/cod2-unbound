@@ -545,6 +545,18 @@ void NET_OpenIP(void)
             goto next_check;
         }
 
+#if COD2_WINDOWS_NATIVE
+        /* A wildcard client bind can otherwise share the same port with an
+         * address-specific host in this account. Its replies can land on the
+         * host socket. Reject overlap and let the client try the next port. */
+        if (setsockopt(newsocket, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char *)&sock_i, sizeof(sock_i)) == SOCKET_ERROR) {
+            Com_Printf("WARNING: UDP_OpenSocket: SO_EXCLUSIVEADDRUSE: %i\n", WSAGetLastError());
+            closesocket(newsocket);
+            ip_socket = 0;
+            goto next_check;
+        }
+#endif
+
         {
             struct sockaddr_in address;
 
