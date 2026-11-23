@@ -5,6 +5,7 @@ namespace CoD2Unbound.Windows.Platform;
 
 internal static unsafe class WindowsGraphicsFacts
 {
+    private static readonly Guid Factory1Id = new("770aae78-f26f-4dba-a829-253c83d1b387");
     private static readonly Guid Factory6Id = new("c1b6694f-ff09-44a9-b03c-77900a0a1d17");
     private static readonly Guid Adapter1Id = new("29038f61-3839-4626-91fd-086879011a05");
     private static readonly Guid DeviceId = new("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
@@ -53,6 +54,39 @@ internal static unsafe class WindowsGraphicsFacts
                 }
                 finally { Marshal.Release(adapter); }
             }
+        }
+        finally { Marshal.Release(factory); }
+    }
+
+    internal static string[] AdapterNames()
+    {
+        if (CreateDXGIFactory1(in Factory1Id, out nint factory) < 0)
+            return [];
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            // IDXGIFactory1::EnumAdapters1 follows the base factory and IUnknown methods.
+            var enumerate = (delegate* unmanaged[Stdcall]<nint, uint, nint*, int>)Method(factory, 12);
+            for (uint index = 0; ; index++)
+            {
+                nint adapter;
+                if (enumerate(factory, index, &adapter) < 0)
+                    break;
+                try
+                {
+                    var describe = (delegate* unmanaged[Stdcall]<nint, AdapterDescription*, int>)Method(adapter, GetDesc1);
+                    AdapterDescription info;
+                    if (describe(adapter, &info) >= 0 && (info.Flags & SoftwareAdapter) == 0)
+                    {
+                        var description = new ReadOnlySpan<char>(info.Name, 128);
+                        int end = description.IndexOf('\0');
+                        if (end > 0)
+                            names.Add(description[..end].Trim().ToString());
+                    }
+                }
+                finally { Marshal.Release(adapter); }
+            }
+            return [.. names];
         }
         finally { Marshal.Release(factory); }
     }

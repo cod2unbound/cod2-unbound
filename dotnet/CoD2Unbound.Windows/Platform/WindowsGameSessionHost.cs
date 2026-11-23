@@ -38,7 +38,13 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
             TryMigrate(profileLease);
             studio = OpenStudio(request.Edition, profileLease);
             request = studio.PrepareClientLaunch(request);
-            var plan = WindowsLaunchPlan.Client(request, binary, home, renderer(), files);
+            string? requestedMonitor = request.Loadout?.GetValueOrDefault("r_monitor");
+            var display = WindowsDisplays.ForLoadout(WindowsDisplayInventory.ReadForGame(), request.Settings.WindowsMonitor, requestedMonitor);
+            var plan = WindowsLaunchPlan.Client(request, binary, home, renderer(), files, display: display);
+            var adjusted = WindowsDisplays.Adjustment(request.Loadout?.GetValueOrDefault("r_mode") ?? request.Settings.Resolution, display);
+            int? monitor = display?.Monitor.ToString(System.Globalization.CultureInfo.InvariantCulture) == requestedMonitor ? null : display?.Monitor;
+            if (request.Studio is { } loadout && (adjusted.HasValue || monitor.HasValue))
+                studio.ProtectLaunchDisplay(loadout.ProfileId, adjusted, monitor);
             reserving = true;
             return new Reservation(this, plan, lease, profileLease, studio, saveIntro);
         }

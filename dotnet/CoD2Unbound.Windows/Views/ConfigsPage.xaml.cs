@@ -101,9 +101,12 @@ public sealed partial class ConfigsPage : Page
         if (model.Model.Jump("r_mode").FirstOrDefault(spec => spec.Name == "r_mode") is not { } resolution)
             return;
         studioTab = 0;
-        expert = true;
+        expert = false;
         category = resolution.Setting.Group;
-        query = resolution.Name;
+        query = "";
+        model.Studio.Focus(model.State.Profiles.FirstOrDefault(profile => profile.IsActive)?.Id);
+        focusResolution = true;
+        RenderLoadouts();
         ShowStudio();
     }
 
@@ -446,6 +449,8 @@ public sealed partial class ConfigsPage : Page
         bool mouseDirection = !expert && spec.Name.Equals("m_pitch", StringComparison.OrdinalIgnoreCase);
         string title = mouseDirection ? "Invert up and down" : spec.Title;
         string? block = model.Model.TakeTheirsBlock(spec, state, null, [], "");
+        if (spec.Name == "r_mode")
+            return DisplayResolutionRow(state, profileId, spec, item.Value, block);
         if (block is not null)
             return SettingRow(title, block, Caption(item.Display), grouped: !expert);
 

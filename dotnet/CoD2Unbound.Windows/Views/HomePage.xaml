@@ -72,6 +72,7 @@
                             </MenuFlyout>
                         </DropDownButton.Flyout>
                     </DropDownButton>
+                    <Button x:Name="AdjustedResolution" Visibility="Collapsed" Click="OnChooseResolution" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="OpenGameData" Click="OnOpenGameData" Visibility="Collapsed"

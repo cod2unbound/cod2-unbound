@@ -500,6 +500,8 @@ public sealed partial class MainWindow : Window
                 return;
             bool ended = !state.Running && state.LastExit is not null;
             lastGame = state;
+            if (ContentFrame.Content is SettingsPage settings)
+                settings.RefreshDisplayRunning(state.Running);
             playerCard?.UpdateRunning(state.Running);
             if (ContentFrame.Content is HomePage home)
             {

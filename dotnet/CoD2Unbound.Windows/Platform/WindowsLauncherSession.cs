@@ -89,7 +89,6 @@ internal sealed partial class WindowsLauncherSession
     internal LauncherSettingsSession Settings { get; private set; } = null!;
     internal SetupSession Setup { get; private set; } = null!;
     internal bool SetupComplete { get; private set; }
-    internal int LastSettingsPane { get; set; }
 
     internal async Task InitializeAsync()
     {
@@ -227,7 +226,7 @@ internal sealed partial class WindowsLauncherSession
     internal Task SetCoD2xReportsAsync(bool enabled) =>
         UpdateSettingsAsync(Settings.Working with { SendCoD2xReports = enabled });
 
-    internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder);
+    internal ValueTask<ConfigProfile?> ReadLoadoutAsync() => ConfigProfileStore.ReadActiveForDisplayAsync(gameFolder, dialect: PlayerDialect);
 
     internal async Task<ImmutableArray<ConfigProfile>> ReadLoadoutChoicesAsync()
     {
@@ -343,6 +342,8 @@ internal sealed partial class WindowsLauncherSession
         var profile = await ConfigProfileStore.ReadActiveForLaunchAsync(gameFolder,
             candidate.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock);
         string data = Setup.DataPath.Length == 0 ? HomePath : Setup.DataPath;
+        var display = WindowsDisplays.ForLoadout(WindowsDisplayInventory.ReadForGame(),
+            candidate.WindowsMonitor, profile?.Values.GetValueOrDefault("r_monitor"));
         return AdvancedSettings.Inspect(candidate, draft, profile is not null, settings =>
         {
             try
@@ -350,7 +351,7 @@ internal sealed partial class WindowsLauncherSession
                 var request = new ClientLaunchRequest(settings.Engine, settings, data, HomePath)
                     { Studio = profile?.Studio, Loadout = profile?.Values };
                 _ = WindowsLaunchPlan.Client(request, new(settings.Engine, EngineRole.Client, "cod2_win32.exe"),
-                    HomePath, settings.WindowsRenderer ?? WindowsRenderMode.Direct3D9, files);
+                    HomePath, settings.WindowsRenderer ?? WindowsRenderMode.Direct3D9, files, display: display);
                 return null;
             }
             catch (LaunchPlanException error) { return error.Message; }

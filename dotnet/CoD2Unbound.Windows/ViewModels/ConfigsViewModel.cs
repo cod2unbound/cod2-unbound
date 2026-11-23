@@ -59,6 +59,7 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
     internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
+    internal GameSettings DisplaySettings => session.Settings.Working;
     public ConfigDialect Dialect => Studio.Dialect;
 
     internal string NewId(string name) => LoadoutName.Identifier(name, State.Profiles.Select(profile => profile.Id));

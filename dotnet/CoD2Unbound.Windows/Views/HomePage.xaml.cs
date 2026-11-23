@@ -87,6 +87,7 @@ public sealed partial class HomePage : Page
         LoadoutChoice.Visibility = IsVisible(loadouts.Count > 0);
         settingLoadout = false;
         RenderDisplay();
+        RenderAdjustedResolution(active);
 
         RenderNews();
         await RenderPlayHistoryAsync();

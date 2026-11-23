@@ -22,7 +22,7 @@ public sealed partial class SettingsPage : Page
     private TextBlock? updateMessage;
     private ProgressBar? updateProgress;
     private LauncherUpdateState? renderedUpdate;
-    private (string Mode, WindowsRenderMode? Renderer)? previousDisplay;
+    private GameSettings? previousDisplay;
     private string? advancedDraft;
     private string? advancedProblem;
     private int lastPane = -1;
@@ -35,7 +35,7 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
-        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : session.LastSettingsPane];
+        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : Current.LastSettingsPane];
         Panes.SelectedItem = initial;
         Loaded += (_, _) =>
         {
@@ -46,11 +46,14 @@ public sealed partial class SettingsPage : Page
 
     private GameSettings Current => model.Settings.Working;
 
-    private void OnPaneChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    private async void OnPaneChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         Feedback.IsOpen = false;
         PaneScroll.ChangeView(null, 0, null);
         Render();
+        int pane = Panes.Items.IndexOf(Panes.SelectedItem);
+        if (pane >= 0 && Current.LastSettingsPane != pane)
+            await ChangeAsync(Current with { LastSettingsPane = pane }, display: pane == 1);
     }
 
     private void Render()
@@ -61,7 +64,6 @@ public sealed partial class SettingsPage : Page
         if (pane >= 0 && lastPane != pane)
         {
             lastPane = pane;
-            session.LastSettingsPane = pane;
             session.Opened(UsagePage.General + pane);
         }
         switch (pane)
@@ -99,43 +101,6 @@ public sealed partial class SettingsPage : Page
         };
         hint.Margin = new Thickness(0, 16, 0, 0);
         Fields.Children.Add(hint);
-    }
-
-    private void Display()
-    {
-        string[] modes = ["exclusive", "borderless", "windowed"];
-        Group("Display");
-        Fields.Children.Add(Body("Applies the next time the game starts."));
-        Choice("Mode", null, ["Full screen", "Borderless", "Windowed"], Current.Fullscreen == "spaces" ? 1 : Array.IndexOf(modes, Current.Fullscreen),
-            async value => await ChangeAsync(Current with { Fullscreen = modes[value] }));
-        Choice("Graphics", "Choose how the game draws on Windows.", ["Direct3D 9", "DirectX 7"], (int)model.Renderer,
-            async value => await ChangeAsync(Current with { WindowsRenderer = (WindowsRenderMode)value }));
-        Row("Resolution", "Every loadout keeps its own resolution.", OpenConfigs());
-        var restore = Action("Restore defaults", async () =>
-        {
-            previousDisplay = (Current.Fullscreen, Current.WindowsRenderer);
-            var defaults = new GameSettings();
-            await ChangeAsync(Current with { Fullscreen = defaults.Fullscreen, WindowsRenderer = null });
-            Render();
-            ShowFeedback("Display defaults restored.", InfoBarSeverity.Success);
-        });
-        restore.IsEnabled = Current.Fullscreen != new GameSettings().Fullscreen || model.Renderer != WindowsRenderMode.Direct3D9;
-        if (previousDisplay is { } previous)
-            Fields.Children.Add(Buttons(restore, Action("Undo", async () =>
-            {
-                await ChangeAsync(Current with { Fullscreen = previous.Mode, WindowsRenderer = previous.Renderer });
-                previousDisplay = null;
-                Render();
-            })));
-        else
-            Fields.Children.Add(restore);
-    }
-
-    private Button OpenConfigs()
-    {
-        var button = Action("Open Configs", shell.OpenResolutionAsync);
-        button.Style = StyleFor("SubtleLinkAction");
-        return button;
     }
 
     private void GameData()
@@ -600,22 +565,7 @@ public sealed partial class SettingsPage : Page
         }));
     }
 
-    private void About()
-    {
-        Row($"CoD2 Unbound {session.Version}",
-            "Call of Duty 2 multiplayer, on every platform. Free and open source. You bring your own copy of the game.");
-        Row("Release notes", null, Action("Release notes for every version", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases")));
-        Row("Support", null, Buttons(Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound")),
-            Action("Report a problem…", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/issues"))));
-        Row("Updates", null, Action("Check for updates…", () =>
-        {
-            Panes.SelectedItem = Panes.Items[4];
-            return shell.RunUpdateAsync(install: false);
-        }, exclusive: false));
-        Row("Call of Duty", "Call of Duty is a registered trademark of Activision Publishing, Inc. CoD2 Unbound is a community project. Bring your own game data to play.");
-    }
-
-    private async Task ChangeAsync(GameSettings settings)
+    private async Task ChangeAsync(GameSettings settings, bool display = false)
     {
         var before = model.Settings.Saved;
         model.Settings.Replace(settings);
@@ -631,8 +581,13 @@ public sealed partial class SettingsPage : Page
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException)
                 {
                     session.ShowError(UsageProblem.SaveSettings);
-                    throw;
+                    if (!display)
+                        throw;
+                    RefreshDisplaySave(failed: true);
+                    return;
                 }
+                if (display)
+                    RefreshDisplaySave(failed: false);
                 foreach (var item in UsageEvent.Changed(before, model.Settings.Saved))
                     session.Record(item);
             });
