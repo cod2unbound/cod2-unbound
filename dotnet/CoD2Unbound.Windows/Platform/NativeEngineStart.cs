@@ -14,9 +14,11 @@ internal static class NativeEngineStart
     private const uint CreateUnicodeEnvironment = 0x00000400;
     private const uint CreateNoWindow = 0x08000000;
     private const uint StartUseStdHandles = 0x00000100;
+    private const string HideServerConsole = "COD2_UNBOUND_HIDE_SERVER_CONSOLE";
     private static readonly nint HandleListAttribute = 0x00020002;
 
-    internal static SafeProcessHandle Start(EngineProcessStart start, AnonymousPipeServerStream output, out int id)
+    internal static SafeProcessHandle Start(EngineProcessStart start, AnonymousPipeServerStream output, bool hostedServer,
+        out int id)
     {
         // A closed input pipe gives the child EOF. Only these handles are inherited.
         using var input = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
@@ -37,7 +39,7 @@ internal static class NativeEngineStart
             Marshal.WriteIntPtr(handles, IntPtr.Size, stdout);
             if (!UpdateProcThreadAttribute(attributes, 0, HandleListAttribute, handles, (nuint)(2 * IntPtr.Size), 0, 0))
                 throw LastError("Windows could not prepare the engine's standard streams.");
-            env = Marshal.StringToHGlobalUni(EnvironmentBlock(start));
+            env = Marshal.StringToHGlobalUni(EnvironmentBlock(start, hostedServer));
             var info = new StartupInfoEx
             {
                 Startup = new()
@@ -68,7 +70,21 @@ internal static class NativeEngineStart
 
     internal static IOException LastError(string message) => new(message, new Win32Exception(Marshal.GetLastPInvokeError()));
 
-    private static string EnvironmentBlock(EngineProcessStart start)
+    internal static void CloseServerConsole(int id)
+    {
+        nint window = 0;
+        // Process.CloseMainWindow only finds visible windows.
+        while ((window = FindWindowEx(0, window, "CoD2 WinConsole", null)) != 0)
+        {
+            if (GetWindowThreadProcessId(window, out uint owner) != 0 && owner == id)
+            {
+                _ = PostMessage(window, 0x0010, 0, 0); // WM_CLOSE
+                return;
+            }
+        }
+    }
+
+    private static string EnvironmentBlock(EngineProcessStart start, bool hostedServer)
     {
         var environment = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
@@ -80,6 +96,10 @@ internal static class NativeEngineStart
             else
                 environment[name] = value;
         }
+        if (hostedServer)
+            environment[HideServerConsole] = "1";
+        else
+            environment.Remove(HideServerConsole);
         return string.Join('\0', environment.Select(pair => pair.Key + "=" + pair.Value)) + "\0";
     }
 
@@ -124,4 +144,14 @@ internal static class NativeEngineStart
 
     [DllImport("kernel32.dll")]
     private static extern void DeleteProcThreadAttributeList(nint list);
+
+    [DllImport("user32.dll", EntryPoint = "FindWindowExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    private static extern nint FindWindowEx(nint parent, nint after, string className, string? windowName);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(nint window, out uint process);
+
+    [DllImport("user32.dll", EntryPoint = "PostMessageW", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PostMessage(nint window, uint message, nint wParam, nint lParam);
 }
