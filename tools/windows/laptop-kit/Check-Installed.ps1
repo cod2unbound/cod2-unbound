@@ -67,7 +67,7 @@ function Set-KitLauncherProfile([string]$Edition, [string]$Renderer) {
     @{
         engine=$Edition; windowsRenderer=$mode; fullscreen='windowed'; resolution='800x600'
         hideWhilePlaying=$false; rawMouse=$true
-        advanced="net_ip 127.0.0.1`nnet_noipx 1`nnet_lanauthorize 0`ncl_allowDownload 0`nsv_allowDownload 0"
+        advanced="logfile 2`nnet_ip 127.0.0.1`nnet_noipx 1`nnet_lanauthorize 0`ncl_allowDownload 0`nsv_allowDownload 0"
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $settings 'launcher-settings.json') -Encoding Ascii
     $activeProfile = Join-Path $LauncherHome 'main\players\active.txt'
     if (-not (Test-Path -LiteralPath $activeProfile)) { New-TestProfile $LauncherHome }
@@ -142,10 +142,11 @@ function Invoke-KitFaults {
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     $settings | Add-Member -NotePropertyName sendCrashReports -NotePropertyValue $true -Force
     $settings | Add-Member -NotePropertyName crashReportsAsked -NotePropertyValue $true -Force
+    # The engine registers its developer commands only at startup.
+    $settings.advanced += "`ndeveloper 1"
     $settings | ConvertTo-Json | Set-Content -LiteralPath $settingsPath -Encoding Ascii
-    $auto = Join-Path $LauncherHome 'main\autoexec.cfg'
-    # A deliberate fault uses its own developer configuration and the loopback sink.
-    'set developer 1' | Add-Content -LiteralPath $auto -Encoding Ascii
+    $log = Join-Path $LauncherHome 'main\console_mp.log'
+    if (Test-Path -LiteralPath $log) { Remove-Item -LiteralPath $log }
     $entry = New-RunContext 'report-sink'
     $portFile = Join-Path $entry.Folder 'port.txt'
     $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
@@ -170,7 +171,6 @@ function Invoke-KitFaults {
         Start-Sleep -Seconds 4
         Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
         Send-KitCommand $window '/toggleconsole; devmap mp_toujane'
-        $log = Join-Path $LauncherHome 'main\console_mp.log'
         Wait-KitCondition {
             (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:' -Quiet)
         } 50 'Toujane for the fault check' | Out-Null
