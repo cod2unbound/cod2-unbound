@@ -59,16 +59,20 @@ public sealed partial class MainWindow
         }
 
         (bool Remember, bool HadSaved)? preference = null;
-        if (known is { PasswordRequired: true } && (target.Password is null || source == UsageJoin.Link))
+        if (known?.PasswordRequired != false && (target.Password is null || source == UsageJoin.Link))
         {
             string? saved = null;
             try { saved = await session.ServerPasswords.ReadAsync(target.Address); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception) { }
-            if (await PromptPasswordAsync(QuakeColors.Plain(known.Name), saved, target.Password) is not { } answer)
-                return null;
-            target = target with { Password = answer.Password };
-            link = LaunchLink.Direct(target.Address, answer.Password);
-            preference = (answer.Remember, saved is not null);
+            if (known is not null || saved is not null)
+            {
+                string name = known is null ? target.Address : QuakeColors.Plain(known.Name);
+                if (await PromptPasswordAsync(name, saved, target.Password) is not { } answer)
+                    return null;
+                target = target with { Password = answer.Password };
+                link = LaunchLink.Direct(target.Address, answer.Password);
+                preference = (answer.Remember, saved is not null);
+            }
         }
 
         if (decision.Action == ServerAdmissionAction.ConfirmVersion &&
