@@ -113,7 +113,8 @@ public sealed partial class ConfigsPage : Page
         syncing = true;
         var rows = state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray();
         Loadouts.ItemsSource = rows;
-        Loadouts.SelectedItem = rows.FirstOrDefault(row => row.Profile.Id == state.Current?.Profile.Id);
+        Loadouts.SelectedItem = DiscoverPlaces.SelectedItem is null
+            ? rows.FirstOrDefault(row => row.Profile.Id == state.Current?.Profile.Id) : null;
         syncing = false;
         NewLoadout.IsEnabled = AddConfig.IsEnabled = !state.ReadOnly && state.Draft is null;
     }

@@ -99,12 +99,9 @@ public sealed partial class HomePage : Page
     {
         var last = model.LastServer;
         string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
-        if (last is not null)
-        {
-            HeroLead.Text = string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
-            if (map is not null)
-                HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
-        }
+        HeroLead.Text = last is null ? "READY TO PLAY" :
+            string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
+        HeroTitle.Text = map is null ? "COD2 UNBOUND" : MapCatalog.DisplayName(map).ToUpperInvariant();
         RenderHeroDetail();
 
         RenderRecent();
@@ -112,6 +109,12 @@ public sealed partial class HomePage : Page
         RenderMatch();
         if (map is not null && await model.ReadArtAsync(map) is { } art)
             ApplyArtwork(art);
+        else if (HeroArt.Source is WriteableBitmap)
+        {
+            HeroArt.Source = null;
+            artworkLuminance = null;
+            RenderBackdrop();
+        }
     }
 
     internal void RenderGame(GameSessionState game)
