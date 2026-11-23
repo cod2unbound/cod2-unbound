@@ -140,7 +140,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
         }
         Save-GameEvidence $LauncherHome $Results
         Stop-KitLauncher $run $Results
-        Save-KitFirewall 'after-installed-client'
+        [void](Save-KitFirewall 'after-installed-client')
     }
 }
 
