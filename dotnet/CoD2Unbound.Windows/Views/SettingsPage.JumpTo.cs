@@ -15,7 +15,7 @@ public sealed partial class SettingsPage
             "Install number", "Match summaries", "Saved match summaries"]),
         ("Updates", ["Check for updates automatically", "Check now", "What’s new", "Install and relaunch"]),
         ("Advanced", ["Launch options", "Logs", "Warnings", "Launcher settings"]),
-        ("About", ["Release notes", "Support", "Acknowledgements"])
+        ("About", ["Release notes", "Support", "Help", "Acknowledgements"])
     ];
 
     internal static IEnumerable<JumpTarget> JumpTargets => JumpPanes.SelectMany(group =>

@@ -9,7 +9,7 @@ namespace CoD2Unbound.Windows;
 
 public sealed partial class MainWindow
 {
-    private const string HelpUrl = "https://cod2unbound.com/help";
+    internal const string HelpUrl = "https://cod2unbound.com/help";
 
     private void InitializeShellShortcuts()
     {
@@ -54,8 +54,8 @@ public sealed partial class MainWindow
         ShellCommand.FilterServers or ShellCommand.Import or ShellCommand.Paste or ShellCommand.NewLoadout or
         ShellCommand.FullScreen or ShellCommand.Help;
 
-    private GameServer? LastJumpServer => (ContentFrame.Content as ServersPage)?.JumpSelectedServer ??
-        (session.Library.Recent.FirstOrDefault() is { } address ? session.ServerForAddress(address) : null);
+    private GameServer? LastJumpServer => session.Library.Recent.FirstOrDefault() is { } address
+        ? session.ServerForAddress(address) : null;
 
     private bool CanRunShellCommand(ShellCommand command)
     {

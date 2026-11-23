@@ -8,7 +8,7 @@ public enum ShellCommand
     RefreshServers, Connect, Favorite, Import, Paste, Undo, Open, CopyAddress, FilterServers,
     NewLoadout, DuplicateLoadout, ExportLoadout, Rename, Delete, CopyFile, ContextMenu, FullScreen, Help, Close,
     Checkup, History, GameDataFolder, MyFilesFolder, LogsFolder, CheckUpdates, ShortcutHelp, ReleaseNotes,
-    ReportProblem, ClearRecent
+    ReportProblem, ClearRecent, SaveLoadoutText
 }
 
 public sealed record LauncherShortcut(ShellCommand Command, string Title, ImmutableArray<string> Chords)
@@ -31,11 +31,11 @@ public static class LauncherShortcuts
         new(ShellCommand.Find, "Find", ["Ctrl+F"]),
         new(ShellCommand.RefreshServers, "Refresh servers", ["Ctrl+R", "F5"]),
         new(ShellCommand.Connect, "Connect to an address", ["Ctrl+L"]),
-        new(ShellCommand.Favorite, "Add to favorites", ["Ctrl+D"]),
+        new(ShellCommand.Favorite, "Toggle server favorite", ["Ctrl+D"]),
         new(ShellCommand.Import, "Import config", ["Ctrl+O"]),
         new(ShellCommand.Paste, "Paste config", ["Ctrl+Shift+V"]),
-        new(ShellCommand.Undo, "Undo", ["Ctrl+Z"]),
-        new(ShellCommand.Open, "Open", ["Enter"]),
+        new(ShellCommand.Undo, "Undo config import", ["Ctrl+Z"]),
+        new(ShellCommand.Open, "Open Library item", ["Enter"]),
         new(ShellCommand.CopyAddress, "Copy server address", ["Ctrl+Shift+C"]),
         new(ShellCommand.FilterServers, "Server filters", ["Ctrl+Shift+F"]),
         new(ShellCommand.NewLoadout, "New loadout", ["Ctrl+N"]),
@@ -43,7 +43,8 @@ public static class LauncherShortcuts
         new(ShellCommand.ExportLoadout, "Export loadout", ["Ctrl+Shift+E"]),
         new(ShellCommand.Rename, "Rename", ["F2"]),
         new(ShellCommand.Delete, "Delete", ["Delete"]),
-        new(ShellCommand.CopyFile, "Copy file", ["Ctrl+C"]),
+        new(ShellCommand.CopyFile, "Copy demo or screenshot", ["Ctrl+C"]),
+        new(ShellCommand.SaveLoadoutText, "Apply loadout text", ["Ctrl+S"]),
         new(ShellCommand.ContextMenu, "Context menu", ["Shift+F10"]),
         new(ShellCommand.FullScreen, "Full screen", ["F11"]),
         new(ShellCommand.Help, "Help", ["F1"]),

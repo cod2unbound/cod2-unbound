@@ -52,6 +52,7 @@ public sealed partial class SettingsPage
         {
             Buttons(release, website, report),
             Buttons(acknowledgements, update),
+            SettingRow("Help", null, Action("Open help", () => OpenAsync(MainWindow.HelpUrl))),
             SettingRow("Keyboard shortcuts", null, shortcuts)
         } };
         panel.Children.Add(actions);

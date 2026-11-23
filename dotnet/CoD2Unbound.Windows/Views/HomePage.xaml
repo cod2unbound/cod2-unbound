@@ -71,8 +71,8 @@
                             </DropDownButton.Flyout>
                         </DropDownButton>
                         <Button x:Name="NarrowNews" Content="What’s New" Click="OnShowNews" Visibility="Collapsed" />
+                        <Button x:Name="AdjustedResolution" Visibility="Collapsed" Click="OnChooseResolution" />
                     </StackPanel>
-                    <Button x:Name="AdjustedResolution" HorizontalAlignment="Left" Visibility="Collapsed" Click="OnChooseResolution" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="OpenGameData" Click="OnOpenGameData" Visibility="Collapsed"
                                 AutomationProperties.Name="Game data not found" />

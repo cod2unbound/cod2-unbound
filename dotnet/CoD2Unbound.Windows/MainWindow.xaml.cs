@@ -399,12 +399,18 @@ public sealed partial class MainWindow : Window
         finally { closing = false; }
     }
 
-    internal async Task RefreshPlayerAsync()
+    internal async Task RefreshPlayerAsync(bool loadoutChanged = false)
     {
         var player = await session.ReadPlayerAsync();
         PlayerName.Inlines.Clear();
         AddGameName(PlayerName, player.Name, Root.ActualTheme, IsHighContrast);
         PaneLoadout.Text = player.Loadout ?? player.Key;
+        if (!loadoutChanged)
+            return;
+        if (ContentFrame.Content is HomePage home)
+            await home.RefreshAsync();
+        else if (ContentFrame.Content is ConfigsPage configs)
+            configs.RefreshActiveLoadout();
     }
 
     internal void RefreshFavorites()

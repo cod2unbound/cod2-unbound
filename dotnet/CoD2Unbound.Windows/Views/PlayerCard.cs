@@ -83,7 +83,7 @@ internal sealed class PlayerCard : StackPanel
                 await FlushNameAsync();
                 await session.SelectLoadoutAsync(profile.Id);
                 await RefreshAsync();
-                await shell.RefreshPlayerAsync();
+                await shell.RefreshPlayerAsync(loadoutChanged: true);
             });
         };
         Children.Add(dogTag);

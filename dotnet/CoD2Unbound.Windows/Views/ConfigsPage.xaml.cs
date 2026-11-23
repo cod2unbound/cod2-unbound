@@ -164,6 +164,14 @@ public sealed partial class ConfigsPage : Page
         await shell.RefreshPlayerAsync();
     }
 
+    internal void RefreshActiveLoadout()
+    {
+        model.Studio.Refresh();
+        RenderLoadouts();
+        if (DiscoverPlaces.SelectedItem is null)
+            ShowStudio();
+    }
+
     internal void UpdateGameState(bool ended)
     {
         if (ended)
