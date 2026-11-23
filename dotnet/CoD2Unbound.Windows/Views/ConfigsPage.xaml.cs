@@ -95,11 +95,7 @@ public sealed partial class ConfigsPage : Page
             check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
     }
 
-    internal void OpenCheckup()
-    {
-        studioTab = 2;
-        ShowStudio();
-    }
+    internal void OpenCheckup() => OpenCheckupForMatch(null);
 
     internal void OpenResolution()
     {
@@ -169,7 +165,10 @@ public sealed partial class ConfigsPage : Page
     internal void UpdateGameState(bool ended)
     {
         if (ended)
+        {
             model.Studio.Refresh();
+            checkupMatches = null;
+        }
         RenderLoadouts();
         updateDialogGameState?.Invoke();
         RenderRecovery();
@@ -195,7 +194,7 @@ public sealed partial class ConfigsPage : Page
         var state = model.State;
         RenderRecovery();
         if (state.ReadProblem is { ProfileId: { } failed } && failed == displayedStudioProfile &&
-            studioBody.Parent == Detail)
+            studioBody.Parent == Detail && studioTab != 2)
         {
             studioBody.Visibility = Visibility.Collapsed;
             UpdateSharingAvailability();
@@ -211,7 +210,9 @@ public sealed partial class ConfigsPage : Page
         {
             displayedStudioProfile = null;
             Detail.Children.Add(Heading(state.Profiles.FirstOrDefault(item => item.Id == state.ReadProblem?.ProfileId)?.DisplayName ?? "My loadouts"));
-            if (state.ReadProblem is null)
+            if (studioTab == 2 && state.ReadProblem is { } problem)
+                Detail.Children.Add(CheckNotice(InfoBarSeverity.Error, "Check-up isn't available", problem.Message));
+            else if (state.ReadProblem is null)
                 Detail.Children.Add(Caption(state.Profiles.IsEmpty ? "Create a loadout or add a config to get started." : "Choose a loadout to edit."));
             return;
         }
@@ -399,7 +400,8 @@ public sealed partial class ConfigsPage : Page
 
         void AddGroup(string group, IEnumerable<ConfigSettingSpec> settings)
         {
-            var specs = settings.Where(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)).ToArray();
+            var specs = settings.Where(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)
+                || IsCheckupTimingSetting(spec)).ToArray();
             if (specs.Length == 0)
                 return;
             var groupTitle = groups.First(item => item.Id == group).Title;
@@ -430,7 +432,7 @@ public sealed partial class ConfigsPage : Page
             if (expert)
             {
                 foreach (var spec in specs)
-                    fields.Children.Add(ExpertSetting(profile, spec));
+                    fields.Children.Add(ExpertSetting(profile, IsCheckupTimingSetting(spec) ? CheckupTimingSpec(spec) : spec));
                 return;
             }
 
@@ -552,38 +554,6 @@ public sealed partial class ConfigsPage : Page
     }
 
     private static string Distance(double cm) => $"{cm:F1} cm per full turn";
-
-    private void ShowCheckup(ConfigStudioState state, ConfigProfileRead profile)
-    {
-        var checkup = new ConfigCheckup(model.Catalog, ConfigRules.LoadBundled(), ConfigOptimizer.LoadBundled());
-        MatchSummary? match;
-        try { match = model.LastMatch; }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { match = null; }
-        studioBody.Children.Add(new TextBlock { Text = "Check-up", Style = StyleFor("SectionTitle") });
-        if (match is null)
-        {
-            AddStudioEmpty("HeartPulse", "No matches recorded yet",
-                "After your next match, its summary appears here if match summaries are on.");
-            return;
-        }
-        var report = checkup.Evaluate(profile, [], ConfigTuneFor.Balanced,
-            measurements: new ConfigCheckupMeasurements(PingMS: match.PingAverageMS, PacketLossPercent: match.PacketLossPercent));
-        foreach (var dial in report.Dials)
-            studioBody.Children.Add(SettingRow(dial.Area.ToString(), dial.Source, Caption(dial.StatusText)));
-        foreach (var suggestion in report.Suggestions.Where(item => item.Area != ConfigCheckupArea.Movement))
-        {
-            var button = Action("Apply", async () =>
-            {
-                var details = string.Join("\n", suggestion.Changes.Select(change => $"{change.Setting}: {change.OldValue} → {change.NewValue}"));
-                if (await Dialog(suggestion.Title, Caption(details), "Apply change").ShowAsync() != ContentDialogResult.Primary)
-                    return;
-                model.Studio.Mutate(profile.Profile.Id, store => checkup.Apply(report, new HashSet<string> { suggestion.Id }, store));
-                RenderStudioBody();
-            });
-            button.IsEnabled = !state.ReadOnly;
-            studioBody.Children.Add(SettingRow(suggestion.Title, suggestion.Why, button));
-        }
-    }
 
     private void ShowHistory(ConfigStudioState state, ConfigProfileRead profile)
     {

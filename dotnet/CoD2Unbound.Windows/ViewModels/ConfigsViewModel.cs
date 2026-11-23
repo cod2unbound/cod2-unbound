@@ -75,7 +75,6 @@ internal sealed partial class ConfigsViewModel : IConfigImportStore
     internal double MouseDpi => DpiFor(State.Current);
     internal double DpiFor(ConfigProfileRead? loadout) => ConfigMouseDpi.For(loadout);
     internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
-    internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
     internal string? GameData => session.Setup.DataPath;
     internal string ConfigPath(string id) => WindowsFiles.Under(session.HomePath, $"main/players/{id}/config_mp.cfg");
