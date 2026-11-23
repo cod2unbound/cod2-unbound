@@ -267,6 +267,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         Stop-KitOwnedGame $game $window
         if ($Route -eq 'connect') {
+            Focus-KitWindow $app
+            [void][KitDesktop]::ShowWindow($app, 3)
             Wait-KitCondition {
                 if ($history = Find-KitControl $app 'All matches' -Name -AllowOffscreen) { return $history }
                 if (-not (Find-KitControl $app 'LaunchButton' -AllowOffscreen)) {
@@ -275,10 +277,24 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             } 30 'Home to show its match history after game exit' | Out-Null
             # Quitting on Harbor can add a newer summary. Home shows the last
             # match, so open the history to find the completed Toujane match.
-            Invoke-KitControl $app 'All matches' -Name -AllowOffscreen
             $title = 'Toujane ' + [char]0x00B7 + ' Deathmatch'
-            Wait-KitCondition { Find-KitControl $app $title -Name } 20 'the Toujane match in the launcher' | Out-Null
-            Focus-KitWindow $app
+            $navigation = @{ Attempts = 0; RetryAt = [DateTime]::MinValue }
+            try {
+                Wait-KitCondition {
+                    if ($row = Find-KitControl $app $title -Name) { return $row }
+                    if ($navigation.Attempts -lt 3 -and [DateTime]::UtcNow -ge $navigation.RetryAt -and
+                        (Find-KitControl $app 'All matches' -Name -AllowOffscreen)) {
+                        Invoke-KitControl $app 'All matches' -Name -AllowOffscreen
+                        $navigation.Attempts++
+                        $navigation.RetryAt = [DateTime]::UtcNow.AddSeconds(4)
+                    }
+                } 24 'the Toujane match in the launcher' | Out-Null
+            } catch {
+                if ([KitDesktop]::GetForegroundWindow() -eq $app) {
+                    try { Save-KitDesktop $app (Join-Path $Results 'launcher-match-timeout.png') } catch { }
+                }
+                throw
+            }
             Save-KitDesktop $app (Join-Path $Results 'launcher-match.png')
         }
         if ($Route -eq 'hosting') {
