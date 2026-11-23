@@ -281,20 +281,33 @@ download or check until the new app is about to take the old one's place.
 
 Report a Problem opens GitHub's bug form in the browser, filled in by field id with the lines
 Copy Version Info copies (app version, game versions, macOS, Mac model, shaders, display; never the
-CD key or player name). With its switch on, the last game log (the retained session output, or an older console, crash
-or freeze report, shortened like a crash report) goes to the clipboard for the player to paste; the
-app itself sends nothing. Reset Settings returns `launcher-settings.json` to its defaults and leaves
-loadouts, demos, screenshots and the CD key alone. Delete Summaries removes
-`main/stats/matches.jsonl`.
+CD key or player name). With its switch on, the last game log goes to the clipboard for the
+player to paste. It uses the retained session output or an older console, crash or freeze report
+shortened like a crash report.
+GitHub receives the prefilled fields when the browser opens the form. Reset Settings returns
+`launcher-settings.json` to its defaults and leaves loadouts, demos, screenshots and the CD key
+alone. Delete Summaries removes `main/stats/matches.jsonl`.
 
-Crash reports leave the Mac only with Settings › Privacy switches the player turned on. A fault in
-CoD2x's own code leaves `<log>.pending.json` beside CoD2x's log; with "Send CoD2x crash reports to
-the CoD2x project" on, the launcher sets `COD2_UNBOUND_COD2X_REPORTS=1` for a CoD2x game and the
-engine sends it to CoD2x at its next start. Every other report goes, with "Send crash reports to
-CoD2 Unbound" on and a build-time receiver (`make_macos_app.py --sentry-dsn`, or `COD2_SENTRY_DSN`
-for the release scripts), to the project's Sentry as one envelope: home folder names shortened to
-`~`, command-line lines dropped, refused if it holds anything that passes the CD key checksum, and
-recorded in `crash-reports-sent.json` so it is never sent twice (`CrashReporting` in `Core.swift`).
+Crash reports leave the Mac only with the corresponding Settings › Privacy switch on.
+A fault in CoD2x's own code leaves `<log>.pending.json` beside CoD2x's log. With
+“Send CoD2x crash reports to the CoD2x project” on when a CoD2x game starts, the
+launcher sets `COD2_UNBOUND_COD2X_REPORTS=1`. CoD2x can then send errors during
+play and retry pending crash and freeze reports after startup. Its error body
+includes the kind, message, system details, recent CoD2x log text, and a stack
+trace for fatal errors. Its crash and freeze body also includes the
+time, server settings, executable and report paths, command line, loaded modules,
+and the affected thread's stack, registers and memory samples. The Mac console
+buffer is empty. The reporter has no populated install or hardware-ID fields and
+no separate graphics or player-name fields.
+
+Other crash and freeze reports go to the project's Sentry with “Send crash reports
+to CoD2 Unbound” on and a build-time receiver (`make_macos_app.py --sentry-dsn`, or
+`COD2_SENTRY_DSN` for the release scripts). The envelope includes the failure
+reason, report number, report and send times, app and game versions, macOS and Mac
+model, and the diagnostic file and its name. Home paths are shortened to `~`,
+command-line entries are dropped, and reports that may contain a CD key stay on
+this Mac. The request asks Sentry to leave out the network address. The launcher
+tracks accepted logs in `crash-reports-sent.json` (`CrashReporting` in `Core.swift`).
 
 WS21's NSAlert setup remains available in engine-only development/test bundles
 (`make_macos_app.py --engine-only`). Production bundles set automatic setup off
@@ -364,29 +377,34 @@ The sender uses `https://eu.i.posthog.com/batch/`. `COD2_USAGE_URL` can name a s
 port and checks the captured JSON. `COD2_LAUNCHER_SKIP_WINDOWS=1` runs the full launcher
 suite through its headless checks.
 
-`usage-setup.json` is a private, versioned setup journal of at most 24 steps with UTC minute
-timestamps. A yes moves eligible steps into ordinary events, and either answer clears that
-journal. `usage-data.json` is a private, versioned send journal with the install UUID, a daily
-app-open marker and up to 300 typed events from the past week. It sends up to 32 events per
-POST and retries with exponential backoff. Off clears the UUID and queue. Reset Number
-replaces the UUID and clears the old queue. The daily marker can remain on the Mac so a
-reset or re-enable cannot count the same UTC day twice.
+The sender drops events recorded before consent. On upgrade it removes the old
+`usage-setup.json` without reading it. `usage-data.json` is a private, versioned send
+journal with the install UUID, a daily app-open marker and up to 300 typed events
+from the past week. When loading an old send journal, it discards pending setup
+steps and app-open events because the old format mixed activity from before and
+after consent. It keeps the install number and other pending events. The sender
+sends up to 32 events per POST and retries with exponential backoff. Off clears the
+UUID and queue. Reset Number replaces the UUID and clears the old queue. The daily
+marker can remain on the Mac so a reset or re-enable cannot count the same UTC day
+twice. App opens are counted only for launches where usage data is already on.
 
 `ConfigDirectory.swift` verifies optional public popularity figures alongside the catalogue.
 See [the publisher format](../tools/config-directory/README.md#optional-popularity-figures).
 
 ### What the player sees
 
-Nothing is sent until the player says yes, and a no sends nothing, not even itself. The question
+Usage data starts with the yes, and a no sends no usage events. A yes in setup queues
+events from that point and holds delivery until setup ends. The question
 is asked once: as setup's Usage data step (after Crash reports, so setup has eight steps while the
 question is due) or, for someone set up before 0.4.2, as a sheet after the update. Don’t Send is
 remembered; a sheet closed without an answer (the app quit with it open) asks again at the next
 start. Neither answer is the default, so Return presses nothing. See What’s Sent… (from the step,
-the sheet and Settings) lists what is recorded in five groups and shows one event, a server joined
-from the list, through the sender's own encoder with this Mac's facts and its install number (all
-zeros before a yes). Settings › Privacy has the switch “Send usage data to CoD2 Unbound”, and after
-a yes the Install number row (its first eight characters) with Reset Number; neither needs an
-alert. What CoD2 Unbound contacts gains “PostHog, in the EU”. A build without the token shows none
+the sheet and Settings) lists what is recorded in twelve rows and shows one event, a join request from
+the list, through the sender’s own encoder with this Mac’s facts and its install number
+(all zeros before a yes). The heading, rows, JSON example and full privacy notice link
+scroll together above fixed Copy and Done buttons. Settings › Privacy has the switch “Send usage
+data to CoD2 Unbound”. After a yes it also shows the first eight characters of the install number
+and Reset Number. What CoD2 Unbound contacts gains “PostHog, in the EU”. A build without the token shows none
 of this. The words are in `UsageDataQuestion` (`ModelUsage.swift`), the sheets in
 `UsageDataView.swift`.
 

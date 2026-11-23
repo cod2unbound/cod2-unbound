@@ -189,7 +189,7 @@ trusted engine arguments after `--`.
 **Settings → About → Report a Problem** opens a new issue on GitHub in your
 browser, filled in with the app version, the game versions installed, your
 macOS version and Mac model, and the shader and display modes. You can edit
-all of it before you post, and the app sends nothing itself.
+all of it before you post.
 
 - **Include the last game log** copies the end of the last game session's log
   to the clipboard for you to paste into the issue. **Include the last server
@@ -204,18 +204,22 @@ all of it before you post, and the app sends nothing itself.
 
 ## What the app sends
 
-- **As the original game does:** the game's master and key servers, and the
-  servers you browse and join.
-- **With CoD2x on:** the CoD2x project's master server for its server list, and
-  CoD2x's update check each time the main menu opens. Like CoD2x on Windows,
-  that check carries your CoD2x version, an MD5 hash of your CD key, an install
-  ID, your CoD2x hardware IDs and a short description of your Mac, over HTTPS
-  or, when that fails, plain UDP. CoD2x servers you join receive your hardware
-  ID hash. zPAM files a server needs are downloaded from the CoD2x project's
-  site.
-- **With the original 1.3 running**, the game sends nothing to the CoD2x
-  project. **Settings → General → Game version** sets your default; joining
-  a server can use the other version for that match.
+- **Online play.** As in the original game, the game sends your CD key, a hash
+  of it and the anonymous-play setting to Activision’s key server when it
+  checks your key. A server you join gets the key hash, your player name,
+  game settings, any server password used and what you do in the match,
+  including any chat you send. CoD2x also sends the server its IDs for this
+  Mac. A server can point the game at another address for map and mod
+  downloads or, with CoD2x, for an upload of the match recording.
+- **With CoD2x on,** the game's update check uses HTTPS and can fall back to
+  plain UDP. It sends the CoD2x version, a hash of your CD key, CoD2x's
+  hardware-derived IDs, the macOS version and build, the country from the
+  language setting if available, and whether the game runs in a virtual
+  machine or as administrator. zPAM files a server needs can come from the
+  CoD2x project's site.
+- **Original 1.3** uses the original game protocol. **Settings → General →
+  Game version** sets your default. Joining a server can use the other
+  version for that match.
 - **The launcher** asks GitHub when you check for updates (once a day while
   it is open, unless you turn off **Settings → Updates → Check for updates
   automatically**) and fetches the news on Home. The fallback addresses are
@@ -235,32 +239,42 @@ all of it before you post, and the app sends nothing itself.
   deleted when the download ends, stops or is cancelled.
 - **Configs** fetches the player setups catalogue from GitHub when its home page
   opens, and a setup's config when you look at it.
-- **Sharing a setup** sends nothing unless you choose **Share Setup** for one
-  of your loadouts. Then the cleaned config (with your name in the game, chat
-  lines, passwords, server addresses and file paths left out), the name you
-  typed and the app's version go to cod2unbound.com, which posts them as a
-  public request on GitHub and keeps no address. **Stop Sharing** in the
-  loadout's menu takes it back.
-- **A server you host** contacts nothing while it is set to My Network. Set to
-  The Internet, it lists itself on the master servers. A CoD2x server asks the
-  CoD2x project's update service about new versions while it runs, and players'
-  games fetch zPAM and its maps from the CoD2x project's site. Getting zPAM
-  downloads it from GitHub.
-- **Report a Problem** opens a prefilled issue in your browser; the app sends
-  nothing itself.
-- **Crash reports** are sent only if you turn a switch on in **Settings →
-  Privacy**. There are two, both off until you turn them on. From 0.3.5,
-  setup asks about the second one, with neither answer chosen for you. One sends
-  CoD2x's own reports to the CoD2x project, as CoD2x does on Windows. The
-  other, new in 0.3.4, sends the report the game wrote when it crashed or
-  froze to this project's report service (Sentry, hosted in the EU): what
-  failed, the app's version, your macOS version, your Mac's model and the
-  report itself, with your Mac's user name replaced by `~` and every command
-  line removed. No account or name goes with it, and the service is told not
-  to record the address it came from. Your CD key is never part of a
-  report: one that seems to hold a key is not sent. A copy you build
-  yourself has no report service unless you give it one, so it sends
-  nothing here.
+- **Sharing a setup.** When you choose **Share Setup**, cod2unbound.com gets
+  the cleaned config, the name you typed, the game and app versions, and the
+  number of lines removed and why. The launcher filters out things like your
+  player name, chat commands, passwords, server addresses and file paths.
+  It posts the setup as a public request on
+  GitHub. **Stop Sharing** sends the request number and a private token to
+  take it back.
+- **A server you host** lists itself on the master servers when set to
+  **The Internet**. It sends status with server settings and the names,
+  scores and pings of its players. A CoD2x server can check for updates even
+  on **My Network**, sending its CoD2x version, platform and installed zPAM
+  version if present. Getting zPAM downloads it from GitHub.
+- **Report a Problem** opens GitHub in your browser with app and game
+  versions, macOS version, Mac model, shader status and display details
+  filled in. You choose whether to post the issue.
+- **CoD2 Unbound crash reports** go to this project's Sentry service in the
+  EU if you turn them on. Setup asks with neither answer chosen for you.
+  A report includes the reason, game and app
+  versions, macOS version and Mac model, the report number, when it was
+  written and sent, and the game’s report and its filename. The launcher
+  shortens home folder paths to `~`, removes command-line entries and holds
+  back reports that may contain a CD key.
+  It asks the service to leave out your network address. Builds with no
+  Sentry receiver offer no Sentry switch.
+- **CoD2x crash reports** have their own switch, read when CoD2x starts.
+  Errors go to the CoD2x project with the CoD2x version, system details and
+  recent CoD2x log text. A fatal error can include a stack trace. A crash or
+  freeze in CoD2x’s code also includes the time, server and process details,
+  command line, paths, loaded modules, and the affected thread’s stack,
+  registers and memory samples. CoD2x can send pending reports on a later start.
+- **Usage data** goes to PostHog in the EU only if you say yes. Recording
+  starts when you agree. See What’s Sent in **Settings → Privacy** lists
+  the events and fields and shows a real example. The events use an install
+  number, a random event number and a time rounded down to the minute.
+  Switching usage data off clears the local number and unsent events.
+  [Read the full privacy notice](https://cod2unbound.com/privacy).
 
 ## Known limitations
 

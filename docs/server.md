@@ -238,8 +238,9 @@ Public listing is off by default (`dedicated 1`). `install --public` selects
 entries disable endpoints. The example keeps the historical master name in
 slot 1, but availability of that public service is not claimed. Tests use only
 a private loopback master receiver. Public mode sends heartbeats every 180 seconds,
-status every 600 seconds, and a `flatline` heartbeat during shutdown. Restart
-with a changed mode; setting masters alone does not enable public listing.
+status every 600 seconds, and a `flatline` heartbeat during shutdown. Status
+includes server settings and the names, scores and pings of connected players.
+To enable public listing, restart in public mode with the masters set.
 
 ## Keep the Mac awake and update
 
@@ -274,14 +275,15 @@ does:
   `master.cod2x.me` (`sv_master1` to `sv_master3`).
 - With `sv_update` on, the default, it asks `master.cod2x.me` whether a newer
   CoD2x or zPAM exists, when a map starts and every 30 to 35 minutes, over
-  HTTPS and then UDP. A newer CoD2x is only reported in the console; nothing
-  is installed. To that service a Mac server names itself as CoD2x's Linux
-  server, the only kind it knows.
+  HTTPS and then UDP. This also applies to network-only servers. The HTTPS request
+  includes the CoD2x version, platform and installed zPAM version if present.
+  The console reports when a newer CoD2x version is available. The Mac server
+  identifies itself to the service as CoD2x’s Linux server.
 - With `sv_updatezpam` on, the default, it moves to the newest zPAM in its
   `main` folder, and with web downloads set up it fetches newer ones from the
   addresses the update service names and checks them before use.
 
-Set `sv_update 0` to keep the server from contacting the update service. These
+Set both `sv_update 0` and `sv_updateZpam 0` to stop these update checks. These
 features were tested against stand-ins on a Mac, not against the CoD2x
 project's servers, and the server has not hosted a public match.
 

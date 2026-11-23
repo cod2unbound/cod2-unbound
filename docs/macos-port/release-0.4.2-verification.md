@@ -13,6 +13,11 @@ by, links that open a setup's page, and the fix for faint text on sheets
 to a stand-in on this Mac. The first player who says yes in the published
 app sends the first real event.
 
+This is the 0.4.2 verification record. That release could replay setup steps from
+before the player's answer after a yes. The current Mac launcher starts recording
+with consent and discards the retired setup journal. See the
+[launcher usage data notes](../../launcher/README.md#usage-data).
+
 ## What was run
 
 - **The engines are 0.4.1's.** `python3 tests/fixes13/legacy.py --base main`
@@ -33,7 +38,7 @@ app sends the first real event.
   that could carry them) and checked against the list in See What's Sent:
   none of it reaches the request. The example shown in See What's Sent is
   made by the same code that makes the real request, and the test compares
-  the two byte for byte.
+  the two field for field.
 - **Where it goes.** Before the release, events sent by hand to the service
   the app uses were read back: the network address is discarded, and of the
   place worked out from it only the country and continent are kept. City,
