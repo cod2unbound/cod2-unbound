@@ -26,21 +26,21 @@ internal sealed class WindowsHostingFiles(string root, bool loopbackOnly) : IHos
 #if UPDATE_FIXTURES
         if (FixtureFolder is { } fixture)
         {
-            var stream = WindowsFiles.Open(fixture, release.Asset);
+            var fixtureStream = WindowsFiles.Open(fixture, release.Asset);
             try
             {
-                if (stream.Length != release.Bytes)
+                if (fixtureStream.Length != release.Bytes)
                     throw new IOException("The zPAM fixture size differs from its release listing.");
                 for (int part = 1; part <= 12; part++)
                 {
                     await Task.Delay(900, cancellationToken);
                     progress(release.Bytes * part / 12);
                 }
-                return stream;
+                return fixtureStream;
             }
             catch
             {
-                await stream.DisposeAsync();
+                await fixtureStream.DisposeAsync();
                 throw;
             }
         }
