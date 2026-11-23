@@ -243,7 +243,7 @@ public sealed partial class ConfigsPage : Page
         var subtitle = new List<string>();
         if (profile.Profile.Id.Equals("main", StringComparison.OrdinalIgnoreCase))
             subtitle.Add("Your everyday setup");
-        if (state.History.LastOrDefault() is { } edit)
+        if (state.History.FirstOrDefault() is { } edit)
             subtitle.Add($"Edited {edit.Date.LocalDateTime:d}");
         if (subtitle.Count != 0)
             title.Children.Add(Caption(string.Join(" · ", subtitle)));

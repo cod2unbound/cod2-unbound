@@ -83,7 +83,7 @@ public sealed partial class ConfigsPage
         void Draw()
         {
             area.Children.Clear();
-            var entries = state.History.Reverse().Where(entry => historyFilter.Includes(entry.Source)).ToArray();
+            var entries = state.History.Where(entry => historyFilter.Includes(entry.Source)).ToArray();
             if (!entries.Any(entry => entry.Id == historySelection))
                 historySelection = historyRestored = null;
             var timeline = new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 540,
@@ -91,7 +91,7 @@ public sealed partial class ConfigsPage
             AutomationProperties.SetName(timeline, "Snapshots");
             timeline.Items.Add(HistoryRow("Check", $"How {profile.Profile.DisplayName} is set up now",
                 profile.Profile.IsActive ? "Everything the next game will use." : "Everything the game uses when you choose this loadout.",
-                "Now", state.History.LastOrDefault()?.Date));
+                "Now", state.History.FirstOrDefault()?.Date));
             foreach (var entry in entries)
             {
                 var changes = HistoryChanges(entry.Before, entry.After);
@@ -167,7 +167,7 @@ public sealed partial class ConfigsPage
         var more = new Button { Content = Fluent("More", 16), IsEnabled = CanEdit };
         AutomationProperties.SetName(more, "More actions for this snapshot");
         var menu = new MenuFlyout();
-        bool earlier = !entry.Before.Matches(entry.After) || state.History.Any(item => item.Id != entry.Id && item.After.Matches(entry.Before));
+        bool earlier = ConfigHistoryFilters.HasEarlierRevision(entry, state.History);
         menu.Items.Add(MenuItem("Restore the state before this change",
             () => RestoreSnapshotAsync(profile, entry, ConfigSnapshotRevision.Before), earlier && !entry.Before.Matches(profile.Version)));
         more.Flyout = menu;

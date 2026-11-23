@@ -63,6 +63,7 @@ internal static partial class Program
             studio.Create("Main", "Main", new ConfigDocument(ImportBytes("seta sensitivity 2\r\n").AsSpan(), ConfigDialect.Cod2x));
             studio.Focus("Main");
             var current = studio.State.Current!;
+            var creation = studio.State.History.Single();
             files.FailPath = ConfigPath;
             var snapshot = studio.SaveSnapshot(current);
             files.FailPath = null;
@@ -70,7 +71,9 @@ internal static partial class Program
             Equal(ConfigHistorySource.You, snapshot.Source);
             Equal(true, snapshot.Before.Matches(current.Version));
             Equal(true, snapshot.After.Matches(current.Version));
-            Equal(2, studio.State.History.Length);
+            Sequence(new[] { snapshot.Id, creation.Id }, studio.State.History.Select(item => item.Id));
+            Equal(false, ConfigHistoryFilters.HasEarlierRevision(creation, studio.State.History));
+            Equal(true, ConfigHistoryFilters.HasEarlierRevision(snapshot, studio.State.History));
             Equal(true, ConfigHistoryFilter.You.Includes(ConfigHistorySource.Restore));
             Equal(false, ConfigHistoryFilter.Game.Includes(ConfigHistorySource.You));
             Equal(true, ConfigHistoryFilter.Imports.Includes(ConfigHistorySource.Import));

@@ -13,4 +13,8 @@ public static class ConfigHistoryFilters
         ConfigHistoryFilter.Game => source == ConfigHistorySource.GameSession,
         _ => false
     };
+
+    public static bool HasEarlierRevision(ConfigHistoryEntry entry, IEnumerable<ConfigHistoryEntry> newestFirst) =>
+        !entry.Before.Matches(entry.After) ||
+        newestFirst.SkipWhile(item => item.Id != entry.Id).Skip(1).Any(item => item.After.Matches(entry.Before));
 }
