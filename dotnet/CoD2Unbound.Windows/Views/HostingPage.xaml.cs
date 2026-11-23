@@ -201,12 +201,12 @@ public sealed partial class HostingPage : Page
 
     private async Task JoinAsync(HostedServer server)
     {
-        if (!HostedDashboard.From(server, State(server)).CanJoin)
+        if (!HostedDashboard.From(server, hosting.DashboardState(State(server))).CanJoin)
             return;
-        var result = await session.JoinAsync(new($"127.0.0.1:{server.Port}", server.JoinPassword), server.Engine);
-        if (result != GameStartState.Started)
-            Notify(result is GameStartState.NeedsSetup or GameStartState.MissingData
-                ? "Choose a complete game data folder before launching." : "Call of Duty 2 is already running.");
+        string address = FormattableString.Invariant($"127.0.0.1:{server.Port}");
+        if (await shell.JoinServerAsync(new(address, server.JoinPassword), UsageJoin.List, requested: server.Engine)
+                is { } message)
+            Notify(message);
     }
 
     private async Task ToggleAsync(HostedServer server, bool refresh = true)

@@ -113,7 +113,7 @@ public sealed partial class HostingPage
             mapValue.Text = view.Map;
             gameType.Text = view.GameType;
             full.Visibility = IsVisible(view.IsFull);
-            join.IsEnabled = view.CanJoin && !page.session.Game.State.Running;
+            join.IsEnabled = view.CanJoin;
             UpdatePlayers(view);
             var (addresses, wifi) = page.hosting.JoinAddresses(server);
             if (lastAddresses is null || !addresses.Network.SequenceEqual(lastAddresses.Network) || wifi != lastWifi)
