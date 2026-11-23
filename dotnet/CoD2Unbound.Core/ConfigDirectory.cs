@@ -157,6 +157,14 @@ public sealed partial class ConfigDirectory(ConfigDirectoryConfiguration? config
         return await storage.ModifiedAsync(ConfigDirectoryFile.Cache, cancellationToken).ConfigureAwait(false);
     }
 
+    public async ValueTask<ConfigDirectorySnapshot?> ReadCachedSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        if (configuration is not { } trust)
+            return null;
+        await using var lease = await storage.AcquireAsync(cancellationToken).ConfigureAwait(false);
+        return await ReadCacheOrDiscardAsync(trust, cancellationToken).ConfigureAwait(false);
+    }
+
     public async ValueTask<ConfigImportBundle> LoadProfileAsync(string entryId, ConfigDirectorySnapshot snapshot,
         ConfigDialect dialect, IConfigImportCatalog catalog, CancellationToken cancellationToken = default)
     {
