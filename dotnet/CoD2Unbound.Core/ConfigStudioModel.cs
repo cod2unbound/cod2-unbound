@@ -51,6 +51,16 @@ public sealed record ConfigSettingState(ConfigSettingSpec Spec, string? Raw, boo
 
 public static partial class ConfigValues
 {
+    public static string MousePitch(string? value, bool inverted)
+    {
+        string text = value?.Trim() ?? "";
+        double? number = Number(text, "float");
+        if (number == 0)
+            return "0";
+        string magnitude = number is null ? "0.022" : NumericPrefix().Match(text).Value.TrimStart('+', '-');
+        return inverted ? "-" + magnitude : magnitude;
+    }
+
     public static int? Integer(string text)
     {
         var bytes = text.AsSpan();

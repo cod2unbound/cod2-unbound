@@ -1,30 +1,42 @@
 <Page x:Class="CoD2Unbound.Windows.Views.HostingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid ColumnSpacing="16">
+    <Grid ColumnSpacing="12">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <ListView x:Name="Servers" SelectionChanged="OnServerChanged" ContainerContentChanging="OnServerRowChanged"
-                  AutomationProperties.Name="Hosted servers">
-            <ListView.Resources>
-                <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
-            </ListView.Resources>
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}" />
-            </ListView.ItemContainerStyle>
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid MinHeight="40">
-                        <Border Style="{StaticResource SelectionPill}" Margin="-12,0,0,0" Loaded="OnSelectionPillLoaded" />
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="Details" Spacing="12" />
+        <Border x:Name="Sidebar" Style="{StaticResource FieldCard}" VerticalAlignment="Stretch" Width="202" Padding="8">
+            <Grid RowSpacing="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Your servers" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="8,4" />
+                <ListView x:Name="Servers" Grid.Row="1" SelectionChanged="OnServerChanged" ContainerContentChanging="OnServerRowChanged"
+                          AutomationProperties.Name="Hosted servers">
+                    <ListView.Resources>
+                        <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}" />
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid MinHeight="48">
+                                <Border Style="{StaticResource SelectionPill}" Margin="-12,0,0,0" Loaded="OnSelectionPillLoaded" />
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="HostRowStatus" Style="{StaticResource SecondaryText}" TextTrimming="CharacterEllipsis" FontSize="12" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+        <ScrollViewer Grid.Column="1" x:Name="DetailScroll" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="Details" Spacing="12" Margin="0,0,8,8" />
         </ScrollViewer>
     </Grid>
 </Page>

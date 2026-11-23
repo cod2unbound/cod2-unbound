@@ -6,6 +6,14 @@ internal static partial class Program
 {
     private static void ExtraCases()
     {
+        Check("mouse inversion preserves the exact imported scale", () =>
+        {
+            Equal("-0.0171234567", ConfigValues.MousePitch("-0.0171234567", inverted: true));
+            Equal("0.0171234567", ConfigValues.MousePitch("-0.0171234567", inverted: false));
+            Equal("-1.2e-5", ConfigValues.MousePitch("+1.2e-5", inverted: true));
+            Equal("0", ConfigValues.MousePitch("0", inverted: true));
+            Equal("-0.022", ConfigValues.MousePitch(null, inverted: true));
+        });
         using var fixture = Fixtures("extras");
         var root = fixture.RootElement;
         foreach (var item in root.GetProperty("artwork").EnumerateArray())

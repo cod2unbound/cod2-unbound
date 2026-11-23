@@ -409,9 +409,21 @@ public sealed partial class ConfigsPage : Page
     private Border Setting(ConfigStudioState state, string profileId, ConfigSettingSpec spec)
     {
         var item = ConfigStudioModel.State(spec, state.Current?.Document, state.Current?.Metadata);
+        bool mouseDirection = !expert && spec.Name.Equals("m_pitch", StringComparison.OrdinalIgnoreCase);
+        string title = mouseDirection ? "Invert up and down" : spec.Title;
         string? block = model.Model.TakeTheirsBlock(spec, state, null, [], "");
         if (block is not null)
-            return SettingRow(spec.Title, block, Caption(item.Display), grouped: !expert);
+            return SettingRow(title, block, Caption(item.Display), grouped: !expert);
+
+        if (mouseDirection)
+        {
+            double scale = ConfigValues.Number(item.Value ?? "", "float") ?? 0.022;
+            var invert = new ToggleSwitch { IsOn = scale < 0, IsEnabled = scale != 0,
+                OnContent = "On", OffContent = "Off", MinWidth = 0 };
+            AutomationProperties.SetName(invert, title);
+            invert.Toggled += async (_, _) => await Apply(ConfigValues.MousePitch(item.Value, invert.IsOn));
+            return SettingRow(title, "Moving the mouse forward looks down.", invert, grouped: true);
+        }
 
         Control control;
         if (!expert && spec.Name.Equals("cl_mouseAccel", StringComparison.OrdinalIgnoreCase))

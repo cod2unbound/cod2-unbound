@@ -117,7 +117,7 @@ public sealed partial class ServersPage : Page
 
     internal void UpdateContrast() => Render();
 
-    internal void UpdateHostingState() => hosting?.UpdateRunState();
+    internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
 
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
         Details.Width = args.NewSize.Width >= 1000 ? 320 : 300;
@@ -186,7 +186,7 @@ public sealed partial class ServersPage : Page
     {
         bool favorite = model.IsFavorite(server.Address);
         button.Content = Fluent(favorite ? "StarFilled" : "Star", 16, filled: favorite);
-        button.Foreground = ThemeBrush(favorite || ReferenceEquals(button, FavoriteButton) ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
+        button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
         string action = favorite ? "Remove from Favorites" : "Add to Favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
         ToolTipService.SetToolTip(button, action);
@@ -490,10 +490,10 @@ public sealed partial class ServersPage : Page
         RenderDetails();
     }
 
-    internal void UpdateGameState(GameSessionState state)
+    internal Task UpdateGameStateAsync()
     {
         RenderDetails();
-        UpdateHostingState();
+        return UpdateHostingStateAsync();
     }
 
     private async void OnRefreshShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)

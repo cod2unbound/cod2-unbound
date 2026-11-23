@@ -399,10 +399,13 @@ public sealed partial class MainWindow : Window
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
+            var icon = Fluent("StarFilled", 16, filled: true);
+            if (!IsHighContrast)
+                icon.Foreground = ThemeBrush("FavoriteBrush", Root.ActualTheme, false);
             Nav.MenuItems.Add(new NavigationViewItem
             {
                 Content = QuakeColors.Plain(favorite.Name), Tag = favorite.Address,
-                Icon = Fluent("Star", 20), SelectsOnInvoked = false, HighContrastAdjustment = ElementHighContrastAdjustment.None
+                Icon = icon, SelectsOnInvoked = false, HighContrastAdjustment = ElementHighContrastAdjustment.None
             });
         }
     }
@@ -439,7 +442,7 @@ public sealed partial class MainWindow : Window
                 hostPolled = now;
                 await session.Hosting.PollAsync();
                 if (ContentFrame.Content is ServersPage hosting)
-                    hosting.UpdateHostingState();
+                    await hosting.UpdateHostingStateAsync();
             }
             if (session.CanAutoCheckUpdates && session.Settings.Working.CheckUpdatesAutomatically && updateRequest is null &&
                 session.Updates.State.Phase is not (UpdatePhase.Installed or UpdatePhase.Ready or UpdatePhase.Installing) &&
@@ -458,7 +461,7 @@ public sealed partial class MainWindow : Window
             if (ContentFrame.Content is HomePage home)
                 home.RenderGame(state);
             if (ContentFrame.Content is ServersPage servers)
-                servers.UpdateGameState(state);
+                await servers.UpdateGameStateAsync();
         }, clearProblem: false);
     }
 
@@ -517,9 +520,9 @@ public sealed partial class MainWindow : Window
     internal bool IsBusy => busy;
     internal void ClearProblem() => Problem.IsOpen = false;
 
-    internal async Task<string?> PickFolderAsync()
+    internal async Task<string?> PickFolderAsync(string title = "Choose the Call of Duty 2 folder")
     {
-        var picker = new FolderPicker(AppWindow.Id) { Title = "Choose the Call of Duty 2 folder" };
+        var picker = new FolderPicker(AppWindow.Id) { Title = title };
         return (await picker.PickSingleFolderAsync())?.Path;
     }
 

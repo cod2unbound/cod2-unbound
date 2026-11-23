@@ -61,6 +61,7 @@
             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="#1C170C" />
             <SolidColorBrush x:Key="HeroAccentBrush" Color="#E2BD72" />
             <SolidColorBrush x:Key="FavoriteBrush" Color="#C99A4C" />
+            <SolidColorBrush x:Key="SettingsNoteBackground" Color="#272B3B" />
             <SolidColorBrush x:Key="BodyBrush" Color="#ECE6D6" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#A9A28F" />
             <SolidColorBrush x:Key="AddressBrush" Color="#B9A982" />
@@ -170,6 +171,7 @@
             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="#FFF8E8" />
             <SolidColorBrush x:Key="HeroAccentBrush" Color="#6B4A12" />
             <SolidColorBrush x:Key="FavoriteBrush" Color="#55622F" />
+            <SolidColorBrush x:Key="SettingsNoteBackground" Color="#ECECEB" />
             <SolidColorBrush x:Key="BodyBrush" Color="#26251D" />
             <SolidColorBrush x:Key="CaptionBrush" Color="#615E51" />
             <SolidColorBrush x:Key="AddressBrush" Color="#7A5A1C" />
@@ -279,6 +281,7 @@
             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="HeroAccentBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="FavoriteBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SettingsNoteBackground" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="BodyBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="CaptionBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="AddressBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
