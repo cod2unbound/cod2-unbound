@@ -71,6 +71,11 @@ public sealed record GameServer(string Address, ImmutableDictionary<string, stri
         foreach (var (key, value) in info.Fields)
         {
             string name = key.ToLowerInvariant();
+            // CoD2x getinfo uses the legacy discovery protocol even when getstatus
+            // identifies a 1.4 server with its actual join protocol.
+            if (name == "protocol" && value == "118" && Field("protocol") == "120" &&
+                Field("shortversion")?.StartsWith("1.4.", StringComparison.Ordinal) == true)
+                continue;
             if (fields.Any(previous => previous.Key.ToLowerInvariant() == name && previous.Value != value))
                 conflicts.Add(name);
             fields[key] = value;

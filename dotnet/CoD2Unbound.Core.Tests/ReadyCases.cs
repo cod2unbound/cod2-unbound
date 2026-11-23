@@ -10,6 +10,20 @@ internal static partial class Program
         using var fixture = Fixtures("ready");
         var clock = new FixedClock();
         var check = new ConfigReadyCheck(ConfigCatalog.LoadBundled(), ConfigRules.LoadBundled(), clock);
+        Check("CoD2x status 120 keeps its protocol when getinfo advertises stock discovery protocol", () =>
+        {
+            var status = WireParser.Status([.. WireParser.Marker, .. "statusResponse\n\\protocol\\120\\shortversion\\1.4.6.8\\mod\\0\\g_competitive\\0\n"u8],
+                "127.0.0.1:28960", 1, clock.GetUtcNow());
+            var info = WireParser.Status([.. WireParser.Marker, .. "infoResponse\n\\protocol\\118\\mod\\0\\clients\\1"u8],
+                status.Address, 1, clock.GetUtcNow());
+            var combined = status.MergeInfo(info);
+            Equal("120", combined.Fields["protocol"]);
+            Equal(true, combined.QueryConflicts.IsDefaultOrEmpty);
+            Equal("1", combined.Fields["clients"]);
+            var contradictory = status with { Fields = status.Fields.Remove("shortversion") };
+            Equal(true, contradictory.MergeInfo(info).QueryConflicts.Contains("protocol"));
+        });
+
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
             Check("Swift Ready Check " + row.GetProperty("name").GetString(), () =>
             {
