@@ -123,6 +123,8 @@ public sealed partial class ConfigsPage : Page
             ? rows.FirstOrDefault(row => row.Profile.Id == (state.Current?.Profile.Id ?? state.ReadProblem?.ProfileId)) : null;
         syncing = false;
         NewLoadout.IsEnabled = AddConfig.IsEnabled = !state.ReadOnly && state.Draft is null;
+        if (lastImport is not null && Status.ActionButton is Button { Tag: "UndoImport" } undo)
+            undo.IsEnabled = CanEdit;
     }
 
     private async void OnSelectLoadout(object sender, SelectionChangedEventArgs args)
@@ -744,8 +746,8 @@ public sealed partial class ConfigsPage : Page
         string? setting = row.Title.StartsWith("Set ", StringComparison.Ordinal) ? row.Title[4..] : null;
         var spec = setting is null ? null : model.Model.Specs.FirstOrDefault(spec => spec.Name.Equals(setting, StringComparison.OrdinalIgnoreCase));
         string title = credential ? "Password or key" : spec?.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase) == true
-            ? "Game timing setting" : spec?.Title ?? (row.Group == "Settings" ? "Config setting" :
-                row.Group == "Bindings" ? "Key binding" : RiskSummary(candidate.Reasons.FirstOrDefault(), candidate.Reasons.IsEmpty));
+            ? "Game timing setting" : spec?.Title ?? (row.Group is "Settings" or "Bindings"
+                ? row.Title : RiskSummary(candidate.Reasons.FirstOrDefault(), candidate.Reasons.IsEmpty));
         if (!credential && spec is null && candidate.Classification == ConfigImportClassification.Blocked &&
             candidate.Command.Tokens.Length > 0 && candidate.Command.Tokens[0].Text is { Length: > 0 and <= 32 } command &&
             command.All(character => char.IsAsciiLetterOrDigit(character) || character == '_'))

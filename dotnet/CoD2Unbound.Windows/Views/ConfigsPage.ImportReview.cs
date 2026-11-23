@@ -69,6 +69,7 @@ public sealed partial class ConfigsPage
         string message = created ? $"Imported as a new loadout, {targetName}. Your other loadouts are unchanged."
             : $"Imported into {targetName}. History has the version from before.";
         var undo = Action("Undo", UndoImportAsync);
+        undo.Tag = "UndoImport";
         undo.IsEnabled = CanEdit;
         Feedback(message, undo);
         Announce(message);

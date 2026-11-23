@@ -95,7 +95,7 @@ public sealed partial class ConfigsPage
         try { model.Studio.InspectRecovery(id); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            ShowStatus(InfoBarSeverity.Error, "Nothing to recover", error.Message);
+            ShowStatus(InfoBarSeverity.Error, "Nothing to recover", error.Message, closable: false);
             return;
         }
 
