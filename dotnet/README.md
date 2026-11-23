@@ -243,25 +243,45 @@ publishing the launcher.
 | `CrashReportDsn` | `https://<PUBLIC_KEY>@<SENTRY_INGEST_HOST>/<PROJECT_NUMBER>` |
 
 Omit a property to omit that consent step and Privacy switch. Only an explicit
-yes allows the relevant reports to leave this PC. Usage requests use the EU
-ingestion endpoint without redirects, cookies, or ambient credentials. With the
-app’s version and your Windows version, usage data includes your PC’s model and
-hardware (processor, memory and graphics card), your display, your system
-language and the country you connect from. It includes the processor’s name and
-logical core count, the PC and launcher architectures (`x64` or `arm64`), and
+yes allows the relevant reports to leave this PC. Usage recording starts with a
+yes in Setup or Settings. The consent event names where you said yes. The launcher
+discards events from before that answer, including setup steps. Events recorded
+after a yes in Setup wait until setup finishes before sending. Setup and
+Settings › Privacy show a preview for each configured service.
+
+Usage requests use the PostHog EU ingestion endpoint without redirects, cookies,
+or ambient credentials. The launcher records app opens at most once per UTC day,
+screen opens, setup steps reached or skipped and the game-file source marker,
+game starts with edition, renderer, display mode and a reported scale of 100%,
+game exits with normal or unexpected exit and runtime in minutes, server list
+refreshes with the active tab, and join attempts with method and edition. It
+also records public player setup catalogue IDs for views, tries and imports,
+loadouts and config checks, hosting reach and edition, update stages and versions,
+setting names and encoded choices, and error kinds. Each event has a timestamp
+rounded down to the minute, a random event ID, and the random install number.
+
+With the app’s version and your Windows version, each event includes your PC’s
+model and hardware (processor, memory and graphics card), your display, and your
+system language. It includes the processor’s name and logical core count, the PC
+and launcher architectures (`x64` or `arm64`), and
 installed memory in whole GB, rounded to the nearest GB. When the launcher runs
 emulated, its architecture differs from the PC’s. For the one graphics card
 Windows prefers for high performance it includes the name, dedicated memory in
 whole GB rounded down, and the driver version when available. It includes the
-display’s size and refresh rate. The service works out the country from the
-network address, discards the address, and disables person profiles.
+display’s size and refresh rate. The launcher requests that PostHog skip person
+profiles. Country lookup from the connection address, discarding that address
+and keeping location only at country level depend on the PostHog project’s
+ingestion settings.
 
 Usage data excludes your name, the PC’s name or serial numbers, the board’s UUID,
 the machine GUID, your CD key, server names and addresses, chat, config contents,
 file paths, disks, the number of displays, network adapters, and anything you type.
-Crash reports use a separate Windows text attachment containing exception
-details, module offsets, and module versions. Local game logs and dumps stay
-on this PC.
+CoD2 Unbound crash reports send the launcher version, game edition, Windows
+version, PC model, report file’s modification time and upload time. They include
+a validated Windows text attachment with exception details, stack frame module
+offsets and module versions. The report number is derived from the report
+filename and contents so retries use the same number. The launcher keeps local
+game logs and dump files on this PC. CoD2x handles its own reports separately.
 
 Keep `UpdateBuildProfile=Public` and `EnableLocalReportReceivers=false` for
 releases. Test builds additionally require `UpdateBuildProfile=Fixture` and
