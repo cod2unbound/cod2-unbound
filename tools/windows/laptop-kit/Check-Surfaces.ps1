@@ -14,10 +14,29 @@ function Invoke-KitSurface([string]$Page) {
     $exe = Get-KitStartTarget
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Set-KitLauncherProfile 'original' 'dx9'
+    if ($Page -eq 'home') {
+        [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
+            '{"recent":["127.0.0.1:9"]}')
+    }
+    if ($Page -eq 'library') {
+        $demo = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
+        $picture = Join-Path $Kit 'frame-references\original\dx9\dx9-mp_toujane-00-windows.png'
+        Copy-Item -LiteralPath $demo -Destination (New-Folder (Join-Path $LauncherHome 'main\demos'))
+        Copy-Item -LiteralPath $picture -Destination (New-Folder (Join-Path $LauncherHome 'main\screenshots'))
+        $stats = New-Folder (Join-Path $LauncherHome 'main\stats')
+        $summary = @{
+            schemaVersion=1; endedAt=[DateTime]::UtcNow.ToString('o'); endReason='intermission'
+            map='mp_toujane'; mode='dm'; durationSeconds=60; serverAddress='127.0.0.1:29792'
+            ruleHints=@{}; frameCount=0; capSampleFrames=0; capFPS=0; pingSamples=0
+            packetsReceived=0; packetsLost=0; snapshotsReceived=0
+        }
+        $summary | ConvertTo-Json -Compress |
+            Set-Content -LiteralPath (Join-Path $stats 'matches.jsonl') -Encoding ASCII
+    }
     $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
     try {
         $app = Get-KitLauncherWindow $run.Process
-        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'Home to open' | Out-Null
+        Wait-KitHome $app
         [void][KitDesktop]::ShowWindow($app, 3)
         Focus-KitWindow $app
         switch ($Page) {
@@ -32,8 +51,7 @@ function Invoke-KitSurface([string]$Page) {
             }
             'jump' {
                 [KitDesktop]::Chord(17, 75)
-                $box = Wait-KitCondition { Find-KitControl $app 'Jump to' -Name } 12 'the Jump to box'
-                $box.SetFocus()
+                Wait-KitCondition { Find-KitControl $app 'Jump to' -Name } 12 'the Jump to box' | Out-Null
                 [Windows.Forms.SendKeys]::SendWait('keyboard shortcuts')
                 Save-KitSurface $app 'jump-search' @('Keyboard shortcuts')
                 [KitDesktop]::Tap(13)
@@ -43,13 +61,17 @@ function Invoke-KitSurface([string]$Page) {
             'hosting' {
                 Invoke-KitControl $app 'ServersItem'
                 Invoke-KitControl $app 'Hosting' -Name
-                Invoke-KitControl $app 'NewHost'
+                Invoke-KitControl $app 'New server' -Name
                 Set-KitEdit $app 'Server name' 'Kit Export' -Name
-                Invoke-KitControl $app 'Start Server' -Name
+                Invoke-KitControl $app 'Start server' -Name
                 $room = Wait-KitCondition { Find-KitHostedServer 'Kit Export' } 20 'the disposable Hosting room'
                 Wait-KitCondition { (Request-KitServer $room.Port 'getstatus Kit') -match 'Kit Export' } 45 'the Hosting room to start' | Out-Null
                 $export = 'Export for another machine' + [char]0x2026
+                $row = Wait-KitCondition { Find-KitControl $app 'Kit Export' -Name } 12 'the saved Hosting row'
+                $row.SetFocus()
+                [KitDesktop]::Chord(16, 121)
                 Save-KitSurface $app 'hosting-folder' @($export,'Show its folder in File Explorer')
+                [KitDesktop]::Tap(27)
                 Invoke-KitControl $app $export -Name
                 Save-KitSurface $app 'hosting-export' @('Cancel')
                 Invoke-KitControl $app 'Cancel' -Name
@@ -68,7 +90,7 @@ function Invoke-KitSurface([string]$Page) {
             'library' {
                 Invoke-KitControl $app 'LibraryItem'
                 Invoke-KitControl $app 'MatchesSection'
-                Save-KitSurface $app 'library-matches' @('Match history')
+                Save-KitSurface $app 'library-matches' @('Match history',('Toujane ' + [char]0x00b7 + ' Deathmatch'))
                 Invoke-KitControl $app 'DemosSection'
                 Save-KitSurface $app 'library-demos' @('Find a file','Show in File Explorer')
                 Invoke-KitControl $app 'ScreenshotsSection'

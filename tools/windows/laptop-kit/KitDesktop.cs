@@ -141,6 +141,11 @@ public static class KitDesktop {
                     foreach (int x in new[] { 0, bounds.Width - corner })
                         foreach (int y in new[] { 0, bounds.Height - corner })
                             canvas.FillRectangle(Brushes.Black, x, y, corner, corner);
+                    const int edge = 2;
+                    canvas.FillRectangle(Brushes.Black, 0, 0, bounds.Width, edge);
+                    canvas.FillRectangle(Brushes.Black, 0, bounds.Height - edge, bounds.Width, edge);
+                    canvas.FillRectangle(Brushes.Black, 0, 0, edge, bounds.Height);
+                    canvas.FillRectangle(Brushes.Black, bounds.Width - edge, 0, edge, bounds.Height);
                 }
                 bitmap.Save(path, ImageFormat.Png);
             }

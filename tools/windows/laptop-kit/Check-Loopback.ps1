@@ -103,7 +103,7 @@ function Invoke-KitOpenDemo([string]$Edition) {
     $window = [IntPtr]::Zero
     try {
         $app = Get-KitLauncherWindow $launcher.Process
-        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
+        Wait-KitHome $app
         Open-KitAssociation $demo 'CoD2Unbound.Demo' $exe
         $since = Get-Date
         Invoke-KitControl $app 'Play demo' -Name
@@ -192,19 +192,19 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings
         $app = Get-KitLauncherWindow $launcher.Process
-        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
+        Wait-KitHome $app
         Invoke-KitControl $app 'ServersItem'
         $since = Get-Date
         switch ($Route) {
             { $_ -in 'connect','fullscreen' } {
                 Invoke-KitControl $app ('Connect to address' + [char]0x2026) -Name
                 Set-KitEdit $app 'AddressBox' "127.0.0.1:$port"
-                Invoke-KitControl $app 'Connect' -Name
+                Invoke-KitControl $app 'PrimaryButton'
             }
             'link' {
                 $scheme = if ($Edition -eq 'original') { 'cod2' } else { 'cod2x' }
                 Open-KitAssociation ("${scheme}://127.0.0.1:$port") $scheme $exe
-                Invoke-KitControl $app 'Connect' -Name
+                Invoke-KitControl $app 'PrimaryButton'
             }
             { $_ -in 'list','handoff' } {
                 Invoke-KitControl $app 'All' -Name
@@ -224,9 +224,9 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             'hosting' {
                 Invoke-KitControl $app 'Hosting' -Name
-                Invoke-KitControl $app 'NewHost'
+                Invoke-KitControl $app 'New server' -Name
                 Set-KitEdit $app 'Server name' $hostName -Name
-                Invoke-KitControl $app 'Start Server' -Name
+                Invoke-KitControl $app 'Start server' -Name
                 $hosted = Wait-KitCondition { Find-KitHostedServer $hostName } 15 'the saved Hosting entry'
                 $port = $hosted.Port
                 $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
@@ -497,9 +497,25 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     Wait-KitCondition { Find-KitControl $App 'Saved on this PC. Untick to forget it when you launch.' -Name } 15 'the remembered password' | Out-Null
     Save-KitWindow $App (Join-Path $Results 'server-password-saved.png')
     Invoke-KitControl $App 'Cancel' -Name
-    Invoke-KitControl $App 'HomeItem'
-    foreach ($name in 'Return to game','Close game') {
-        Wait-KitCondition { Find-KitControl $App $name -Name } 15 $name | Out-Null
+    Wait-KitCondition { -not (Find-KitControl $App 'Password for Kit-Password' -Name) } 15 'the password dialog to close' | Out-Null
+    $ready = $false
+    foreach ($attempt in 1..3) {
+        Focus-KitWindow $App
+        [KitDesktop]::Chord(17, 49)
+        try {
+            Wait-KitCondition {
+                (Find-KitControl $App 'Return to game' -Name -AllowOffscreen) -and
+                    (Find-KitControl $App 'Close game' -Name -AllowOffscreen)
+            } 5 'the Home controls for the running game' | Out-Null
+            $ready = $true
+            break
+        } catch {
+            if ($Game.HasExited) { throw 'The game stopped before its Home controls appeared.' }
+        }
+    }
+    if (-not $ready) {
+        Save-KitWindow $App (Join-Path $Results 'launcher-playing-timeout.png')
+        throw 'The running game controls did not appear after the handoff.'
     }
     Save-KitWindow $App (Join-Path $Results 'launcher-playing.png')
     [KitDesktop]::Chord(18, 115)

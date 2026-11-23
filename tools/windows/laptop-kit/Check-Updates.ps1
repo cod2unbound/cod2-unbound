@@ -54,7 +54,7 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
         $settings.COD2_UNBOUND_TEST_UPDATE_ORIGIN = "http://127.0.0.1:$port/"
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings -WorkingDirectory (Join-Path $env:SystemRoot 'System32')
         $window = Get-KitLauncherWindow $launcher.Process
-        Wait-KitCondition { Find-KitControl $window 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
+        Wait-KitHome $window
         Invoke-KitControl $window 'Settings' -Name
         Invoke-KitControl $window 'Updates' -Name
         $action = Wait-KitCondition {

@@ -36,6 +36,24 @@ function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [swit
     if ($action -is [Windows.Automation.InvokePattern]) { $action.Invoke() } else { $action.Select() }
 }
 
+function Wait-KitHome([IntPtr]$Window) {
+    Wait-KitCondition {
+        (Find-KitControl $Window 'Find a server' -Name -AllowOffscreen) -or
+            (Find-KitControl $Window 'LaunchButton' -AllowOffscreen) -or
+            (Find-KitControl $Window 'Return to game' -Name -AllowOffscreen)
+    } 45 'Home to open' | Out-Null
+}
+
+function Open-KitGameMenu([IntPtr]$Window) {
+    Wait-KitHome $Window
+    if (Find-KitControl $Window 'OpenGameMenuButton') {
+        Invoke-KitControl $Window 'OpenGameMenuButton'
+    } else {
+        Invoke-KitControl $Window 'More ways to launch' -Name
+        Invoke-KitControl $Window 'Open the game menu' -Name
+    }
+}
+
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
     $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
     if (Test-Path -LiteralPath $complete) { return }
@@ -139,7 +157,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
         Complete-KitLauncherSetup $launcher $Results
         $binary = Get-Binary $Edition -Root $InstallRoot
         $start = Get-Date
-        Invoke-KitControl $launcher 'LaunchButton'
+        Open-KitGameMenu $launcher
         $game = Wait-KitCondition {
             Get-Process -Name 'cod2_win32' -ErrorAction SilentlyContinue |
                 Where-Object { $_.Path -ieq $binary -and $_.StartTime -ge $start -and $_.SessionId -eq $run.Process.SessionId } |
@@ -198,7 +216,7 @@ function Invoke-KitFaults {
         $launcher = Start-KitProcess $exe '' $LauncherHome $overrides
         $app = Get-KitLauncherWindow $launcher.Process
         $since = Get-Date
-        Invoke-KitControl $app 'LaunchButton'
+        Open-KitGameMenu $app
         $game = Get-KitOwnedGame 'original' $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
         Start-Sleep -Seconds 4

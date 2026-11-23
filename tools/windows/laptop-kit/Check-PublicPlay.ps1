@@ -68,7 +68,7 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
         Focus-KitWindow $App
         Invoke-KitControl $App 'ServersItem'
         Invoke-KitControl $App 'Hosting' -Name
-        Invoke-KitControl $App 'NewHost'
+        Invoke-KitControl $App 'New server' -Name
         Set-KitEdit $App 'Server name' $name -Name
         Select-KitComboChoice $App 'Game version' $version
         Select-KitComboChoice $App 'Who can join' $reach
@@ -255,7 +255,7 @@ function Invoke-KitPublicPlay {
     $app = [Diagnostics.Process]::Start($info)
     try {
         $window = Get-KitLauncherWindow $app
-        Wait-KitCondition { Find-KitControl $window 'LaunchButton' } 45 'the already set up Public launcher' | Out-Null
+        Wait-KitHome $window
         Invoke-KitControl $window 'Settings' -Name
         Invoke-KitControl $window 'Game data' -Name
         Wait-KitCondition { Find-KitControl $window ("Verified " + [char]0x00b7 + ' Stored only on this PC') -Name -AllowOffscreen } 12 'a verified CD key reported by the launcher' | Out-Null
