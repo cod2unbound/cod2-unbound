@@ -508,8 +508,8 @@ public sealed partial class MainWindow : Window
                 else
                     home.RenderGame(state);
             }
-            if (ended && ContentFrame.Content is LibraryPage library)
-                library.Render();
+            if (ContentFrame.Content is LibraryPage library)
+                library.UpdateGameState(state.Running, ended);
             if (ContentFrame.Content is ServersPage servers)
                 await servers.UpdateGameStateAsync();
             if (ContentFrame.Content is ConfigsPage configs)

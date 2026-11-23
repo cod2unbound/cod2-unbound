@@ -5,8 +5,10 @@ using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsMediaFiles(string home) : IMediaFiles
+internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
 {
+    private readonly string home = homePath;
+
     public ImmutableArray<MediaFile> List(MediaKind kind)
     {
         string folder = WindowsFiles.Under(home, MediaLibrary.Folder(kind));
@@ -105,16 +107,29 @@ internal sealed class WindowsMediaFiles(string home) : IMediaFiles
         string path = WindowsFiles.Under(home, from);
         using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!);
         using var verified = WindowsFiles.Open(home, from);
-        File.Move(path, WindowsFiles.Under(home, to), overwrite: false);
+        string destination = WindowsFiles.Under(home, to);
+        try { File.Move(path, destination, overwrite: false); }
+        catch (IOException) when (kind == MediaKind.Demo &&
+            !path.Equals(destination, StringComparison.OrdinalIgnoreCase) && Path.Exists(destination))
+        {
+            throw new MediaNameInUseException();
+        }
     }
 
-    internal void Recycle(MediaKind kind, string name, nint owner)
+    internal string Recycle(MediaKind kind, string name, nint owner)
     {
         string relative = Relative(kind, name);
         string path = WindowsFiles.Under(home, relative);
         using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!);
         using var verified = WindowsFiles.Open(home, relative);
-        WindowsRecycleBin.Recycle(path, owner);
+        return WindowsRecycleBin.Recycle(path, owner, singleFile: kind != MediaKind.Config);
+    }
+
+    internal void Restore(MediaKind kind, string name, string token, nint owner)
+    {
+        string path = WindowsFiles.Under(home, Relative(kind, name));
+        using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(path)!);
+        WindowsRecycleBin.RestoreFile(token, path, owner);
     }
 
     internal void Reveal(MediaKind kind, string name)
@@ -131,3 +146,5 @@ internal sealed class WindowsMediaFiles(string home) : IMediaFiles
         return MediaLibrary.Folder(kind) + "/" + name;
     }
 }
+
+internal sealed class MediaNameInUseException : IOException;

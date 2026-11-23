@@ -10,7 +10,9 @@ internal static class WindowsRecycleBin
     private const uint Silent = 0x0004, NoConfirmation = 0x0010, AllowUndo = 0x0040, NoErrorUi = 0x0400;
     private const uint WantNukeWarning = 0x4000, EarlyFailure = 0x00100000, RecycleOnDelete = 0x00080000;
 
-    internal static string Recycle(string path, nint owner)
+    private const uint NoConnectedElements = 0x2000;
+
+    internal static string Recycle(string path, nint owner, bool singleFile = false)
     {
         const string message = "Windows couldn’t move this item to the Recycle Bin.";
         nint item = 0, progress = 0;
@@ -19,8 +21,17 @@ internal static class WindowsRecycleBin
         {
             Marshal.ThrowExceptionForHR(SHCreateItemFromParsingName(path, 0, ShellItemInterface, out item));
             progress = Marshal.GetComInterfaceForObject(sink, typeof(IRecycleProgressSink));
-            Perform(owner, Silent | NoErrorUi | EarlyFailure | NoConfirmation | AllowUndo | WantNukeWarning | RecycleOnDelete,
-                operation => operation.DeleteItem(item, progress), message);
+            uint flags = Silent | NoErrorUi | EarlyFailure | NoConfirmation | AllowUndo | WantNukeWarning | RecycleOnDelete;
+            if (singleFile)
+            {
+                // Fail before asking the Shell to remove a file on a drive without a Recycle Bin.
+                string root = Path.GetPathRoot(path)!;
+                var info = new RecycleBinQuery { Size = Marshal.SizeOf<RecycleBinQuery>() };
+                if (new DriveInfo(root).DriveType != DriveType.Fixed || SHQueryRecycleBin(root, ref info) < 0)
+                    throw new IOException(message);
+                flags |= NoConnectedElements;
+            }
+            Perform(owner, flags, operation => operation.DeleteItem(item, progress), message);
             if (sink.ItemId is null || Path.Exists(path))
                 throw new IOException(message);
             return sink.ItemId;
@@ -35,22 +46,42 @@ internal static class WindowsRecycleBin
         }
     }
 
-    internal static void Restore(string token, string destination, nint owner)
+    internal static void Restore(string token, string destination, nint owner) =>
+        RestoreItem(token, destination, owner, singleFile: false);
+
+    internal static void RestoreFile(string token, string destination, nint owner) =>
+        RestoreItem(token, destination, owner, singleFile: true);
+
+    private static void RestoreItem(string token, string destination, nint owner, bool singleFile)
     {
-        const string message = "Windows couldn’t restore this loadout from the Recycle Bin.";
+        string message = singleFile ? "Windows couldn’t restore this file from the Recycle Bin."
+            : "Windows couldn’t restore this loadout from the Recycle Bin.";
         if (Path.Exists(destination))
-            throw new IOException("A loadout with this identifier already exists.");
+            throw new IOException(singleFile ? "A file with that name already exists." : "A loadout with this identifier already exists.");
         byte[] pidl = Convert.FromBase64String(token);
         nint buffer = Marshal.AllocCoTaskMem(pidl.Length);
-        nint item = 0, folder = 0;
+        nint item = 0, folder = 0, progress = 0;
         try
         {
             Marshal.Copy(pidl, 0, buffer, pidl.Length);
             Marshal.ThrowExceptionForHR(SHCreateItemFromIDList(buffer, ShellItemInterface, out item));
             Marshal.ThrowExceptionForHR(SHCreateItemFromParsingName(Path.GetDirectoryName(destination)!, 0, ShellItemInterface, out folder));
-            Perform(owner, Silent | NoErrorUi | EarlyFailure,
-                operation => operation.MoveItem(item, folder, Path.GetFileName(destination), 0), message);
-            if (!Directory.Exists(destination))
+            uint flags = Silent | NoErrorUi | EarlyFailure;
+            string name = Path.GetFileName(destination);
+            var sink = singleFile ? new RecycleProgress(destination) : null;
+            if (sink is not null)
+            {
+                flags |= NoConnectedElements;
+                progress = Marshal.GetComInterfaceForObject(sink, typeof(IRecycleProgressSink));
+            }
+            Perform(owner, flags, operation => operation.MoveItem(item, folder, name, progress), message);
+            if (sink is not null)
+            {
+                if (!sink.Restored)
+                    throw new IOException(message);
+                using var verified = WindowsFiles.Open(Path.GetDirectoryName(destination)!, Path.GetFileName(destination));
+            }
+            else if (!Directory.Exists(destination))
                 throw new IOException(message);
         }
         catch (COMException error) { throw new IOException(message, error); }
@@ -60,6 +91,8 @@ internal static class WindowsRecycleBin
                 Marshal.Release(item);
             if (folder != 0)
                 Marshal.Release(folder);
+            if (progress != 0)
+                Marshal.Release(progress);
             Marshal.FreeCoTaskMem(buffer);
         }
     }
@@ -81,15 +114,16 @@ internal static class WindowsRecycleBin
     }
 
     [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
-    private sealed class RecycleProgress : IRecycleProgressSink
+    private sealed class RecycleProgress(string? destination = null) : IRecycleProgressSink
     {
+        private const int Cancel = unchecked((int)0x80004004);
         internal string? ItemId { get; private set; }
+        internal bool Restored { get; private set; }
 
         public int PreDeleteItem(uint flags, nint item)
         {
             const uint recycleIfPossible = 0x80;
-            const int cancel = unchecked((int)0x80004004);
-            return (flags & recycleIfPossible) == 0 ? cancel : 0;
+            return (flags & recycleIfPossible) == 0 ? Cancel : 0;
         }
 
         public void PostDeleteItem(uint flags, nint item, int result, nint recycled)
@@ -109,8 +143,15 @@ internal static class WindowsRecycleBin
         public void FinishOperations(int result) { }
         public void PreRenameItem(uint flags, nint item, nint name) { }
         public void PostRenameItem(uint flags, nint item, nint name, int result, nint created) { }
-        public void PreMoveItem(uint flags, nint item, nint folder, nint name) { }
-        public void PostMoveItem(uint flags, nint item, nint folder, nint name, int result, nint created) { }
+        public int PreMoveItem(uint flags, nint item, nint folder, nint name)
+        {
+            const uint renameOrOverwrite = 0x03;
+            return destination is not null && ((flags & renameOrOverwrite) != 0 || Path.Exists(destination)) ? Cancel : 0;
+        }
+
+        public void PostMoveItem(uint flags, nint item, nint folder, nint name, int result, nint created) =>
+            Restored = destination is not null && result >= 0 && created != 0 &&
+                string.Equals(Marshal.PtrToStringUni(name), Path.GetFileName(destination), StringComparison.OrdinalIgnoreCase);
         public void PreCopyItem(uint flags, nint item, nint folder, nint name) { }
         public void PostCopyItem(uint flags, nint item, nint folder, nint name, int result, nint created) { }
         public void PreNewItem(uint flags, nint folder, nint name) { }
@@ -120,6 +161,17 @@ internal static class WindowsRecycleBin
         public void PauseTimer() { }
         public void ResumeTimer() { }
     }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    private struct RecycleBinQuery
+    {
+        public int Size;
+        public long Bytes;
+        public long Items;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHQueryRecycleBinW", ExactSpelling = true)]
+    private static extern int SHQueryRecycleBin(string root, ref RecycleBinQuery info);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
     private static extern int SHCreateItemFromParsingName(string path, nint binding, in Guid iid, out nint item);
@@ -163,7 +215,7 @@ public interface IRecycleProgressSink
     void FinishOperations(int result);
     void PreRenameItem(uint flags, nint item, nint name);
     void PostRenameItem(uint flags, nint item, nint name, int result, nint created);
-    void PreMoveItem(uint flags, nint item, nint folder, nint name);
+    [PreserveSig] int PreMoveItem(uint flags, nint item, nint folder, nint name);
     void PostMoveItem(uint flags, nint item, nint folder, nint name, int result, nint created);
     void PreCopyItem(uint flags, nint item, nint folder, nint name);
     void PostCopyItem(uint flags, nint item, nint folder, nint name, int result, nint created);

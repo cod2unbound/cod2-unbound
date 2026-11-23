@@ -1,8 +1,22 @@
 <Page x:Class="CoD2Unbound.Windows.Views.LibraryPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      PreviewKeyDown="OnLibraryKeyDown">
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
     <Grid Padding="40,28,40,24" RowSpacing="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -13,21 +27,109 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Library" Style="{StaticResource PageTitle}" />
-            <Button Grid.Column="1" Content="Show folder" Click="OnShowFolder" AccessKey="O" />
+            <SelectorBar x:Name="Sections" Style="{StaticResource AlignedSelector}"
+                         SelectionChanged="OnSectionChanged" AutomationProperties.Name="Library sections">
+                <SelectorBarItem x:Name="MatchesSection" Text="Matches" AccessKey="M" />
+                <SelectorBarItem x:Name="DemosSection" Text="Demos" AccessKey="D" />
+                <SelectorBarItem x:Name="ScreenshotsSection" Text="Screenshots" AccessKey="T" />
+                <SelectorBarItem x:Name="ConfigFilesSection" Text="Configs" AccessKey="K" />
+            </SelectorBar>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock x:Name="Retention" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+                <Button x:Name="DeleteSummaries" Content="Delete summaries…" Click="OnDeleteSummaries" AccessKey="Y" />
+                <Button x:Name="ShowFolder" Content="Show in File Explorer" Click="OnShowFolder" AccessKey="O" />
+            </StackPanel>
         </Grid>
-        <SelectorBar x:Name="Sections" Grid.Row="1" Style="{StaticResource AlignedSelector}"
-                     SelectionChanged="OnSectionChanged" AutomationProperties.Name="Library sections">
-            <SelectorBarItem Text="Screenshots" AccessKey="T" />
-            <SelectorBarItem Text="Demos" AccessKey="D" />
-            <SelectorBarItem x:Name="ConfigFilesSection" Text="Configs" AccessKey="K" />
-        </SelectorBar>
+        <StackPanel Grid.Row="1" Spacing="6">
+            <TextBlock x:Name="SectionTitle" Style="{StaticResource PageTitle}"
+                       AutomationProperties.HeadingLevel="Level1" />
+            <TextBlock x:Name="SectionDetail" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" />
+        </StackPanel>
         <TextBox x:Name="Search" Grid.Row="2" PlaceholderText="Find a file" TextChanged="OnSearch"
                  AutomationProperties.Name="Find a file" AccessKey="F" MaxLength="256" />
-        <Grid Grid.Row="3">
-            <ContentPresenter x:Name="Empty" />
-            <GridView x:Name="Screenshots" AutomationProperties.Name="Screenshots" IsItemClickEnabled="True"
-                      ItemClick="OnOpenFile" SelectionMode="None" TabNavigation="Once">
+        <StackPanel Grid.Row="3" Spacing="6">
+            <InfoBar x:Name="SummariesOff" IsClosable="False" Severity="Informational"
+                     Message="Match summaries are off, so new matches aren’t added. These stay on this PC until you delete them.">
+                <InfoBar.ActionButton>
+                    <Button Content="Turn on in Settings…" Click="OnMatchPrivacy" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <InfoBar x:Name="RecycleNotice" Severity="Informational" CloseButtonClick="OnRecycleNoticeClosed">
+                <InfoBar.ActionButton>
+                    <Button Content="Undo" Click="OnUndoRecycle" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <InfoBar x:Name="Notice" />
+        </StackPanel>
+        <Grid Grid.Row="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ScrollViewer x:Name="Empty" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+                <ContentPresenter x:Name="EmptyBody" />
+            </ScrollViewer>
+            <Grid x:Name="MatchTable" RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid Padding="12,0,12,0" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="76" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="80" />
+                        <ColumnDefinition Width="125" />
+                        <ColumnDefinition Width="94" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Map" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Grid.Column="1" Text="Match" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Grid.Column="3" Text="Connection" Style="{StaticResource SecondaryText}" />
+                </Grid>
+                <ListView x:Name="Matches" Grid.Row="1" SelectionMode="None" AutomationProperties.Name="Match history">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnSpacing="12" Padding="0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="125" />
+                                    <ColumnDefinition Width="94" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="76" Height="48" Style="{StaticResource MediaTile}">
+                                    <Image Stretch="UniformToFill" Loaded="OnMatchArtLoaded" DataContextChanged="OnMatchArtChanged"
+                                           AutomationProperties.AccessibilityView="Raw" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Text="{Binding Stamp}" Style="{ThemeResource LibraryRowCaption}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding Ping}" AutomationProperties.Name="{Binding PingName}"
+                                           VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" FontSize="14" Glyph="{Binding ConnectionGlyph}"
+                                              AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock Text="{Binding ConnectionLabel}" />
+                                </StackPanel>
+                                <Button Grid.Column="4" Content="Check-up" Tag="{Binding}" Click="OnMatchCheckup"
+                                        AutomationProperties.Name="{Binding CheckupName}" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <GridView x:Name="Screenshots" AutomationProperties.Name="Screenshots" SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
+                      DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested"
+                      SizeChanged="OnScreenshotGridSizeChanged">
                 <GridView.ItemContainerStyle>
                     <Style TargetType="GridViewItem">
                         <Setter Property="Padding" Value="0" />
@@ -37,14 +139,14 @@
                 </GridView.ItemContainerStyle>
                 <GridView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <ItemsWrapGrid Orientation="Horizontal" ItemWidth="208" ItemHeight="152" />
+                        <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="208" ItemHeight="177" />
                     </ItemsPanelTemplate>
                 </GridView.ItemsPanel>
                 <GridView.ItemTemplate>
                     <DataTemplate>
                         <Grid RowSpacing="4" AutomationProperties.Name="{Binding Name}">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="112.5" />
+                                <RowDefinition Height="128" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Border Style="{StaticResource MediaTile}" Loaded="OnScreenshotLoaded"
@@ -57,8 +159,12 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis"
-                                           VerticalAlignment="Center" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ScreenshotTitle}" TextTrimming="CharacterEllipsis"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Text="{Binding Stamp}" Style="{ThemeResource LibraryRowCaption}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
                                 <Button Grid.Column="1" Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
                                         AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="{Binding MenuName}">
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
@@ -68,6 +174,9 @@
                     </DataTemplate>
                 </GridView.ItemTemplate>
             </GridView>
+            <TextBlock x:Name="ScreenshotHelp" Grid.Row="1" Style="{StaticResource SecondaryText}"
+                       Margin="0,8,0,0" TextWrapping="Wrap"
+                       Text="Double-click to open. Right-click for Copy image, Share, Show in File Explorer and Move to Recycle Bin." />
             <Grid x:Name="FileTable" RowSpacing="4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -75,31 +184,20 @@
                 </Grid.RowDefinitions>
                 <Grid Padding="12,0,12,0" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition x:Name="FirstFileColumn" Width="2*" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="112" />
                         <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition x:Name="FileActionsColumn" Width="32" />
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="NameHeader" Text="Name" FontSize="12" Style="{StaticResource SecondaryText}" />
                     <TextBlock x:Name="MapHeader" Grid.Column="1" Text="Map" FontSize="12" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Grid.Column="2" Text="Date" FontSize="12" Style="{StaticResource SecondaryText}" />
+                    <TextBlock x:Name="DateHeader" Grid.Column="2" Text="Date" FontSize="12" Style="{StaticResource SecondaryText}" />
                     <TextBlock Grid.Column="3" Text="Size" FontSize="12" Style="{StaticResource SecondaryText}" />
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" TabNavigation="Once" AutomationProperties.Name="Files"
-                          IsItemClickEnabled="True" ItemClick="OnOpenFile">
-                    <ListView.Resources>
-                        <ResourceDictionary>
-                            <ResourceDictionary.ThemeDictionaries>
-                                <ResourceDictionary x:Key="Default">
-                                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}" />
-                                </ResourceDictionary>
-                                <ResourceDictionary x:Key="HighContrast">
-                                    <Style x:Key="LibraryRowCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
-                                </ResourceDictionary>
-                            </ResourceDictionary.ThemeDictionaries>
-                        </ResourceDictionary>
-                    </ListView.Resources>
+                          IsItemClickEnabled="True" ItemClick="OnOpenFile" IsSwipeEnabled="False"
+                          DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -108,32 +206,38 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="0,6" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}">
+                            <Grid Padding="0,6" ColumnSpacing="12" AutomationProperties.Name="{Binding Name}"
+                                  Loaded="OnFileRowLoaded" DataContextChanged="OnFileRowChanged">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="112" />
                                     <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="32" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border Width="72" Height="48" Visibility="{Binding Demo}" Style="{StaticResource MediaTile}">
-                                        <Image Stretch="UniformToFill" Loaded="OnDemoArtLoaded" DataContextChanged="OnDemoArtChanged" />
-                                    </Border>
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                <Border Width="72" Height="48" HorizontalAlignment="Left"
+                                        Visibility="{Binding Demo}" Style="{StaticResource MediaTile}">
+                                    <Image Stretch="UniformToFill" Loaded="OnDemoArtLoaded" DataContextChanged="OnDemoArtChanged"
+                                           AutomationProperties.AccessibilityView="Raw" />
+                                </Border>
+                                <TextBlock Text="{Binding Name}" Visibility="{Binding Config}" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <StackPanel Grid.Column="1" Visibility="{Binding Demo}" VerticalAlignment="Center" Spacing="4">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
                                                Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                </Grid>
-                                <TextBlock Grid.Column="1" Text="{Binding Map}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DemoDetail}" TextTrimming="CharacterEllipsis"
+                                               Style="{ThemeResource LibraryRowCaption}" />
+                                </StackPanel>
                                 <TextBlock Grid.Column="2" Text="{Binding Stamp}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
-                                <Button Grid.Column="4" Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
-                                        VerticalAlignment="Center" Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
-                                </Button>
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Button Content="Play" Visibility="{Binding Demo}" Click="OnPlayDemo" Tag="{Binding}"
+                                            AutomationProperties.Name="{Binding PlayName}" />
+                                    <Button Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
+                                            Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
+                                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
