@@ -51,6 +51,16 @@ public static class LoadoutName
         return candidate;
     }
 
+    public static string CopyOf(string name, IEnumerable<string> existing)
+    {
+        string stem = "Copy of " + name;
+        var names = existing.ToHashSet(StringComparer.InvariantCultureIgnoreCase);
+        string result = stem;
+        for (int suffix = 2; names.Contains(result); suffix++)
+            result = FormattableString.Invariant($"{stem} {suffix}");
+        return result;
+    }
+
     public static string? Problem(string name, IEnumerable<string> existing, bool readOnly)
     {
         if (readOnly)
@@ -82,7 +92,9 @@ public sealed partial class ConfigProfileStore(
 
     public ConfigDialect Dialect { get; } = dialect;
 
-    public ImmutableArray<ConfigProfile> List()
+    public ImmutableArray<ConfigProfile> List() => List(null);
+
+    internal ImmutableArray<ConfigProfile> List(Action<string, Exception>? onUnreadable)
     {
         using var lease = files.Acquire(default);
         var active = Selection().ProfileId;
@@ -91,11 +103,19 @@ public sealed partial class ConfigProfileStore(
         foreach (string id in files.ListDirectories(Players).Where(ValidIdentifier).Order(comparer))
         {
             string directory = DirectoryName(id);
-            Recover(id, directory);
-            if (files.Read(directory + ConfigName) is not null)
+            ConfigProfile? description = null;
+            try
             {
-                var metadata = ConfigProfileFormat.Metadata(files.Read(directory + MetadataName), id);
-                result.Add(ToProfile(id, metadata, active));
+                if (onUnreadable is not null)
+                    description = ToProfile(id, ConfigProfileFormat.Metadata(files.Read(directory + MetadataName), id), active);
+                Recover(id, directory);
+                if (files.Read(directory + ConfigName) is not null)
+                    result.Add(ToProfile(id, ConfigProfileFormat.Metadata(files.Read(directory + MetadataName), id), active));
+            }
+            catch (Exception error) when (onUnreadable is not null && error is IOException or UnauthorizedAccessException)
+            {
+                result.Add(description ?? new(id, id, id.Equals(active, StringComparison.OrdinalIgnoreCase)));
+                onUnreadable(id, error);
             }
         }
         return result.ToImmutable();

@@ -16,6 +16,11 @@ public sealed partial class ConfigProfileStore
     {
         using var lease = files.Acquire(default);
         CheckWritable();
+        KeepDiskVersionLocked(recovery);
+    }
+
+    private void KeepDiskVersionLocked(ConfigTransactionRecovery recovery)
+    {
         string id = recovery.ProfileId;
         string directory = DirectoryName(id);
         string journalPath = directory + JournalName;
@@ -49,6 +54,34 @@ public sealed partial class ConfigProfileStore
             if (!SameBytes(files.Read(journalPath), recovery.Journal) || !ReadVersion(id, directory).Matches(recovery.Current))
                 throw Conflict();
         }
+    }
+
+    internal void SaveSetting(ConfigStudioDraft draft, string summary, string operation)
+    {
+        using var lease = files.Acquire(default);
+        CheckWritable();
+        string directory = DirectoryName(draft.ProfileId);
+        var current = ReadLocked(draft.ProfileId);
+        var after = draft.Expected with { Config = draft.Document.Serialized };
+        var receipt = ReadHistory(directory).FirstOrDefault(entry => entry.Id == operation);
+        if (receipt is not null)
+        {
+            if (!receipt.Before.Matches(draft.Expected) || !receipt.After.Matches(after) ||
+                !current.Version.Matches(after))
+                throw Conflict();
+            return;
+        }
+        UpdateLocked(draft.ProfileId, draft.Expected, after, ConfigHistorySource.You, summary, operation);
+    }
+
+    internal void DiscardSetting(string profileId, string operation)
+    {
+        using var lease = files.Acquire(default);
+        CheckWritable();
+        string directory = DirectoryName(profileId);
+        if (files.Read(directory + JournalName) is { } journal &&
+            ConfigProfileFormat.Transaction(journal).Entry.Id == operation)
+            KeepDiskVersionLocked(new(profileId, ReadVersion(profileId, directory), journal));
     }
 
     public ImmutableArray<ConfigHistoryEntry> History(string id)

@@ -59,13 +59,14 @@ public sealed partial class ConfigProfileStore
         files.DeleteOwnedDirectory(path);
     }
 
-    public ConfigProfileTrashHandle MoveToTrash(string id, ConfigProfileVersion expected, IConfigProfileTrash trash)
+    public ConfigProfileTrashHandle MoveToTrash(string id, ConfigProfileVersion expected, IConfigProfileTrash trash, string? expectedImport = null)
     {
         using var lease = files.Acquire(default);
         CheckWritable();
         string directory = DirectoryName(id);
         var profile = ReadLocked(id);
-        if (!profile.Version.Matches(expected))
+        if (!profile.Version.Matches(expected) || expectedImport is not null &&
+            !ReadHistory(directory).Any(entry => entry.Id == expectedImport && entry.Source == ConfigHistorySource.Import))
             throw Conflict();
         if (id.Equals(Selection().ProfileId, StringComparison.OrdinalIgnoreCase))
             throw new ConfigProfileException(ConfigProfileFailure.InUse);

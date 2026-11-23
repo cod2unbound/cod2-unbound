@@ -6,9 +6,13 @@ using System.Text.Json.Serialization;
 namespace CoD2Unbound.Core;
 
 public sealed record ConfigStudioDraft(string ProfileId, ConfigProfileVersion Expected, ConfigDocument Document);
+public sealed record ConfigStudioReadProblem(string? ProfileId, string Message);
 public sealed record ConfigStudioState(ImmutableArray<ConfigProfile> Profiles, ConfigProfileRead? Current,
     ImmutableArray<ConfigHistoryEntry> History, ConfigStudioDraft? Draft, bool ReadOnly, bool LaunchReserved,
-    string? FocusedProfileId, ConfigTransactionRecovery? Recovery);
+    string? FocusedProfileId, ConfigTransactionRecovery? Recovery)
+{
+    public ConfigStudioReadProblem? ReadProblem { get; init; }
+}
 
 /// <summary>Coordinates Studio state on the launcher's serialized command queue.</summary>
 public sealed partial class ConfigStudioSession
@@ -28,6 +32,8 @@ public sealed partial class ConfigStudioSession
     private ConfigStudioDraft? draft;
     private string? focused;
     private ConfigTransactionRecovery? recovery;
+    private ConfigStudioReadProblem? readProblem;
+    private string? settingOperation;
 
     public ConfigStudioSession(IConfigProfileFiles files, ConfigDialect dialect, Func<bool> verifiedGameRunning, TimeProvider clock,
         Func<Guid>? newIdentifier = null)
@@ -42,7 +48,8 @@ public sealed partial class ConfigStudioSession
 
     public bool IsReadOnly => reserved || !games.IsEmpty || verifiedGameRunning();
     public ConfigDialect Dialect => store.Dialect;
-    public ConfigStudioState State => new(profiles, current, history, draft, IsReadOnly, reserved, focused, recovery);
+    public ConfigStudioState State => new(profiles, current, history, draft, IsReadOnly, reserved, focused, recovery)
+        { ReadProblem = readProblem };
 
     public void ChangeDialect(ConfigDialect dialect)
     {
@@ -56,30 +63,52 @@ public sealed partial class ConfigStudioSession
 
     public void Refresh()
     {
-        var available = ManagedProfiles();
-        string? id = focused is not null && available.Any(profile => SameId(profile.Id, focused))
-            ? focused : null;
-        var selected = (id ?? available.FirstOrDefault(profile => profile.IsActive)?.Id) is { } profileId ? store.Read(profileId) : null;
-        var entries = selected is null ? [] : store.History(selected.Profile.Id);
-        profiles = available;
-        focused = id;
-        current = selected;
-        history = entries;
+        var failures = new Dictionary<string, Exception>(StringComparer.OrdinalIgnoreCase);
+        string? id = focused;
+        current = null;
+        history = [];
+        readProblem = null;
+        try
+        {
+            profiles = ManagedProfiles((failedId, error) => failures.Add(failedId, error));
+            if (id is not null && !profiles.Any(profile => SameId(profile.Id, id)))
+                focused = id = null;
+            id ??= profiles.FirstOrDefault(profile => profile.IsActive)?.Id;
+            if (id is null)
+                return;
+            if (failures.TryGetValue(id, out var failure))
+            {
+                readProblem = new(id, failure.Message);
+                return;
+            }
+            var read = store.Read(id);
+            history = store.History(id);
+            current = read;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            readProblem = new(id, error.Message);
+        }
     }
 
     public void Focus(string? id)
     {
         if (draft is not null)
             throw new ConfigProfileException(ConfigProfileFailure.Conflict);
-        if (id is not null && !ManagedProfiles().Any(profile => SameId(profile.Id, id)))
+        if (id is not null && !ManagedProfiles(static (_, _) => { }).Any(profile => SameId(profile.Id, id)))
             throw new ConfigProfileException(ConfigProfileFailure.MissingProfile);
         focused = id;
         Refresh();
     }
 
     public ConfigProfileRead ReadProfile(string id) => store.Read(id);
-    public ConfigProfileRead? ReadActive() => ManagedProfiles().FirstOrDefault(profile => profile.IsActive) is { } active
-        ? store.Read(active.Id) : null;
+    public ConfigProfileRead? ReadActive()
+    {
+        if (store.ActiveSelection().ProfileId is not { } id || SameId(id, archive?.ConnectionSelection?.DisposableProfileId))
+            return null;
+        try { return store.Read(id); }
+        catch (ConfigProfileException error) when (error.Failure == ConfigProfileFailure.MissingProfile) { return null; }
+    }
 
     public void Select(string id)
     {
@@ -101,6 +130,7 @@ public sealed partial class ConfigStudioSession
     {
         Refresh();
         draft = null;
+        settingOperation = null;
         recovery = null;
     }
 
@@ -123,6 +153,25 @@ public sealed partial class ConfigStudioSession
         return result;
     }
 
+    public void SaveSettingDraft(string summary)
+    {
+        CheckWritable(rejectDraft: false);
+        var pending = draft ?? throw new ConfigProfileException(ConfigProfileFailure.MissingProfile);
+        settingOperation ??= newIdentifier().ToString("D");
+        store.SaveSetting(pending, summary, settingOperation);
+        settingOperation = null;
+        draft = null;
+        Refresh();
+    }
+
+    public void DiscardSettingDraft()
+    {
+        CheckWritable(rejectDraft: false);
+        if (draft is { } pending && settingOperation is { } operation)
+            store.DiscardSetting(pending.ProfileId, operation);
+        DiscardDraft();
+    }
+
     public ConfigProfileRead Create(string id, string name, ConfigDocument? document = null)
     {
         CheckWritable(rejectDraft: true);
@@ -135,9 +184,29 @@ public sealed partial class ConfigStudioSession
     {
         CheckWritable(rejectDraft: true);
         var selected = current ?? throw new ConfigProfileException(ConfigProfileFailure.MissingProfile);
-        var result = store.Duplicate(selected.Profile.Id, id, name, selected.Version);
+        return Duplicate(selected, id, name);
+    }
+
+    public ConfigProfileRead Duplicate(ConfigProfileRead source, string id, string name)
+    {
+        CheckWritable(rejectDraft: true);
+        var result = store.Duplicate(source.Profile.Id, id, name, source.Version);
         Refresh();
         return result;
+    }
+
+    public void UndoImport(ConfigImportReceipt receipt, bool created, IConfigProfileTrash trash)
+    {
+        CheckWritable(rejectDraft: true);
+        if (created)
+        {
+            store.MoveToTrash(receipt.ProfileId, receipt.HistoryEntry.After, trash, receipt.HistoryEntry.Id);
+            if (SameId(focused, receipt.ProfileId))
+                focused = null;
+        }
+        else
+            store.Restore(receipt.ProfileId, receipt.HistoryEntry.Id, receipt.HistoryEntry.After, ConfigSnapshotRevision.Before);
+        Refresh();
     }
 
     public ConfigProfileTrashHandle Trash(string id, IConfigProfileTrash trash)
@@ -300,8 +369,8 @@ public sealed partial class ConfigStudioSession
 
     private ConfigProfileStore Open(ConfigDialect dialect) => new(files, dialect, () => IsReadOnly, () => draft is not null, clock);
 
-    private ImmutableArray<ConfigProfile> ManagedProfiles() =>
-        [.. store.List().Where(profile => !SameId(profile.Id, archive?.ConnectionSelection?.DisposableProfileId))];
+    private ImmutableArray<ConfigProfile> ManagedProfiles(Action<string, Exception>? onUnreadable = null) =>
+        [.. store.List(onUnreadable).Where(profile => !SameId(profile.Id, archive?.ConnectionSelection?.DisposableProfileId))];
 
     private void CheckWritable(bool rejectDraft)
     {

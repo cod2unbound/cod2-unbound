@@ -24,6 +24,7 @@ internal static partial class Program
         HostingPackageCases();
         SetupCases();
         SetupWorkflowCases();
+        WindowsConfigCases();
         SteamCases();
         LifecycleCases();
         LifecycleFlowCases();
