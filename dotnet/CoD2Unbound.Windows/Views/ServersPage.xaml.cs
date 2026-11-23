@@ -390,7 +390,7 @@ public sealed partial class ServersPage : Page
             using var cancellation = new CancellationTokenSource();
             refreshing = cancellation;
             UpdateJoinButton();
-            RefreshGlyph.Glyph = "\uE71A";
+            RefreshGlyph.Glyph = (string)Application.Current.Resources["FluentStop"];
             AutomationProperties.SetName(RefreshButton, "Stop refresh");
             ToolTipService.SetToolTip(RefreshButton, "Stop refresh");
             string? message = null;
@@ -408,7 +408,7 @@ public sealed partial class ServersPage : Page
             finally
             {
                 refreshing = null;
-                RefreshGlyph.Glyph = "\uE72C";
+                RefreshGlyph.Glyph = (string)Application.Current.Resources["FluentRefresh"];
                 AutomationProperties.SetName(RefreshButton, "Refresh server list");
                 ToolTipService.SetToolTip(RefreshButton, "Refresh server list (Ctrl+R)");
                 Render();

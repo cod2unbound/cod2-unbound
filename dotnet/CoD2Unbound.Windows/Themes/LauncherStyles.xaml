@@ -18,6 +18,7 @@
     <x:String x:Key="FluentBookmark">&#xF1F5;</x:String>
     <x:String x:Key="FluentCopy">&#xF32B;</x:String>
     <x:String x:Key="FluentRefresh">&#xF13D;</x:String>
+    <x:String x:Key="FluentStop">&#xF72A;</x:String>
     <x:String x:Key="FluentDesktop">&#xF359;</x:String>
     <x:String x:Key="FluentCheck">&#xE305;</x:String>
     <x:String x:Key="FluentCheckCircle">&#xF297;</x:String>
