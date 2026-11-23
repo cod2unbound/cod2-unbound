@@ -20,13 +20,12 @@ function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Desc
 }
 
 function Focus-KitWindow([IntPtr]$Window) {
-    if ([KitDesktop]::GetForegroundWindow() -eq $Window) { return }
-    [void][KitDesktop]::ShowWindow($Window, 9)
-    [void][KitDesktop]::SetForegroundWindow($Window)
-    Start-Sleep -Milliseconds 350
-    if ([KitDesktop]::GetForegroundWindow() -ne $Window) {
-        throw 'The game could not take focus. If Windows Security is open, handle it at the laptop.'
-    }
+    $deadline = [DateTime]::UtcNow.AddSeconds(8)
+    do {
+        if ([KitDesktop]::TryFocus($Window)) { return }
+        Start-Sleep -Milliseconds 350
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw 'The test window could not take focus. If Windows Security is open, handle it at the laptop.'
 }
 
 function Send-KitCommand([IntPtr]$Window, [string]$Command) {
@@ -91,14 +90,14 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
     "Menu clip $([KitDesktop]::Clip())" | Set-Content -LiteralPath $notes
     Save-KitFrame $Window $GameHome $Evidence 'kit-menu'
     foreach ($map in 'mp_toujane','restart','mp_harbor','mp_carentan','mp_burgundy') {
-        $marker = if ($map -eq 'restart') { 'Server Initialization' } else { 'CL_InitCGame:' }
+        $marker = 'CL_InitCGame:'
         $count = @(Select-String -LiteralPath $log -SimpleMatch $marker).Count
         $command = if ($map -eq 'restart') { 'map_restart' } else { "devmap $map" }
         Send-KitCommand $Window "/toggleconsole; $command"
         Wait-KitCondition {
             @(Select-String -LiteralPath $log -SimpleMatch $marker).Count -gt $count
         } 55 "$map to load" | Out-Null
-        if ($map -eq 'restart') { Start-Sleep -Seconds 4 } else {
+        if ($map -ne 'restart') {
             Start-Sleep -Seconds 2
             foreach ($key in 13,50,49,49,49) {
                 Focus-KitWindow $Window

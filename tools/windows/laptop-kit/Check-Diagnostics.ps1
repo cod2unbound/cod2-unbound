@@ -72,7 +72,7 @@ function Invoke-KitShaderTable {
     }
     if (-not $requests.Count) { throw 'No shader requests were found in the game files.' }
     $requests | Sort-Object | Set-Content -LiteralPath (Join-Path $entry.Folder 'shader-requests.tsv') -Encoding Ascii
-    $run = Start-KitProcess $probe 'shaders' $entry.Folder
+    $run = Start-KitProcess $probe 'shaders' $entry.Folder -NoWindow
     $done = Complete-KitProcess $run $entry.Evidence 360
     Save-Text (Join-Path $entry.Folder 'shader-results.tsv') (Join-Path $entry.Evidence 'shader-results.tsv')
     if ($done.TimedOut -or $done.ExitCode -ne 0) { throw 'Shader compilation failed or reached its time limit. See the compiler table.' }

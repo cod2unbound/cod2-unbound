@@ -227,7 +227,7 @@ $Steps = @(
                 $mode = $desktop
                 if ($step.Variant -eq 'lower') {
                     $w,$h = $desktop -split 'x'
-                    $mode = [KitDesktop]::Display($null) | ForEach-Object {
+                    $mode = [KitDesktop]::Display() | ForEach-Object {
                         if ($_ -match '^\d+ (\d+)x(\d+) 32bpp ' -and [int]$Matches[1] -lt [int]$w -and [int]$Matches[2] -le [int]$h) {
                             [pscustomobject]@{ Value="$($Matches[1])x$($Matches[2])"; Pixels=([int]$Matches[1]*[int]$Matches[2]) }
                         }

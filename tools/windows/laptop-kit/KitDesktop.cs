@@ -3,6 +3,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Threading;
+using System.Diagnostics;
 public static class KitDesktop {
     [StructLayout(LayoutKind.Sequential)] public struct Rect {
         public int L,T,R,B;
@@ -20,6 +21,42 @@ public static class KitDesktop {
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr w);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr w,int mode);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+    [DllImport("user32.dll")] static extern bool AttachThreadInput(uint source, uint target, bool attach);
+    [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr window, int mode);
+    [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+
+    public static bool TryFocus(IntPtr window)
+    {
+        IntPtr foreground = GetForegroundWindow();
+        if (foreground == window) return true;
+        if (foreground == IntPtr.Zero) return false;
+        uint processId;
+        uint foregroundThread = GetWindowThreadProcessId(foreground, out processId);
+        try {
+            using (var process = Process.GetProcessById((int)processId)) {
+                string name = process.ProcessName.ToLowerInvariant();
+                if (name == "searchhost" || name == "startmenuexperiencehost") {
+                    // Dismiss only the foreground Start or Search overlay.
+                    if (GetForegroundWindow() == foreground) Tap(27);
+                    return false;
+                }
+                if (WindowClass(foreground) == "#32770" || name == "consent" || name == "smartscreen" || name == "securityhealthhost" ||
+                    name == "securityhealthsystray" || name == "windowsdefender" || name == "applicationframehost")
+                    return false;
+            }
+        } catch (ArgumentException) { return false; }
+        uint caller = GetCurrentThreadId();
+        bool attached = caller != foregroundThread && AttachThreadInput(caller, foregroundThread, true);
+        try {
+            ShowWindowAsync(window, 9);
+            SetForegroundWindow(window);
+        } finally {
+            if (attached) AttachThreadInput(caller, foregroundThread, false);
+        }
+        return GetForegroundWindow() == window;
+    }
+
     [DllImport("user32.dll")] public static extern bool GetClipCursor(out Rect r);
     [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point p);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern bool PostMessage(IntPtr w,uint msg,IntPtr a,IntPtr b);
@@ -33,6 +70,7 @@ public static class KitDesktop {
     }
     [DllImport("user32.dll",CharSet=CharSet.Unicode)]
     static extern bool EnumDisplaySettings(string device,int number,ref Mode mode);
+    public static string[] Display() { return Display(null); }
     public static string[] Display(string device) {
         var modes = new List<string>();
         for(int i=-1;i<int.MaxValue;i++) {

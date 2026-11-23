@@ -2,7 +2,7 @@
 
 Each run writes a dated directory under results. The text checklist records what the tester saw and any skipped or blocked cases. The temporary session directory is removed after the evidence and before/after comparisons have been written. Copy any needed local demo out of that directory before ending the run and review it separately.
 
-## Windows VM coverage
+## Earlier Windows VM coverage
 
 The guest ran Windows 11 ARM64 build 26300.9457 with Windows PowerShell 5.1.26100.9457, emulated x64 engine binaries and a 640 × 480 Microsoft Basic Display Driver. The lab wrapper supplied the x64 guard value in the script process and used a restricted token for the signed-in account. Native script checks covered manual folder selection, missing archives, install junction resolution, profile junction rejection, Credential Manager, both extracted ZIP servers, the two standing Toujane replays and all 22 four-player replay runs. Original 1.3 drew menu and Toujane captures in Direct3D 9 and DirectX 7 mode. CoD2x exited before graphics initialization with WMI error 0x80004005 on `Win32_BaseBoard.Manufacturer`. The guest exposed zero baseboard rows even to SYSTEM. The laptop must establish CoD2x client startup and hardware presentation.
 

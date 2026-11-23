@@ -72,7 +72,8 @@ the laptop screen during the run.
 3. In administrator PowerShell run `Start-Service sshd`. The Mac must verify
    the SSH host key before the run. Compare the Mac's key fingerprint with
    `ssh-keygen -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"` at the PC.
-   If the run includes a restart, arrange for SSH to start again and sign back
+   Add the matching public host key to the Mac's known hosts. If the run
+   includes a restart, arrange for SSH to start again and sign back
    in when Windows comes up.
 4. On the Mac run the driver from the project checkout. It pauses for consent
    and notes. Handle Windows prompts at the laptop screen.
@@ -90,8 +91,9 @@ the laptop screen during the run.
    `OpenSSH-Server-In-TCP` rule remains and remove it if it was new.
 
 If the Mac loses the connection, keep the Windows run folder. Reuse the same
-driver command and Mac results folder. The kit still works from Windows
-PowerShell if the laptop cannot be reached.
+driver command and Mac results folder. To pack already pulled results, run the driver again with
+`--pack-only --output /path/to/results`. Use Windows PowerShell for the
+checks when the laptop cannot be reached.
 
 [Microsoft OpenSSH setup and removal](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse) ·
 [Windows public-key sign-in](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement)
