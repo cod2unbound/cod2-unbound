@@ -5,7 +5,7 @@ using CoD2Unbound.Core;
 namespace CoD2Unbound.Windows.Platform;
 
 /// <summary>Composes the platform adapters with the shared setup and settings sessions.</summary>
-internal sealed class WindowsLauncherSession
+internal sealed partial class WindowsLauncherSession
 {
     private readonly WindowsFiles files = new();
     private readonly ISettingsFolder folder;
@@ -116,7 +116,10 @@ internal sealed class WindowsLauncherSession
             ? Encoding.UTF8.GetString(path.AsSpan()).Trim()
             : null;
         bool hasKey = SetupSession.KeyTail(await credentials.ReadAsync(SetupSession.KeySecret, default)) is not null;
-        Setup = await CreateSetupAsync(remembered, hasKey, SetupStep.Welcome);
+        Setup = SetupComplete && !string.IsNullOrEmpty(remembered)
+            ? new SetupSession(files, folder, credentials, remembered, hasKey, step: SetupStep.Complete)
+            : await CreateSetupAsync(remembered, hasKey, SetupComplete ? SetupStep.Complete : SetupStep.Welcome,
+                wizard: !SetupComplete);
         RefreshUpdateOutcome();
         await RecordInstalledUpdateAsync();
     }
@@ -169,6 +172,8 @@ internal sealed class WindowsLauncherSession
 
     internal async Task<bool> ReplaceKeyAsync(string key)
     {
+        await using var lease = await WindowsGameSessionHost.OpenLeaseAsync(HomePath, ".launcher-start.lock", default);
+        RequireStopped();
         var change = new SetupSession(files, folder, credentials, Setup.DataPath, Setup.HasStoredKey, step: SetupStep.Key);
         change.ReplaceKey();
         if (!await change.ContinueAsync(key))
@@ -250,9 +255,8 @@ internal sealed class WindowsLauncherSession
     internal async Task<(string Name, string? Loadout, string Key)> ReadPlayerAsync()
     {
         var loadout = await ReadLoadoutAsync();
-        var dialect = Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
-        string? name = await ConfigProfileStore.ReadPlayerNameAsync(gameFolder, dialect);
-        return (string.IsNullOrWhiteSpace(name) ? "Player" : name, loadout?.DisplayName,
+        string? name = await ReadRawPlayerNameAsync();
+        return (name ?? SetupPlayer.Unknown, loadout?.DisplayName,
             Setup.HasStoredKey ? "CD key verified" : "No CD key stored");
     }
 
@@ -491,17 +495,17 @@ internal sealed class WindowsLauncherSession
 
     private async ValueTask SaveIntroAsync() => await UpdateSettingsAsync(Settings.Working with { IntroFilmsPlayed = true });
 
-    private async Task<SetupSession> CreateSetupAsync(string? remembered, bool hasKey, SetupStep step)
+    private async Task<SetupSession> CreateSetupAsync(string? remembered, bool hasKey, SetupStep step,
+        bool wizard = false, bool review = false)
     {
-        var candidates = await Task.Run(async () =>
-        {
-            var installations = await discovery.DiscoverAsync(default).ConfigureAwait(false);
-            return GameArchives.RecoverSelection(files, remembered, installations.Select(install => install.DataPath));
-        });
-        string initialPath = SetupSession.InitialDataPath(candidates, remembered, SetupComplete);
-        return new SetupSession(files, folder, credentials, initialPath, hasKey, step: step,
-            hasReportService: Reports.CrashAvailable && !Settings.Working.CrashReportsAsked && !SetupComplete,
-            hasUsageService: Reports.Usage.ShouldAsk && !SetupComplete);
+        var candidates = await FindGameDataAsync(remembered);
+        if (wizard)
+            SetupCopies = candidates;
+        string initialPath = SetupSession.InitialDataPath(candidates.FirstOrDefault()?.DataPath, remembered, SetupComplete);
+        return new SetupSession(files, folder, credentials, initialPath, hasKey, canCancel: review, step: step,
+            hasReportService: Reports.CrashAvailable && (review || (!Settings.Working.CrashReportsAsked && !SetupComplete)),
+            hasUsageService: review ? Reports.Usage.Available : Reports.Usage.ShouldAsk && !SetupComplete,
+            deferWrites: wizard);
     }
 
     private sealed class ProbeCredentials : ISecretStore

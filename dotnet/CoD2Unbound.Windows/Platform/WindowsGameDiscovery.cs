@@ -6,29 +6,121 @@ using Microsoft.Win32;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed partial class WindowsGameDiscovery(WindowsEngineInventory inventory) : IGameDiscovery
+internal sealed class WindowsGameDiscovery(WindowsEngineInventory inventory) : IGameDiscovery
 {
     private const string RetailKey = @"SOFTWARE\Activision\Call of Duty 2";
     private const string SteamKey = @"SOFTWARE\Valve\Steam";
+    private static readonly RegistryView[] Views = [RegistryView.Registry32, RegistryView.Registry64];
+    private static readonly RegistryHive[] Hives = [RegistryHive.CurrentUser, RegistryHive.LocalMachine];
 
     public ValueTask<ImmutableArray<GameInstallation>> DiscoverAsync(CancellationToken cancellationToken)
     {
-        var paths = new List<string>();
-        foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
+        var copies = new List<GameInstallation>();
+        var binaries = inventory.Installed;
+        foreach (string steam in SteamRoots())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Add(paths, RegistryPath(RegistryHive.LocalMachine, view, RetailKey, "InstallPath"));
-            Add(paths, RegistryPath(RegistryHive.CurrentUser, view, RetailKey, "InstallPath"));
-            AddSteam(paths, RegistryPath(RegistryHive.CurrentUser, view, SteamKey, "SteamPath"));
-            AddSteam(paths, RegistryPath(RegistryHive.LocalMachine, view, SteamKey, "InstallPath"));
+            AddSteam(steam);
+        }
+        foreach (var view in Views)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (var hive in Hives)
+                Add(RegistryValue(hive, view, RetailKey, "InstallPath"), GameInstallSource.Disc);
         }
 
-        var binaries = inventory.Installed;
+        foreach (string programs in ProgramDirectories())
+            Add(Path.Join(programs, @"Activision\Call of Duty 2"), GameInstallSource.Disc);
+        foreach (var drive in DriveInfo.GetDrives().Where(drive => drive.DriveType == DriveType.Fixed))
+        {
+            Add(Path.Join(drive.Name, @"Games\Call of Duty 2"), GameInstallSource.Disc);
+            Add(Path.Join(drive.Name, @"Activision\Call of Duty 2"), GameInstallSource.Disc);
+            AddLibrary(Path.Join(drive.Name, "SteamLibrary"));
+        }
         return ValueTask.FromResult<ImmutableArray<GameInstallation>>(
-            [.. paths.Distinct(StringComparer.OrdinalIgnoreCase).Select(path => new GameInstallation(path, binaries))]);
+            [.. copies.DistinctBy(copy => copy.DataPath, StringComparer.OrdinalIgnoreCase)]);
+
+        void Add(string? path, GameInstallSource source)
+        {
+            if (Normalize(path) is { } normalized)
+                copies.Add(new(normalized, binaries, source));
+        }
+
+        void AddLibrary(string library)
+        {
+            var common = Path.Join(library, @"steamapps\common");
+            try
+            {
+                var manifest = ReadSteamFile(library, "steamapps/appmanifest_2630.acf", 64 * 1024);
+                if (SetupDiscovery.SteamInstallDirectory(manifest) is { } directory)
+                    Add(Path.Join(common, directory), GameInstallSource.Steam);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or RegexMatchTimeoutException) { }
+            Add(Path.Join(common, "Call of Duty 2"), GameInstallSource.Steam);
+        }
+
+        void AddSteam(string root)
+        {
+            AddLibrary(root);
+            try
+            {
+                foreach (string library in SetupDiscovery.SteamLibraryPaths(ReadSteamFile(root, "steamapps/libraryfolders.vdf", 1024 * 1024)))
+                    if (Normalize(library) is { } normalized)
+                        AddLibrary(normalized);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or RegexMatchTimeoutException) { }
+        }
     }
 
-    private static string? RegistryPath(RegistryHive hive, RegistryView view, string key, string name)
+    internal static bool SteamInstalled() => SteamRoots().Any(root => File.Exists(Path.Join(root, "steam.exe")));
+
+    private static IEnumerable<string> SteamRoots()
+    {
+        var roots = Hives.SelectMany(hive => Views.Select(view =>
+                RegistryValue(hive, view, SteamKey, hive == RegistryHive.CurrentUser ? "SteamPath" : "InstallPath")))
+            .Concat(ProgramDirectories().Select(path => Path.Join(path, "Steam")));
+        return roots.Select(Normalize).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> ProgramDirectories() => new[]
+    {
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+    }.Where(path => path.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase);
+
+    // Only called in response to the explicit action on the CD key step.
+    internal static string? ReadDiscKey()
+    {
+        foreach (string virtualKey in new[]
+        {
+            @"Software\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\Activision\Call of Duty 2",
+            @"Software\Classes\VirtualStore\MACHINE\SOFTWARE\Activision\Call of Duty 2"
+        })
+            if (ValidKey(RegistryValue(RegistryHive.CurrentUser, RegistryView.Registry64, virtualKey, "codkey")) is { } key)
+                return key;
+
+        foreach (var view in Views)
+            foreach (var hive in Hives)
+                if (ValidKey(RegistryValue(hive, view, RetailKey, "codkey")) is { } key)
+                    return key;
+        return null;
+
+        static string? ValidKey(string? value) => value is { Length: <= 32 } && CdKey.IsValid(value) ? CdKey.Normalize(value) : null;
+    }
+
+    internal async ValueTask<WindowsProfileDiscovery> DiscoverProfilesAsync(string? chosen, CancellationToken cancellationToken)
+    {
+        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var copies = await DiscoverAsync(cancellationToken);
+        var folders = copies.Select(copy => copy.DataPath).Prepend(chosen).OfType<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var sources = folders.SelectMany(path => new[] { SetupDiscovery.VirtualStoreCopy(local, path), path })
+            .OfType<string>().Where(Directory.Exists).ToArray();
+        cancellationToken.ThrowIfCancellationRequested();
+        return WindowsProfiles.Find(new WindowsInstalledProfileFiles(), [], sources);
+    }
+
+    private static string? RegistryValue(RegistryHive hive, RegistryView view, string key, string name)
     {
         try
         {
@@ -42,40 +134,23 @@ internal sealed partial class WindowsGameDiscovery(WindowsEngineInventory invent
         }
     }
 
-    private static void Add(List<string> paths, string? path)
+    private static string? Normalize(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            return;
-        try { paths.Add(WindowsFiles.NormalizeFolder(path)); }
-        catch (Exception error) when (error is IOException or ArgumentException) { }
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
+            return null;
+        try { return WindowsFiles.NormalizeFolder(path); }
+        catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException) { return null; }
     }
 
-    private static void AddSteam(List<string> paths, string? path)
+    private static string ReadSteamFile(string root, string relative, int maximum)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            return;
-        const string game = @"steamapps\common\Call of Duty 2";
-        Add(paths, Path.Join(path, game));
-        try
-        {
-            // Steam's current libraryfolders.vdf records each library under a "path" key.
-            using var input = WindowsFiles.Open(path, "steamapps/libraryfolders.vdf");
-            if (input.Length > 1024 * 1024)
-                return;
-            using var reader = new StreamReader(input, Encoding.UTF8);
-            char[] buffer = new char[1024 * 1024 + 1];
-            int count = reader.ReadBlock(buffer);
-            if (count == buffer.Length)
-                return;
-            foreach (Match match in LibraryPath().Matches(new string(buffer, 0, count)))
-            {
-                string library = match.Groups[1].Value.Replace(@"\\", @"\", StringComparison.Ordinal);
-                Add(paths, Path.Join(library, game));
-            }
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or RegexMatchTimeoutException) { }
+        using var input = WindowsFiles.Open(root, relative);
+        // Steam can replace this file while installing. Re-read it on the next poll.
+        if (input.Length > maximum)
+            return "";
+        using var reader = new StreamReader(input, Encoding.UTF8);
+        char[] buffer = new char[maximum + 1];
+        int count = reader.ReadBlock(buffer);
+        return count <= maximum ? new string(buffer, 0, count) : "";
     }
-
-    [GeneratedRegex("""(?m)^\s*"path"\s+"([^"\r\n]+)"\s*$""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 250)]
-    private static partial Regex LibraryPath();
 }
