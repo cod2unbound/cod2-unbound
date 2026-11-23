@@ -31,12 +31,12 @@ function Save-Machine {
     $log = New-RunContext 'computer'
     $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
     $gpu = @(Get-CimInstance -ClassName Win32_VideoController |
-        Select-Object Name, DriverVersion, CurrentHorizontalResolution, CurrentVerticalResolution)
+        Select-Object Name, AdapterRAM, DriverVersion, CurrentHorizontalResolution, CurrentVerticalResolution, CurrentRefreshRate)
     [ordered]@{ Windows = $version.DisplayVersion; Build = "$($version.CurrentBuildNumber).$($version.UBR)"
         Graphics = $gpu; PowerShell = $PSVersionTable.PSVersion.ToString() } |
         ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $log.Evidence 'windows-and-graphics.json') -Encoding UTF8
     $raw = Join-Path $log.Folder 'dxdiag.txt'
-    $p = Start-Process -FilePath "$env:SystemRoot\System32\dxdiag.exe" -ArgumentList "/whql:off /t `"$raw`"" -PassThru
+    $p = Start-Process -FilePath "$env:SystemRoot\System32\dxdiag.exe" -WindowStyle Hidden -ArgumentList "/whql:off /t `"$raw`"" -PassThru
     try {
         # DxDiag may spawn a second process and return before the report is written.
         $deadline = (Get-Date).AddSeconds(75)

@@ -2,6 +2,7 @@
 $ErrorActionPreference = 'Stop'
 $Kit = $PSScriptRoot
 $LocalData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+if (-not $LocalData -and $Mode -eq 'Status') { $LocalData = $Kit }
 $AppDataRoot = Join-Path $LocalData 'CoD2 Unbound'
 
 function Assert-Offline {
@@ -11,7 +12,9 @@ function Assert-Offline {
 
 function Assert-StandardUser {
     $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-    if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64' -or -not [Environment]::Is64BitProcess -or
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    $armRehearsal = $arch -eq 'ARM64' -and $env:COD2_KIT_ARM_REHEARSAL -eq '1'
+    if (($arch -ne 'AMD64' -and -not $armRehearsal) -or -not [Environment]::Is64BitProcess -or
         [int]$version.CurrentBuildNumber -lt 22000) {
         throw 'Use 64-bit Windows PowerShell on Windows 11 x64.'
     }
@@ -85,18 +88,36 @@ function Engine-Path([string]$Path) {
 
 function Save-Text([string]$Source, [string]$Destination) {
     if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) { return }
-    $data = @(Get-Content -LiteralPath $Source) | Where-Object {
-        $_ -notmatch '(?i)cd.?key|codkey|keycode|hwid|regid|serial\s*number|device\s*(key|identifier)|machine\s*(name|id)|computer\s*name|user\s*name|\bGUID\b'
-    } | ForEach-Object {
-        $line = $_ -replace '(?i)\b[0-9A-Z]{20}\b', '[redacted]'
-        if ($env:USERPROFILE) { $line = $line -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%' }
-        $line
+    $data = Read-KitText $Source
+    Protect-KitText $data | Set-Content -LiteralPath $Destination -Encoding UTF8
+}
+
+function Read-KitText([string]$Path) {
+    # Windows programs also write UTF-16 and their system ANSI code page.
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -ge 2 -and ($bytes[0] -in 254,255 -or $bytes[1] -eq 0)) {
+        return [IO.File]::ReadAllText($Path, [Text.Encoding]::Unicode)
     }
-    Set-Content -LiteralPath $Destination -Value @($data) -Encoding UTF8
+    try { [Text.UTF8Encoding]::new($true, $true).GetString($bytes).TrimStart([char]0xfeff) }
+    catch [Text.DecoderFallbackException] { [Text.Encoding]::Default.GetString($bytes) }
+}
+
+function Protect-KitText([string]$Text) {
+    $line = $Text -replace '(?im)(cd[ -]?key|codkey|keycode|hwid2?|regid|serial[ _-]*number|password|computername|username)\s*["'']?\s*[:=]\s*[^\r\n]*', '$1=[redacted]'
+    $line = $line -replace '(?i)\b[0-9a-z]{18,20}\b|\b[0-9a-f]{32}\b|\b(?:[0-9a-z]{4}-){4}[0-9a-z]{4}\b', '[redacted]'
+    foreach ($value in @($env:USERPROFILE, $env:COMPUTERNAME, $env:USERNAME) + @($script:KitSerials)) {
+        if ($value) {
+            foreach ($variant in @($value, $value.Replace('\','/'), $value.Replace('\','\\')) | Select-Object -Unique) {
+                $pattern = '(?<![\p{L}\p{N}])' + [regex]::Escape($variant) + '(?![\p{L}\p{N}])'
+                $line = $line -replace $pattern, '[redacted]'
+            }
+        }
+    }
+    $line
 }
 
 function Start-KitProcess {
-    param([string]$Exe, [string]$Arguments, [string]$Folder, [hashtable]$Settings = @{})
+    param([string]$Exe, [string]$Arguments, [string]$Folder, [hashtable]$Settings = @{}, [switch]$NoWindow, [string]$WorkingDirectory)
     Assert-Offline
     $values = @{
         HOME = $Folder
@@ -115,14 +136,24 @@ function Start-KitProcess {
         SYSDIFF_SEED = $null
         SYSDIFF_DUMP = $null
     }
-    foreach ($name in $Settings.Keys) { $values[$name] = $Settings[$name] }
+    foreach ($name in $Settings.Keys) {
+        if ($name -like 'COD2X_TEST_*' -and $values[$name] -cne $Settings[$name]) {
+            throw "Unexpected engine endpoint override: $name"
+        }
+        if ($name -in 'COD2_UNBOUND_TEST_UPDATE_ORIGIN','COD2_USAGE_URL','COD2_CRASH_URL' -and
+            $Settings[$name] -notmatch '^http://127\.0\.0\.1:[0-9]+(?:/[^\s]*)?$') {
+            throw "The launcher endpoint $name must stay on this PC."
+        }
+        $values[$name] = $Settings[$name]
+    }
 
     # A per-child environment and one raw argument string preserve Unicode and engine quotes.
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $Exe
     $info.Arguments = $Arguments
-    $info.WorkingDirectory = $Folder
+    $info.WorkingDirectory = if ($WorkingDirectory) { $WorkingDirectory } else { $Folder }
     $info.UseShellExecute = $false
+    $info.CreateNoWindow = $NoWindow.IsPresent
     $info.RedirectStandardOutput = $true
     $info.RedirectStandardError = $true
     $info.StandardOutputEncoding = [Text.Encoding]::UTF8
@@ -140,12 +171,15 @@ function Complete-KitProcess($Run, [string]$Evidence, [int]$Seconds = 120) {
     $timedOut = -not $Run.Process.WaitForExit(1000 * $Seconds)
     if ($timedOut) {
         if (-not $Run.Process.HasExited) { $Run.Process.Kill() }
-        $Run.Process.WaitForExit()
+        if (-not $Run.Process.WaitForExit(5000)) { throw 'The kit process did not exit.' }
     }
     $stdout = Join-Path $Run.Folder 'stdout.txt'
     $stderr = Join-Path $Run.Folder 'stderr.txt'
-    [IO.File]::WriteAllText($stdout, $Run.Output.GetAwaiter().GetResult())
-    [IO.File]::WriteAllText($stderr, $Run.Errors.GetAwaiter().GetResult())
+    foreach ($stream in @(@{ Task=$Run.Output; Path=$stdout }, @{ Task=$Run.Errors; Path=$stderr })) {
+        $content = if ($stream.Task.Wait(3000)) { $stream.Task.GetAwaiter().GetResult() }
+            else { 'An inherited output stream remained open after the process exited.' }
+        [IO.File]::WriteAllText($stream.Path, $content)
+    }
     foreach ($file in @($stdout, $stderr)) {
         Save-Text $file (Join-Path $Evidence ([IO.Path]::GetFileName($file)))
     }
@@ -170,10 +204,14 @@ function Invoke-TestKey([string]$Action) {
     if ($checked.TimedOut -or $checked.ExitCode -ne 0) { throw "Windows could not complete the test key check ($Action)." }
 }
 
-function Assert-NoSavedKitKey {
+function Test-SavedKitKey {
     $listed = & "$env:SystemRoot\System32\cmdkey.exe" /list
     if ($LASTEXITCODE -ne 0) { throw 'Windows could not check for an existing saved CoD2 Unbound key.' }
-    if ($listed -match 'CoD2 Unbound/CD Key') {
+    [bool]($listed -match 'CoD2 Unbound/CD Key')
+}
+
+function Assert-NoSavedKitKey {
+    if (Test-SavedKitKey) {
         throw 'This account already has a saved CoD2 Unbound key. Leave it in place and use another account for the kit.'
     }
 }
@@ -201,5 +239,14 @@ function Save-GameEvidence([string]$HomePath, [string]$Evidence) {
     if (Test-Path -LiteralPath $shots) {
         Get-ChildItem -LiteralPath $shots -File -Filter 'kit-*.jpg' |
             Copy-Item -Destination $Evidence
+    }
+}
+
+function Get-KitSerials {
+    foreach ($className in 'Win32_BIOS','Win32_BaseBoard','Win32_DiskDrive','Win32_SystemEnclosure') {
+        try {
+            Get-CimInstance -ClassName $className -OperationTimeoutSec 4 -ErrorAction Stop |
+                ForEach-Object { "$($_.SerialNumber)".Trim() } | Where-Object { $_.Length -ge 3 }
+        } catch { }
     }
 }

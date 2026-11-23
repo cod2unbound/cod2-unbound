@@ -3,9 +3,15 @@
 param(
     [string]$GamePath,
     [string]$RetailPath,
+    [string]$RunId = 'laptop',
     [Parameter(ParameterSetName = 'Extras', Mandatory)][switch]$Extras,
     [Parameter(ParameterSetName = 'Lan', Mandatory)][switch]$LanOnly
 )
+
+if (-not ($Extras -or $LanOnly)) {
+    & (Join-Path $PSScriptRoot 'Run-Laptop.ps1') -GamePath $GamePath -RunId $RunId
+    return
+}
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer') {
@@ -154,39 +160,6 @@ try {
         return
     }
 
-    Write-Host 'Game files, test key and servers'
-    Invoke-Check 'Check which game folders are accepted' { Test-GameData $GamePath }
-    Invoke-Check 'The game reads a valid test key from Windows and rejects a damaged one' { Invoke-TestKey 'check' }
-    $extracted = $null
-    try { $extracted = Expand-ServerPackage }
-    catch {
-        "FAIL Server ZIP. $($_.Exception.Message)" | Add-Content -LiteralPath $summary
-        Write-Warning 'The server ZIP could not be opened or checked. The saved matches can still run.'
-    }
-    foreach ($edition in 'original','cod2x') {
-        $gameName = Get-EditionName $edition
-        if ($extracted) {
-            Invoke-Check "$gameName server opens Toujane and answers on this PC" {
-                Invoke-ServerCheck $edition $GamePath $extracted "server-$edition"
-            }
-        }
-        Invoke-Check "$gameName server repeats the saved Toujane match" {
-            Invoke-Replay $edition $GamePath 'standing' 'mp_toujane' 'dm' 12345 600 2 (Join-Path $Kit 'replays\standing\usercmds.txt') ''
-        }
-    }
-
-    Write-Host 'Play Toujane in both editions in Direct3D 9'
-    foreach ($edition in 'original','cod2x') {
-        $label = "$(Get-EditionName $edition), Direct3D 9"
-        if (Confirm-Step "Open $label") {
-            Invoke-Check "$label opens, saves both pictures and closes" {
-                Invoke-ClientCheck $edition $GamePath 'dx9' "client-$edition-dx9" -RequireScreens
-            }
-        } else { "SKIPPED $label" | Add-Content -LiteralPath $summary }
-    }
-    if (Confirm-Step 'Install, upgrade, repair and remove CoD2 Unbound for this account') {
-        Invoke-Check 'Install, upgrade, repair and remove CoD2 Unbound for this account' { Invoke-InstallChecks $GamePath }
-    } else { 'SKIPPED Setup' | Add-Content -LiteralPath $summary }
 } finally {
     try {
         if ($hasBaseline) {

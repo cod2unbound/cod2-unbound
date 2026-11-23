@@ -12,8 +12,14 @@ function Invoke-Setup([string]$Exe, [string]$Label, [string]$Options = '') {
     $detail = New-RunContext $Label
     $rawLog = Join-Path $detail.Folder 'setup.log'
     try {
-        $p = Start-Process -FilePath $Exe -ArgumentList "$Options /LOG=`"$rawLog`"" -PassThru -Wait
-        try { return $p.ExitCode } finally { $p.Dispose() }
+        $p = Start-Process -FilePath $Exe -ArgumentList "$Options /LOG=`"$rawLog`"" -PassThru
+        try {
+            if (-not $p.WaitForExit(180000)) {
+                if (-not $p.HasExited) { $p.Kill() }
+                throw 'Setup timed out. Read any prompt still on the screen before continuing.'
+            }
+            return $p.ExitCode
+        } finally { $p.Dispose() }
     } finally { Save-Text $rawLog (Join-Path $detail.Evidence 'setup.log') }
 }
 
