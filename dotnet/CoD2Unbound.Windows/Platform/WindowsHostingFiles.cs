@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
@@ -105,7 +106,10 @@ internal sealed class WindowsHostingFiles(string root, bool loopbackOnly) : IHos
         const string marker = "managed-zpam.json";
         var settings = new WindowsSettingsFolder(home);
         var saved = await settings.ReadAsync(marker, cancellationToken);
-        string[] previous = saved is { } data ? JsonSerializer.Deserialize<string[]>(data.AsSpan()) ?? [] : [];
+        string[] previous = saved is { } data ?
+            JsonSerializer.Deserialize(data.AsSpan(), WindowsHostingFilesJson.Default.StringArray) ?? [] : [];
+        if (previous.Length == 0 && archives.Length == 0)
+            return null;
         // Record the union before touching any archives so an interrupted staging can be retried.
         await TrackAsync(previous.Union(archives, StringComparer.OrdinalIgnoreCase));
         foreach (string old in previous.Where(IsArchive).Except(archives, StringComparer.OrdinalIgnoreCase))
@@ -126,7 +130,8 @@ internal sealed class WindowsHostingFiles(string root, bool loopbackOnly) : IHos
         return await ReadTemplateAsync(version, cancellationToken);
 
         ValueTask TrackAsync(IEnumerable<string> names) =>
-            settings.WriteAsync(marker, [.. JsonSerializer.SerializeToUtf8Bytes(names.ToArray())], cancellationToken);
+            settings.WriteAsync(marker, [.. JsonSerializer.SerializeToUtf8Bytes(
+                names.ToArray(), WindowsHostingFilesJson.Default.StringArray)], cancellationToken);
     }
 
     internal async ValueTask<string?> ReadTemplateAsync(string? version, CancellationToken cancellationToken)
@@ -218,3 +223,6 @@ internal sealed class WindowsHostingFiles(string root, bool loopbackOnly) : IHos
         }
     }
 }
+
+[JsonSerializable(typeof(string[]))]
+internal sealed partial class WindowsHostingFilesJson : JsonSerializerContext;
