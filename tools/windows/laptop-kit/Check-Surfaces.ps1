@@ -55,7 +55,10 @@ function Invoke-KitSurface([string]$Page) {
                 Wait-KitCondition { Find-KitControl $app 'Jump to' -Name } 12 'the Jump to box' | Out-Null
                 [Windows.Forms.SendKeys]::SendWait('keyboard shortcuts')
                 Save-KitSurface $app 'jump-search' @('Keyboard shortcuts')
-                [KitDesktop]::Tap(13)
+                [KitDesktop]::Tap(27)
+                Invoke-KitControl $app 'Settings' -Name
+                Invoke-KitControl $app 'About' -Name
+                Invoke-KitControl $app 'Show' -Name -AllowOffscreen
                 Save-KitSurface $app 'shortcuts' @('Done')
                 Invoke-KitControl $app 'Done' -Name
             }
