@@ -482,7 +482,7 @@ enum PrivacyContacts {
         ("Crash reports", "Only with the CoD2 Unbound crash reports switch above on. The launcher remembers reports the service accepted."),
         ("CoD2x crash reports", "Only with the CoD2x crash reports switch above on when you start CoD2x. It sends what failed, the CoD2x version, system details and recent CoD2x log text. A fatal error can include a stack trace. A crash or freeze in CoD2x’s own code also includes its time, server and process details, the game’s command line and folder paths, loaded modules, and the affected thread’s stack, registers and samples of its memory. These crash and freeze reports go out on a later start, including any still waiting from earlier runs."),
         ("Config links", "Only a link you paste into Configs to import from it."),
-        ("cod2unbound.com", "As a fallback for updates and the news on Home. When you choose Share Setup: the cleaned config, the name you type, the game and app versions, and the number of lines removed and why. The setup is posted publicly on GitHub. Stop Sharing sends the request number and its private token."),
+        ("cod2unbound.com", "As a fallback for updates and the news on Home. When you choose Share Setup: the cleaned config, the name you type, the game and app versions, and how many lines were left out and why. The setup is posted publicly on GitHub. Stop Sharing sends the request number and its private token."),
     ]
 }
 
