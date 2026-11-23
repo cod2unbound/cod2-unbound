@@ -6,7 +6,6 @@ namespace CoD2Unbound.Windows.ViewModels;
 
 internal sealed class ServersViewModel(WindowsLauncherSession session, ServerScope scope)
 {
-    private readonly ServerAdmission admission = new();
     internal ServerScope Scope { get; set; } = scope;
     internal ServerSort Sort { get; private set; } = ServerSort.Ping;
     internal bool Ascending { get; private set; } = true;
@@ -30,23 +29,6 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
 
     internal Task SetFiltersAsync(ServerFilters filters) => session.SaveFiltersAsync(filters);
     internal Task FavoriteAsync(GameServer server) => session.ToggleFavoriteAsync(server.Address);
-    internal Task<GameStartState> JoinAsync(ServerAddress address, GameEdition edition, UsageJoin source) => session.JoinAsync(address, edition, source);
-
-    internal async Task<ServerAdmissionResult> CheckAsync(ServerAddress address, bool refreshCached)
-    {
-        var link = LaunchLink.Direct(address.Address, address.Password ?? "");
-        var edition = session.Settings.Working.Engine;
-        var installed = Enum.GetValues<GameEdition>().Where(session.HasClient).ToHashSet();
-        var saved = session.Library.Cache.FirstOrDefault(row => row.Address == address.Address);
-        if (refreshCached && saved is not null)
-            saved = await session.ServerQuery.ServerAsync(address.Address) ?? saved;
-        var result = admission.Evaluate(link, saved, edition, installed, alwaysUseServerVersion: false);
-        if (result.Action != ServerAdmissionAction.LookUp)
-            return result;
-        var checkedServer = await session.ServerQuery.ServerAsync(address.Address);
-        admission.LookUpFinished(address.Address, cancelled: false);
-        return admission.Evaluate(link, checkedServer, edition, installed, alwaysUseServerVersion: false);
-    }
 }
 
 internal sealed record ServerRow(GameServer Server)

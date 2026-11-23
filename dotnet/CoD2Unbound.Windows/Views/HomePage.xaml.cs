@@ -382,8 +382,17 @@ public sealed partial class HomePage : Page
     {
         if (!model.CanLaunch)
             return;
-        await model.LaunchAsync(address ?? model.LastServer?.Address);
+        string? status = null;
+        if ((address ?? model.LastServer?.Address) is { } target)
+            status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
+        else
+            await model.LaunchAsync();
         RenderGame(model.Game);
+        if (status is not null && !model.Game.Running)
+        {
+            LaunchReason.Text = status;
+            LaunchReason.Visibility = Visibility.Visible;
+        }
     });
 
     private async void OnFindServer(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);

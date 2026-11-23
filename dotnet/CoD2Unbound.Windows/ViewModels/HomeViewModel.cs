@@ -12,7 +12,7 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal bool CanLaunch => LaunchProblem is null;
     internal string? LaunchProblem => Game.Running ? "Call of Duty 2 is already running." :
         session.Setup.Data.State != SetupDataState.Found ? "Choose a complete game data folder before launching." :
-        !session.HasClient(Settings.Engine) ? "The game executable is missing." : null;
+        LastServer is null && !session.HasClient(Settings.Engine) ? "The game executable is missing." : null;
 
     internal ImmutableArray<GameServer> Recent => [.. session.Library.Recent.Take(3).Select(session.ServerForAddress)];
     internal GameServer? LastServer => session.Library.Recent.FirstOrDefault() is { } address
@@ -56,8 +56,7 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         }
     }
 
-    internal Task LaunchAsync(string? address = null) => address is null
-        ? session.LaunchAsync() : session.JoinAsync(new(address, null));
+    internal Task LaunchAsync() => session.LaunchAsync();
 
     internal Task SetLoadoutAsync(string id) => session.SelectLoadoutAsync(id);
 

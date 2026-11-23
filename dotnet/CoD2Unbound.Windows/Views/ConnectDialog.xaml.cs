@@ -7,10 +7,12 @@ namespace CoD2Unbound.Windows.Views;
 public sealed partial class ConnectDialog : ContentDialog
 {
     private readonly string? linkedAddress;
+    private readonly bool passwordRequired;
 
-    internal ConnectDialog(string? address = null, ServerLink? link = null)
+    internal ConnectDialog(string? address = null, ServerLink? link = null, bool passwordRequired = false)
     {
-        linkedAddress = link?.Target.Address;
+        this.passwordRequired = passwordRequired;
+        linkedAddress = link?.Target.Address ?? (passwordRequired ? address : null);
         InitializeComponent();
         AddressBox.Text = address ?? "";
         if (link is not null)
@@ -19,6 +21,12 @@ public sealed partial class ConnectDialog : ContentDialog
             Description.Text = $"This link requests {EditionName(link.Edition)}.";
             PasswordInput.Password = link.Target.Password ?? "";
             DefaultButton = ContentDialogButton.Close;
+        }
+        if (passwordRequired)
+        {
+            AddressBox.IsReadOnly = true;
+            Description.Text = "This server requires a password.";
+            PasswordInput.Header = "Password";
         }
         UpdateTarget();
         Opened += (_, _) =>
@@ -40,7 +48,7 @@ public sealed partial class ConnectDialog : ContentDialog
             return;
         var address = linkedAddress is null ? ServerAddress.Parse(AddressBox.Text) : new ServerAddress(linkedAddress, null);
         string password = PasswordInput.Password;
-        Target = address is null || ServerAddress.PasswordProblem(password) is not null ? null :
+        Target = address is null || (passwordRequired && password.Length == 0) || ServerAddress.PasswordProblem(password) is not null ? null :
             password.Length == 0 ? address : address with { Password = password };
         IsPrimaryButtonEnabled = Target is not null;
     }

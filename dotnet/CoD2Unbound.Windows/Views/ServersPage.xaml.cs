@@ -26,7 +26,6 @@ public sealed partial class ServersPage : Page
     private GameServer? currentReadyServer;
     private string? currentMap;
     private CancellationTokenSource? refreshing;
-    private bool dialogOpen;
     private bool ready;
 
     internal ServersPage(MainWindow shell, WindowsLauncherSession session, ServerScope scope, string? address)
@@ -421,23 +420,15 @@ public sealed partial class ServersPage : Page
 
     private async void OnConnect(object sender, RoutedEventArgs args) => await ConnectAsync();
 
-    private Task ConnectAsync(string? address = null, UsageJoin source = UsageJoin.TypedAddress) =>
-        shell.RunAsync(() => ShowConnectAsync(address, source));
+    private Task ConnectAsync() => shell.RunAsync(() => ShowConnectAsync());
 
-    internal Task ConnectLinkAsync(ServerLink link) => ShowConnectAsync(link.Target.Address, UsageJoin.Link, link);
+    internal Task ConnectLinkAsync(ServerLink link) => ShowConnectAsync(link);
 
-    private async Task ShowConnectAsync(string? address, UsageJoin source, ServerLink? link = null)
+    private async Task ShowConnectAsync(ServerLink? link = null)
     {
-        if (dialogOpen)
-            return;
-        dialogOpen = true;
-        try
-        {
-            var dialog = new ConnectDialog(address, link) { XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme };
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Target is { } target)
-                await JoinAsync(target, source, link?.Edition);
-        }
-        finally { dialogOpen = false; }
+        var target = await shell.PromptServerAsync(link?.Target.Address, link);
+        if (target is not null)
+            await JoinAsync(target, link is null ? UsageJoin.TypedAddress : UsageJoin.Link, link?.Edition);
     }
 
     private async void OnJoin(object sender, RoutedEventArgs args)
@@ -445,48 +436,13 @@ public sealed partial class ServersPage : Page
         if (refreshing is not null || ServerList.SelectedItem is not ServerRow row)
             return;
         var source = model.Scope == ServerScope.Favorites ? UsageJoin.Favorite : UsageJoin.List;
-        if (row.Server.PasswordRequired)
-            await ConnectAsync(row.Server.Address, source);
-        else
-            await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null), source));
+        await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null), source, known: row.Server));
     }
 
-    private async Task JoinAsync(ServerAddress address, UsageJoin source, GameEdition? requestedEdition = null)
+    private async Task JoinAsync(ServerAddress target, UsageJoin source, GameEdition? edition = null, GameServer? known = null)
     {
-        if (model.GameRunning)
-        {
-            RefreshStatus.Text = "Call of Duty 2 is already running.";
-            return;
-        }
-        var decision = requestedEdition is { } requested
-            ? new ServerAdmissionResult(ServerAdmissionAction.Launch, requested,
-                session.HasClient(requested) ? null : $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(requested)}.")
-            : await model.CheckAsync(address, refreshCached: source == UsageJoin.TypedAddress);
-        if (decision.Problem is { } problem)
-        {
-            RefreshStatus.Text = problem;
-            session.ShowError(decision.Action == ServerAdmissionAction.MissingCod2x ||
-                requestedEdition is not null ? UsageProblem.ServerVersion : UsageProblem.Join);
-            return;
-        }
-        if (decision.Action == ServerAdmissionAction.ConfirmVersion)
-        {
-            string version = ConnectDialog.EditionName(decision.Edition);
-            var switchEdition = new ContentDialog
-            {
-                XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Switch game version?", Content = $"This server runs {version}.",
-                PrimaryButtonText = "Launch", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
-            };
-            if (await switchEdition.ShowAsync() != ContentDialogResult.Primary)
-                return;
-        }
-
-        RefreshStatus.Text = (await model.JoinAsync(address, decision.Edition, source)) switch
-        {
-            GameStartState.Started => "Launching Call of Duty 2…",
-            GameStartState.NeedsSetup or GameStartState.MissingData => "Choose a complete game data folder before launching.",
-            _ => "Call of Duty 2 is already running."
-        };
+        if (await shell.JoinServerAsync(target, source, edition, known) is { } status)
+            RefreshStatus.Text = status;
         RenderDetails();
     }
 
