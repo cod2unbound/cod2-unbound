@@ -198,14 +198,52 @@ begin
   end;
 end;
 
-function InstalledFilesBusy(const Root: String): Boolean;
+function InstalledServersBusy(const Root: String): Boolean;
+begin
+  Result := Busy(Root + '\original\cod2_win32_ded.exe') or Busy(Root + '\cod2x\cod2_win32_ded.exe');
+end;
+
+function InstalledClientsBusy(const Root: String): Boolean;
 begin
   Result := Busy(Root + '\original\cod2_win32.exe') or
-    Busy(Root + '\original\cod2_win32_ded.exe') or
     Busy(Root + '\cod2x\cod2_win32.exe') or
-    Busy(Root + '\cod2x\cod2_win32_ded.exe') or
     Busy(Root + '\launcher\{#Launcher}') or
     Busy(Root + '\launcher\CoD2Unbound.exe');
+end;
+
+function InstalledFilesBusy(const Root: String): Boolean;
+begin
+  Result := InstalledClientsBusy(Root) or InstalledServersBusy(Root);
+end;
+
+function PromptToStopInstalledServers(const Root: String; Silent: Boolean): Boolean;
+var
+  Code: Integer;
+  Path, Script: String;
+begin
+  Result := not InstalledServersBusy(Root);
+  if Result or Silent then Exit;
+  if IsReparsePoint(Root) or IsReparsePoint(Root + '\original') or IsReparsePoint(Root + '\cod2x') then Exit;
+  if MsgBox('CoD2 Unbound needs its dedicated server files. Stop any installed servers and continue? Players will be disconnected.',
+    mbConfirmation, MB_YESNO or MB_DEFBUTTON2) <> IDYES then Exit;
+
+  Path := Root;
+  StringChangeEx(Path, '''', '''''', True);
+  { Hold the process handle from before the image-path query through exit.
+    Select only this installation's two dedicated images, including on an Arm PC. }
+  Script := '$root=''' + Path + '''; ' +
+    '$paths=@((Join-Path $root ''original\cod2_win32_ded.exe''),(Join-Path $root ''cod2x\cod2_win32_ded.exe'')); ' +
+    'foreach($p in [Diagnostics.Process]::GetProcessesByName(''cod2_win32_ded'')) { try { ' +
+    '$null=$p.Handle; $id=$p.Id; ' +
+    '$image=(Get-CimInstance -ClassName Win32_Process -Filter (''ProcessId=''+$id) -ErrorAction Stop).ExecutablePath; ' +
+    'if ($image -in $paths -and !$p.HasExited) { $p.Kill(); $null=$p.WaitForExit(8000) } ' +
+    '} catch {} finally { $p.Dispose() } }';
+  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -NonInteractive -Command "' + Script + '"', '', SW_HIDE, ewWaitUntilTerminated, Code) then
+    Log('Could not start the dedicated-server shutdown helper.')
+  else
+    Log(Format('Dedicated-server shutdown helper exited with %d.', [Code]));
+  Result := not InstalledServersBusy(Root);
 end;
 
 #ifdef HasLauncher
@@ -522,7 +560,7 @@ begin
     Exit;
   end;
 #endif
-  if InstalledFilesBusy(Root) then begin
+  if InstalledClientsBusy(Root) or not PromptToStopInstalledServers(Root, WizardSilent) then begin
     Result := 'Close CoD2 Unbound, the game and any hosted servers, then run Setup again.';
     Exit;
   end;
@@ -568,8 +606,13 @@ begin
 end;
 
 function InitializeUninstall(): Boolean;
+var
+  Root: String;
 begin
-  Result := not InstalledFilesBusy(ExpandConstant('{app}'));
+  Root := ExpandConstant('{app}');
+  Result := not InstalledClientsBusy(Root) and PromptToStopInstalledServers(Root, UninstallSilent);
+  if not Result then
+    Log('Uninstall stopped because installed files are in use.');
   if not Result then
     SuppressibleMsgBox('Close CoD2 Unbound, the game and any hosted servers, then try again.',
       mbError, MB_OK, IDOK);
