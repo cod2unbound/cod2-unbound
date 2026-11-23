@@ -49,7 +49,7 @@
                             </Grid.RowDefinitions>
                             <Border Style="{StaticResource MediaTile}" Loaded="OnScreenshotLoaded"
                                     DataContextChanged="OnScreenshotChanged">
-                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentImage}"
+                                <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentImage}"
                                           FontSize="24" Foreground="{ThemeResource TertiaryBrush}" />
                             </Border>
                             <Grid Grid.Row="1" ColumnSpacing="4">
@@ -61,7 +61,7 @@
                                            VerticalAlignment="Center" />
                                 <Button Grid.Column="1" Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
                                         AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="{Binding MenuName}">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
+                                    <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentMore}" FontSize="16" />
                                 </Button>
                             </Grid>
                         </Grid>
@@ -132,7 +132,7 @@
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
                                 <Button Grid.Column="4" Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
                                         VerticalAlignment="Center" Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />
+                                    <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentMore}" FontSize="16" />
                                 </Button>
                             </Grid>
                         </DataTemplate>

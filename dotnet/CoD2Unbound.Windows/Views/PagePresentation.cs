@@ -35,17 +35,17 @@ internal static class PagePresentation
     }
 
     internal static TextBlock MonoCaption(string text) => new() { Text = text, Style = StyleFor("MonoCaption") };
-    internal static FontIcon Fluent(string icon, double size, bool filled = false) => new()
+    internal static FontIcon Fluent(string icon, double size) => new()
     {
         Glyph = (string)Application.Current.Resources["Fluent" + icon],
-        FontFamily = (FontFamily)Application.Current.Resources[filled ? "FluentFilled" : "FluentRegular"],
+        FontFamily = (FontFamily)Application.Current.Resources["LauncherIconFont"],
         FontSize = size
     };
 
-    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false) => new()
+    internal static StackPanel IconLabel(string icon, string text, double size = 20) => new()
     {
         Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
-        Children = { Fluent(icon, size, filled), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
+        Children = { Fluent(icon, size), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
     };
 
     internal static Brush ThemeBrush(string key, ElementTheme theme, bool contrast)
