@@ -136,8 +136,6 @@ public sealed partial class HostingPage : Page
 
         phaseText = Caption("");
         AutomationProperties.SetLiveSetting(phaseText, AutomationLiveSetting.Polite);
-        Details.Children.Add(Heading(server.Name));
-        Details.Children.Add(phaseText);
         actionFeedback = Caption("");
         actionFeedback.Visibility = Visibility.Collapsed;
         AutomationProperties.SetLiveSetting(actionFeedback, AutomationLiveSetting.Polite);
@@ -149,19 +147,46 @@ public sealed partial class HostingPage : Page
         nextMap.IsEnabled = HostingConfig.Password(server.AdminPassword).Length > 0;
         var join = Action("Join", () => JoinAsync(server), "J");
         join.Style = StyleFor("LauncherAccentButton");
-        Details.Children.Add(Buttons(Action("Edit…", () =>
+        var actions = Buttons(Action("Edit…", () =>
         {
             Details.Children.Clear();
             dashboard = null;
             ShowForm(configured, isNew: false, editingRunning: true);
             return Task.CompletedTask;
-        }, "E"), nextMap, join, Action("Stop server", () => ToggleAsync(server), "R")));
+        }, "E"), nextMap, join, Action("Stop server", () => ToggleAsync(server), "R"));
+        Details.Children.Add(RunningHeader(server.Name, phaseText, actions));
         Details.Children.Add(actionFeedback);
 
         dashboard = new Dashboard(this, server, join);
         Details.Children.Add(dashboard.Stats);
         Details.Children.Add(dashboard.Content);
         await UpdateRunStateAsync();
+    }
+
+    private static Grid RunningHeader(string name, TextBlock phase, StackPanel actions)
+    {
+        var title = Heading(name);
+        title.MaxWidth = 260;
+        title.TextWrapping = TextWrapping.NoWrap;
+        title.TextTrimming = TextTrimming.CharacterEllipsis;
+        ToolTipService.SetToolTip(title, name);
+        phase.VerticalAlignment = VerticalAlignment.Center;
+        var label = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { title, phase } };
+        label.VerticalAlignment = VerticalAlignment.Center;
+
+        var header = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        header.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        header.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        header.RowSpacing = 8;
+        Put(header, 0, label);
+        Put(header, 1, actions);
+        header.SizeChanged += (_, args) =>
+        {
+            var compact = args.NewSize.Width < 740;
+            Grid.SetRow(actions, compact ? 1 : 0);
+            Grid.SetColumn(actions, compact ? 0 : 1);
+        };
+        return header;
     }
 
     internal async Task UpdateRunStateAsync()

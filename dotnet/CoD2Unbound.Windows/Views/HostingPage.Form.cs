@@ -77,7 +77,6 @@ public sealed partial class HostingPage
             friendly = new() { Header = "Friendly fire", IsOn = server.FriendlyFire };
             maps = [.. HostingConfig.Maps(server)];
 
-            Content.Children.Add(Heading(isNew ? "New server" : server.Name));
             start = page.Action("Start server", () => PersistAsync(startServer: true), "R");
             start.Style = StyleFor("LauncherAccentButton");
             start.Visibility = IsVisible(!editingRunning);
@@ -87,9 +86,9 @@ public sealed partial class HostingPage
                 var phase = Caption("");
                 page.phaseText = phase;
                 page.UpdatePhaseText(page.State(server));
-                Content.Children.Add(phase);
                 save.Style = StyleFor("LauncherAccentButton");
-                Content.Children.Add(Buttons(page.Action("Cancel", page.ShowServerAsync, "U"), save));
+                var actions = Buttons(page.Action("Cancel", page.ShowServerAsync, "U"), save);
+                Content.Children.Add(RunningHeader(server.Name, phase, actions));
                 Content.Children.Add(new InfoBar
                 {
                     IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational,
@@ -99,6 +98,7 @@ public sealed partial class HostingPage
             }
             else
             {
+                Content.Children.Add(Heading(isNew ? "New server" : server.Name));
                 Content.Children.Add(isNew ? Buttons(start, save, page.Action("Cancel", page.ShowServerAsync, "U"))
                     : Buttons(start, save));
             }
