@@ -156,14 +156,16 @@ public sealed partial class ConfigProfileStore(
     }
 
     public static async ValueTask<string?> ReadPlayerNameAsync(ISettingsFolder home, ConfigDialect dialect,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool preserveColors = false)
     {
         var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
         if (selected.ProfileId is not { } id ||
             await home.ReadAsync(DirectoryName(id) + ConfigName, cancellationToken).ConfigureAwait(false) is not { } config)
             return null;
         string? name = new ConfigDocument(config.AsSpan(), dialect).EffectiveSetting("name");
-        return string.IsNullOrWhiteSpace(name) ? null : QuakeColors.Plain(LauncherText.Prefix(name, 64));
+        if (string.IsNullOrWhiteSpace(name))
+            return null;
+        return preserveColors ? name : QuakeColors.Plain(LauncherText.Prefix(name, 64));
     }
 
     // The native host holds the same profile lease used by an editor until spawn completes.

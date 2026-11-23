@@ -83,6 +83,158 @@ internal static partial class Program
             Equal(false, setup.DataWasPicked);
         });
 
+        Check("Canceling the Windows wizard discards confirmed folder and key drafts", () =>
+        {
+            var storage = new MemoryPlatform("home");
+            var secrets = new TestSecrets();
+            var setup = new SetupSession(new ArchiveChoices { Complete = true }, storage, secrets,
+                "old", false, canCancel: true, step: SetupStep.Data, hasReportService: true,
+                hasUsageService: true, deferWrites: true);
+            setup.ChooseData("new");
+            Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(true, setup.ContinueAsync("000000000000000086D3").AsTask().GetAwaiter().GetResult());
+            Equal("86D3", setup.PendingKeyTail);
+            Equal(true, setup.ReviewPersonalization(new("^2Morrow", "windowed")));
+            setup.ReviewPrivacy(true);
+            setup.ReviewPrivacy(false);
+            Equal(true, setup.CrashChoice);
+            Equal(false, setup.UsageChoice);
+            Equal(true, setup.Cancel());
+            Equal<SetupPersonalization?>(null, setup.Personalization);
+            Equal<bool?>(null, setup.CrashChoice);
+            Equal<bool?>(null, setup.UsageChoice);
+            Equal("old", setup.DataPath);
+            Equal(false, setup.HasStoredKey);
+            Equal<string?>(null, secrets.Saved);
+            Equal(false, storage.ReadAsync(SetupSession.DataPathFile, default).AsTask().GetAwaiter().GetResult().HasValue);
+        });
+
+        Check("Finishing the Windows wizard validates again and writes reviewed choices", () =>
+        {
+            var files = new ArchiveChoices { Complete = true };
+            var storage = new MemoryPlatform("home");
+            var secrets = new TestSecrets();
+            var setup = new SetupSession(files, storage, secrets, "old", false, step: SetupStep.Data, deferWrites: true);
+            setup.ChooseData("new");
+            setup.ContinueAsync().AsTask().GetAwaiter().GetResult();
+            setup.SkipKey();
+            setup.PersonalizationSaved();
+            files.Complete = false;
+            Equal(false, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(SetupStep.Data, setup.Step);
+            files.Complete = true;
+            setup.ChooseData("new");
+            setup.ContinueAsync().AsTask().GetAwaiter().GetResult();
+            setup.SkipKey();
+            setup.PersonalizationSaved();
+            Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(SetupStep.Complete, setup.Step);
+            Equal("new\n", Encoding.UTF8.GetString(storage.ReadAsync(SetupSession.DataPathFile, default)
+                .AsTask().GetAwaiter().GetResult()!.Value.AsSpan()));
+        });
+
+        Check("The reviewed CD key and choices are applied only after archive validation", () =>
+        {
+            var storage = new MemoryPlatform("home");
+            var secrets = new TestSecrets();
+            var files = new ArchiveChoices { Complete = true };
+            var setup = new SetupSession(files, storage, secrets, "new", false,
+                canCancel: true, step: SetupStep.Data, deferWrites: true);
+            Sync(setup.ContinueAsync());
+            Sync(setup.ContinueAsync("000000000000000086D3"));
+            setup.PersonalizationSaved();
+            Equal<string?>(null, secrets.Saved);
+            int applied = 0;
+            files.Complete = false;
+            Equal(false, Sync(setup.ContinueAsync(applyReview: Apply)));
+            Equal(0, applied);
+            Equal(true, setup.CanCancel);
+            files.Complete = true;
+            setup.ChooseData("new");
+            Sync(setup.ContinueAsync());
+            Sync(setup.ContinueAsync());
+            setup.PersonalizationSaved();
+            Equal(true, Sync(setup.ContinueAsync(applyReview: Apply)));
+            Equal(1, applied);
+            Equal("86D3", SetupSession.KeyTail(secrets.Saved));
+
+            ValueTask Apply()
+            {
+                applied++;
+                return ValueTask.CompletedTask;
+            }
+        });
+
+        Check("A player card edit preserves other settings and does not repeat an unchanged write", () =>
+        {
+            var storage = new FixtureProfileFiles();
+            bool running = false;
+            var store = new ConfigProfileStore(storage, ConfigDialect.Stock, () => running);
+            store.Create("Main", "Main", new("seta name Soldier\r\nseta sensitivity 3\r\n"u8, ConfigDialect.Stock));
+            store.Select("Main", null);
+            store.SavePlayerName("Main", "^3Sgt. ^7Morrow");
+            store.SavePlayerName("Main", "^3Sgt. ^7Morrow");
+            Equal("^3Sgt. ^7Morrow", store.Read("Main").Document.EffectiveSetting("name"));
+            Equal("3", store.Read("Main").Document.EffectiveSetting("sensitivity"));
+            Equal(2, store.History("Main").Length);
+            running = true;
+            ProfileRejects(ConfigProfileFailure.GameRunning, () => store.SavePlayerName("Main", "While playing"));
+        });
+
+        Check("Steam library discovery supports current and legacy quoted VDF paths", () =>
+        {
+            const string vdf = """
+                "libraryfolders"
+                {
+                    "0"
+                    {
+                        "path"        "C:\\Program Files (x86)\\Steam"
+                        "apps" { "2630" "3456" }
+                    }
+                    "1"           "D:\\Other Library"
+                }
+                """;
+            Sequence(new[] { @"C:\Program Files (x86)\Steam", @"D:\Other Library" }, SetupDiscovery.SteamLibraryPaths(vdf));
+            Equal("Call of Duty 2", SetupDiscovery.SteamInstallDirectory(""" "installdir" "Call of Duty 2" """));
+            Equal<string?>(null, SetupDiscovery.SteamInstallDirectory(""" "installdir" "../Call of Duty 2" """));
+        });
+
+        Check("Setup discovery keeps unique complete copies with their source", () =>
+        {
+            var files = new ArchiveChoices { Complete = true };
+            var known = SetupDiscovery.Complete(files, "OLD",
+                [new("old", [], GameInstallSource.Disc), new("new", [], GameInstallSource.Steam),
+                 new("NEW", [], GameInstallSource.Disc), new("partial", [], GameInstallSource.Steam)]);
+            Sequence(new[] { ("old", GameInstallSource.Disc), ("new", GameInstallSource.Steam) },
+                known.Select(copy => (copy.DataPath, copy.Source)));
+            Equal(@"C:\Users\Player\AppData\Local\VirtualStore\Program Files (x86)\Activision\Call of Duty 2",
+                SetupDiscovery.VirtualStoreCopy(@"C:\Users\Player\AppData\Local", @"C:\Program Files (x86)\Activision\Call of Duty 2"));
+            Equal<string?>(null, SetupDiscovery.VirtualStoreCopy(@"C:\Local", @"\\server\share\Call of Duty 2"));
+        });
+
+        Check("Steam watch resurvey advances only on a complete archive set", () =>
+        {
+            var files = new ArchiveChoices();
+            int attempts = 0;
+            var changed = SetupDiscovery.WaitForSteamAsync(files, _ =>
+            {
+                files.Complete = ++attempts == 2;
+                return ValueTask.FromResult<System.Collections.Immutable.ImmutableArray<GameInstallation>>(
+                    [new("old", [], GameInstallSource.Disc), new("new", [], GameInstallSource.Steam)]);
+            }, TimeSpan.Zero, default).GetAwaiter().GetResult();
+            Equal(2, attempts);
+            Equal("new", changed.DataPath);
+        });
+
+        Check("Player name validation and recovery use portable launcher rules", () =>
+        {
+            Equal<string?>(null, SetupPlayer.NameProblem("^2Ranger"));
+            Equal(true, SetupPlayer.NameProblem("Bad;name") is not null);
+            Equal(LaunchRecoveryKind.Folder, LaunchRecovery.Classify("old", false, false, "error").Kind);
+            Equal(LaunchRecoveryKind.MissingGame, LaunchRecovery.Classify("old", true, false, "error").Kind);
+            Equal("error", LaunchRecovery.Classify("old", true, true, "error").Message);
+        });
+
         Check("Replacing a CD key preserves the stored key until confirmation", () =>
         {
             var storage = new MemoryPlatform("home");

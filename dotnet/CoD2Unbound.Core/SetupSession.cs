@@ -6,6 +6,7 @@ public enum SetupStep { Welcome, Data, Key, Personalize, CrashReports, Ready, Co
 public enum SetupDataState { Missing, Damaged, Found, UnfinishedSteam }
 public enum CrashConsentQuestion { Nothing, Answered, Ask }
 public sealed record SetupDataChoice(string Path, SetupDataState State, GameArchiveSurvey Survey, string? Problem);
+public sealed record SetupPersonalization(string? Name, string Display);
 
 /// <summary>One setup attempt. The presentation host serializes calls, including asynchronous transitions.</summary>
 public sealed class SetupSession
@@ -23,6 +24,10 @@ public sealed class SetupSession
     private readonly Func<string, bool> unfinishedSteam;
     private readonly bool hasReportService;
     private readonly bool hasUsageService;
+    private readonly bool deferWrites;
+    private readonly string originalData;
+    private readonly bool originallyHadKey;
+    private string? pendingKey;
     private string confirmedData;
     private bool canCancel;
 
@@ -33,10 +38,15 @@ public sealed class SetupSession
     public bool HasStoredKey { get; private set; }
     public bool ReplacingKey { get; private set; }
     public bool CanCancel => canCancel;
+    public string? PendingKeyTail => KeyTail(pendingKey);
+    public SetupPersonalization? Personalization { get; private set; }
+    public bool? CrashChoice { get; private set; }
+    public bool? UsageChoice { get; private set; }
 
     public SetupSession(IGameFiles files, ISettingsFolder folder, ISecretStore secrets, string initialData,
         bool hasStoredKey, bool canCancel = false, SetupStep step = SetupStep.Welcome,
-        bool hasReportService = false, Func<string, bool>? unfinishedSteam = null, bool hasUsageService = false)
+        bool hasReportService = false, Func<string, bool>? unfinishedSteam = null, bool hasUsageService = false,
+        bool deferWrites = false)
     {
         this.files = files;
         this.folder = folder;
@@ -45,8 +55,9 @@ public sealed class SetupSession
         this.hasReportService = hasReportService;
         this.hasUsageService = hasUsageService;
         this.canCancel = canCancel;
-        HasStoredKey = hasStoredKey;
-        confirmedData = initialData;
+        this.deferWrites = deferWrites;
+        originallyHadKey = HasStoredKey = hasStoredKey;
+        originalData = confirmedData = initialData;
         Step = step;
         Data = Inspect(initialData);
     }
@@ -69,7 +80,8 @@ public sealed class SetupSession
         return Data;
     }
 
-    public async ValueTask<bool> ContinueAsync(string keyInput = "", CancellationToken cancellationToken = default)
+    public async ValueTask<bool> ContinueAsync(string keyInput = "", CancellationToken cancellationToken = default,
+        Func<ValueTask>? applyReview = null)
     {
         switch (Step)
         {
@@ -81,8 +93,8 @@ public sealed class SetupSession
                     return false;
                 if (!GameSettings.SafeEngineText(Data.Path) || !GameSettings.SafeEngineText(folder.Root))
                     throw new InvalidDataException("Choose a path without quotes, plus signs, semicolons or control characters.");
-                await folder.WriteAsync(DataPathFile, [.. Encoding.UTF8.GetBytes(Data.Path + "\n")], cancellationToken)
-                    .ConfigureAwait(false);
+                if (!deferWrites)
+                    await WriteDataAsync(Data.Path, cancellationToken).ConfigureAwait(false);
                 confirmedData = Data.Path;
                 Step = SetupStep.Key;
                 break;
@@ -91,7 +103,11 @@ public sealed class SetupSession
                     return false;
                 if (ReplacingKey || !HasStoredKey)
                 {
-                    await secrets.WriteAsync(KeySecret, CdKey.Normalize(keyInput), cancellationToken).ConfigureAwait(false);
+                    string normalized = CdKey.Normalize(keyInput);
+                    if (deferWrites)
+                        pendingKey = normalized;
+                    else
+                        await secrets.WriteAsync(KeySecret, normalized, cancellationToken).ConfigureAwait(false);
                     HasStoredKey = true;
                     ReplacingKey = false;
                 }
@@ -102,6 +118,17 @@ public sealed class SetupSession
                 {
                     Step = SetupStep.Data;
                     return false;
+                }
+                if (deferWrites)
+                {
+                    // Once application begins, retry the reviewed choices on failure. Cancel can no longer discard them.
+                    canCancel = false;
+                    if (applyReview is not null)
+                        await applyReview().ConfigureAwait(false);
+                    await WriteDataAsync(confirmedData, cancellationToken).ConfigureAwait(false);
+                    if (pendingKey is { } key)
+                        await secrets.WriteAsync(KeySecret, key, cancellationToken).ConfigureAwait(false);
+                    pendingKey = null;
                 }
                 await folder.WriteAsync(CompletionFile, [.. "prepared\n"u8.ToArray()], cancellationToken).ConfigureAwait(false);
                 canCancel = false;
@@ -120,6 +147,32 @@ public sealed class SetupSession
         KeepStoredKey();
         Step = SetupStep.Personalize;
         return true;
+    }
+
+    public bool ReviewPersonalization(SetupPersonalization? choice)
+    {
+        if (Step != SetupStep.Personalize)
+            return false;
+        if (choice is { } edit && (edit.Display is not ("borderless" or "exclusive" or "windowed") ||
+            edit.Name is { } name && SetupPlayer.NameProblem(name) is not null))
+            return false;
+        Personalization = choice;
+        return PersonalizationSaved();
+    }
+
+    public void ReviewPrivacy(bool send)
+    {
+        switch (Step)
+        {
+            case SetupStep.CrashReports:
+                CrashChoice = send;
+                CrashQuestionAnswered();
+                break;
+            case SetupStep.UsageData:
+                UsageChoice = send;
+                UsageQuestionAnswered();
+                break;
+        }
     }
 
     // The host applies the reviewed player-name/display changes through its profile/settings stores.
@@ -175,12 +228,23 @@ public sealed class SetupSession
     {
         if (!canCancel)
             return false;
+        if (deferWrites)
+        {
+            pendingKey = null;
+            Personalization = null;
+            CrashChoice = UsageChoice = null;
+            HasStoredKey = originallyHadKey;
+            confirmedData = originalData;
+        }
         ChooseData(confirmedData);
         ReplacingKey = false;
         canCancel = false;
         Step = SetupStep.Complete;
         return true;
     }
+
+    private ValueTask WriteDataAsync(string path, CancellationToken cancellationToken) =>
+        folder.WriteAsync(DataPathFile, [.. Encoding.UTF8.GetBytes(path + "\n")], cancellationToken);
 
     private SetupDataChoice Inspect(string path)
     {
