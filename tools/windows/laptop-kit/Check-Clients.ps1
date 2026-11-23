@@ -2,7 +2,7 @@ function New-TestProfile([string]$HomePath, [switch]$Classic) {
     $profile = New-Folder (Join-Path $HomePath 'main\players\kit')
     'kit' | Set-Content -LiteralPath (Join-Path (Split-Path $profile -Parent) 'active.txt') -Encoding ASCII
     @('bind F10 "screenshotJpeg kit-extra"', 'bind F11 "screenshotJpeg kit-menu"',
-        'bind F12 "screenshotJpeg kit-toujane"') |
+        'bind F12 "screenshotJpeg kit-toujane"', 'seta name "Kit Player"') |
         Set-Content -LiteralPath (Join-Path $profile 'config_mp.cfg') -Encoding ASCII
     if ($Classic) {
         '000000000000000086D3' | Set-Content -LiteralPath (Join-Path $HomePath 'main\cod2key') -Encoding ASCII
