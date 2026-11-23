@@ -348,23 +348,24 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         if ($Route -eq 'hosting') {
             $closeTrace = Join-Path $Results 'hosting-close.txt'
+            $closeAction = 'Stop server and close'
             Focus-KitWindow $app
             [KitDesktop]::Chord(18, 115)
-            Wait-KitCondition { Find-KitControl $app 'Stop and quit' -Name } 12 'the hosted server close confirmation' | Out-Null
+            Wait-KitCondition { Find-KitControl $app $closeAction -Name } 12 'the hosted server close confirmation' | Out-Null
             Focus-KitWindow $app
             [KitDesktop]::Tap(27)
             Wait-KitCondition {
-                -not (Find-KitControl $app 'Stop and quit' -Name) -and
+                -not (Find-KitControl $app $closeAction -Name) -and
                     (Request-KitServer $port 'getstatus Kit') -match $hostnameField
             } 12 'the confirmation to close and the server to stay up after Cancel' | Out-Null
             'Cancel dismissed the confirmation and the server still answered.' | Set-Content -LiteralPath $closeTrace
             Start-Sleep -Milliseconds 700
             Focus-KitWindow $app
             [KitDesktop]::Chord(18, 115)
-            $confirm = Wait-KitCondition { Find-KitControl $app 'Stop and quit' -Name } 12 'the reopened quit confirmation'
+            $confirm = Wait-KitCondition { Find-KitControl $app $closeAction -Name } 12 'the reopened quit confirmation'
             $confirm.SetFocus()
             [KitDesktop]::Tap(13)
-            'Confirmed Stop and quit.' | Add-Content -LiteralPath $closeTrace
+            "Confirmed $closeAction." | Add-Content -LiteralPath $closeTrace
             Wait-KitCondition {
                 $launcher.Process.HasExited -and -not (Request-KitServer $port 'getstatus Kit')
             } 20 'the launcher and its hosted server to stop' | Out-Null
