@@ -79,6 +79,23 @@ public static class KitDesktop {
     public static void ClickButton(bool up) {
         Send(new Input { value=new Payload { mouse=new Mouse { flags=up?4u:2u } } });
     }
+    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    private struct ShellRequest {
+        public int Size; public uint Mask; public IntPtr Window;
+        public string Verb, File, Parameters, Directory; public int Show;
+        public IntPtr Instance, List; public string FileClass; public IntPtr ClassKey; public uint Hotkey;
+        public IntPtr Monitor, Process;
+    }
+    [DllImport("shell32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    private static extern bool ShellExecuteEx(ref ShellRequest request);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+    public static void OpenAssociation(string file, string fileClass) {
+        var request = new ShellRequest { Size=Marshal.SizeOf(typeof(ShellRequest)),
+            Mask=0x541, FileClass=fileClass, Verb="open", File=file, Show=1 };
+        if (!ShellExecuteEx(ref request))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        if (request.Process != IntPtr.Zero) CloseHandle(request.Process);
+    }
     public static string Clip() {
         Rect r; Point p;
         GetClipCursor(out r); GetCursorPos(out p);

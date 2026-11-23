@@ -39,6 +39,63 @@ function Stop-KitOwnedGame($Game, [IntPtr]$Window) {
     if (-not $Game.WaitForExit(8000)) { $Game.Kill(); [void]$Game.WaitForExit(5000) }
 }
 
+function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe) {
+    Assert-Offline
+    $key = "HKCU:\Software\Classes\$Class\shell\open\command"
+    Stop-KitIfMissing $key 'The kit association was not registered.'
+    if ((Get-Item -LiteralPath $key).GetValue('') -ine ('"{0}" "%1"' -f $Exe)) {
+        throw 'The association points to a different program.'
+    }
+    $environment = Get-KitLauncherSettings
+    $environment.HOME = $environment.CFFIXED_USER_HOME = $LauncherHome
+    $environment.COD2X_TEST_SERVICE_URL = 'http://127.0.0.1:9'
+    $environment.COD2X_TEST_UPDATER_ADDRESS = '127.0.0.1:9'
+    $environment.COD2X_TEST_UPDATER_URL = 'http://127.0.0.1:9/api/updater/check'
+    $original = @{}
+    try {
+        foreach ($name in $environment.Keys) {
+            $original[$name] = [Environment]::GetEnvironmentVariable($name)
+            [Environment]::SetEnvironmentVariable($name, $environment[$name])
+        }
+        [KitDesktop]::OpenAssociation($Target, $Class)
+    } finally {
+        foreach ($name in $original.Keys) { [Environment]::SetEnvironmentVariable($name, $original[$name]) }
+    }
+}
+
+function Invoke-KitOpenDemo([string]$Edition) {
+    Stop-KitIfNoGame
+    $exe = Get-KitStartTarget
+    $demo = Join-Path $RunResults "match-$Edition-connect\kit-match.dm_1"
+    Stop-KitIfMissing $demo 'The loopback match did not save a demo.'
+    Initialize-KitDesktop
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    Set-KitLauncherProfile $Edition 'dx9'
+    $console = Join-Path $LauncherHome 'main\console_mp.log'
+    if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
+    $launcher = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    $game = $null
+    $window = [IntPtr]::Zero
+    try {
+        $app = Get-KitLauncherWindow $launcher.Process
+        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
+        Open-KitAssociation $demo 'CoD2Unbound.Demo' $exe
+        $since = Get-Date
+        Invoke-KitControl $app 'Play demo' -Name
+        $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
+        $window = Get-KitGameWindow $game
+        $console = Join-Path $LauncherHome 'main\console_mp.log'
+        Wait-KitCondition {
+            (Test-Path -LiteralPath $console) -and (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
+        } 40 'game demo playback' | Out-Null
+        Save-KitFrame $window $LauncherHome $Results 'kit-shell-demo'
+    } finally {
+        Stop-KitOwnedGame $game $window
+        Save-GameEvidence $LauncherHome $Results
+        Stop-KitLauncher $launcher $Results
+    }
+}
+
 function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
@@ -51,6 +108,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     Set-KitLauncherProfile $Edition 'dx9'
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
+    $recording = Join-Path $LauncherHome 'main\demos\kit-match.dm_1'
+    if ($Route -eq 'connect' -and (Test-Path -LiteralPath $recording)) { Remove-Item -LiteralPath $recording }
     $port = 29791
     $settings = Get-KitLauncherSettings
     $launcher = $server = $master = $game = $null
@@ -92,13 +151,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             'link' {
                 $scheme = if ($Edition -eq 'original') { 'cod2' } else { 'cod2x' }
-                $key = "HKCU:\Software\Classes\$scheme\shell\open\command"
-                Stop-KitIfMissing $key 'The kit link handler was not registered.'
-                if ((Get-Item -LiteralPath $key).GetValue('') -ine ('"{0}" "%1"' -f $exe)) {
-                    throw 'The link handler points to a different program.'
-                }
-                # The signed-in Shell uses the registered association.
-                Start-Process -FilePath ("${scheme}://127.0.0.1:$port")
+                Open-KitAssociation ("${scheme}://127.0.0.1:$port") $scheme $exe
                 Invoke-KitControl $app 'Connect' -Name
             }
             'list' {

@@ -157,6 +157,13 @@ $Steps = @(
         Invoke-KitSetupVersion $false
         Assert-InstalledFiles $InstallRoot (Join-Path $Kit 'portable')
     } 'Type YES to update this Windows account to the current test version, or press Enter to skip' -Consent
+    Add-KitStep 'installed-signatures' 'Windows signature state for installed files' {
+        Stop-KitIfMissing $InstallMarker 'There is no kit install to check.'
+        $programs = @(Get-ChildItem -LiteralPath $InstallRoot -File -Recurse |
+            Where-Object Extension -in '.exe','.dll','.cat')
+        if (-not $programs.Count) { throw 'Setup left no files to check.' }
+        Save-Signatures $programs.FullName (Join-Path $Results 'installed-signatures.json')
+    }
     Add-KitStep 'launcher' 'First and later launcher starts from the installed shortcut' {
         Stop-KitIfNoGame
         Initialize-KitDesktop
@@ -255,6 +262,12 @@ $Steps = @(
                 Invoke-KitLoopback $step.Edition $step.Variant
             } -Edition $edition -Variant $route
         }
+    }
+    foreach ($edition in 'original','cod2x') {
+        Add-KitStep "open-demo-$edition" "Open the $(Get-EditionName $edition) demo through Windows" {
+            param($step)
+            Invoke-KitOpenDemo $step.Edition
+        } -Edition $edition
     }
     foreach ($attempt in 1..5) {
         Add-KitStep "update-$attempt" "In-app update $attempt of 5 from the installed shortcut" {
