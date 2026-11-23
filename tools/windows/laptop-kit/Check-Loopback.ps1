@@ -165,10 +165,20 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             'hosting' {
                 Invoke-KitControl $app 'Hosting' -Name
                 Invoke-KitControl $app 'New Server' -Name
-                Set-KitEdit $app 'Server name' 'Kit host' -Name
+                $hostName = "Kit $Edition"
+                Set-KitEdit $app 'Server name' $hostName -Name
                 Invoke-KitControl $app 'Start Server' -Name
-                $port = 28960
-                Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match '\\sv_hostname\\Kit host' } 45 'the launcher-hosted server' | Out-Null
+                $savedHosts = Join-Path $LauncherHome 'hosting\hosted-servers.json'
+                $port = Wait-KitCondition {
+                    if (Test-Path -LiteralPath $savedHosts) {
+                        $configured = Get-Content -LiteralPath $savedHosts -Raw | ConvertFrom-Json
+                        foreach ($saved in $configured) {
+                            if ($saved.Name -eq $hostName) { return $saved.Port }
+                        }
+                    }
+                } 15 'the saved Hosting port'
+                $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
+                Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match $hostnameField } 45 'the launcher-hosted server' | Out-Null
                 Invoke-KitControl $app 'Join' -Name
             }
         }
@@ -201,15 +211,17 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         if ($Route -eq 'hosting') {
             Invoke-KitControl $app 'Stop server' -Name
             Wait-KitCondition { -not (Request-KitServer $port 'getstatus Kit') } 15 'Hosting to stop' | Out-Null
-            $logs = Join-Path $LauncherHome 'hosting\servers'
-            foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
-                if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $Results $file.Name) }
-            }
         }
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
         if ($launcher) { Stop-KitLauncher $launcher $Results }
+        if ($Route -eq 'hosting') {
+            $logs = Join-Path $LauncherHome 'hosting\servers'
+            foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
+                if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $Results $file.Name) }
+            }
+        }
         if ($master) {
             if (-not $master.Process.HasExited) { $master.Process.Kill() }
             Complete-KitProcess $master $entryMaster.Evidence 5 | Out-Null
