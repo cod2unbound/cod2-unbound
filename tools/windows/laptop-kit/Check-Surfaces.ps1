@@ -22,8 +22,8 @@ function Invoke-KitSurface([string]$Page) {
         Focus-KitWindow $app
         switch ($Page) {
             'home' {
-                Invoke-KitControl $app 'Open game menu' -Name
-                Save-KitSurface $app 'game-menu' @('Original 1.3','CoD2x')
+                Invoke-KitControl $app 'More ways to launch' -Name
+                Save-KitSurface $app 'game-menu' @('Open the game menu',('Connect to an address' + [char]0x2026))
                 [KitDesktop]::Tap(27)
                 $news = if (Find-KitControl $app 'See all' -Name) { 'See all' } else { "What$([char]0x2019)s New" }
                 Invoke-KitControl $app $news -Name

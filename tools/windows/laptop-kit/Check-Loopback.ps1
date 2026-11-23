@@ -213,7 +213,10 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Wait-KitCondition { Find-KitControl $app 'Kit-Loopback' -Name } 25 'the loopback server in the list' | Out-Null
                 if ($Route -eq 'handoff') {
                     Select-KitServerRow $app 'Kit-Loopback'
-                    Wait-KitCondition { Find-KitControl $app 'DetailReady' -AllowOffscreen } 15 'the server ready check' | Out-Null
+                    Wait-KitCondition {
+                        (Find-KitControl $app 'Check again' -Name -AllowOffscreen) -or
+                        (Find-KitControl $app 'DetailReady' -AllowOffscreen)
+                    } 15 'the server ready check' | Out-Null
                     Focus-KitWindow $app
                     Save-KitWindow $app (Join-Path $Results 'servers-ready.png')
                 }
