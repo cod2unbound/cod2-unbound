@@ -108,6 +108,7 @@
                 <GradientStop Offset="0.5" Color="#E8141711" />
                 <GradientStop Offset="1" Color="#22141711" />
             </LinearGradientBrush>
+            <SolidColorBrush x:Key="GroundBrush" Color="#0D0F0C" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -218,6 +219,7 @@
                 <GradientStop Offset="0.5" Color="#E8F7F2E6" />
                 <GradientStop Offset="1" Color="#22F7F2E6" />
             </LinearGradientBrush>
+            <SolidColorBrush x:Key="GroundBrush" Color="#EFE8D8" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="Transparent" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
         </ResourceDictionary>
@@ -320,6 +322,7 @@
             <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SetupHeroScrimBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource SystemColorWindowColor}" />
         </ResourceDictionary>

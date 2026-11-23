@@ -29,12 +29,12 @@
                 <Button x:Name="RefreshButton" Style="{StaticResource IconAction}" AccessKey="R" Click="OnRefresh"
                         ToolTipService.ToolTip="Refresh server list (Ctrl+R)"
                         AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list, Ctrl+R">
-                    <FontIcon x:Name="RefreshGlyph" FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentRefresh}" FontSize="20" />
+                    <FontIcon x:Name="RefreshGlyph" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentRefresh}" FontSize="20" />
                 </Button>
                 <Button AccessKey="C" Click="OnConnect" AutomationProperties.Name="Connect to address…"
                         AutomationProperties.AcceleratorKey="Ctrl+L">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
                         <TextBlock Text="Connect to address…" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -42,7 +42,7 @@
             <Button x:Name="NewHost" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
                     AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
+                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
                     <TextBlock Text="New server" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
@@ -65,7 +65,7 @@
                             AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                             TextChanged="OnSearch" QuerySubmitted="OnSearchSubmitted">
                 <AutoSuggestBox.QueryIcon>
-                    <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
+                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
                 </AutoSuggestBox.QueryIcon>
                 <AutoSuggestBox.TextBoxStyle>
                     <Style TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
@@ -156,7 +156,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock x:Name="RowName" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <FontIcon Grid.Column="1" FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentLock}" FontSize="12"
+                                            <FontIcon Grid.Column="1" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="12"
                                                       Visibility="{Binding Lock}" AutomationProperties.Name="Password required" />
                                         </Grid>
                                         <Grid ColumnSpacing="4">
@@ -210,7 +210,7 @@
                                            MaxWidth="214" Style="{StaticResource AddressText}" />
                                 <Button Style="{StaticResource IconAction}" Click="OnCopyAddress"
                                         AutomationProperties.Name="Copy server address" ToolTipService.ToolTip="Copy server address">
-                                    <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentCopy}" FontSize="14" />
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCopy}" FontSize="14" />
                                 </Button>
                             </StackPanel>
                             <Grid ColumnSpacing="8">
@@ -256,7 +256,7 @@
                         <Button x:Name="JoinButton" AutomationProperties.Name="Launch" HorizontalAlignment="Stretch" Height="40"
                                 Style="{StaticResource LauncherAccentButton}" AccessKey="L" Click="OnJoin">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="{StaticResource LauncherIconFont}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
+                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
                                 <TextBlock x:Name="JoinButtonLabel" Text="Launch" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>

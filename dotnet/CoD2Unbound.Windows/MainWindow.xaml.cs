@@ -48,7 +48,7 @@ public sealed partial class MainWindow : Window
         }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
-        useCustomTitleBar = windows11 && AppWindowTitleBar.IsCustomizationSupported();
+        useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();
         if (useCustomTitleBar)
         {
             ExtendsContentIntoTitleBar = true;
@@ -182,6 +182,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateCaptionColors()
     {
+        // Windows 10 supports caption button colors when content extends into the title bar.
         if (!useCustomTitleBar)
             return;
         var foreground = windowTheme.HighContrast ? null : (WindowBar.Foreground as SolidColorBrush)?.Color;
@@ -454,7 +455,7 @@ public sealed partial class MainWindow : Window
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
-            var icon = Fluent("StarFilled", 16);
+            var icon = Fluent("StarFilled", 16, filled: true);
             if (!IsHighContrast)
                 icon.Foreground = ThemeBrush("FavoriteBrush", Root.ActualTheme, false);
             Nav.MenuItems.Add(new NavigationViewItem
