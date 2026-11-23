@@ -120,14 +120,32 @@ function Invoke-KitRestore {
     $settings = Get-KitLauncherSettings
     $started = Get-Date
     $run = Start-KitProcess $exe '' $LauncherHome $settings -WorkingDirectory (Join-Path $env:SystemRoot 'System32')
+    $session = $run.Process.SessionId
+    $starterId = $run.Process.Id
     try {
         Wait-KitCondition {
             $version = try { Read-InstalledVersion 'HKCU' $InstallRoot } catch { '' }
             $version -eq '0.3.9' -and -not (Test-Path -LiteralPath "$InstallRoot.previous-install")
         } 150 'the old version to be restored' | Out-Null
         Invoke-TestKey 'verify'
+        $trace = Join-Path $LauncherHome 'startup-timing.log'
+        Wait-KitCondition {
+            if (Test-Path -LiteralPath $trace) {
+                foreach ($process in Get-Process -Name 'CoD2Unbound.Windows' -ErrorAction SilentlyContinue) {
+                    if ($process.Path -ieq $exe -and $process.SessionId -eq $session -and $process.Id -ne $starterId -and
+                        $process.StartTime -ge $started -and
+                        (Select-String -LiteralPath $trace -SimpleMatch " $($process.Id) first content frame" -Quiet)) { $process }
+                }
+            }
+        } 45 'the restored launcher to show its first content' | Out-Null
+        Save-Text $trace (Join-Path $Results 'restored-startup-timing.log')
     } finally {
         Save-KitUpdateLogs 'restore' $started
         Stop-KitLauncher $run $Results
+        foreach ($relaunch in Get-Process -Name 'CoD2Unbound.Windows' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -ieq $exe -and $_.SessionId -eq $session -and $_.StartTime -ge $started }) {
+            [void]$relaunch.CloseMainWindow()
+            if (-not $relaunch.WaitForExit(10000)) { $relaunch.Kill(); [void]$relaunch.WaitForExit(5000) }
+        }
     }
 }
