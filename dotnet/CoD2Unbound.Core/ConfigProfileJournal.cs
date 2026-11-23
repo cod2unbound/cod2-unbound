@@ -93,6 +93,13 @@ public sealed partial class ConfigProfileStore
         return ReadHistory(directory);
     }
 
+    public ConfigHistoryEntry SaveSnapshot(string id, ConfigProfileVersion expected)
+    {
+        using var lease = files.Acquire(default);
+        CheckWritable();
+        return UpdateLocked(id, expected, expected, ConfigHistorySource.You, "Saved a snapshot");
+    }
+
     public ConfigHistoryEntry Restore(string id, string snapshotId, ConfigProfileVersion expected,
         ConfigSnapshotRevision revision = ConfigSnapshotRevision.After)
     {

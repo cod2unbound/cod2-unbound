@@ -35,6 +35,7 @@ internal static partial class Program
         ChainCases();
         WindowsBindsCases();
         CheckupCases();
+        ConfigChecksCases();
         ExtraCases();
         WorkflowCases();
         WindowsUpdateCases();

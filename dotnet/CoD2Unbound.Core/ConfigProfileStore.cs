@@ -88,7 +88,7 @@ public sealed partial class ConfigProfileStore(
     private const string MetadataName = "/studio.json";
     private const string JournalName = "/.studio-transaction.json";
     private const string HistoryName = "/history";
-    private const int HistoryRetention = 50;
+    public const int HistoryRetention = 50;
 
     public ConfigDialect Dialect { get; } = dialect;
 

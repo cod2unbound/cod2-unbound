@@ -235,6 +235,9 @@ public sealed partial class ConfigStudioSession
         Refresh();
     }
 
+    public ConfigHistoryEntry SaveSnapshot(ConfigProfileRead profile) =>
+        Mutate(profile.Profile.Id, store => store.SaveSnapshot(profile.Profile.Id, profile.Version));
+
     public TResult Mutate<TResult>(string id, Func<ConfigProfileStore, TResult> edit)
     {
         CheckWritable(rejectDraft: true);
