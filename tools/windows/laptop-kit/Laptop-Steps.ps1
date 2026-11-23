@@ -17,15 +17,30 @@ function Stop-KitIfNoGame {
 }
 
 function Save-KitFirewall([string]$Label) {
-    $records = foreach ($filter in Get-NetFirewallApplicationFilter -PolicyStore ActiveStore) {
-        if (-not $filter.Program -or $filter.Program -eq 'Any') { continue }
-        if ((Split-Path $filter.Program -Leaf) -notin $EngineNames) { continue }
-        $rule = Get-NetFirewallRule -AssociatedNetFirewallApplicationFilter $filter
-        [pscustomobject]@{ Program=$filter.Program; Direction=$rule.Direction.ToString()
-            Enabled=$rule.Enabled.ToString(); Action=$rule.Action.ToString(); Profile=$rule.Profile.ToString() }
+    # Windows 10 refuses the rule list to a standard account. That must not fail
+    # the game or server step that asked for it: record the refusal and go on.
+    try {
+        $records = foreach ($filter in Get-NetFirewallApplicationFilter -PolicyStore ActiveStore -ErrorAction Stop) {
+            if (-not $filter.Program -or $filter.Program -eq 'Any') { continue }
+            if ((Split-Path $filter.Program -Leaf) -notin $EngineNames) { continue }
+            $rule = Get-NetFirewallRule -AssociatedNetFirewallApplicationFilter $filter -ErrorAction Stop
+            [pscustomobject]@{ Program=$filter.Program; Direction=$rule.Direction.ToString()
+                Enabled=$rule.Enabled.ToString(); Action=$rule.Action.ToString(); Profile=$rule.Profile.ToString() }
+        }
+    } catch {
+        Protect-KitText "Windows did not let this account list firewall rules. $($_.Exception.Message)" |
+            Set-Content -LiteralPath (Join-Path $Results "firewall-$Label-unreadable.txt") -Encoding UTF8
+        return $false
     }
     Protect-KitText (ConvertTo-Json -InputObject @($records) -Depth 4) |
         Set-Content -LiteralPath (Join-Path $Results "firewall-$Label.json") -Encoding UTF8
+    return $true
+}
+
+function Save-KitFirewallStep([string]$Label) {
+    if (-not (Save-KitFirewall $Label)) {
+        throw [NotSupportedException]::new('Windows does not let a standard account list firewall rules on this PC')
+    }
 }
 
 function Get-KitLauncherSettings {
@@ -81,6 +96,9 @@ $Steps = @(
         $windows = Get-KitWindowsVersion
         "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build), Windows PowerShell $($PSVersionTable.PSVersion)" |
             Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
+        $gateways = @(Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0', '::/0') }).Count
+        "Default routes: $gateways. Online run allowed by the driver: $($env:COD2_KIT_ONLINE -eq '1')." |
+            Set-Content -LiteralPath (Join-Path $Results 'network.txt') -Encoding UTF8
         Test-KitFiles
         $captured = @()
         if ($GamePath) {
@@ -119,7 +137,7 @@ $Steps = @(
             Set-Content (Join-Path $Results 'directx-files.txt')
     }
     Add-KitStep 'shaders' 'Stock shaders on the Windows compiler' { Invoke-KitShaderTable }
-    Add-KitStep 'firewall-before' 'Firewall rules before first start' { Save-KitFirewall 'before' }
+    Add-KitStep 'firewall-before' 'Firewall rules before first start' { Save-KitFirewallStep 'before' }
     Add-KitStep 'key' 'Windows reads the sample key' {
         Assert-NoSavedKitKey
         [IO.File]::WriteAllText($KeyMarker, 'sample')
@@ -136,7 +154,7 @@ $Steps = @(
             try {
                 Invoke-ServerCheck $step.Edition $GamePath $extracted 'server'
                 Invoke-Replay $step.Edition $GamePath 'standing' 'mp_toujane' 'dm' 12345 600 2 (Join-Path $Kit 'replays\standing\usercmds.txt') ''
-            } finally { Save-KitFirewall 'after-server' }
+            } finally { [void](Save-KitFirewall 'after-server') }
         } -Edition $edition
     }
     Add-KitStep 'install' 'Install the previous version for this user' {
@@ -206,7 +224,7 @@ $Steps = @(
                 Stop-KitIfNoGame
                 $script:RecordKitAudio = $step.Edition -eq 'original' -and $step.Renderer -eq 'dx9'
                 try { Invoke-AutomaticClient $step.Edition $GamePath $step.Renderer }
-                finally { $script:RecordKitAudio = $false; Save-KitFirewall 'after-client' }
+                finally { $script:RecordKitAudio = $false; [void](Save-KitFirewall 'after-client') }
             } -Edition $edition -Renderer $renderer
         }
         foreach ($renderer in 'dx9','dx7') {
@@ -287,7 +305,7 @@ $Steps = @(
     Add-KitStep 'comparison-pictures' 'Open game and reference pictures side by side' { Open-KitComparison }
     Add-KitStep 'looks' 'Picture, mouse and sound on this PC' {} 'Compare the game pictures. Try mouse turning and sound in both editions, then Alt+Tab out and back. Write one line about picture, mouse, sound and full-screen, or type skip'
     Add-KitStep 'narrator' 'Windows appearance and Narrator' {} 'Check Home and Settings > Privacy with Narrator. Write what read out of order, what was hard to reach, or what looked out of place. Type skip to skip'
-    Add-KitStep 'firewall-after' 'Firewall rules after game and server starts' { Save-KitFirewall 'after' }
+    Add-KitStep 'firewall-after' 'Firewall rules after game and server starts' { Save-KitFirewallStep 'after' }
     Add-KitStep 'security-answer' 'Security prompts actually shown' {} 'Write the Windows Security, SmartScreen or UAC wording and the button you pressed. If there was no prompt, write none'
     Add-KitStep 'faults' 'Freeze recovery and crash with a local report receiver' { Invoke-KitFaults }
     Add-KitStep 'collect' 'Windows application and Defender event entries' { Save-KitEvents }
