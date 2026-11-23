@@ -103,11 +103,17 @@ public sealed partial class SettingsPage
             Message = "Your loadouts keep their own resolution and picture settings.",
             ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
         });
+        Control retryFocus = mode;
         displaySave = new InfoBar
         {
             Severity = InfoBarSeverity.Error, IsClosable = false,
             Message = "Your changes couldn't be saved. Check that your CoD2 Unbound folder is writable, then try again.",
-            ActionButton = Action("Try again", () => ChangeAsync(Current, display: true))
+            ActionButton = Action("Try again", async () =>
+            {
+                await ChangeAsync(Current, display: true);
+                if (Current == model.Settings.Saved && retryFocus.IsLoaded)
+                    retryFocus.Focus(FocusState.Programmatic);
+            })
         };
         container.Children.Add(displaySave);
         displaySaved = Caption("Saved. Applies the next time the game starts.");
@@ -143,18 +149,18 @@ public sealed partial class SettingsPage
         {
             if (monitors.SelectedItem is ComboBoxItem { Tag: WindowsDisplay selected })
             {
-                await Save(Current with { WindowsMonitor = selected.Id });
+                await Save(Current with { WindowsMonitor = selected.Id }, monitors);
             }
         };
         mode.SelectionChanged += async (_, _) =>
         {
             if (mode.SelectedIndex >= 0)
-                await Save(Current with { Fullscreen = modes[mode.SelectedIndex] });
+                await Save(Current with { Fullscreen = modes[mode.SelectedIndex] }, mode);
         };
         graphics.SelectionChanged += async (_, _) =>
         {
             if (graphics.SelectedIndex >= 0)
-                await Save(Current with { WindowsRenderer = (WindowsRenderMode)graphics.SelectedIndex });
+                await Save(Current with { WindowsRenderer = (WindowsRenderMode)graphics.SelectedIndex }, graphics);
         };
 
         void AddRow(string label, FrameworkElement action, TextBlock detail)
@@ -164,8 +170,9 @@ public sealed partial class SettingsPage
             rows.Children.Add(row);
         }
 
-        async Task Save(GameSettings settings)
+        async Task Save(GameSettings settings, Control editor)
         {
+            retryFocus = editor;
             var pending = ChangeAsync(settings, display: true);
             displaySaved!.Visibility = Visibility.Collapsed;
             UpdatePreview();
