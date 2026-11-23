@@ -27,19 +27,22 @@ public sealed partial class LibraryPage : Page
         library = new(files);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
-        Sections.SelectedItem = Sections.Items[0];
+        Sections.SelectedItem = MatchesSection;
+        Retention.Text = $"Kept on this PC · the last {MatchSummaries.RecordLimit} matches";
         ready = true;
         Render();
     }
 
-    private MediaKind CurrentKind => Sections.Items.IndexOf(Sections.SelectedItem) switch
-    {
-        1 => MediaKind.Demo,
-        2 => MediaKind.Config,
-        _ => MediaKind.Screenshot
-    };
+    private MediaKind CurrentKind => ReferenceEquals(Sections.SelectedItem, DemosSection) ? MediaKind.Demo
+        : ReferenceEquals(Sections.SelectedItem, ConfigFilesSection) ? MediaKind.Config : MediaKind.Screenshot;
 
-    private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args) => TryRender();
+    private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    {
+        if (ready)
+            Notice.IsOpen = false;
+        TryRender();
+    }
+
     private void OnSearch(object sender, TextChangedEventArgs args) => TryRender();
 
     private async void TryRender()
@@ -48,29 +51,88 @@ public sealed partial class LibraryPage : Page
             await shell.ShowProblemAsync(() => { Render(); return Task.CompletedTask; });
     }
 
+    internal void UpdateGameState(bool running, bool ended)
+    {
+        if (ended)
+            Render();
+        else if (running)
+            DeleteSummaries.IsEnabled = false;
+    }
+
     internal void Render()
     {
+        bool matches = ShowingMatches;
         var kind = CurrentKind;
-        var items = library.List(kind, Search.Text);
-        var rows = items.Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local))).ToArray();
+        ShowFolder.Visibility = IsVisible(!matches);
+        Search.Visibility = IsVisible(!matches);
+        RecycleNotice.Visibility = IsVisible(!matches && recycled?.Kind == kind);
+        SectionTitle.Text = matches ? "Matches" : kind switch
+        {
+            MediaKind.Demo => "Demos",
+            MediaKind.Screenshot => "Screenshots",
+            _ => "Library"
+        };
+        SectionDetail.Text = matches ? "How your recent matches ran: ping and connection." : kind switch
+        {
+            MediaKind.Demo => "Recorded matches play back in the game, from any point.",
+            MediaKind.Screenshot => "Screenshots you take in a match, kept in your CoD2 Unbound folder.",
+            _ => ""
+        };
+        SectionDetail.Visibility = IsVisible(SectionDetail.Text.Length != 0);
+        ShowFolder.Content = kind == MediaKind.Config ? "Show folder" : "Show in File Explorer";
+        if (matches)
+        {
+            Screenshots.Visibility = FileTable.Visibility = ScreenshotHelp.Visibility = Visibility.Collapsed;
+            RenderMatches();
+            return;
+        }
+
+        MatchTable.Visibility = Retention.Visibility = DeleteSummaries.Visibility = Visibility.Collapsed;
+        SummariesOff.IsOpen = false;
+        ListViewBase list = kind == MediaKind.Screenshot ? Screenshots : Files;
+        string? selected = (list.SelectedItem as MediaRow) is { } row && row.Kind == kind ? row.Name : null;
+        MediaRow[] rows;
+        try
+        {
+            rows = library.List(kind, Search.Text)
+                .Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local))).ToArray();
+        }
+        catch (Exception error) when (kind != MediaKind.Config && error is (IOException or UnauthorizedAccessException))
+        {
+            Screenshots.Visibility = FileTable.Visibility = ScreenshotHelp.Visibility = Visibility.Collapsed;
+            Empty.Visibility = Visibility.Visible;
+            EmptyBody.Content = LibraryEmpty("Folder", "Library unavailable",
+                "These files couldn’t be read. Check that your CoD2 Unbound folder is readable, then try again.",
+                LibraryAction("Try again", () => { Render(); return Task.CompletedTask; }));
+            return;
+        }
         Screenshots.ItemsSource = kind == MediaKind.Screenshot ? rows : null;
         Files.ItemsSource = kind == MediaKind.Screenshot ? null : rows;
-        Screenshots.Visibility = IsVisible(!items.IsEmpty && kind == MediaKind.Screenshot);
-        FileTable.Visibility = IsVisible(!items.IsEmpty && kind != MediaKind.Screenshot);
-        NameHeader.Text = kind == MediaKind.Demo ? "Recording" : "Name";
+        Files.IsItemClickEnabled = kind == MediaKind.Config;
+        Screenshots.Visibility = ScreenshotHelp.Visibility = IsVisible(rows.Length > 0 && kind == MediaKind.Screenshot);
+        FileTable.Visibility = IsVisible(rows.Length > 0 && kind != MediaKind.Screenshot);
+        NameHeader.Text = kind == MediaKind.Demo ? "Map" : "Name";
+        MapHeader.Text = "Recording";
+        FirstFileColumn.Width = kind == MediaKind.Demo ? new GridLength(84) : new GridLength(2, GridUnitType.Star);
+        DateHeader.Text = kind == MediaKind.Demo ? "Recorded" : "Date";
+        FileActionsColumn.Width = new GridLength(kind == MediaKind.Demo ? 96 : 32);
         MapHeader.Visibility = IsVisible(kind == MediaKind.Demo);
-        Empty.Visibility = IsVisible(items.IsEmpty);
-        if (!items.IsEmpty)
+        Empty.Visibility = IsVisible(rows.Length == 0);
+        if (selected is not null)
+            list.SelectedItem = rows.FirstOrDefault(item => item.Name == selected);
+        if (rows.Length > 0)
             return;
-        var (icon, heading, detail) = kind switch
-        {
-            MediaKind.Screenshot => ("Image", "No screenshots yet", "Screenshots you take in the game appear here."),
-            MediaKind.Demo => ("VideoClip", "No demos yet", "Demos you record in the game appear here."),
-            _ => ("Document", "No config files yet", "Config files saved in the game folder appear here.")
-        };
+
         if (!string.IsNullOrWhiteSpace(Search.Text))
-            (heading, detail) = ("No matching files", "Try another search.");
-        Empty.Content = EmptyState(icon, heading, detail);
+            EmptyBody.Content = kind == MediaKind.Config ? EmptyState("Document", "No matching files", "Try another search.")
+                : LibraryEmpty("Search", "No matching files", "Try another search.");
+        else if (kind == MediaKind.Demo)
+            EmptyBody.Content = RecordingEmpty();
+        else if (kind == MediaKind.Screenshot)
+            EmptyBody.Content = LibraryEmpty("Image", "No screenshots",
+                "Take one in a match with F12. It appears here when you come back.");
+        else
+            EmptyBody.Content = EmptyState("Document", "No config files yet", "Config files saved in the game folder appear here.");
     }
 
     private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Border)sender);
@@ -140,29 +202,6 @@ public sealed partial class LibraryPage : Page
             await shell.RunAsync(() => OpenFileAsync(row));
     }
 
-    private void OnFileMenu(object sender, RoutedEventArgs args)
-    {
-        if (sender is not Button button || button.Tag is not MediaRow row)
-            return;
-        var menu = new MenuFlyout();
-        Add(row.Kind == MediaKind.Demo ? "Play demo" : "Open", () => OpenFileAsync(row));
-        Add("Show in File Explorer", () =>
-        {
-            files.Reveal(row.Kind, row.File.Name);
-            return Task.CompletedTask;
-        });
-        Add("Rename…", () => RenameAsync(row));
-        Add("Move to Recycle Bin…", () => RecycleAsync(row));
-        menu.ShowAt(button);
-
-        void Add(string title, Func<Task> call)
-        {
-            var item = new MenuFlyoutItem { Text = title };
-            item.Click += async (_, _) => await shell.RunAsync(call);
-            menu.Items.Add(item);
-        }
-    }
-
     private async Task OpenFileAsync(MediaRow row)
     {
         string path = files.Existing(row.Kind, row.File.Name);
@@ -185,7 +224,7 @@ public sealed partial class LibraryPage : Page
 
     internal Task OfferDemoAsync(string path)
     {
-        Sections.SelectedItem = Sections.Items[1];
+        Sections.SelectedItem = DemosSection;
         return PlayDemoAsync(path, confirm: true);
     }
 
@@ -227,71 +266,19 @@ public sealed partial class LibraryPage : Page
                 ? "Set up your game files to play demos." : "Close the game before playing a demo.");
     }
 
-    private async Task RenameAsync(MediaRow row)
-    {
-        var name = new TextBox { Header = "Name", Text = Path.GetFileNameWithoutExtension(row.File.Name), MaxLength = 251 };
-        var problem = Caption("");
-        var content = new StackPanel { Spacing = 8 };
-        content.Children.Add(name);
-        content.Children.Add(problem);
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Rename file", Content = content, PrimaryButtonText = "Rename",
-            CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
-        };
-        name.TextChanged += (_, _) => Validate();
-        dialog.Opened += (_, _) => { name.Focus(FocusState.Programmatic); name.SelectAll(); };
-        dialog.PrimaryButtonClick += (_, args) =>
-        {
-            if (MediaLibrary.Rename(row.File, name.Text).FileName is not { } filename)
-            {
-                args.Cancel = true;
-                return;
-            }
-            try
-            {
-                if (filename != row.File.Name)
-                    files.Rename(row.Kind, row.File, filename);
-            }
-            catch (IOException error)
-            {
-                problem.Text = error.Message;
-                args.Cancel = true;
-            }
-        };
-        Validate();
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-            Render();
-
-        void Validate()
-        {
-            var (_, message) = MediaLibrary.Rename(row.File, name.Text);
-            problem.Text = message ?? "";
-            dialog.IsPrimaryButtonEnabled = message is null;
-        }
-    }
-
-    private async Task RecycleAsync(MediaRow row)
-    {
-        var dialog = new SafeRemovalDialog("Move this file to the Recycle Bin?", row.File.Name, "Move to Recycle Bin")
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
-        };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-        {
-            files.Recycle(row.Kind, row.File.Name, WinRT.Interop.WindowNative.GetWindowHandle(shell));
-            Render();
-        }
-    }
 }
 
 internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts)
 {
     public string Name => File.Name;
+    public string ScreenshotTitle => Facts.Map is { } map ? MapCatalog.DisplayName(map) : Name;
+    public string PlayName => $"Play {Name}";
     public string MenuName => $"More actions for {Name}";
-    public string Map => Kind == MediaKind.Demo && Facts.Map is { } map ? MapCatalog.DisplayName(map) : "";
+    public string DemoDetail => Facts.Map is { } map ? $"{MapCatalog.DisplayName(map)} · Recorded match" : "Recorded match";
+    public GridLength FirstColumnWidth => Kind == MediaKind.Demo ? new GridLength(84) : new GridLength(2, GridUnitType.Star);
     public string Stamp => Facts.Stamp;
     public string Size => Facts.Size;
     public Visibility Demo => IsVisible(Kind == MediaKind.Demo);
+    public Visibility Config => IsVisible(Kind == MediaKind.Config);
     public override string ToString() => Name;
 }

@@ -613,7 +613,7 @@ public sealed partial class ConfigsPage : Page
     {
         var checkup = new ConfigCheckup(model.Catalog, ConfigRules.LoadBundled(), ConfigOptimizer.LoadBundled());
         MatchSummary? match;
-        try { match = model.LastMatch; }
+        try { match = libraryMatch ?? model.LastMatch; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { match = null; }
         studioBody.Children.Add(new TextBlock { Text = "Check-up", Style = StyleFor("SectionTitle") });
         if (match is null)
