@@ -85,20 +85,21 @@ internal sealed partial class WindowsLauncherSession
         return null;
     }
 
-    internal async Task<bool> DeliverJoinAsync(GameProcessIdentity game, LaunchLink link, GameEdition edition,
+    internal async Task<GameLinkDelivery> DeliverJoinAsync(GameProcessIdentity game, LaunchLink link, GameEdition edition,
         UsageJoin source, GameServer? observation)
     {
         if (RunningEdition(game) != edition)
-            return false;
+            return GameLinkDelivery.Failed;
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+        GameLinkDelivery result;
         try
         {
-            if (await Game.ConnectToRunningAsync(game, link, deadline.Token) != GameLinkDelivery.Delivered)
-                return false;
+            result = await Game.ConnectToRunningAsync(game, link, deadline.Token);
         }
-        catch (OperationCanceledException) when (deadline.IsCancellationRequested) { return false; }
-        await RecordJoinAsync(link.Address, edition, source, observation);
-        return true;
+        catch (OperationCanceledException) when (deadline.IsCancellationRequested) { return GameLinkDelivery.Pending; }
+        if (result == GameLinkDelivery.Delivered)
+            await RecordJoinAsync(link.Address, edition, source, observation);
+        return result;
     }
 
     internal bool ReturnToRunningGame(GameProcessIdentity game) => WindowsRunningGameJoin.Activate(game);

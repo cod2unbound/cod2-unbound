@@ -45,12 +45,13 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
             var name = Body(shortcut.Title);
             name.VerticalAlignment = VerticalAlignment.Center;
             Put(line, 0, name);
-            Put(line, 1, new Border
-            {
-                Style = StyleFor("FieldCard"), Padding = new Thickness(6, 2, 6, 2),
-                Child = new TextBlock { Text = shortcut.Keys, Style = StyleFor("MonoCaption") }
-            });
-            AutomationProperties.SetName(line, $"{shortcut.Title}, {shortcut.Keys}");
+            if (shortcut.Keys.Length > 0)
+                Put(line, 1, new Border
+                {
+                    Style = StyleFor("FieldCard"), Padding = new Thickness(6, 2, 6, 2),
+                    Child = new TextBlock { Text = shortcut.Keys, Style = StyleFor("MonoCaption") }
+                });
+            AutomationProperties.SetName(line, shortcut.Keys.Length == 0 ? shortcut.Title : $"{shortcut.Title}, {shortcut.Keys}");
             column.Children.Add(line);
         }
         return column;

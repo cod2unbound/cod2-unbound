@@ -1,6 +1,7 @@
 <Page x:Class="CoD2Unbound.Windows.Views.HomePage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:CoD2Unbound.Windows.Views">
     <ScrollViewer x:Name="Scroll" SizeChanged="OnLayoutChanged">
         <Grid>
             <Grid.RowDefinitions>
@@ -33,18 +34,51 @@
                     <TextBlock x:Name="HeroDetail" MaxWidth="540" HorizontalAlignment="Left" FontSize="16"
                                TextWrapping="Wrap" Foreground="{ThemeResource HeroInkBrush}" />
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Button x:Name="LaunchButton" AutomationProperties.Name="Launch" AccessKey="L"
+                        <local:LaunchSplitButton x:Name="LaunchButton" AutomationProperties.Name="Launch" AccessKey="L"
                                 AutomationProperties.AcceleratorKey="Ctrl+Enter" Height="40" MinWidth="140" CornerRadius="20"
-                                Click="OnLaunch" Style="{StaticResource LauncherAccentButton}" IsEnabled="False">
+                                Click="OnLaunchSplit" Visibility="Collapsed">
+                            <local:LaunchSplitButton.Resources>
+                                <ResourceDictionary Source="ms-appx:///Views/HomeLaunchResources.xaml" />
+                            </local:LaunchSplitButton.Resources>
+                            <local:LaunchSplitButton.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem x:Name="RejoinMenu" Click="OnLaunch" KeyboardAcceleratorTextOverride="Ctrl+Enter" />
+                                    <MenuFlyoutItem Text="Open the game menu" Click="OnOpenGameMenu" KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter" />
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem Text="Connect to an address…" Click="OnConnectAddress" KeyboardAcceleratorTextOverride="Ctrl+L" />
+                                </MenuFlyout>
+                            </local:LaunchSplitButton.Flyout>
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
                                 <TextBlock Text="Launch" VerticalAlignment="Center" />
                             </StackPanel>
-                        </Button>
-                        <Button Height="42" AccessKey="F" Click="OnFindServer" AutomationProperties.Name="Find a server">
+                        </local:LaunchSplitButton>
+                        <Button x:Name="FindServerButton" Height="40" AccessKey="F" Click="OnFindServer" AutomationProperties.Name="Find a server">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="20" />
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="16" />
                                 <TextBlock Text="Find a server" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="OpenGameMenuButton" Height="40" Click="OnOpenGameMenu"
+                                AutomationProperties.Name="Open game menu" AutomationProperties.AcceleratorKey="Ctrl+Shift+Enter">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
+                                <TextBlock Text="Open game menu" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ReturnGameButton" Height="40" CornerRadius="20" Click="OnReturnGame"
+                                Style="{StaticResource LauncherAccentButton}" Visibility="Collapsed"
+                                AutomationProperties.Name="Return to game">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
+                                <TextBlock Text="Return to game" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="CloseGameButton" Height="40" Click="OnCloseGame" Visibility="Collapsed"
+                                AutomationProperties.Name="Close game">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7E8;" FontSize="16" />
+                                <TextBlock x:Name="CloseGameLabel" Text="Close game" />
                             </StackPanel>
                         </Button>
                         <TextBlock x:Name="LaunchHint" Style="{StaticResource SecondaryText}" FontSize="12"

@@ -15,8 +15,7 @@ public sealed partial class MainWindow
         GameServer? known = null, bool lookupUnknown = false, ServerReadySession? readyCheck = null,
         string? loadoutId = null, bool alreadyLookedUp = false)
     {
-        ServerJoinWarning.IsOpen = false;
-        ServerJoinWarning.ActionButton = null;
+        ClearProblem();
         if (!alreadyLookedUp)
         {
             known ??= session.Library.Cache.FirstOrDefault(server => ServerBrowser.TryAddress(server.Address) == target.Address);
@@ -32,7 +31,7 @@ public sealed partial class MainWindow
         await session.Game.ReconcileAsync();
         var normal = session.Settings.Working.Engine;
         var installed = Enum.GetValues<GameEdition>().Where(session.HasClient).ToHashSet();
-        GameProcessIdentity? running = session.Game.State.Games.IsEmpty ? null : session.Game.State.Games[0];
+        GameProcessIdentity? running = session.Game.State.ActiveGame;
         GameEdition? runningEdition = running is { } game ? session.RunningEdition(game) : null;
         var link = LaunchLink.Direct(target.Address, target.Password ?? "");
         serverAdmission.EndGame();
@@ -46,15 +45,15 @@ public sealed partial class MainWindow
             session.ShowError(UsageProblem.ServerVersion);
             return problem;
         }
-        if (running is { } current && runningEdition is { } activeEdition && activeEdition != decision.Edition)
+        if (running is not null && runningEdition is { } activeEdition && activeEdition != decision.Edition)
         {
-            ShowServerJoinWarning($"This server needs {ConnectDialog.EditionName(decision.Edition)}. Close the game before switching versions.", current);
+            ShowServerJoinWarning($"This server needs {ConnectDialog.EditionName(decision.Edition)}. Close the game before switching versions.");
             return null;
         }
 
-        if (running is { } fixedGame && runningEdition is { } runningMode && session.HasTemporaryServerLoadout(runningMode))
+        if (running is not null && runningEdition is { } runningMode && session.HasTemporaryServerLoadout(runningMode))
         {
-            ShowServerJoinWarning("Close the game to remove the temporary server settings before joining another server.", fixedGame);
+            ShowServerJoinWarning("Close the game to remove the temporary server settings before joining another server.");
             return null;
         }
 
@@ -90,7 +89,7 @@ public sealed partial class MainWindow
             }
         }
 
-        if (!ServerJoinWarning.IsOpen && known is not null && ServerFacts.From(known).Occupancy == ServerOccupancy.Full)
+        if (!Problem.IsOpen && known is not null && ServerFacts.From(known).Occupancy == ServerOccupancy.Full)
             ShowServerJoinWarning("This server is full. The game will still try to connect.");
 
         if (running is { } activeGame)
@@ -120,9 +119,12 @@ public sealed partial class MainWindow
     private async Task<string?> DeliverServerJoinAsync(GameProcessIdentity game, LaunchLink link, GameEdition edition,
         UsageJoin source, GameServer? known)
     {
-        if (await session.DeliverJoinAsync(game, link, edition, source, known))
+        var delivery = await session.DeliverJoinAsync(game, link, edition, source, known);
+        if (delivery == GameLinkDelivery.Delivered)
             return "Sent the server link to Call of Duty 2.";
-        ShowServerJoinWarning("Could not deliver the server link to the game. Try again after the menu appears.", game);
+        ShowServerJoinWarning(delivery == GameLinkDelivery.Pending
+            ? "The game hasn't finished starting. Open the server link again after the menu appears."
+            : "Could not deliver the server link to the game. Try again after the menu appears.");
         return null;
     }
 
@@ -158,16 +160,5 @@ public sealed partial class MainWindow
         return true;
     }
 
-    private void ShowServerJoinWarning(string message, GameProcessIdentity? game = null)
-    {
-        ServerJoinWarning.Message = message;
-        ServerJoinWarning.ActionButton = null;
-        if (game is { } active)
-        {
-            var back = new Button { Content = "Return to game" };
-            back.Click += (_, _) => session.ReturnToRunningGame(active);
-            ServerJoinWarning.ActionButton = back;
-        }
-        ServerJoinWarning.IsOpen = true;
-    }
+    private void ShowServerJoinWarning(string message) => ShowShellNotice(message, InfoBarSeverity.Warning);
 }

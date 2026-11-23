@@ -103,6 +103,7 @@ public sealed partial class MainWindow : Window
         StartupTrace.Mark("root loaded");
         ResizeForDisplay(startup: true);
         session.Reports.Facts.Window = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        sessionEnd = new(session.Reports.Facts.Window, EndWindowsSession);
         UpdateCaptionColors();
         CompositionTarget.Rendered += OnFirstRendered;
     }
@@ -367,64 +368,7 @@ public sealed partial class MainWindow : Window
             await page.RefreshAsync();
     }
 
-    private void OnClientStarted()
-    {
-        if (session.Settings.Working.HideWhilePlaying && AppWindow.Presenter is OverlappedPresenter presenter &&
-            presenter.State != OverlappedPresenterState.Minimized)
-        {
-            minimizedForGame = true;
-            presenter.Minimize();
-        }
-    }
-
-    private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
-    {
-        if (flushedForClose || !loaded)
-            return;
-        if (!closing && !busy && !session.Hosting.HasActiveServers && (session.Settings is null || session.Settings.Saved == session.Settings.Working))
-            return;
-        args.Cancel = true;
-        if (closing)
-            return;
-        if (busy)
-        {
-            closeRequested = true;
-            return;
-        }
-        await CompleteCloseAsync();
-    }
-
-    private async Task CompleteCloseAsync()
-    {
-        closing = true;
-        try
-        {
-            await ShowProblemAsync(async () =>
-            {
-                if (session.Hosting.HasActiveServers)
-                {
-                    var confirmation = new ContentDialog
-                    {
-                        XamlRoot = DialogRoot,
-                        RequestedTheme = DialogTheme,
-                        Title = "Stop hosted servers and quit?",
-                        Content = "Quitting stops your hosted servers and disconnects their players.",
-                        PrimaryButtonText = "Stop and quit",
-                        CloseButtonText = "Cancel",
-                        DefaultButton = ContentDialogButton.Close
-                    };
-                    if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
-                        return;
-                }
-                if (session.Settings is { } settings)
-                    await settings.FlushAsync();
-                await session.Hosting.ShutdownAsync();
-                flushedForClose = true;
-                Close();
-            });
-        }
-        finally { closing = false; }
-    }
+    private void OnClientStarted() => MinimizeForGame();
 
     internal async Task RefreshPlayerAsync(bool loadoutChanged = false)
     {
@@ -483,14 +427,9 @@ public sealed partial class MainWindow : Window
             await session.Game.ReconcileAsync();
             ShowMigrationProblem();
             var state = session.Game.State;
-            session.GameObserved(state);
-            if (!state.Running && minimizedForGame)
-            {
-                minimizedForGame = false;
-                if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
-                    presenter.Restore();
-            }
+            bool sameRunningState = lastGame?.Running == state.Running;
             var now = DateTimeOffset.UtcNow;
+            await RefreshGameViewsAsync(state, now);
             if (session.Hosting.HasActiveServers && now - hostPolled >= TimeSpan.FromSeconds(3))
             {
                 hostPolled = now;
@@ -498,7 +437,7 @@ public sealed partial class MainWindow : Window
                 if (ContentFrame.Content is ServersPage hosting)
                     await hosting.UpdateHostingStateAsync();
             }
-            if (lastGame?.Running == state.Running && session.CanAutoCheckUpdates &&
+            if (sameRunningState && session.CanAutoCheckUpdates &&
                 session.Settings.Working.CheckUpdatesAutomatically && updateRequest is null &&
                 session.Updates.State.Phase is not (UpdatePhase.Installed or UpdatePhase.Ready or UpdatePhase.Installing) &&
                 now >= firstUpdate &&
@@ -510,26 +449,6 @@ public sealed partial class MainWindow : Window
                 try { await CheckUpdatesAndRefreshNewsAsync(automatic: true, request.Token); }
                 finally { updateRequest = null; }
             }
-            if (lastGame?.Running == state.Running && lastGame.LastExit == state.LastExit)
-                return;
-            bool ended = !state.Running && state.LastExit is not null;
-            lastGame = state;
-            if (ContentFrame.Content is SettingsPage settings)
-                settings.RefreshDisplayRunning(state.Running);
-            playerCard?.UpdateRunning(state.Running);
-            if (ContentFrame.Content is HomePage home)
-            {
-                if (ended)
-                    await home.RefreshPlayHistoryAsync();
-                else
-                    home.RenderGame(state);
-            }
-            if (ContentFrame.Content is LibraryPage library)
-                library.UpdateGameState(state.Running, ended);
-            if (ContentFrame.Content is ServersPage servers)
-                await servers.UpdateGameStateAsync();
-            if (ContentFrame.Content is ConfigsPage configs)
-                configs.UpdateGameState(ended);
         }, clearProblem: false);
     }
 
@@ -539,10 +458,7 @@ public sealed partial class MainWindow : Window
         if (problem == lastMigrationProblem)
             return;
         if (problem is not null)
-        {
-            Problem.Message = problem;
-            Problem.IsOpen = true;
-        }
+            ShowShellNotice(problem, InfoBarSeverity.Error);
         else if (Problem.Message == lastMigrationProblem)
             Problem.IsOpen = false;
         lastMigrationProblem = problem;
@@ -634,7 +550,7 @@ public sealed partial class MainWindow : Window
                 closeRequested = false;
                 await CompleteCloseAsync();
             }
-            if (!flushedForClose)
+            if (!flushedForClose && !windowsSessionEnding)
                 ScheduleActivation();
         }
     }
@@ -644,10 +560,10 @@ public sealed partial class MainWindow : Window
         try { await action(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
             or ArgumentException or FormatException or LaunchPlanException or System.Runtime.InteropServices.COMException
+            or System.ComponentModel.Win32Exception
             or ConfigDirectoryException or ConfigImportSessionException or ConfigBindingException or ConfigEditException)
         {
-            Problem.Message = error.Message;
-            Problem.IsOpen = true;
+            ShowShellNotice(error.Message, InfoBarSeverity.Error);
         }
     }
 

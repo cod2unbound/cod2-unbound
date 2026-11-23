@@ -42,6 +42,12 @@ public static class JumpIndex
     public static JumpTarget Loadout(ConfigProfile profile) => new(JumpGroup.Loadouts, profile.Id, profile.DisplayName,
         profile.IsActive ? "Loadout · used for your next game" : "Loadout");
 
+    public static ImmutableArray<JumpTarget> GameActions(bool running, bool closingGame) =>
+    [
+        new(JumpGroup.Actions, nameof(ShellCommand.ReturnToGame), "Return to game", Enabled: running),
+        new(JumpGroup.Actions, nameof(ShellCommand.CloseGame), "Close game", Enabled: running && !closingGame)
+    ];
+
     private static int Rank(JumpTarget item, string query)
     {
         if (Comparison.Compare(item.Title, query, Options) == 0 || Comparison.Compare(item.SearchName, query, Options) == 0)

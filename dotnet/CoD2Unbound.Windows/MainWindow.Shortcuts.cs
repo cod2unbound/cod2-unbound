@@ -1,6 +1,7 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 using Windows.System;
@@ -71,6 +72,8 @@ public sealed partial class MainWindow
         return command switch
         {
             ShellCommand.Launch or ShellCommand.OpenGameMenu => !session.Game.State.Running && session.Setup.DataPath.Length != 0,
+            ShellCommand.ReturnToGame => session.Game.State.Running,
+            ShellCommand.CloseGame => session.Game.State is { Running: true, Quitting: false },
             ShellCommand.Import or ShellCommand.Paste => !session.Game.State.Running && (configs?.CanImportFromShell ?? true),
             ShellCommand.Favorite or ShellCommand.CopyAddress => servers is { CanRunRowShortcut: true },
             ShellCommand.FilterServers => servers is { ShowsServerBrowser: true },
@@ -102,6 +105,9 @@ public sealed partial class MainWindow
         yield return Action(ShellCommand.RefreshServers, "Refresh server list");
         yield return Action(ShellCommand.Launch, LastJumpServer is { } server ? $"Launch on {QuakeColors.Plain(server.Name)}" : "Launch");
         yield return Action(ShellCommand.OpenGameMenu, "Open game menu");
+        var game = session.Game.State;
+        foreach (var action in JumpIndex.GameActions(game.Running, game.Quitting))
+            yield return action;
         yield return Action(ShellCommand.Import, "Import config…");
         yield return Action(ShellCommand.Paste, "Paste config");
         yield return Action(ShellCommand.Home, "Home");
@@ -177,11 +183,9 @@ public sealed partial class MainWindow
                 case ShellCommand.OpenGameMenu:
                     await LaunchFromShellAsync(useServer: command == ShellCommand.Launch);
                     break;
-                case ShellCommand.Connect:
-                    if (ContentFrame.Content is not ServersPage { ShowsServerBrowser: true })
-                        await NavigateAsync(LauncherPlace.Servers, refreshServers: false);
-                    await ((ServersPage)ContentFrame.Content).ConnectFromShellAsync();
-                    break;
+                case ShellCommand.ReturnToGame: ReturnToGame(); break;
+                case ShellCommand.CloseGame: await CloseActiveGameAsync(); break;
+                case ShellCommand.Connect: await ConnectFromShellAsync(); break;
                 case ShellCommand.Import:
                 case ShellCommand.Paste:
                     await WithConfigsAsync(page => command == ShellCommand.Import ? page.PickConfigAsync() : page.PasteConfigAsync());
@@ -234,14 +238,25 @@ public sealed partial class MainWindow
         ((SettingsPage)ContentFrame.Content).OpenJumpPane(pane);
     }
 
-    private async Task LaunchFromShellAsync(bool useServer)
+    internal Task OpenConnectAsync() => RunAsync(ConnectFromShellAsync);
+
+    private async Task ConnectFromShellAsync()
     {
-        if (useServer && LastJumpServer is { } server)
+        if (ContentFrame.Content is not ServersPage { ShowsServerBrowser: true })
+            await NavigateAsync(LauncherPlace.Servers, refreshServers: false);
+        await ((ServersPage)ContentFrame.Content).ConnectFromShellAsync();
+    }
+
+    private async Task LaunchFromShellAsync(bool useServer, string? recentAddress = null)
+    {
+        if ((recentAddress ?? (useServer ? LastJumpServer?.Address : null)) is { } address)
         {
-            string? problem = await JoinServerAsync(new(server.Address, null), UsageJoin.List, lookupUnknown: true);
+            string? problem = await JoinServerAsync(new(address, null), UsageJoin.List, lookupUnknown: true);
             if (problem is not null && !session.Game.State.Running)
                 throw new IOException(problem);
         }
+        else if (session.Game.State.Running)
+            ShowShellNotice("Call of Duty 2 is already running.", InfoBarSeverity.Informational);
         else
             await RunGameStartAsync(session.Settings.Working.Engine, () => session.LaunchAsync());
         if (ContentFrame.Content is HomePage home)

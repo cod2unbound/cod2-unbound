@@ -8,7 +8,7 @@ public enum ShellCommand
     RefreshServers, Connect, Favorite, Import, Paste, Undo, Open, CopyAddress, FilterServers,
     NewLoadout, DuplicateLoadout, ExportLoadout, Rename, Delete, CopyFile, ContextMenu, FullScreen, Help, Close,
     Checkup, History, GameDataFolder, MyFilesFolder, LogsFolder, CheckUpdates, ShortcutHelp, ReleaseNotes,
-    ReportProblem, ClearRecent, SaveLoadoutText
+    ReportProblem, ClearRecent, SaveLoadoutText, ReturnToGame, CloseGame
 }
 
 public sealed record LauncherShortcut(ShellCommand Command, string Title, ImmutableArray<string> Chords)
@@ -22,6 +22,8 @@ public static class LauncherShortcuts
     [
         new(ShellCommand.Launch, "Launch", ["Ctrl+Enter"]),
         new(ShellCommand.OpenGameMenu, "Open game menu", ["Ctrl+Shift+Enter"]),
+        new(ShellCommand.ReturnToGame, "Return to game", []),
+        new(ShellCommand.CloseGame, "Close game", []),
         new(ShellCommand.Home, "Home", ["Ctrl+1"]),
         new(ShellCommand.Servers, "Servers", ["Ctrl+2"]),
         new(ShellCommand.Library, "Library", ["Ctrl+3"]),

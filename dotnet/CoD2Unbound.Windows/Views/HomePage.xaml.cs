@@ -98,56 +98,9 @@ public sealed partial class HomePage : Page
 
     private async Task RenderPlayHistoryAsync()
     {
-        var last = model.LastServer;
-        string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
-        HeroLead.Text = last is null ? "READY TO PLAY" :
-            string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
-        HeroTitle.Text = map is null ? "COD2 UNBOUND" : MapCatalog.DisplayName(map).ToUpperInvariant();
-        RenderHeroDetail();
-
         RenderRecent();
-        RenderGame(model.Game);
         RenderMatch();
-        if (map is not null && await model.ReadArtAsync(map) is { } art)
-            ApplyArtwork(art);
-        else if (HeroArt.Source is WriteableBitmap)
-        {
-            HeroArt.Source = null;
-            artworkLuminance = null;
-            RenderBackdrop();
-        }
-    }
-
-    internal void RenderGame(GameSessionState game)
-    {
-        string? reason = model.LaunchProblem;
-        LaunchButton.IsEnabled = reason is null;
-        LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
-        OpenGameData.Visibility = IsVisible(session.Setup.Data.State != SetupDataState.Found);
-        OpenCdKey.Visibility = IsVisible(!session.Setup.HasStoredKey);
-        OpenGameData.IsEnabled = OpenCdKey.IsEnabled = !game.Running;
-        LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe." : "");
-        LaunchReason.Visibility = IsVisible(LaunchReason.Text.Length > 0);
-        LaunchHint.Text = model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server";
-        LaunchHint.Visibility = IsVisible(reason is null);
-        AutomationProperties.SetHelpText(LaunchButton, reason ?? LaunchHint.Text);
-        foreach (var button in recentButtons)
-            button.IsEnabled = reason is null;
-    }
-
-    private void RenderHeroDetail()
-    {
-        HeroDetail.Inlines.Clear();
-        if (model.LastServer is not { } last)
-        {
-            HeroDetail.Text = "You’re set up. Pick a server to join your first match, or open the game’s own menu.";
-            return;
-        }
-        AddGameName(HeroDetail, last.Name, ActualTheme, shell.IsHighContrast);
-        if (last.GameType != "—")
-            HeroDetail.Inlines.Add(new Run { Text = "   ·   " + GameModes.Long(last.GameType) });
-        if (model.Played(last.Address, includeTime: true) is { } played)
-            HeroDetail.Inlines.Add(new Run { Text = "   ·   Played " + played });
+        await RenderSessionAsync(model.Game);
     }
 
     private void RenderRecent()
@@ -279,7 +232,7 @@ public sealed partial class HomePage : Page
     internal void UpdateTheme()
     {
         RenderBackdrop();
-        RenderHeroDetail();
+        RenderHeroDetail(model.Game);
     }
 
     private void RenderBackdrop()
@@ -341,6 +294,7 @@ public sealed partial class HomePage : Page
         ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(40, 40, 40, 24);
         HeroTitle.FontSize = wide ? 132 : 112;
         HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
+        RenderGameHint(model.Game.Running, wide);
         ArtLayer.Height = wide ? 560 : 420;
         NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
         NewsCard.Visibility = IsVisible(!compactCards);
@@ -352,14 +306,14 @@ public sealed partial class HomePage : Page
         ContentLayout.MinHeight = args.NewSize.Height;
     }
 
-    private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync();
+    private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync(model.LastServer?.Address);
 
-    private Task LaunchAsync(string? address = null) => shell.RunAsync(async () =>
+    private Task LaunchAsync(string? address) => shell.RunAsync(async () =>
     {
         if (!model.CanLaunch)
             return;
         string? status = null;
-        if ((address ?? model.LastServer?.Address) is { } target)
+        if (address is { } target)
             status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
         else
             await shell.RunGameStartAsync(model.Settings.Engine, model.LaunchAsync);
@@ -367,7 +321,7 @@ public sealed partial class HomePage : Page
         if (model.Game.Running)
             await RenderPlayHistoryAsync();
         else
-            RenderGame(model.Game);
+            await RenderSessionAsync(model.Game);
         if (status is not null && !model.Game.Running)
         {
             LaunchReason.Text = status;
@@ -392,7 +346,7 @@ public sealed partial class HomePage : Page
 
     private async void OnLoadoutChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (settingLoadout || LoadoutChoice.SelectedItem is not ComboBoxItem { Tag: string id })
+        if (settingLoadout || model.Game.Running || LoadoutChoice.SelectedItem is not ComboBoxItem { Tag: string id })
             return;
         await shell.RunAsync(async () =>
         {
@@ -414,7 +368,7 @@ public sealed partial class HomePage : Page
 
     private async void OnDisplayChanged(object sender, RoutedEventArgs args)
     {
-        if (sender is RadioMenuFlyoutItem { Tag: string mode })
+        if (!model.Game.Running && sender is RadioMenuFlyoutItem { Tag: string mode })
             await shell.RunAsync(async () =>
             {
                 try { await model.SetDisplayAsync(mode); }

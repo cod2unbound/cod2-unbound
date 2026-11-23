@@ -40,6 +40,8 @@ internal sealed class WindowsHosting
 
     internal bool IsActive(string id) => Running.TryGetValue(id, out var state) && IsActive(state);
     internal bool HasActiveServers => Running.Values.Any(IsActive);
+    internal ImmutableArray<string> ActiveNames => [.. Running.Where(entry => IsActive(entry.Value))
+        .Select(entry => activeSettings.TryGetValue(entry.Key, out var server) ? QuakeColors.Plain(server.Name) : "Hosted server")];
     internal HostedServer ActiveSettings(HostedServer server) => activeSettings.GetValueOrDefault(server.Id) ?? server;
 
     internal HostedRunState DashboardState(HostedRunState state)
@@ -113,6 +115,8 @@ internal sealed class WindowsHosting
         await session.ShutdownAsync();
         await RefreshAsync();
     }
+
+    internal Task ShutdownForSessionEndAsync(CancellationToken cancellationToken) => session.ShutdownAsync(cancellationToken);
 
     internal async Task PollAsync()
     {
