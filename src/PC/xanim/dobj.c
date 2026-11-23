@@ -1165,7 +1165,7 @@ static inline __attribute__((always_inline)) void DObjApplyDuplicatePartLocal(DO
 }
 
 #if defined(COD2_X64)
-static void DObjCalcParentLocal(DObjAnimMat *mat, const DObjAnimMat *parent, int control)
+static void DObjCalcParentLocal(DObjAnimMat *mat, const DObjAnimMat *parent, int control, int modelRoot)
 {
     const DObjAnimMat local = *mat;
     const float x = local.quat[0], y = local.quat[1], z = local.quat[2], w = local.quat[3];
@@ -1179,19 +1179,53 @@ static void DObjCalcParentLocal(DObjAnimMat *mat, const DObjAnimMat *parent, int
 
     if (control) {
         mat->quat[3] = ((w * pw - px * x) - y * py) - z * pz;
+#if COD2_WINDOWS_NATIVE
+        mat->quat[0] = (pw * x + pz * y + px * w) - z * py;
+#else
         mat->quat[0] = (px * w + pw * x + pz * y) - z * py;
+#endif
         mat->quat[1] = ((w * py - x * pz) + pw * y) + z * px;
         mat->quat[2] = ((w * pz + py * x) - px * y) + pw * z;
     } else {
         mat->quat[3] = ((pw * w - x * px) - py * y) - z * pz;
+#if COD2_WINDOWS_NATIVE
+        mat->quat[0] = (w * px + z * py + x * pw) - y * pz;
+#else
         mat->quat[0] = (x * pw + w * px + z * py) - y * pz;
+#endif
         mat->quat[1] = ((pw * y - z * px) + w * py) + x * pz;
         mat->quat[2] = ((pw * z + px * y) - py * x) + pz * w;
     }
+#if COD2_WINDOWS_NATIVE
+    /* Retail 1.3 sums parented quaternion squares in W, Y, Z, X order. */
+    const float *q = mat->quat;
+    const float lenSq = q[3] * q[3] + q[1] * q[1] + q[2] * q[2] + q[0] * q[0];
+    if (lenSq == 0.0f) {
+        mat->quat[3] = 1.0f;
+        mat->transWeight = 2.0f;
+    } else {
+        mat->transWeight = 2.0f / lenSq;
+    }
+
+    /* Attached model roots sum Z, Y, X. Other bones sum Z, X, Y. */
+    const float axis[3][3] = {
+        { 1.0f - (yy + zz), xy + zw, xz - yw },
+        { xy - zw, 1.0f - (zz + xx), xw + yz },
+        { xz + yw, yz - xw, 1.0f - (xx + yy) }
+    };
+    const int second = modelRoot ? 1 : 0;
+    const int third = 1 - second;
+    for (int i = 0; i < 3; ++i) {
+        mat->trans[i] = axis[2][i] * local.trans[2] + axis[second][i] * local.trans[second]
+            + axis[third][i] * local.trans[third] + parent->trans[i];
+    }
+#else
+    (void)modelRoot;
     DObjFinalizeQuatWeightLocal(mat);
     mat->trans[0] = (1.0f - (yy + zz)) * local.trans[0] + (xy - zw) * local.trans[1] + (xz + yw) * local.trans[2] + parent->trans[0];
     mat->trans[1] = (xy + zw) * local.trans[0] + (1.0f - (zz + xx)) * local.trans[1] + (yz - xw) * local.trans[2] + parent->trans[1];
     mat->trans[2] = (xz - yw) * local.trans[0] + (xw + yz) * local.trans[1] + (1.0f - (xx + yy)) * local.trans[2] + parent->trans[2];
+#endif
 }
 
 void DObjCalcSkel(const DObj *obj, int *partBits)
@@ -1246,7 +1280,8 @@ void DObjCalcSkel(const DObj *obj, int *partBits)
                         mat->trans[1] += parts->trans[(i - rootCount) * 3 + 1];
                         mat->trans[2] += parts->trans[(i - rootCount) * 3 + 2];
                     }
-                    DObjCalcParentLocal(mat, &skel->mat[parentIndex], DObjPartBitTestLocal(calculate, boneIndex));
+                    DObjCalcParentLocal(mat, &skel->mat[parentIndex], DObjPartBitTestLocal(calculate, boneIndex),
+                                        i < rootCount);
                 } else {
                     DObjFinalizeQuatWeightLocal(mat);
                 }
