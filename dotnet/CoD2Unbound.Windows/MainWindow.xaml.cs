@@ -132,6 +132,7 @@ public sealed partial class MainWindow : Window
 #endif
             gameWatcher.Start();
         });
+            _ = RemoveInstalledNotificationsAsync();
     }
 
 #if UPDATE_FIXTURES
@@ -530,6 +531,8 @@ public sealed partial class MainWindow : Window
         else if (Problem.Message == lastMigrationProblem)
             Problem.IsOpen = false;
         lastMigrationProblem = problem;
+        if (!cancellationToken.IsCancellationRequested)
+            await NotifyUpdateAsync(version);
     }
 
     private void OnUpdateChanged(LauncherUpdateState state) =>
@@ -549,7 +552,7 @@ public sealed partial class MainWindow : Window
 
     private async Task CheckUpdatesAndRefreshNewsAsync(bool automatic, CancellationToken cancellationToken)
     {
-        await session.CheckUpdatesAsync(automatic, cancellationToken);
+        string? version = await session.CheckUpdatesAsync(automatic, cancellationToken);
         if (ContentFrame.Content is HomePage home)
             home.RenderNews();
     }

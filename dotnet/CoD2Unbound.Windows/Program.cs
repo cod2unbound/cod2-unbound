@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
 using Windows.ApplicationModel.Activation;
 
 namespace CoD2Unbound.Windows;
@@ -20,7 +22,6 @@ internal static class Program
 
         WinRT.ComWrappersSupport.InitializeComWrappers();
         var current = AppInstance.GetCurrent();
-        var initial = current.GetActivatedEventArgs();
         var pending = new ConcurrentQueue<string[]>();
         Action? schedule = null;
 
@@ -30,7 +31,10 @@ internal static class Program
         {
             var owner = AppInstance.FindOrRegisterForKey("CoD2Unbound.Launcher");
             if (!owner.IsCurrent)
-                return Redirect(owner, initial);
+                return Redirect(owner, current.GetActivatedEventArgs());
+
+            using var notifications = new WindowsUpdateNotifications(Enqueue);
+            var initial = current.GetActivatedEventArgs();
 
             StartupTrace.Mark("AppLifecycle registration");
             Application.Start(initialization =>
@@ -40,6 +44,7 @@ internal static class Program
                 SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(dispatcher));
                 _ = new App(window =>
                 {
+                    window.UpdateNotifications = notifications;
                     window.ReceiveActivation(ReadArguments(initial), bringForward: false);
                     Volatile.Write(ref schedule, () => dispatcher.TryEnqueue(Drain));
                     Drain();
@@ -55,9 +60,11 @@ internal static class Program
         }
         finally { current.Activated -= Redirected; }
 
-        void Redirected(object? sender, AppActivationArguments activation)
+        void Redirected(object? sender, AppActivationArguments activation) => Enqueue(ReadArguments(activation));
+
+        void Enqueue(string[] arguments)
         {
-            pending.Enqueue(ReadArguments(activation));
+            pending.Enqueue(arguments);
             Volatile.Read(ref schedule)?.Invoke();
         }
     }
@@ -77,6 +84,7 @@ internal static class Program
 
     private static string[] ReadArguments(AppActivationArguments activation) => activation.Data switch
     {
+        AppNotificationActivatedEventArgs notification => WindowsUpdateNotifications.ReadArguments(notification),
         ILaunchActivatedEventArgs launch => ReadCommandLine(launch.Arguments),
         IFileActivatedEventArgs files => [.. files.Files.Select(file => file.Path)],
         IProtocolActivatedEventArgs protocol => [protocol.Uri.OriginalString],
@@ -94,7 +102,10 @@ internal static class Program
             if (count < 2)
                 return [];
             // Setup's command contains exactly one quoted %1.
-            return count == 2 ? [Marshal.PtrToStringUni(Marshal.ReadIntPtr(argv, IntPtr.Size)) ?? ""] : [""];
+            if (count != 2)
+                return [""];
+            string argument = Marshal.PtrToStringUni(Marshal.ReadIntPtr(argv, IntPtr.Size)) ?? "";
+            return argument == "----AppNotificationActivated:" ? [] : [argument];
         }
         finally { _ = LocalFree(argv); }
     }
