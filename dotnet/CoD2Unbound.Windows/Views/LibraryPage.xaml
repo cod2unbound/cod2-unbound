@@ -232,7 +232,8 @@
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" Style="{ThemeResource LibraryRowCaption}" VerticalAlignment="Center" />
                                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Button Content="Play" Visibility="{Binding Demo}" Click="OnPlayDemo" Tag="{Binding}"
-                                            AutomationProperties.Name="{Binding PlayName}" />
+                                            IsEnabled="{Binding CanPlay}" AutomationProperties.Name="{Binding PlayName}"
+                                            AutomationProperties.HelpText="{Binding PlaybackHint}" />
                                     <Button Style="{StaticResource IconAction}" AutomationProperties.Name="{Binding MenuName}"
                                             Click="OnFileMenu" Tag="{Binding}" ToolTipService.ToolTip="{Binding MenuName}">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="16" />

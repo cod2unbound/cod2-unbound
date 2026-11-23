@@ -45,7 +45,7 @@ public sealed partial class LibraryPage
 
     private async void OnPlayDemo(object sender, RoutedEventArgs args)
     {
-        if (sender is Button { Tag: MediaRow row })
+        if (sender is Button { Tag: MediaRow { CanPlay: true } row })
             await shell.RunAsync(() => OpenFileAsync(row));
     }
 
@@ -70,7 +70,8 @@ public sealed partial class LibraryPage
             FindMedia(args.OriginalSource as DependencyObject) is not { FromButton: false } item)
             return;
         args.Handled = true;
-        await shell.RunAsync(() => OpenFileAsync(item.Row));
+        if (item.Row.CanPlay)
+            await shell.RunAsync(() => OpenFileAsync(item.Row));
     }
 
     private async void OnLibraryKeyDown(object sender, KeyRoutedEventArgs args)
@@ -97,7 +98,7 @@ public sealed partial class LibraryPage
 
         Func<Task>? action = (args.Key, control, shift, alt) switch
         {
-            (VirtualKey.Enter, false, false, false) when !item.FromButton => () => OpenFileAsync(row),
+            (VirtualKey.Enter, false, false, false) when !item.FromButton && row.CanPlay => () => OpenFileAsync(row),
             (VirtualKey.F2, false, false, false) when row.Kind == MediaKind.Demo => () => RenameAsync(row),
             (VirtualKey.Delete, false, false, false) => () => RecycleAsync(row),
             (VirtualKey.C, true, false, false) => () => CopyMediaAsync(row),
@@ -131,7 +132,7 @@ public sealed partial class LibraryPage
         bool config = row.Kind == MediaKind.Config;
         bool demo = row.Kind == MediaKind.Demo;
         var menu = new MenuFlyout();
-        Add(demo ? "Play" : "Open", () => OpenFileAsync(row), config ? null : "Enter");
+        Add(demo ? "Play" : "Open", () => OpenFileAsync(row), config ? null : "Enter", row.CanPlay);
         Add("Show in File Explorer", () => RevealMediaAsync(row));
         if (!config)
         {
@@ -146,9 +147,11 @@ public sealed partial class LibraryPage
         else
             menu.ShowAt(anchor, options);
 
-        void Add(string title, Func<Task> action, string? shortcut = null)
+        void Add(string title, Func<Task> action, string? shortcut = null, bool enabled = true)
         {
-            var item = new MenuFlyoutItem { Text = title };
+            var item = new MenuFlyoutItem { Text = title, IsEnabled = enabled };
+            if (!enabled)
+                AutomationProperties.SetHelpText(item, row.PlaybackHint);
             if (shortcut is not null)
                 item.KeyboardAcceleratorTextOverride = shortcut;
             item.Click += async (_, _) => await shell.RunAsync(action);

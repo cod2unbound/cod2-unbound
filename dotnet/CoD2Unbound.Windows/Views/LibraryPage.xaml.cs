@@ -55,7 +55,7 @@ public sealed partial class LibraryPage : Page
 
     internal void UpdateGameState(bool running, bool ended)
     {
-        if (ended)
+        if (ended || (running && !ShowingMatches && CurrentKind == MediaKind.Demo))
             Render();
         else if (running)
             DeleteSummaries.IsEnabled = false;
@@ -65,6 +65,7 @@ public sealed partial class LibraryPage : Page
     {
         bool matches = ShowingMatches;
         var kind = CurrentKind;
+        bool canPlay = kind != MediaKind.Demo || !session.Game.State.Running;
         ShowFolder.Visibility = IsVisible(!matches);
         Search.Visibility = IsVisible(!matches);
         RecycleNotice.Visibility = IsVisible(!matches && recycled?.Kind == kind);
@@ -76,7 +77,7 @@ public sealed partial class LibraryPage : Page
         };
         SectionDetail.Text = matches ? "How your recent matches ran: ping and connection." : kind switch
         {
-            MediaKind.Demo => "Recorded matches play back in the game, from any point.",
+            MediaKind.Demo => canPlay ? "Recorded matches play back in the game, from any point." : MediaRow.PlayBlocked,
             MediaKind.Screenshot => "Screenshots you take in a match, kept in your CoD2 Unbound folder.",
             _ => ""
         };
@@ -97,7 +98,7 @@ public sealed partial class LibraryPage : Page
         try
         {
             rows = library.List(kind, Search.Text)
-                .Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local))).ToArray();
+                .Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local), canPlay)).ToArray();
         }
         catch (Exception error) when (kind != MediaKind.Config && error is (IOException or UnauthorizedAccessException))
         {
@@ -267,11 +268,13 @@ public sealed partial class LibraryPage : Page
 
 }
 
-internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts)
+internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts, bool CanPlay = true)
 {
+    internal const string PlayBlocked = "Close the game before playing a demo.";
     public string Name => File.Name;
     public string ScreenshotTitle => Facts.Map is { } map ? MapCatalog.DisplayName(map) : Name;
     public string PlayName => $"Play {Name}";
+    public string PlaybackHint => CanPlay ? "" : PlayBlocked;
     public string MenuName => $"More actions for {Name}";
     public string DemoDetail => Facts.Map is { } map ? $"{MapCatalog.DisplayName(map)} · Recorded match" : "Recorded match";
     public GridLength FirstColumnWidth => Kind == MediaKind.Demo ? new GridLength(84) : new GridLength(2, GridUnitType.Star);
