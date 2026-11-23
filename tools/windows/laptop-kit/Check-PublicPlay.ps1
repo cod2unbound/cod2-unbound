@@ -262,9 +262,7 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
         Invoke-KitControl $App 'HomeItem'
         Invoke-KitControl $App 'Return to game' -Name
         Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $gameWindow } 10 'Return to game' | Out-Null
-        Focus-KitWindow $App
-        Invoke-KitControl $App 'Close game' -Name
-        if (-not $game.WaitForExit(18000)) { throw 'Close game did not end the observed game session.' }
+        Close-KitRunningGame $App $game
         'Two joins used the same game process. Return to game and Close game both worked.' |
             Add-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt')
     } finally {

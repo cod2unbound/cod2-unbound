@@ -420,6 +420,29 @@ function Get-KitNamedPlayer([int]$Port) {
     if ($status -match '(?m)^-?\d+ +(\d+) +"Kit Player"\r?$' -and [int]$Matches[1] -lt 999) { $status }
 }
 
+function Close-KitRunningGame([IntPtr]$App, $Game) {
+    for ($attempt = 1; $attempt -le 3 -and -not $Game.HasExited; $attempt++) {
+        Focus-KitWindow $App
+        Invoke-KitControl $App 'CloseGameButton' -AllowOffscreen
+        try {
+            Wait-KitCondition {
+                $Game.HasExited -or -not (Find-KitControl $App 'CloseGameButton' -AllowOffscreen)
+            } 4 'the Close game action to begin' | Out-Null
+            break
+        } catch {
+            if ($attempt -eq 3) { throw }
+        }
+    }
+    # The launcher allows up to twenty seconds for its graceful-close and
+    # recovery path. Keep pumping our own foreground and security checks.
+    Wait-KitCondition {
+        if ($Game.HasExited) { return $true }
+        if (Find-KitControl $App "The game didn't close. Switch to it and close it from its own menu." -Name -AllowOffscreen) {
+            throw 'The launcher reported that the game did not close.'
+        }
+    } 25 'the launcher to stop the game' | Out-Null
+}
+
 function Select-KitServerRow([IntPtr]$Window, [string]$ServerName) {
     $selection = Wait-KitCondition {
         $node = Find-KitControl $Window $ServerName -Name
@@ -508,9 +531,7 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     Invoke-KitControl $App 'Return to game' -Name
     $gameWindow = Get-KitGameWindow $Game
     Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $gameWindow } 8 'Return to game to bring the game forward' | Out-Null
-    Focus-KitWindow $App
-    Invoke-KitControl $App 'Close game' -Name
-    if (-not $Game.WaitForExit(18000)) { throw 'Close game did not stop the test game.' }
+    Close-KitRunningGame $App $Game
     'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
 }
 
