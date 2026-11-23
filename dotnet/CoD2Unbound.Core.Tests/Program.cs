@@ -33,6 +33,7 @@ internal static partial class Program
         ReadyCases();
         LibraryCases();
         ChainCases();
+        WindowsBindsCases();
         CheckupCases();
         ExtraCases();
         WorkflowCases();

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Collections.Immutable;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 
@@ -23,6 +24,23 @@ internal sealed class ConfigsViewModel : IConfigImportStore
         Model = new(Catalog, Dialect == ConfigDialect.Cod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock, CultureInfo.CurrentCulture);
         directory = WindowsConfigFetch.Create(session.HomePath, session.TestMaster is not null);
         Discover = new(directory, Catalog);
+    }
+
+    internal async Task<ImmutableArray<ConfigDirectorySavedEntry>> ReadSavedSetupsAsync()
+    {
+        var snapshot = ShareCatalogue ?? await directory.ReadCachedSnapshotAsync();
+        if (snapshot is null)
+            return [];
+        cachedCatalogue = snapshot;
+        return await directory.SavedAsync(snapshot);
+    }
+
+    internal async Task<IReadOnlyDictionary<string, string>> ReadSavedSettingsAsync(string id)
+    {
+        var snapshot = ShareCatalogue ?? throw new InvalidOperationException("The player directory isn’t available.");
+        var catalog = new ConfigImportCatalogAdapter(Catalog);
+        var bundle = await directory.LoadProfileAsync(id, snapshot, Dialect, catalog);
+        return ConfigExpertEdits.ReviewedSettings(bundle, catalog);
     }
 
     internal async Task LoadSharingAsync()
@@ -56,7 +74,7 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal ConfigStudioModel Model { get; }
     internal ConfigDiscover Discover { get; }
     internal double MouseDpi => DpiFor(State.Current);
-    internal double DpiFor(ConfigProfileRead? loadout) => loadout?.Metadata.Dpi ?? session.Settings.Working.Dpi;
+    internal double DpiFor(ConfigProfileRead? loadout) => ConfigMouseDpi.For(loadout);
     internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
     internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
