@@ -9,11 +9,18 @@ public sealed class GameSessionLog(IEnumerable<string> secrets, string home)
     public const int FileLimit = 4 * 1024 * 1024;
     public const int TotalLimit = 20 * 1024 * 1024;
     private const int LineLimit = 16_384;
-    private readonly HashSet<string> secrets = new(secrets.Where(secret => secret.Length > 0), StringComparer.Ordinal);
+    private ImmutableHashSet<string> secrets = secrets.Where(secret => secret.Length > 0)
+        .ToImmutableHashSet(StringComparer.Ordinal);
     private readonly List<byte> pending = new();
     private int written;
     private bool dropping;
     private bool finished;
+
+    public void Protect(string secret)
+    {
+        if (secret.Length != 0)
+            ImmutableInterlocked.Update(ref secrets, values => values.Add(secret));
+    }
 
     // Call from the single drain owned by the native adapter. The sink writes these bytes only
     // to the private verified file, with no second unfiltered output path.
@@ -46,7 +53,7 @@ public sealed class GameSessionLog(IEnumerable<string> secrets, string home)
 
     private void WriteLine(ImmutableArray<byte>.Builder output)
     {
-        string text = dropping ? "[Long output line omitted]" : Filter(Encoding.UTF8.GetString(pending.ToArray()), secrets, home);
+        string text = dropping ? "[Long output line omitted]" : Filter(Encoding.UTF8.GetString(pending.ToArray()), Volatile.Read(ref secrets), home);
         byte[] line = Encoding.UTF8.GetBytes(text + "\n");
         if (line.Length > FileLimit - 64 - written)
         {

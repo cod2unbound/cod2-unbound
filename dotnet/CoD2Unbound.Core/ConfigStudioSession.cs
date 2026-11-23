@@ -48,6 +48,7 @@ public sealed partial class ConfigStudioSession
 
     public bool IsReadOnly => reserved || !games.IsEmpty || verifiedGameRunning();
     public ConfigDialect Dialect => store.Dialect;
+    public bool IsTemporaryServerLoadout => archive?.ConnectionSelection?.DisposableProfileId is not null;
     public ConfigStudioState State => new(profiles, current, history, draft, IsReadOnly, reserved, focused, recovery)
         { ReadProblem = readProblem };
 
@@ -329,10 +330,12 @@ public sealed partial class ConfigStudioSession
 
     public ClientLaunchRequest PrepareClientLaunch(ClientLaunchRequest request)
     {
-        var launch = PrepareLaunch(request.Link);
+        var choice = request.ServerLoadout;
+        var launch = PrepareLaunch(request.Link, choice?.ProfileId, choice?.Connection, choice?.Expected, choice?.Chain);
         return launch is null ? request : request with
         {
             Studio = launch,
+            Connection = choice?.Connection ?? request.Connection,
             Loadout = ConfigProfileStore.LauncherValues(store.Read(launch.ProfileId).Document)
         };
     }
@@ -381,7 +384,7 @@ public sealed partial class ConfigStudioSession
 
     private ConfigProfileStore Open(ConfigDialect dialect) => new(files, dialect, () => IsReadOnly, () => draft is not null, clock);
 
-    private ImmutableArray<ConfigProfile> ManagedProfiles(Action<string, Exception>? onUnreadable = null) =>
+    internal ImmutableArray<ConfigProfile> ManagedProfiles(Action<string, Exception>? onUnreadable = null) =>
         [.. store.List(onUnreadable).Where(profile => !SameId(profile.Id, archive?.ConnectionSelection?.DisposableProfileId))];
 
     private void CheckWritable(bool rejectDraft)

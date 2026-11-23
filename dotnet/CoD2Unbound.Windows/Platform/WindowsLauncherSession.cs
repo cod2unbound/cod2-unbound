@@ -53,13 +53,16 @@ internal sealed partial class WindowsLauncherSession
     internal WindowsLauncherSession()
     {
         bool useWindowsCredentials = FixtureHome() is null;
+        bool rejectFixturePasswordWrites = false;
 #if UPDATE_FIXTURES
         if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_MASTER_PORT") is { } test)
             TestMaster = int.TryParse(test, out int port) && port is > 0 and <= 65535 ? [new("127.0.0.1", port)] : [];
         useWindowsCredentials |= TestMaster is { Length: > 0 } &&
             Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS") == "1";
+        rejectFixturePasswordWrites = TestMaster is not null &&
+            Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_SERVER_PASSWORD_WRITE_FAILURE") == "1";
 #endif
-        credentials = useWindowsCredentials ? new WindowsCredentials() : new ProbeCredentials();
+        credentials = useWindowsCredentials ? new WindowsCredentials() : new ProbeCredentials(rejectFixturePasswordWrites);
         gameFolder = new WindowsSettingsFolder(ResolveHome(), allowNestedWrites: true);
         var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         folder = settingsFolder;
@@ -145,21 +148,11 @@ internal sealed partial class WindowsLauncherSession
     }
 
     internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null, UsageJoin source = UsageJoin.List,
-        GameServer? observation = null)
+        GameServer? observation = null, ServerLaunchLoadout? loadout = null)
     {
-        var result = await LaunchAsync(LaunchLink.Direct(address.Address, address.Password ?? ""), edition);
+        var result = await LaunchAsync(LaunchLink.Direct(address.Address, address.Password ?? ""), edition, serverLoadout: loadout);
         if (result == GameStartState.Started)
-        {
-            Record(UsageEvent.Join(source, edition ?? Settings.Working.Engine));
-            await UpdateLibraryAsync(library =>
-            {
-                var joined = library.Joined(address.Address, TimeProvider.System.GetUtcNow());
-                return observation is null ? joined : joined with
-                {
-                    Cache = [.. joined.Cache.Where(server => server.Address != observation.Address), observation]
-                };
-            });
-        }
+            await RecordJoinAsync(address.Address, edition ?? Settings.Working.Engine, source, observation);
         return result;
     }
 
@@ -264,12 +257,13 @@ internal sealed partial class WindowsLauncherSession
     internal bool HasClient(GameEdition edition) =>
         inventory.Installed.Any(binary => binary is { Role: EngineRole.Client } && binary.Edition == edition);
 
-    internal async Task<GameStartState> LaunchAsync(LaunchLink? link = null, GameEdition? edition = null, string? demo = null)
+    internal async Task<GameStartState> LaunchAsync(LaunchLink? link = null, GameEdition? edition = null, string? demo = null,
+        ServerLaunchLoadout? serverLoadout = null)
     {
         if (SetupUpdating)
             throw new IOException("Wait for the launcher update to finish before opening the game.");
         var settings = Settings.Working;
-        var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo };
+        var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo, ServerLoadout = serverLoadout };
         var usage = Reports.Usage;
         var installAtLaunch = usage.InstallNumber;
         GameStartState start;
@@ -438,13 +432,6 @@ internal sealed partial class WindowsLauncherSession
             Updates.RestoreInstallResult(lastUpdateOutcome == UpdateOutcome.Installed, Library.DispatchesCheckedAt);
     }
 
-    internal async Task SaveFiltersAsync(ServerFilters filters)
-    {
-        var preferences = ServerPreferences with { Filters = filters };
-        await preferences.SaveAsync(folder);
-        ServerPreferences = preferences;
-    }
-
     internal async Task RefreshServersAsync(ServerScope scope, IProgress<ServerRefreshState> progress, CancellationToken cancellationToken)
     {
         Record(new(UsageKind.ServerListRefreshed, (int)scope));
@@ -511,13 +498,29 @@ internal sealed partial class WindowsLauncherSession
             deferWrites: wizard);
     }
 
-    private sealed class ProbeCredentials : ISecretStore
+    private sealed class ProbeCredentials(bool rejectServerWrites) : ISecretStore
     {
-        private string? key;
-        public ValueTask<string?> ReadAsync(string name, CancellationToken cancellationToken) => ValueTask.FromResult(key);
+        private readonly Dictionary<string, string> values = new(StringComparer.Ordinal);
+
+        public ValueTask<string?> ReadAsync(string name, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (values)
+                return ValueTask.FromResult(values.GetValueOrDefault(name));
+        }
+
         public ValueTask WriteAsync(string name, string? value, CancellationToken cancellationToken)
         {
-            key = value;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (rejectServerWrites && name != SetupSession.KeySecret)
+                throw new IOException("Fixture refused to store the password.");
+            lock (values)
+            {
+                if (value is null)
+                    values.Remove(name);
+                else
+                    values[name] = value;
+            }
             return ValueTask.CompletedTask;
         }
     }

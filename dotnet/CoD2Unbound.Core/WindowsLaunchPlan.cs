@@ -10,10 +10,11 @@ public enum WindowsRenderMode { Direct3D9, DirectX7 }
 
 public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntroFilms)
 {
+    public const string ServerJoinVariable = "COD2_UNBOUND_JOIN";
     private const string DedicatedPrefix = "+set dedicated 2 ";
 
     public static WindowsLaunchPlan Client(ClientLaunchRequest request, GameBinary binary, string workingDirectory,
-        WindowsRenderMode renderMode = WindowsRenderMode.Direct3D9, IGameFiles? files = null, Guid? connectionId = null,
+        WindowsRenderMode renderMode = WindowsRenderMode.Direct3D9, IGameFiles? files = null,
         WindowsDisplay? display = null)
     {
         if (binary.Edition != request.Edition || binary.Role != EngineRole.Client)
@@ -29,25 +30,26 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
         var plan = GameLaunchPlan.BuildClient(paths, files, renderer, request.HomePath,
             display?.Monitor, WindowsDisplays.Adjustment(request.Loadout?.GetValueOrDefault("r_mode") ?? request.Settings.Resolution, display));
         ImmutableArray<string> arguments = plan.Arguments;
-        ImmutableArray<PrivateLaunchFile> privateFiles = [];
+        string? join = null;
         if (plan.Link is { } link)
         {
             if (request.Demo is not null)
                 throw KeyedFailure("launch.conflictingActions");
 
-            // WinMain logs its command line. A private config uses the engine's validated URL commands
-            // without adding the password to process arguments, crash metadata or the environment.
-            string name = $"join_{(connectionId ?? Guid.NewGuid()):N}.cfg";
-            string connect = $"connect {link.Address}\n";
-            string commands = link.HasPassword ? $"password \"{link.Password}\"\n" + connect : connect;
-            privateFiles = [new("main/" + name, [.. Encoding.ASCII.GetBytes(commands)])];
-            arguments = [.. arguments, "+exec", name];
+            if (link.Password.Length > 0)
+            {
+                // WinMain consumes this validated payload before initialization.
+                join = LaunchLink.Direct(link.Address, link.Password).Url[8..];
+            }
+            else
+                arguments = [.. arguments, "+connect", link.Address];
         }
 
         ValidateTail(arguments, request.Edition, dedicated: false);
-        var start = new EngineProcessStart(binary.Path, workingDirectory, request.HomePath, arguments, privateFiles)
+        var start = new EngineProcessStart(binary.Path, workingDirectory, request.HomePath, arguments, [])
         {
             EnvironmentChanges = CrashConsent(request.Edition == GameEdition.Cod2x && request.Settings.SendCoD2xReports)
+                .Add(ServerJoinVariable, join)
         };
         return new(start, plan.PlaysIntroFilms);
     }

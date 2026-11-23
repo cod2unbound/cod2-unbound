@@ -67,6 +67,27 @@ internal static partial class Program
             Equal(null, store.OriginalMigrationBackup());
         });
 
+        Check("client launch reserves the chosen loadout and restores the previous selection", () =>
+        {
+            var files = new FixtureProfileFiles();
+            var store = new ConfigProfileStore(files, ConfigDialect.Stock);
+            store.Create("Main", "Main", new("seta r_monitor 2\n"u8, ConfigDialect.Stock));
+            store.Create("Scrim", "Scrim", new("seta r_monitor 6\n"u8, ConfigDialect.Stock));
+            store.Select("Main", null);
+            var studio = new ConfigStudioSession(files, ConfigDialect.Stock, () => false, new FixedClock());
+            var request = new ClientLaunchRequest(GameEdition.Original, new(), "data", "home")
+            {
+                Link = LaunchLink.Direct("localhost"),
+                ServerLoadout = new("Scrim")
+            };
+            var prepared = studio.PrepareClientLaunch(request);
+            Equal("Scrim", prepared.Studio?.ProfileId);
+            Equal("Scrim", store.ActiveSelection().ProfileId);
+            Equal("6", prepared.Loadout?["r_monitor"]);
+            studio.CancelLaunch();
+            Equal("Main", store.ActiveSelection().ProfileId);
+        });
+
         Check("connection cleanup checks origin and restores only its own active bytes", () =>
         {
             var files = new FixtureProfileFiles();

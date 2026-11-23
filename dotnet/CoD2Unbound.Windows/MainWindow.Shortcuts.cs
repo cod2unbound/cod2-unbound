@@ -72,8 +72,7 @@ public sealed partial class MainWindow
         {
             ShellCommand.Launch or ShellCommand.OpenGameMenu => !session.Game.State.Running && session.Setup.DataPath.Length != 0,
             ShellCommand.Import or ShellCommand.Paste => !session.Game.State.Running && (configs?.CanImportFromShell ?? true),
-            ShellCommand.Connect => !session.Game.State.Running,
-            ShellCommand.Favorite or ShellCommand.CopyAddress => servers?.JumpSelectedServer is not null,
+            ShellCommand.Favorite or ShellCommand.CopyAddress => servers is { CanRunRowShortcut: true },
             ShellCommand.FilterServers => servers is { ShowsServerBrowser: true },
             ShellCommand.NewLoadout => configs is { CanCreateFromShell: true },
             ShellCommand.History or ShellCommand.Checkup => configs?.HasJumpLoadouts ?? jumpLoadouts.Count != 0,
@@ -149,7 +148,6 @@ public sealed partial class MainWindow
             return;
         }
 
-        // The filter flyout keeps the page available for its Apply action.
         if (command == ShellCommand.FilterServers && ContentFrame.Content is ServersPage filterPage)
         {
             filterPage.OpenShellFilters();
@@ -158,6 +156,11 @@ public sealed partial class MainWindow
         if (command == ShellCommand.Favorite && ContentFrame.Content is ServersPage favorites)
         {
             await favorites.ToggleShellFavoriteAsync();
+            return;
+        }
+        if (command == ShellCommand.CopyAddress && ContentFrame.Content is ServersPage copyPage)
+        {
+            await copyPage.CopyShellAddressAsync();
             return;
         }
 
@@ -178,9 +181,6 @@ public sealed partial class MainWindow
                     if (ContentFrame.Content is not ServersPage { ShowsServerBrowser: true })
                         await NavigateAsync(LauncherPlace.Servers, refreshServers: false);
                     await ((ServersPage)ContentFrame.Content).ConnectFromShellAsync();
-                    break;
-                case ShellCommand.CopyAddress:
-                    (ContentFrame.Content as ServersPage)?.CopyShellAddress();
                     break;
                 case ShellCommand.Import:
                 case ShellCommand.Paste:

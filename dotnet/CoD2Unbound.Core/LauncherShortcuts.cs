@@ -35,7 +35,7 @@ public static class LauncherShortcuts
         new(ShellCommand.Import, "Import config", ["Ctrl+O"]),
         new(ShellCommand.Paste, "Paste config", ["Ctrl+Shift+V"]),
         new(ShellCommand.Undo, "Undo config import", ["Ctrl+Z"]),
-        new(ShellCommand.Open, "Open Library item", ["Enter"]),
+        new(ShellCommand.Open, "Launch server or open Library item", ["Enter"]),
         new(ShellCommand.CopyAddress, "Copy server address", ["Ctrl+Shift+C"]),
         new(ShellCommand.FilterServers, "Server filters", ["Ctrl+Shift+F"]),
         new(ShellCommand.NewLoadout, "New loadout", ["Ctrl+N"]),
@@ -45,7 +45,7 @@ public static class LauncherShortcuts
         new(ShellCommand.Delete, "Delete", ["Delete"]),
         new(ShellCommand.CopyFile, "Copy demo or screenshot", ["Ctrl+C"]),
         new(ShellCommand.SaveLoadoutText, "Apply loadout text", ["Ctrl+S"]),
-        new(ShellCommand.ContextMenu, "Context menu", ["Shift+F10"]),
+        new(ShellCommand.ContextMenu, "Row context menu", ["Shift+F10", "Menu key"]),
         new(ShellCommand.FullScreen, "Full screen", ["F11"]),
         new(ShellCommand.Help, "Help", ["F1"]),
         new(ShellCommand.Close, "Close", ["Alt+F4"])

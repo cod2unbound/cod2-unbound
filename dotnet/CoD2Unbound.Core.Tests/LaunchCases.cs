@@ -1,13 +1,11 @@
 using System.Collections.Immutable;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 
 namespace CoD2Unbound.Core.Tests;
 
 internal static partial class Program
 {
-    private static readonly Guid ConnectionId = new("cd47c776-4f22-4456-a4f3-eb3b6b6097de");
     private const string WindowsData = @"D:\Game data";
     private const string WindowsHome = @"C:\User Home\";
     private const string BinaryPath = @"C:\Program Files\CoD2\cod2_win32.exe";
@@ -90,9 +88,8 @@ internal static partial class Program
                     string chain = root.String("chain")!;
                     platform.PutFile("main/" + chain);
                     var binary = new GameBinary(edition, EngineRole.Client, BinaryPath);
-                    var plan = WindowsLaunchPlan.Client(request, binary, WorkingDirectory, renderer, platform, ConnectionId);
+                    var plan = WindowsLaunchPlan.Client(request, binary, WorkingDirectory, renderer, platform);
                     string rendererValue = renderer == WindowsRenderMode.Direct3D9 ? "dx9" : "dx7";
-                    string filename = $"join_{ConnectionId:N}.cfg";
                     var expected = row.Strings("arguments").Select(value => value switch
                     {
                         "\"/Game data\"" => "\"D:/Game data\"",
@@ -100,10 +97,11 @@ internal static partial class Program
                         _ => value
                     }).ToList();
                     expected.InsertRange(expected.IndexOf(chain) + 1, ["+set", "r_rendererPreference", $"\"{rendererValue}\""]);
-                    expected.AddRange(["+exec", filename]);
                     Sequence(expected, plan.Start.EngineArguments);
-                    Equal("main/" + filename, plan.Start.PrivateFiles.Single().RelativePath);
-                    Equal(root.String("connectionConfig"), Encoding.ASCII.GetString(plan.Start.PrivateFiles.Single().Data.AsSpan()));
+                    Equal(true, plan.Start.PrivateFiles.IsEmpty);
+                    var handoff = LaunchLink.Parse("cod2x://" + plan.Start.EnvironmentChanges[WindowsLaunchPlan.ServerJoinVariable]);
+                    Equal("LOCALhost", handoff.Address);
+                    Equal("fake+password", handoff.Password);
                     Equal($"\"{BinaryPath}\" " + string.Join(' ', expected), WindowsCommandLine.Format(plan.Start));
                     Equal(false, WindowsCommandLine.Format(plan.Start).Contains("fake+password", StringComparison.Ordinal));
                     Equal(false, plan.PlaysIntroFilms);
@@ -142,8 +140,10 @@ internal static partial class Program
                 Link = LaunchLink.Parse("cod2x://connect/localhost")
             };
             var binary = new GameBinary(GameEdition.Original, EngineRole.Client, BinaryPath);
-            var plan = WindowsLaunchPlan.Client(request, binary, WorkingDirectory, connectionId: ConnectionId);
-            Equal("connect localhost\n", Encoding.ASCII.GetString(plan.Start.PrivateFiles.Single().Data.AsSpan()));
+            var plan = WindowsLaunchPlan.Client(request, binary, WorkingDirectory);
+            Sequence(new[] { "+connect", "localhost" }, plan.Start.EngineArguments.TakeLast(2));
+            Equal(true, plan.Start.PrivateFiles.IsEmpty);
+            Equal(null, plan.Start.EnvironmentChanges[WindowsLaunchPlan.ServerJoinVariable]);
         });
 
         Check("in-memory platform boundaries", () => PlatformBoundary().GetAwaiter().GetResult());

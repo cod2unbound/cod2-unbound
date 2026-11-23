@@ -47,14 +47,22 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists"
-                         Style="{StaticResource AlignedSelector}" SelectionChanged="OnScopeChanged">
-                <SelectorBarItem Text="All" AccessKey="A" />
-                <SelectorBarItem Text="Favorites" AccessKey="V" />
-                <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
-                <SelectorBarItem Text="Hosting" AccessKey="T" />
-            </SelectorBar>
-            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" Width="300" HorizontalAlignment="Right"
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists"
+                             Style="{StaticResource AlignedSelector}" SelectionChanged="OnScopeChanged">
+                    <SelectorBarItem Text="All" AccessKey="A" />
+                    <SelectorBarItem Text="Favorites" AccessKey="V" />
+                    <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
+                    <SelectorBarItem Text="Hosting" AccessKey="T" />
+                </SelectorBar>
+                <Button x:Name="ClearRecent" Click="OnClearRecent" Style="{StaticResource SubtleAction}" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <SymbolIcon Symbol="Delete" />
+                        <TextBlock Text="Clear recent" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" MaxWidth="300" HorizontalAlignment="Stretch"
                             PlaceholderText="Search servers, maps or mods" VerticalAlignment="Center"
                             AutomationProperties.Name="Search servers, maps or mods" AutomationProperties.AcceleratorKey="Ctrl+F"
                             TextChanged="OnSearch" QuerySubmitted="OnSearchSubmitted">
@@ -71,17 +79,17 @@
                 <Button.Flyout>
                     <Flyout Opening="OnFiltersOpening">
                         <StackPanel Spacing="8" Width="200">
-                            <ComboBox x:Name="FilterEdition" Header="Version" HorizontalAlignment="Stretch">
+                            <ComboBox x:Name="FilterEdition" SelectionChanged="OnFilterSelection" Header="Version" HorizontalAlignment="Stretch">
                                 <ComboBoxItem Content="All" />
                                 <ComboBoxItem Content="CoD2x 1.4.6.8" />
                                 <ComboBoxItem Content="Original 1.3" />
                             </ComboBox>
-                            <ComboBox x:Name="FilterMode" Header="Game type" HorizontalAlignment="Stretch" />
-                            <ComboBox x:Name="FilterPing" Header="Maximum ping" HorizontalAlignment="Stretch" />
-                            <CheckBox x:Name="HideEmpty" Content="Hide empty servers" />
-                            <CheckBox x:Name="HideFull" Content="Hide full servers" />
-                            <CheckBox x:Name="HidePassworded" Content="Hide passworded servers" />
-                            <Button Content="Apply" Click="OnApplyFilters" />
+                            <ComboBox x:Name="FilterMode" SelectionChanged="OnFilterSelection" Header="Game type" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="FilterPing" SelectionChanged="OnFilterSelection" Header="Maximum ping" HorizontalAlignment="Stretch" />
+                            <CheckBox x:Name="HideEmpty" Checked="OnFilterToggle" Unchecked="OnFilterToggle" Content="Hide empty servers" />
+                            <CheckBox x:Name="HideFull" Checked="OnFilterToggle" Unchecked="OnFilterToggle" Content="Hide full servers" />
+                            <CheckBox x:Name="HidePassworded" Checked="OnFilterToggle" Unchecked="OnFilterToggle" Content="Hide passworded servers" />
+                            <Button x:Name="ClearFilters" Content="Clear filters" Click="OnClearFilters" Style="{StaticResource SubtleAction}" />
                         </StackPanel>
                     </Flyout>
                 </Button.Flyout>
@@ -126,7 +134,7 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid ColumnSpacing="8" MinHeight="62" AutomationProperties.Name="{Binding Label}"
-                                  Loaded="OnServerRowLoaded" DataContextChanged="OnServerRowChanged">
+                                  Loaded="OnServerRowLoaded" DataContextChanged="OnServerRowChanged" DoubleTapped="OnServerRowDoubleTapped">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="64" />
@@ -185,8 +193,14 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+                <StackPanel x:Name="EmptyServers" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Spacing="6" MaxWidth="320" Margin="16" Visibility="Collapsed">
+                    <TextBlock x:Name="EmptyHeading" Style="{StaticResource BodyStrongTextBlockStyle}" TextAlignment="Center" />
+                    <TextBlock x:Name="EmptyMessage" Style="{StaticResource SecondaryText}" TextAlignment="Center" />
+                    <Button x:Name="EmptyAction" HorizontalAlignment="Center" Style="{StaticResource SubtleAction}" Click="OnEmptyAction" />
+                </StackPanel>
             </Grid>
-            <Border x:Name="Details" Grid.Column="1" Width="300" Style="{StaticResource FieldCard}" Visibility="Collapsed">
+            <Border x:Name="Details" Grid.Column="1" Width="380" Style="{StaticResource FieldCard}" Visibility="Collapsed">
                 <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
@@ -226,8 +240,9 @@
                                     <TextBlock x:Name="DetailAccess" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 </StackPanel>
                             </Grid>
-                            <TextBlock x:Name="DetailReady" Foreground="{ThemeResource PositiveBrush}" FontSize="12"
-                                       TextWrapping="Wrap" Visibility="Collapsed" />
+                            <TextBlock x:Name="DetailFull" Text="This server is full." TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{ThemeResource AddressBrush}" Visibility="Collapsed" />
+                            <ContentControl x:Name="DetailReady" HorizontalContentAlignment="Stretch" IsTabStop="False" />
                             <Border Height="1" Background="{ThemeResource SeparatorBrush}" />
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>

@@ -2,6 +2,9 @@ using System.Collections.Immutable;
 
 namespace CoD2Unbound.Core;
 
+public sealed record ServerLaunchLoadout(string? ProfileId, ConfigConnectionLaunch? Connection = null,
+    ConfigProfileVersion? Expected = null, ImmutableArray<byte>? Chain = null);
+
 public sealed record ServerReadyState(string? Address = null, ConfigReadyReport? Report = null, bool Checking = false, bool Evaluated = false);
 
 /// <summary>The selector and temporary overrides are scoped to one canonical endpoint.</summary>
@@ -12,7 +15,23 @@ public sealed class ServerReadySession(ConfigReadyCheck checker, ServerQueryClie
     private int revision;
     private GameServer? observed;
     public ServerReadyState State { get; private set; } = new();
+    public GameServer? Observation => observed;
     public string? ProfileId => connection.ProfileId;
+    public ImmutableDictionary<string, string> Overrides => connection.Overrides;
+    public ConfigProfile? ActiveProfile => studio.ReadActive()?.Profile;
+    public ConfigProfile? ChosenProfile => Profile()?.Profile;
+
+    public ConfigProfile? CompatibleAlternative(ConfigCatalogMode mode)
+    {
+        lock (gate)
+        {
+            if (observed is null || State.Report?.Status != ConfigReadyStatus.NeedsChanges)
+                return null;
+            return studio.ManagedProfiles().Where(profile => profile.Id != State.Report.ProfileId)
+                .FirstOrDefault(profile => checker.Evaluate(observed, studio.ReadProfile(profile.Id), mode).Status ==
+                    ConfigReadyStatus.MatchesKnownRules);
+        }
+    }
 
     public ServerReadyState Evaluate(string address, GameServer? server, ConfigCatalogMode mode)
     {
@@ -72,6 +91,7 @@ public sealed class ServerReadySession(ConfigReadyCheck checker, ServerQueryClie
     {
         lock (gate)
         {
+            RequireWritable();
             string address = State.Address ?? throw new InvalidOperationException("Choose a server before choosing a loadout.");
             bool alternate = id is not null && !id.Equals(studio.ReadActive()?.Profile.Id, StringComparison.OrdinalIgnoreCase);
             if (alternate)
@@ -91,6 +111,7 @@ public sealed class ServerReadySession(ConfigReadyCheck checker, ServerQueryClie
     {
         lock (gate)
         {
+            RequireWritable();
             if (State.Report is not { } report || State.Checking)
                 throw new InvalidOperationException("There is no verified temporary fix for this server and loadout.");
             connection.Fix(report);
@@ -100,8 +121,7 @@ public sealed class ServerReadySession(ConfigReadyCheck checker, ServerQueryClie
 
     public void Undo(ConfigCatalogMode mode) => UseLoadout(null, mode);
 
-    public (string? ProfileId, ConfigConnectionLaunch? Connection, ConfigProfileVersion? Expected, ImmutableArray<byte>? Chain)
-        Prepare(LaunchLink link, GameServer? current, ConfigCatalogMode mode)
+    public ServerLaunchLoadout? Prepare(LaunchLink link, GameServer? current, ConfigCatalogMode mode)
     {
         lock (gate)
         {
@@ -110,11 +130,17 @@ public sealed class ServerReadySession(ConfigReadyCheck checker, ServerQueryClie
                 return default;
             var profile = Profile();
             if (profile is null || connection.Overrides.IsEmpty)
-                return (connection.ProfileId, null, null, null);
+                return connection.ProfileId is { } id ? new(id) : null;
             var server = SameEndpoint(current, canonical) ? current : observed;
             var report = checker.Evaluate(server, profile, mode, requireFresh: false);
-            return (connection.ProfileId, connection.Launch(link, profile, report), profile.Version, report.AdvancedChain);
+            return new(connection.ProfileId, connection.Launch(link, profile, report), profile.Version, report.AdvancedChain);
         }
+    }
+
+    private void RequireWritable()
+    {
+        if (studio.IsReadOnly)
+            throw new ConfigProfileException(ConfigProfileFailure.GameRunning);
     }
 
     private ConfigProfileRead? Profile() => connection.ProfileId is { } id ? studio.ReadProfile(id) : studio.ReadActive();

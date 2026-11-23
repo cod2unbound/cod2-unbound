@@ -24,6 +24,85 @@ internal static partial class Program
             Equal(true, contradictory.MergeInfo(info).QueryConflicts.Contains("protocol"));
         });
 
+        Check("clearing recent servers and timestamps survives a source-generated round trip", () =>
+        {
+            const string address = "localhost:28960";
+            var library = new LauncherLibrary { Favorites = [address] }.Joined(address, clock.GetUtcNow());
+            var cleared = LauncherLibrary.Read(library.ClearRecent().Write().AsMemory());
+            Equal(true, cleared.Recent.IsEmpty);
+            Equal(true, cleared.Played.IsEmpty);
+            Equal(true, cleared.Favorites.Contains(address));
+        });
+
+        Check("direct entry carries the observed result and an explicit link edition", () =>
+        {
+            var input = ServerConnectEntry.Parse("cod2://connect/LOCALHOST", "");
+            Equal("localhost:28960", input.Target?.Address);
+            Equal<GameEdition?>(GameEdition.Original, input.Edition);
+            string copied = ServerAddress.JoinLink(input.Target!.Address, GameEdition.Original)!;
+            Equal(input.Target.Address, ServerLink.Parse(copied)?.Target.Address);
+            Equal<GameEdition?>(GameEdition.Original, ServerLink.Parse(copied)?.Edition);
+            Equal(true, ServerConnectEntry.Parse("localhost:65536", "").InvalidAddress);
+            Equal(false, ServerConnectEntry.Parse(" ", "").InvalidAddress);
+            Equal(null, ServerConnectEntry.Parse("localhost", "bad;password").Target);
+            Equal("one use", ServerConnectEntry.Parse("cod2x://connect%20localhost%20password%20%22one%20use%22", "").Target?.Password);
+        });
+
+        Check("remembered passwords are per canonical endpoint and clearing one leaves other secrets", () =>
+        {
+            var platform = new MemoryPlatform("C:/fixture");
+            var store = new ServerPasswordStore(platform);
+            var secrets = (ISecretStore)platform;
+            secrets.WriteAsync(SetupSession.KeySecret, "fixture key", default).GetAwaiter().GetResult();
+            store.RememberAsync("LOCALHOST", "first secret").GetAwaiter().GetResult();
+            store.RememberAsync("localhost:28961", "second secret").GetAwaiter().GetResult();
+            Equal("first secret", Sync(store.ReadAsync("localhost:28960")));
+            store.RememberAsync("LOCALHOST:28960", null).GetAwaiter().GetResult();
+            Equal(null, Sync(store.ReadAsync("localhost")));
+            Equal("second secret", Sync(store.ReadAsync("localhost:28961")));
+            Equal("fixture key", Sync(secrets.ReadAsync(SetupSession.KeySecret, default)));
+        });
+
+        Check("ready check switches the inspected loadout and uses a disposable, endpoint-bound fix", () =>
+        {
+            var rows = fixture.RootElement.GetProperty("cases").EnumerateArray().ToArray();
+            var original = rows.Single(row => row.String("name") == "competitive");
+            var compatible = rows.Single(row => row.String("name") == "compatible");
+            var files = new FixtureProfileFiles();
+            var store = new ConfigProfileStore(files, ConfigDialect.Cod2x);
+            store.Create("Main", "Main", new(original.Bytes("input"), ConfigDialect.Cod2x));
+            store.Create("Scrim", "Scrim", new(compatible.Bytes("input"), ConfigDialect.Cod2x));
+            store.Select("Main", null);
+            bool playing = false;
+            var studio = new ConfigStudioSession(files, ConfigDialect.Cod2x, () => playing, clock);
+            var ready = new ServerReadySession(check, new ServerQueryClient(new BrowserUdp(), clock), studio);
+            var server = new GameServer("127.0.0.1:28960", Fields(original.GetProperty("fields")), 12, [], clock.GetUtcNow());
+            var link = LaunchLink.Direct(server.Address);
+            const ConfigCatalogMode mode = ConfigCatalogMode.Cod2x;
+            Equal(ConfigReadyStatus.NeedsChanges, ready.Evaluate(server.Address, server, mode).Report?.Status);
+            Equal("Scrim", ready.CompatibleAlternative(mode)?.Id);
+            ready.UseLoadout("Scrim", mode);
+            Equal(ConfigReadyStatus.MatchesKnownRules, ready.State.Report?.Status);
+            Equal("Scrim", ready.Prepare(link, server, mode)?.ProfileId);
+            Equal("Main", store.ActiveSelection().ProfileId);
+            playing = true;
+            ProfileRejects(ConfigProfileFailure.GameRunning, () => ready.Undo(mode));
+            playing = false;
+            ready.Undo(mode);
+            ready.Fix();
+            Equal(null, ready.Prepare(LaunchLink.Direct("127.0.0.1:28961"), server, mode));
+            var choice = ready.Prepare(link, server, mode);
+            Equal("250", choice?.Connection?.Values["com_maxfps"]);
+            var prepared = studio.PrepareClientLaunch(new(GameEdition.Cod2x, new(), "data", "home") { Link = link, ServerLoadout = choice });
+            Equal(true, prepared.Studio?.ConnectionIsolated);
+            Equal(true, studio.IsTemporaryServerLoadout);
+            Equal("250", prepared.Connection?.Values["com_maxfps"]);
+            studio.CancelLaunch();
+            Equal(false, studio.IsTemporaryServerLoadout);
+            Equal("Main", store.ActiveSelection().ProfileId);
+            Equal("333", store.Read("Main").Document.EffectiveSetting("com_maxfps"));
+        });
+
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
             Check("Swift Ready Check " + row.GetProperty("name").GetString(), () =>
             {

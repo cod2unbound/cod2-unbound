@@ -171,6 +171,8 @@ internal static partial class Program
             Sequence("[Private connection or key details omitted]\n"u8.ToArray(), output.Append("thetic-key\n"u8));
             Equal(0, output.Append(Enumerable.Repeat((byte)'x', 16_385).ToArray()).Length);
             Sequence("[Long output line omitted]\n"u8.ToArray(), output.Append("\n"u8));
+            output.Protect("after-launch");
+            Sequence("[Private connection or key details omitted]\n"u8.ToArray(), output.Append("reply after-launch\n"u8));
             Sequence("final line\n"u8.ToArray(), output.Append("final line"u8, complete: true));
             Equal(0, output.Append("late"u8).Length);
             var files = Enumerable.Range(0, 12).Select(index => new MediaFile($"game-{index:D2}.log", null, 4L << 20));

@@ -109,6 +109,7 @@
                     </Grid.RowDefinitions>
                     <StackPanel>
                         <InfoBar x:Name="Problem" Severity="Error" IsClosable="False" />
+                        <InfoBar x:Name="ServerJoinWarning" Severity="Warning" />
                         <InfoBar x:Name="ReportCopied" Severity="Success" />
                         <InfoBar x:Name="ReportWarning" Severity="Warning" />
                     </StackPanel>
