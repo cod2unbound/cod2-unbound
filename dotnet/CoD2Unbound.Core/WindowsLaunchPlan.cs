@@ -61,7 +61,8 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
             throw new ArgumentException("The binary must be a dedicated server.", nameof(binary));
         if (port is < 1 or > 65535 || !IPAddress.TryParse(bind, out var ip) || ip.AddressFamily != AddressFamily.InterNetwork)
             throw KeyedFailure("hosting.invalidEndpoint");
-        var arguments = GameLaunchPlan.DedicatedArguments(EnginePath(dataPath), EnginePath(homePath), port, listed, ip.ToString());
+        var arguments = GameLaunchPlan.DedicatedArguments(EnginePath(dataPath), EnginePath(homePath), port,
+            listed && !IPAddress.IsLoopback(ip), ip.ToString());
         ValidateTail(arguments, binary.Edition, dedicated: true);
         var start = new EngineProcessStart(binary.Path, workingDirectory, homePath, arguments, [])
         {

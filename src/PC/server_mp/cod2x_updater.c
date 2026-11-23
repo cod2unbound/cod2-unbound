@@ -64,9 +64,9 @@ void SV_Cod2xUpdaterInit(void)
     sv_update = Dvar_RegisterBool("sv_update", 1, 0x1000);
 }
 
-static int Updater_Dedicated(void)
+static int Updater_ListedServer(void)
 {
-    return Dvar_GetInt("dedicated") > 0;
+    return Dvar_GetInt("dedicated") == 2;
 }
 
 /* A newer CoD2x is acted on only with sv_update and a map running. */
@@ -284,7 +284,7 @@ static void Updater_SendHttps(int periodic)
 
 void SV_Cod2xUpdaterCheck(void)
 {
-    if (Updater_Dedicated() && Updater_CheckEnabled())
+    if (Updater_ListedServer() && Updater_CheckEnabled())
         Updater_SendHttps(0);
 }
 
@@ -309,7 +309,7 @@ static int Updater_PeriodicDue(void)
 void SV_Cod2xUpdaterFrame(void)
 {
     Cod2x_HttpFrameFor(Updater_Done);
-    if (!Updater_Dedicated())
+    if (!Updater_ListedServer())
         return;
     if (Updater_PeriodicDue() && Updater_CheckEnabled())
         Updater_SendHttps(1);
