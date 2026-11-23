@@ -26,13 +26,22 @@ public static class WindowsProfiles
     ];
 
     public static WindowsProfileDiscovery Find(IWindowsProfileFiles files, IReadOnlyList<string> volumes,
-        IReadOnlyList<string> selectedFolders, int maximumEntries = 256, int maximumVolumes = 32)
+        IReadOnlyList<string> selectedFolders, int maximumEntries = 256, int maximumVolumes = 32, string? localAppData = null,
+        CancellationToken cancellationToken = default)
     {
         int limit = Math.Max(0, maximumVolumes);
-        var scanner = new Scanner(files, Math.Max(0, maximumEntries))
+        var scanner = new Scanner(files, Math.Max(0, maximumEntries), cancellationToken)
         {
             Truncated = volumes.Count > limit || selectedFolders.Count > limit
         };
+        if (localAppData is not null && Normalize(localAppData) is { } local && ValidRoot(local))
+        {
+            var candidatePaths = InstallPaths.Concat(selectedFolders.Take(limit).Select(Normalize)
+                .Where(path => path.Length > 3 && path[1..3] == ":/").Select(path => path[3..]));
+            foreach (string install in candidatePaths.Distinct(StringComparer.OrdinalIgnoreCase).Where(IsProgramFilesInstall))
+                scanner.Players(local, local + "/VirtualStore/" + install + "/main/players");
+        }
+
         foreach (string volume in volumes.Take(limit).Select(Normalize).Where(ValidRoot))
             foreach (string installPath in InstallPaths)
                 scanner.Players(volume, volume + "/" + installPath + "/main/players");
@@ -50,11 +59,16 @@ public static class WindowsProfiles
     }
 
     private static string Normalize(string root) => root.Replace('\\', '/').TrimEnd('/');
+    private static bool IsProgramFilesInstall(string path) =>
+        (path.StartsWith("Program Files/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("Program Files (x86)/", StringComparison.OrdinalIgnoreCase)) &&
+        path.Split('/').All(IsLeaf);
+
     private static bool ValidRoot(string root) => root.Length != 0 && !root.Contains('\0');
     private static bool IsLeaf(string name) => name.Length > 0 && name is not ("." or "..") &&
         !name.AsSpan().ContainsAny("/\\:\0");
 
-    private sealed class Scanner(IWindowsProfileFiles files, int limit)
+    private sealed class Scanner(IWindowsProfileFiles files, int limit, CancellationToken cancellationToken)
     {
         private readonly Dictionary<string, WindowsProfileCandidate> profiles = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> playersVisited = new(StringComparer.OrdinalIgnoreCase);
@@ -69,23 +83,23 @@ public static class WindowsProfiles
 
         public void Players(string root, string path)
         {
-            if (!files.IsDirectory(root, path) || !playersVisited.Add(path))
+            if (!Try(() => files.IsDirectory(root, path)) || !playersVisited.Add(path))
                 return;
             string? active = null;
             string selection = path + "/active.txt";
-            if (files.IsRegularFile(root, selection) && files.ReadPrefix(root, selection, 257) is { Length: <= 256 } bytes)
+            if (Try(() => files.IsRegularFile(root, selection) ? files.ReadPrefix(root, selection, 257) : null) is { Length: <= 256 } bytes)
             {
                 string text = Encoding.Latin1.GetString(bytes).Trim();
                 if (IsLeaf(text) && !text.Contains("..", StringComparison.Ordinal))
                     active = text;
             }
             foreach (string name in Entries(root, path))
-                Profile(root, path + "/" + name, path, name, name == active);
+                Profile(root, path + "/" + name, path, name, name.Equals(active, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Profile(string root, string path, string players, string name, bool active)
         {
-            if (!files.IsDirectory(root, path) || !profilesVisited.Add(path))
+            if (!Try(() => files.IsDirectory(root, path)) || !profilesVisited.Add(path))
                 return;
             ReadConfigs(path, false);
             foreach (string backup in new[] { "backup", "backups", "Raptr" })
@@ -99,21 +113,33 @@ public static class WindowsProfiles
                     string full = directory + "/" + leaf;
                     if (filename.StartsWith("config_mp", StringComparison.Ordinal) &&
                         (filename.EndsWith(".cfg", StringComparison.Ordinal) || filename.EndsWith(".cfg.bak", StringComparison.Ordinal)) &&
-                        files.IsRegularFile(root, full))
+                        Try(() => files.IsRegularFile(root, full)))
                         profiles[full] = new(name, full, players, active, forceBackup || filename != "config_mp.cfg");
                 }
+            }
+        }
+
+        private T? Try<T>(Func<T> read)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { return read(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                unreadable++;
+                return default;
             }
         }
 
         private IEnumerable<string> Entries(string root, string path)
         {
             var names = new List<string>();
-            if (!files.IsDirectory(root, path))
+            if (!Try(() => files.IsDirectory(root, path)))
                 return names;
             try
             {
                 foreach (string name in files.EnumerateNames(root, path))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (inspected == limit)
                     {
                         Truncated = true;

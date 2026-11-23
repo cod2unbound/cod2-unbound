@@ -60,6 +60,26 @@ public sealed class ConfigImportLoader(IConfigImportCatalog catalog, IConfigImpo
     private static readonly string[] NonTextPrefixes = ["<!doctype", "<html", "<?xml", "%pdf-", "pk\u0003\u0004", "mz"];
     private static readonly byte[] Utf8Bom = [239, 187, 191];
 
+    public static bool AcceptsLink(string text)
+    {
+        if (!Uri.TryCreate(text.Trim(), UriKind.Absolute, out var url))
+            return false;
+        try { _ = RemoteSource(url); return true; }
+        catch (ConfigImportException) { return false; }
+    }
+
+    public static bool IsCredentialFile(string path) =>
+        path.Split('/', '\\').Any(part => part.Split('.', 2)[0].ToLowerInvariant() is
+            "cdkey" or "cd_key" or "codkey" or "cod2key");
+
+    public static string SuggestedName(string filename)
+    {
+        string name = Path.GetFileNameWithoutExtension(filename);
+        if (name.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
+        return string.IsNullOrWhiteSpace(name) || name == "raw" ? "Imported config" : LauncherText.Prefix(name, 80);
+    }
+
     public async ValueTask<ConfigImportBundle> LoadAsync(ConfigImportInput input, ConfigDialect dialect,
         CancellationToken cancellationToken = default)
     {
@@ -84,7 +104,7 @@ public sealed class ConfigImportLoader(IConfigImportCatalog catalog, IConfigImpo
             {
                 string requested = ConfigImportScript.Text(value.AsSpan());
                 string? path = ConfigImportScript.ExecPath(value.AsSpan());
-                if (path is null)
+                if (path is null || IsCredentialFile(path))
                 {
                     unresolved.Add(new(file.Path, requested, ConfigImportFailure.OutsideRoot));
                     continue;
@@ -139,7 +159,8 @@ public sealed class ConfigImportLoader(IConfigImportCatalog catalog, IConfigImpo
                     throw new ConfigImportException(ConfigImportFailure.MissingEntry);
                 var selection = await local.ResolveFileAsync(file.Url, cancellationToken).ConfigureAwait(false);
                 if (selection.EntryPath.Length == 0 || selection.EntryPath is "." or ".." ||
-                    selection.EntryPath.IndexOfAny(['/', '\\', ':', '\0']) >= 0)
+                    selection.EntryPath.IndexOfAny(['/', '\\', ':', '\0']) >= 0 ||
+                    IsCredentialFile(selection.EntryPath))
                     throw new ConfigImportException(ConfigImportFailure.OutsideRoot);
                 return (new(ConfigImportSourceKind.File, file.Url, selection.Root), selection.EntryPath,
                     await ReadLocalAsync(selection.Root, selection.EntryPath, cancellationToken).ConfigureAwait(false));
@@ -148,7 +169,8 @@ public sealed class ConfigImportLoader(IConfigImportCatalog catalog, IConfigImpo
             {
                 var local = localFiles ?? throw new ConfigImportException(ConfigImportFailure.MissingEntry);
                 if (!folder.Url.IsAbsoluteUri || !folder.Url.IsFile ||
-                    ConfigImportScript.ExecPath(Encoding.UTF8.GetBytes(folder.EntryPath)) != folder.EntryPath)
+                    folder.EntryPath.Split('/').Any(part => part.Length == 0 || part is "." or ".." ||
+                        part.IndexOfAny(['\\', ':', '\0']) >= 0) || IsCredentialFile(folder.EntryPath))
                     throw new ConfigImportException(ConfigImportFailure.OutsideRoot);
                 var root = await local.ResolveFolderAsync(folder.Url, cancellationToken).ConfigureAwait(false);
                 return (new(ConfigImportSourceKind.Folder, folder.Url, root), folder.EntryPath,
@@ -258,7 +280,7 @@ public sealed class ConfigImportLoader(IConfigImportCatalog catalog, IConfigImpo
 
     private static (Uri Url, Uri Root, string Path, ConfigImportSourceKind Kind) RemoteSource(Uri original)
     {
-        if (!ConfigFetchRequest.IsPermitted(original))
+        if (!ConfigFetchRequest.IsPermitted(original) || IsCredentialFile(Uri.UnescapeDataString(original.AbsolutePath)))
             throw new ConfigImportException(ConfigImportFailure.InvalidUrl);
 
         var url = original;

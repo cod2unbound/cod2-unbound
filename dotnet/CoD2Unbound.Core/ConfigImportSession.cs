@@ -33,6 +33,8 @@ public sealed record ConfigImportRow(ConfigImportCandidate Candidate, string Tit
     string? NewValue, ImmutableArray<string> LockedNames, string? PlatformNote)
 {
     public string Id => Candidate.Id;
+    public string? SourceLine { get; init; }
+    public string? PreviousLine { get; init; }
     public bool CanSelect => Candidate.Importable && Candidate.Classification != ConfigImportClassification.Blocked &&
         LockedNames.IsEmpty && PlatformNote is null && Candidate.Command.Kind is not
         (ConfigCommandKind.Empty or ConfigCommandKind.Comment);
@@ -97,6 +99,23 @@ public sealed partial class ConfigImportSession
     public ConfigImportReceipt? Receipt { get; private set; }
     public ImmutableHashSet<string> SelectedIds { get; private set; } = ImmutableHashSet.Create<string>(StringComparer.Ordinal);
     public ImmutableArray<ConfigImportRow> Rows => rows;
+    public bool IsEmpty => !rows.Any(row => row.Candidate.Command.Kind is not
+        (ConfigCommandKind.Comment or ConfigCommandKind.Empty) &&
+        !row.Candidate.Reasons.Contains(ConfigImportRisk.Malformed));
+    public int SelectedRiskCount => rows.Count(row => SelectedIds.Contains(row.Id) &&
+        row.Candidate.Classification == ConfigImportClassification.NeedsOk);
+    public bool RequiresConfirmation => Mode == ConfigImportMode.Everything || SelectedRiskCount > 0;
+
+    public void RenameNewTarget(string id, string name)
+    {
+        lock (gate)
+        {
+            CheckMutable();
+            if (Target is not ConfigImportTarget.NewLoadout)
+                throw new ConfigImportSessionException(ConfigImportSessionFailure.UnavailableSelection);
+            Target = new ConfigImportTarget.NewLoadout(id, name);
+        }
+    }
 
     private ConfigProfileRead? Baseline => (Target as ConfigImportTarget.Existing)?.Read;
 
@@ -128,6 +147,8 @@ public sealed partial class ConfigImportSession
             if (!rows.Any(row => row.Id == id && row.CanSelect))
                 throw new ConfigImportSessionException(ConfigImportSessionFailure.UnavailableSelection);
             SelectedIds = selected ? SelectedIds.Add(id) : SelectedIds.Remove(id);
+            if (!selected && Mode == ConfigImportMode.Everything)
+                Mode = ConfigImportMode.Review;
         }
     }
 

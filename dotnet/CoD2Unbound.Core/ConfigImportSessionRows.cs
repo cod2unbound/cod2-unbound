@@ -26,6 +26,7 @@ public sealed partial class ConfigImportSession
         bool secret = candidate.Reasons.Contains(ConfigImportRisk.Credential);
         string title, group;
         string? previous = null, next = null;
+        ConfigImportCandidate? previousCommand = null;
 
         if (ConfigImportScript.Assignment(command, document, catalog, static _ => false) is { } assignment)
         {
@@ -36,8 +37,13 @@ public sealed partial class ConfigImportSession
                 bool oldSecret = baseline is not null && priorReview.Any(prior =>
                     prior.Reasons.Contains(ConfigImportRisk.Credential) &&
                     ConfigImportScript.Assignment(prior.Command, baseline.Document, catalog, static _ => false)?.Name == assignment.Name);
-                if (!oldSecret)
-                    previous = baseline?.Document.EffectiveSetting(assignment.Name);
+                if (!oldSecret && baseline is not null)
+                {
+                    previous = baseline.Document.EffectiveSetting(assignment.Name);
+                    if (previous is not null)
+                        previousCommand = priorReview.LastOrDefault(prior =>
+                            ConfigImportScript.Assignment(prior.Command, baseline.Document, catalog, static _ => false)?.Name == assignment.Name);
+                }
                 next = ConfigImportScript.Text(assignment.Value.AsSpan());
             }
         }
@@ -50,7 +56,13 @@ public sealed partial class ConfigImportSession
                 prior.Command.Tokens.Length > 1 && ConfigDocument.KeyNumber(prior.Command.Tokens[1].Text) == ConfigDocument.KeyNumber(key) &&
                 prior.Reasons.Contains(ConfigImportRisk.Credential));
             if (!oldSecret)
+            {
                 previous = baseline?.Document.EffectiveBind(key);
+                if (previous is not null)
+                    previousCommand = priorReview.LastOrDefault(prior => prior.Command.Kind == ConfigCommandKind.Bind &&
+                        prior.Command.Tokens.Length > 1 &&
+                        ConfigDocument.KeyNumber(prior.Command.Tokens[1].Text) == ConfigDocument.KeyNumber(key));
+            }
             if (!secret)
                 next = ConfigImportScript.Text(binding.AsSpan());
         }
@@ -60,7 +72,12 @@ public sealed partial class ConfigImportSession
             group = "Commands";
         }
 
-        return new(candidate, title, group, previous, next, LockedNames(candidate, baseline), PlatformNote(candidate));
+        return new(candidate, title, group, previous, next, LockedNames(candidate, baseline), PlatformNote(candidate))
+        {
+            SourceLine = secret ? null : ConfigImportScript.Text(candidate.Location.Span.Slice(document.Serialized.AsSpan())),
+            PreviousLine = previousCommand is null || baseline is null ? null :
+                ConfigImportScript.Text(previousCommand.Location.Span.Slice(baseline.Version.Config.AsSpan()))
+        };
     }
 
     private string? PlatformNote(ConfigImportCandidate candidate)
