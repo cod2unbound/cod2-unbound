@@ -257,7 +257,12 @@ void Win_D3D9_PresentParameters(const int *words, void *window, void *out)
     parameters->SwapEffect = (D3DSWAPEFFECT)words[6];
     parameters->hDeviceWindow = (HWND)window;
     parameters->Windowed = words[7] != 0;
+#if COD2_WINDOWS_NATIVE
+    /* The renderer creates its own depth-stencil surface in R_InitRenderTargets. */
+    parameters->EnableAutoDepthStencil = FALSE;
+#else
     parameters->EnableAutoDepthStencil = TRUE;
+#endif
     parameters->AutoDepthStencilFormat = (D3DFORMAT)words[8];
     parameters->Flags = (DWORD)words[9];
     parameters->FullScreen_RefreshRateInHz = words[7] ? 0 : (UINT)words[12];
