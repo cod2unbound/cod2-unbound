@@ -100,6 +100,15 @@ void *Win_D3D9_Direct3DCreate9(void)
 }
 
 #if COD2_WINDOWS_NATIVE
+const char *Win_D3D9_AdapterName(void *d3dInterface, unsigned adapter)
+{
+    static D3DADAPTER_IDENTIFIER9 identifier;
+    IDirect3D9 *d3d = d3dInterface;
+    if (FAILED(IDirect3D9_GetAdapterIdentifier(d3d, adapter, 0, &identifier)))
+        return "unavailable";
+    return identifier.Description;
+}
+
 unsigned Win_D3D9_SelectAdapter(void *d3dInterface, int monitorNumber)
 {
     IDirect3D9 *d3d = d3dInterface;

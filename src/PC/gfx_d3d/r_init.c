@@ -925,6 +925,7 @@ extern void *Win_D3D9_Direct3DCreate9(void);
 #if COD2_WINDOWS_NATIVE
 extern int Dvar_GetInt(const char *name);
 extern unsigned Win_D3D9_SelectAdapter(void *d3d, int monitorNumber);
+extern const char *Win_D3D9_AdapterName(void *d3d, unsigned adapter);
 extern void *Win_D3D9_PrepareWindow(void *d3d, unsigned adapter, int width, int height, int fullscreen, int refresh, int borderless);
 #else
 extern void *Win_D3D9_PrepareWindow(int width, int height, int fullscreen, int refresh);
@@ -1331,6 +1332,10 @@ static Bool R_InitNativeHardware(void)
             R_SetNativeAspectRatio();
             RB_InitSceneViewport();
             if (R_CreateForInitOrReset()) {
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9
+                ri.Printf(0, "Direct3D 9 adapter: %s (ordinal %u)\n",
+                    Win_D3D9_AdapterName(d3d, dx.adapterIndex), dx.adapterIndex);
+#endif
                 ri.Dvar_ClearModified(r_gamma);
                 R_InitSystems();
 #if COD2_WIN32_D3D9
