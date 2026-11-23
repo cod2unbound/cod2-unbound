@@ -42,10 +42,22 @@
                             </local:LaunchSplitButton.Resources>
                             <local:LaunchSplitButton.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem x:Name="RejoinMenu" Click="OnLaunch" KeyboardAcceleratorTextOverride="Ctrl+Enter" />
-                                    <MenuFlyoutItem Text="Open the game menu" Click="OnOpenGameMenu" KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter" />
+                                    <MenuFlyoutItem x:Name="RejoinMenu" Click="OnLaunch" KeyboardAcceleratorTextOverride="Ctrl+Enter">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem Text="Open the game menu" Click="OnOpenGameMenu" KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPlayOutline}" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
                                     <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="Connect to an address…" Click="OnConnectAddress" KeyboardAcceleratorTextOverride="Ctrl+L" />
+                                    <MenuFlyoutItem Text="Connect to an address…" Click="OnConnectAddress" KeyboardAcceleratorTextOverride="Ctrl+L">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
                                 </MenuFlyout>
                             </local:LaunchSplitButton.Flyout>
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
