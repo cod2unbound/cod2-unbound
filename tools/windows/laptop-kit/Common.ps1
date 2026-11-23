@@ -94,9 +94,16 @@ function Save-Text([string]$Source, [string]$Destination) {
 
 function Read-KitText([string]$Path) {
     # Windows programs also write UTF-16 and their system ANSI code page.
-    $bytes = [IO.File]::ReadAllBytes($Path)
+    $share = [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete
+    $inputFile = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, $share)
+    try {
+        $buffer = [IO.MemoryStream]::new()
+        try { $inputFile.CopyTo($buffer); $bytes = $buffer.ToArray() }
+        finally { $buffer.Dispose() }
+    } finally { $inputFile.Dispose() }
     if ($bytes.Length -ge 2 -and ($bytes[0] -in 254,255 -or $bytes[1] -eq 0)) {
-        return [IO.File]::ReadAllText($Path, [Text.Encoding]::Unicode)
+        $encoding = if ($bytes[0] -eq 254) { [Text.Encoding]::BigEndianUnicode } else { [Text.Encoding]::Unicode }
+        return $encoding.GetString($bytes).TrimStart([char]0xfeff)
     }
     try { [Text.UTF8Encoding]::new($true, $true).GetString($bytes).TrimStart([char]0xfeff) }
     catch [Text.DecoderFallbackException] { [Text.Encoding]::Default.GetString($bytes) }

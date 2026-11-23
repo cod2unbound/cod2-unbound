@@ -18,9 +18,24 @@ function Invoke-Setup([string]$Exe, [string]$Label, [string]$Options = '') {
                 if (-not $p.HasExited) { $p.Kill() }
                 throw 'Setup timed out. Read any prompt still on the screen before continuing.'
             }
-            return $p.ExitCode
+            $code = $p.ExitCode
+            # Inno's uninstaller can hand work off to a temporary child.
+            $deadline = [DateTime]::UtcNow.AddSeconds(20)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                if (Test-Path -LiteralPath $rawLog) {
+                    try { if ((Read-KitText $rawLog) -match '(?m)Log closed\.') { break } } catch [IO.IOException] { }
+                } elseif ($code -ne 0) { break }
+                Start-Sleep -Milliseconds 250
+            }
+            return $code
         } finally { $p.Dispose() }
-    } finally { Save-Text $rawLog (Join-Path $detail.Evidence 'setup.log') }
+    } finally {
+        try { Save-Text $rawLog (Join-Path $detail.Evidence 'setup.log') }
+        catch {
+            'Windows kept the Setup log locked. Review it before clearing the test run.' |
+                Set-Content -LiteralPath (Join-Path $detail.Evidence 'log-unavailable.txt')
+        }
+    }
 }
 
 function Assert-InstalledFiles([string]$Root, [string]$From) {
