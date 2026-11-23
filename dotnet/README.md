@@ -247,31 +247,37 @@ yes allows the relevant reports to leave this PC. Usage recording starts with a
 yes in Setup or Settings. The consent event names where you said yes. The launcher
 discards events from before that answer, including setup steps. Events recorded
 after a yes in Setup wait until setup finishes before sending. Setup and
-Settings › Privacy show a preview for each configured service.
+Settings › Privacy show a preview for each configured service. The usage
+preview and the Settings › Privacy contacts card each have a “Read the full
+privacy notice” link.
 
 Usage requests use the PostHog EU ingestion endpoint without redirects, cookies,
 or ambient credentials. The launcher records app opens at most once per UTC day,
-screen opens, setup steps reached or skipped and the game-file source marker,
-game starts with edition, renderer, display mode and a reported scale of 100%,
-game exits with normal or unexpected exit and runtime in minutes, server list
-refreshes with the active tab, and join attempts with method and edition. It
-also records public player setup catalogue IDs for views, tries and imports,
-loadouts and config checks, hosting reach and edition, update stages and versions,
-setting names and encoded choices, and error kinds. Each event has a timestamp
-rounded down to the minute, a random event ID, and the random install number.
+screen opens, and setup steps reached or skipped. A confirmed game folder gets
+the `own files` marker only if the player picked it in setup. The launcher
+records game starts with edition, renderer and display mode, game exits with
+normal or unexpected exit and runtime in whole minutes, and server list refreshes
+with the active tab. Join attempts record method and edition when the launcher
+starts the game. It also records public player setup catalogue IDs for views,
+tries and imports, loadouts and config checks, hosting reach and edition,
+update stages and versions, setting names and encoded choices, and error kinds.
+Each event has a name, a timestamp rounded down to the minute, a random event
+ID, the random install number and the launcher label. Batches carry the
+project’s ingestion key.
 
 With the app’s version and your Windows version, each event includes your PC’s
 model and hardware (processor, memory and graphics card), your display, and your
-system language. It includes the processor’s name and logical core count, the PC
-and launcher architectures (`x64` or `arm64`), and
-installed memory in whole GB, rounded to the nearest GB. When the launcher runs
-emulated, its architecture differs from the PC’s. For the one graphics card
+system language. It includes the processor’s name and logical processor count,
+the PC and launcher architectures (`x64` or `arm64`), and installed memory in
+whole GB, rounded to the nearest GB. A difference in architecture indicates
+emulation. For the one graphics card
 Windows prefers for high performance it includes the name, dedicated memory in
 whole GB rounded down, and the driver version when available. It includes the
 display’s size and refresh rate. The launcher requests that PostHog skip person
-profiles. Country lookup from the connection address, discarding that address
-and keeping location only at country level depend on the PostHog project’s
-ingestion settings.
+profiles and leaves the network address out of event fields. PostHog can work
+out the country and finer location from the connection address. Its project
+settings determine which location data and addresses it retains. Switching
+usage data off clears the install number and unsent events on this PC.
 
 Usage data excludes your name, the PC’s name or serial numbers, the board’s UUID,
 the machine GUID, your CD key, server names and addresses, chat, config contents,
@@ -280,8 +286,13 @@ CoD2 Unbound crash reports send the launcher version, game edition, Windows
 version, PC model, report file’s modification time and upload time. They include
 a validated Windows text attachment with exception details, stack frame module
 offsets and module versions. The report number is derived from the report
-filename and contents so retries use the same number. The launcher keeps local
-game logs and dump files on this PC. CoD2x handles its own reports separately.
+filename and contents so retries use the same number. The launcher requests that
+Sentry leave the connection address out of the report and tracks reports after
+Sentry accepts them. Sending requires crash reporting to be on at launch and
+when the game crashes. The launcher keeps local game logs and dump files on
+this PC. CoD2x handles its own error, crash and freeze reports separately. Its
+switch takes effect on the next CoD2x start, when it can also try sending
+pending reports from earlier runs.
 
 Keep `UpdateBuildProfile=Public` and `EnableLocalReportReceivers=false` for
 releases. Test builds additionally require `UpdateBuildProfile=Fixture` and

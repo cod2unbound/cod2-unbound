@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace CoD2Unbound.Core.Tests;
 
@@ -265,7 +266,6 @@ internal static partial class Program
         });
         Usage("Windows usage wire schema matches the disclosure table", async () =>
         {
-            // Screens needs to explicitly name "app opened" in the revised disclosure.
             var events = new Dictionary<string, (string Row, string[] Properties)>(StringComparer.Ordinal)
             {
                 ["app opened"] = ("Screens", []),
@@ -301,6 +301,19 @@ internal static partial class Program
                 ("With every event", ["$lib", "$process_person_profile"])
             ];
             string[] envelope = ["event", "properties", "distinct_id", "timestamp", "uuid"]; // With every event
+            string[] previewRows = ["Screens", "Setup", "Games", "Servers", "Player setups", "Hosting",
+                "Updates", "Settings", "Problems", "This PC, your country", "With every event", "Never"];
+            CheckFields("mapped disclosure rows", previewRows,
+                events.Values.Select(entry => entry.Row).Concat(shared.Select(entry => entry.Row)).Append("Never"));
+
+            // The WinUI assembly is Windows-only. Read the literal row list used to build the preview.
+            using var source = typeof(Program).Assembly.GetManifestResourceStream("WindowsPrivacyPresentation.cs")
+                ?? throw new InvalidDataException("Windows privacy presentation source is missing.");
+            using var reader = new StreamReader(source);
+            var rowList = Regex.Match(reader.ReadToEnd(), @"(?s)\bUsagePreviewRows\s*=\s*\[(?<rows>.*?)\];");
+            var displayedRows = Regex.Matches(rowList.Groups["rows"].Value, """(?m)^\s*\("([^"]+)",""")
+                .Select(row => row.Groups[1].Value);
+            Sequence(previewRows, displayedRows);
             Equal(Enum.GetValues<UsageKind>().Length, events.Count);
 
             var f = new UsageFixture();
@@ -327,6 +340,12 @@ internal static partial class Program
                 await usage.RecordAsync(new(UsageKind.SettingChanged, (int)setting, setting == UsageSetting.TextureFiltering ? 2 : 1));
             await usage.HoldAsync(false);
             await Until(() => usage.QueuedCount == 0);
+            foreach (var request in f.Captures)
+            {
+                using var batch = JsonDocument.Parse(request);
+                CheckFields("PostHog request wrapper", ["api_key", "batch"],
+                    batch.RootElement.EnumerateObject().Select(field => field.Name));
+            }
             var received = Events(f.Captures);
             CheckFields("event names", events.Keys, received.Select(item => Name(item)!).Distinct());
             foreach (var group in received.GroupBy(item => Name(item)!))
