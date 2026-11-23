@@ -316,8 +316,31 @@ public sealed partial class ServersPage : Page
     private Task ToggleFavoriteAsync(ServerRow row) => shell.RunAsync(async () =>
     {
         await model.FavoriteAsync(row.Server);
+        var focused = FocusManager.GetFocusedElement(XamlRoot);
+        var focusedRow = RowFrom(focused);
+        bool focusStar = focused is Button { Name: "RowFavorite" };
         shell.RefreshFavorites();
         Render();
+        if (focusedRow is null || ServerList.ItemsSource is not ServerRow[] rows)
+            return;
+
+        var replacement = rows.FirstOrDefault(item => item.Server.Address == focusedRow.Server.Address);
+        var target = replacement ?? ServerList.SelectedItem as ServerRow;
+        if (target is null)
+        {
+            EmptyAction.Focus(FocusState.Programmatic);
+            return;
+        }
+
+        ServerList.ScrollIntoView(target);
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!ReferenceEquals(ServerList.ItemsSource, rows) || ServerList.ContainerFromItem(target) is not ListViewItem container)
+                return;
+            var star = focusStar && replacement is not null && container.ContentTemplateRoot is Grid template
+                ? template.FindName("RowFavorite") as Button : null;
+            ((Control?)star ?? container).Focus(FocusState.Programmatic);
+        });
     });
 
     private async void OnRefresh(object sender, RoutedEventArgs args) => await RefreshAsync();
