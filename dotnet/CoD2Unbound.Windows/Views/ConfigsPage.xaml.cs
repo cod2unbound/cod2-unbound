@@ -286,6 +286,8 @@ public sealed partial class ConfigsPage : Page
 
     private void ShowSettings(ConfigStudioState state, ConfigProfileRead profile)
     {
+        if (expert && ShowExpertTextIfOpen(profile))
+            return;
         var groups = model.Catalog.Groups;
         category ??= groups.FirstOrDefault(group => model.Model.Guided(group.Id).Any(spec => spec.Name == "sensitivity"))?.Id ?? groups[0].Id;
         var fields = new StackPanel { Spacing = 4 };
@@ -314,9 +316,7 @@ public sealed partial class ConfigsPage : Page
                 }
             };
             studioBody.Children.Add(filters);
-            var text = Action("Edit as text…", () => EditTextAsync(profile));
-            text.IsEnabled = !state.ReadOnly;
-            studioBody.Children.Add(text);
+            AddExpertTools(profile, RenderRows);
         }
         if (wideGroupRail)
         {
@@ -396,7 +396,7 @@ public sealed partial class ConfigsPage : Page
             if (expert)
             {
                 foreach (var spec in specs)
-                    fields.Children.Add(Setting(state, profile.Profile.Id, spec));
+                    fields.Children.Add(ExpertSetting(profile, spec));
                 return;
             }
 
@@ -405,6 +405,11 @@ public sealed partial class ConfigsPage : Page
             {
                 if (rows.Children.Count > 0)
                     rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                if (spec.Name == "sensitivity")
+                {
+                    rows.Children.Add(MouseDpiRow(state, profile));
+                    rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                }
                 rows.Children.Add(Setting(state, profile.Profile.Id, spec));
             }
             fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = rows });
@@ -441,7 +446,7 @@ public sealed partial class ConfigsPage : Page
             return SettingRow("Speed up on fast movements", "Off keeps every turn the same size, however fast your hand moves.", toggle, grouped: true);
         }
         if (!expert && spec.Name.Equals("sensitivity", StringComparison.OrdinalIgnoreCase) &&
-            spec.SliderRange is { Min: > 0 } range && MouseDistance.Centimetres(model.MouseDpi, 1) is { } reference &&
+            spec.SliderRange is { Min: > 0 } range && ConfigMouseDpi.DistancePerSensitivity(state.Current) is { } reference &&
             ConfigValues.Number(item.Value ?? "", spec.Type) is > 0 and var sensitivity)
         {
             double current = reference / sensitivity;
@@ -463,7 +468,7 @@ public sealed partial class ConfigsPage : Page
                 lastSaved = args.NewValue;
                 await Apply(ConfigValues.Clamped(reference / args.NewValue, spec));
             };
-            return SettingRow("Mouse speed", $"Worked out from {model.MouseDpi:G} DPI.", layout, grouped: true);
+            return SettingRow("Mouse speed", $"Worked out from {state.Current?.Metadata.Dpi:G} DPI.", layout, grouped: true);
         }
         if (spec.Type == "bool")
         {
@@ -500,7 +505,9 @@ public sealed partial class ConfigsPage : Page
             control = text;
         }
         AutomationProperties.SetName(control, spec.Title);
-        return SettingRow(spec.Title, spec.Setting.Summary, control, grouped: !expert);
+        return !expert && spec.Name == "sensitivity"
+            ? SettingRow("Mouse speed", "Enter your mouse’s DPI to see how far you turn.", control, grouped: true)
+            : SettingRow(spec.Title, spec.Setting.Summary, control, grouped: !expert);
 
         Task Apply(string value) => shell.RunAsync(() =>
         {
@@ -511,74 +518,6 @@ public sealed partial class ConfigsPage : Page
     }
 
     private static string Distance(double cm) => $"{cm:F1} cm per full turn";
-
-    private async Task EditTextAsync(ConfigProfileRead profile)
-    {
-        var code = new TextBox { Header = "Config text", Text = System.Text.Encoding.Latin1.GetString(profile.Document.Serialized.AsSpan()),
-            AcceptsReturn = true, Height = 240, MinWidth = 350, Style = StyleFor("MonoField"), TextWrapping = TextWrapping.Wrap };
-        if (await Dialog("Edit as text", code, "Save changes").ShowAsync() == ContentDialogResult.Primary)
-        {
-            model.Model.ApplyText(model.Studio, profile.Version, code.Text.ReplaceLineEndings("\n"));
-            RenderStudioBody();
-        }
-    }
-
-    private void ShowBinds(ConfigStudioState state, ConfigProfileRead profile)
-    {
-        var binds = new ConfigBindings(profile.Document, model.Catalog, model.Model.Mode);
-        studioBody.Children.Add(new TextBlock { Text = "Binds", Style = StyleFor("SectionTitle") });
-        foreach (var group in binds.Actions.GroupBy(action => action.Group).OrderBy(group => group.Key))
-        {
-            studioBody.Children.Add(Caption(group.Key == ConfigBindingGroup.GameUI ? "Game interface" : group.Key.ToString()));
-            foreach (var row in group.Select(action => binds.Row(action.Name)!).OrderByDescending(row => row.Primary.HasValue))
-            {
-                var action = row.Action;
-                var primary = KeyButton(row.Primary, ConfigBindingSlot.Primary);
-                var secondary = KeyButton(row.Secondary, ConfigBindingSlot.Secondary);
-                string? help = action.Summary.Trim().TrimEnd('.').Equals(action.Title, StringComparison.OrdinalIgnoreCase)
-                    ? null : action.Summary;
-                studioBody.Children.Add(SettingRow(action.Title, help, Buttons(primary, secondary)));
-
-                Button KeyButton(EngineKey? key, ConfigBindingSlot slot)
-                {
-                    string? label = key is { } assigned ? KeyLabel(assigned) : null;
-                    var button = Action(label ?? "Add key", () => BindAsync(action, slot));
-                    button.Style = StyleFor(label is null ? "AddKeycap" : "Keycap");
-                    AutomationProperties.SetName(button, $"{action.Title}, {slot.ToString().ToLowerInvariant()} key, {label ?? "unassigned"}");
-                    button.IsEnabled = !state.ReadOnly;
-                    return button;
-                }
-            }
-        }
-    }
-
-    private static string KeyLabel(EngineKey key) => key.Spelling.ToUpperInvariant() switch
-    {
-        "SPACE" => "Space", "ENTER" => "Enter", "TAB" => "Tab", "CTRL" => "Ctrl", "SHIFT" => "Shift",
-        "ALT" => "Alt", "BACKSPACE" => "Backspace", "ESCAPE" => "Esc",
-        "UPARROW" => "↑", "DOWNARROW" => "↓", "LEFTARROW" => "←", "RIGHTARROW" => "→",
-        _ => key.Spelling.ToUpperInvariant()
-    };
-
-    private async Task BindAsync(ConfigBindingAction action, ConfigBindingSlot slot)
-    {
-        if (model.State.Current is not { } profile)
-            return;
-        var binds = new ConfigBindings(profile.Document, model.Catalog, model.Model.Mode);
-        var row = binds.Row(action.Name)!;
-        var existing = slot == ConfigBindingSlot.Primary ? row.Primary : row.Secondary;
-        var key = new TextBox { Header = "Key name", Text = existing?.Spelling ?? "", PlaceholderText = "Leave blank to clear" };
-        var dialog = Dialog($"Change {action.Title} binding", key, "Save binding");
-        key.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = key.Text.Trim().Length == 0 || EngineKey.Parse(key.Text.Trim()) is not null;
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-            return;
-        var edit = binds.Prepare(profile, action.Name, slot, EngineKey.Parse(key.Text.Trim()));
-        if (edit.Conflict is not null && await Dialog("Replace existing binding?",
-            Caption($"{edit.Key?.Spelling} is already bound."), "Replace binding").ShowAsync() != ContentDialogResult.Primary)
-            return;
-        model.Bind(edit, replace: edit.Conflict is not null);
-        RenderStudioBody();
-    }
 
     private void ShowCheckup(ConfigStudioState state, ConfigProfileRead profile)
     {
