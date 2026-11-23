@@ -181,7 +181,7 @@ public sealed partial class ConfigsPage
                 else if (result.NeedsApproval && result.Edit.HasChanges)
                 {
                     pending = result;
-                    var binds = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                    var binds = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                     var notices = result.Edit.ConflictingKeys.Select(spelling =>
                     {
                         var existing = binds.Entries.First(entry => entry.Key == EngineKey.Parse(spelling));

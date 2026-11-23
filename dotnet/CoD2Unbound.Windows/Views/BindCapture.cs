@@ -55,8 +55,9 @@ internal sealed class BindCapture : IDisposable
         };
         wheel = (_, args) =>
         {
-            if (scroll is not null)
-                args.Handled = scroll(args.GetCurrentPoint(root).Properties.MouseWheelDelta);
+            var properties = args.GetCurrentPoint(root).Properties;
+            if (scroll is not null && !properties.IsHorizontalMouseWheel)
+                args.Handled = scroll(properties.MouseWheelDelta);
         };
         root.PreviewKeyDown += keys;
         root.PreviewKeyUp += keyUps;

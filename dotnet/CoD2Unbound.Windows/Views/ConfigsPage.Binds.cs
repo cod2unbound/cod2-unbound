@@ -34,7 +34,7 @@ public sealed partial class ConfigsPage
             bindApproval = null;
         }
         windowsKeyboard = new WindowsKeyboard();
-        var binds = new ConfigBindings(profile.Document, model.Catalog, model.Model.Mode);
+        var binds = ConfigBindingDetails.ForWindows(profile.Document, model.Catalog, model.Model.Mode);
         var surface = new StackPanel { Spacing = 10 };
         var heading = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         Put(heading, 0, new TextBlock { Text = "Binds", Style = StyleFor("SectionTitle"), VerticalAlignment = VerticalAlignment.Center });
@@ -145,7 +145,7 @@ public sealed partial class ConfigsPage
             foreach (var group in binds.Actions.GroupBy(action => action.Group).OrderBy(group => group.Key))
             {
                 var matching = group.Select(action => binds.Row(action.Name)!).Where(row =>
-                    Matches(row.Action.Title) || Matches(row.Action.Name) || row.Keys.Any(key => Matches(KeyLabel(key))))
+                    Matches(row.Action.Title) || Matches(row.Action.Name) || Matches(row.Action.Summary) || row.Keys.Any(key => Matches(KeyLabel(key))))
                     .OrderByDescending(row => row.Primary.HasValue).ToArray();
                 if (matching.Length == 0)
                     continue;
@@ -175,7 +175,7 @@ public sealed partial class ConfigsPage
             button.Click += (_, _) => StartListening(button, pressed =>
             {
                 var current = ForBindingEdit(profile.Profile.Id);
-                var fresh = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                 var edit = slot.HasValue ? fresh.Prepare(current, row.Action.Name, slot.Value, pressed) :
                     fresh.PrepareAdditional(current, row.Action.Name, key!.Value, pressed);
                 return OfferBind(edit, current);
@@ -187,7 +187,7 @@ public sealed partial class ConfigsPage
                 clear.Click += async (_, _) => await shell.RunAsync(async () =>
                 {
                     var current = ForBindingEdit(profile.Profile.Id);
-                    var fresh = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                    var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                     await SaveBind(fresh.PrepareKey(current, key.Value, null), false);
                 });
                 menu.Items.Add(clear);

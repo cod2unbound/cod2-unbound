@@ -71,6 +71,9 @@ internal static partial class Program
             draft.Key = EngineKey.Parse("n");
             draft.Name = "Jump";
             var preview = ConfigChainPreview.Create(draft, profile, catalog, ConfigCatalogMode.Stock);
+            var binds = ConfigBindingDetails.ForWindows(profile.Document, catalog, ConfigCatalogMode.Stock);
+            Equal("Voice chat", ConfigBindingDetails.Title(binds, binds.Entries.Single(), ConfigDialect.Stock));
+            Equal("Forward", binds.Row("+forward")!.Action.Title);
             Equal(true, preview.NeedsApproval);
             Equal(false, preview.Blocked);
             Equal(true, preview.Lines.Contains("bind n \"+gostand\"", StringComparison.Ordinal));

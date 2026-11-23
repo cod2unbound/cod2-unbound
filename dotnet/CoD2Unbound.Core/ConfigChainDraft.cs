@@ -133,7 +133,7 @@ public sealed record ConfigChainPreview(ConfigChainEdit Edit, string Description
             .TakeLast(1).Select(command => Encoding.Latin1.GetString(edit.Document.Serialized.AsSpan(command.Span.Start, command.Span.Length))));
         string script = Encoding.Latin1.GetString(edit.Script.AsSpan()).TrimEnd('\r', '\n');
         string lines = script.Length > 0 ? configLines + "\n\n" + script : configLines;
-        var actions = new ConfigBindings(profile.Document, catalog, mode).Actions;
+        var actions = ConfigBindingDetails.ForWindows(profile.Document, catalog, mode).Actions;
         string Describe(string command) => actions.FirstOrDefault(action => action.Name == command)?.Title ?? command;
 
         string description = chain.Behavior switch

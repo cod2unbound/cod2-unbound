@@ -4,6 +4,15 @@ namespace CoD2Unbound.Core;
 
 public static class ConfigBindingDetails
 {
+    private static readonly IReadOnlyDictionary<string, string> WindowsLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["+forward"] = "Forward",
+        ["+talk"] = "Voice chat"
+    };
+
+    public static ConfigBindings ForWindows(ConfigDocument document, ConfigCatalog catalog, ConfigCatalogMode mode) =>
+        new(document, catalog, mode, WindowsLabels);
+
     public static ImmutableArray<ConfigBindingAction> Actions(ConfigBindings bindings, ConfigBindingEntry entry, ConfigDialect dialect)
     {
         var lookup = bindings.Actions.ToDictionary(action => action.Name, StringComparer.OrdinalIgnoreCase);

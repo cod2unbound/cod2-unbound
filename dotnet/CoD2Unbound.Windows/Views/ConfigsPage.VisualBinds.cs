@@ -268,7 +268,7 @@ public sealed partial class ConfigsPage
                     StartListening(change, pressed =>
                     {
                         var current = ForBindingEdit(profile.Profile.Id);
-                        var fresh = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                        var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                         var edit = fresh.PrepareMove(current, key, pressed);
                         return OfferBind(edit, current);
                     });
@@ -284,7 +284,7 @@ public sealed partial class ConfigsPage
                         if (await dialog.ShowAsync() == ContentDialogResult.Primary && actionsBox.SelectedItem is ConfigBindingAction action)
                         {
                             var current = ForBindingEdit(profile.Profile.Id);
-                            var fresh = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                            var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                             await OfferBind(fresh.PrepareKey(current, key, ConfigBindingDetails.Value(action)), current);
                         }
                     });
@@ -293,7 +293,7 @@ public sealed partial class ConfigsPage
             var clear = Action("Clear", async () =>
             {
                 var current = ForBindingEdit(profile.Profile.Id);
-                var fresh = new ConfigBindings(current.Document, model.Catalog, model.Model.Mode);
+                var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
                 await SaveBind(fresh.PrepareKey(current, key, null), false);
             });
             clear.IsEnabled = !state.ReadOnly && binding is not null;

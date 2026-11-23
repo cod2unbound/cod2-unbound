@@ -119,12 +119,15 @@ public sealed class ConfigBindings
     public ImmutableArray<ConfigBindingAction> Actions { get; }
     public ImmutableArray<ConfigBindingEntry> Entries { get; }
 
-    public ConfigBindings(ConfigDocument document, ConfigCatalog catalog, ConfigCatalogMode mode)
+    public ConfigBindings(ConfigDocument document, ConfigCatalog catalog, ConfigCatalogMode mode,
+        IReadOnlyDictionary<string, string>? labels = null)
     {
         this.document = document;
         Actions = [.. catalog.Commands.Where(command => command.Bindable && command.Variant(mode) is not null &&
-                !command.Name.StartsWith('-') && !string.IsNullOrEmpty(command.MenuLabel))
-            .Select(command => new ConfigBindingAction(command.Name, command.MenuLabel!, command.Summary, Group(command.Name.ToLowerInvariant())))
+                !command.Name.StartsWith('-'))
+            .Select(command => (Command: command, Title: labels?.GetValueOrDefault(command.Name) ?? command.MenuLabel))
+            .Where(item => !string.IsNullOrEmpty(item.Title))
+            .Select(item => new ConfigBindingAction(item.Command.Name, item.Title!, item.Command.Summary, Group(item.Command.Name.ToLowerInvariant())))
             .OrderBy(action => action.Name, StringComparer.Ordinal)];
         var names = Actions.ToDictionary(action => action.Name, action => action.Name, StringComparer.OrdinalIgnoreCase);
         var entries = ImmutableArray.CreateBuilder<ConfigBindingEntry>();
