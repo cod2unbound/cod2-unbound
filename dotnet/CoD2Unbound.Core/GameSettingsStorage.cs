@@ -56,6 +56,8 @@ public static class GameSettingsJson
             {
                 "Direct3D9" => WindowsRenderMode.Direct3D9, "DirectX7" => WindowsRenderMode.DirectX7, _ => null
             }),
+            WindowsMonitor = Read<string?>("windowsMonitor", null, value => value.GetString() is { Length: > 0 and <= 512 } id ? id : null, lenient: true),
+            LastSettingsPane = Read("lastSettingsPane", 0, value => Integer(value) is >= 0 and <= 6 and var pane ? (int)pane : 0, lenient: true),
             CrashReportsAsked = Read("crashReportsAsked", defaults.CrashReportsAsked, value => value.GetBoolean(), lenient: true),
             HideWhilePlaying = Read("hideWhilePlaying", defaults.HideWhilePlaying, value => value.GetBoolean(), lenient: true),
             Appearance = Known("appearance", defaults.Appearance, value => value switch

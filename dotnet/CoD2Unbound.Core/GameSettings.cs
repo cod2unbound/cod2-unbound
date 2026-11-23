@@ -55,6 +55,10 @@ public sealed partial record GameSettings
         this with { UsageDataAsked = answer != UsageConsent.NotAsked, SendUsageData = answer == UsageConsent.Yes };
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public WindowsRenderMode? WindowsRenderer { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? WindowsMonitor { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int LastSettingsPane { get; init; }
     public bool CrashReportsAsked { get; init; }
     public bool HideWhilePlaying { get; init; } = true;
     public LauncherAppearance Appearance { get; init; } = LauncherAppearance.System;
@@ -69,6 +73,7 @@ public sealed partial record GameSettings
     public GameSettings Reset(GameSettings defaults) => defaults with
     {
         IntroFilmsPlayed = IntroFilmsPlayed,
+        LastSettingsPane = LastSettingsPane,
         CrashReportsAsked = CrashReportsAsked,
         UsageDataAsked = UsageDataAsked,
         SendUsageData = SendUsageData

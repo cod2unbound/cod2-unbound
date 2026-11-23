@@ -13,7 +13,8 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
     private const string DedicatedPrefix = "+set dedicated 2 ";
 
     public static WindowsLaunchPlan Client(ClientLaunchRequest request, GameBinary binary, string workingDirectory,
-        WindowsRenderMode renderMode = WindowsRenderMode.Direct3D9, IGameFiles? files = null, Guid? connectionId = null)
+        WindowsRenderMode renderMode = WindowsRenderMode.Direct3D9, IGameFiles? files = null, Guid? connectionId = null,
+        WindowsDisplay? display = null)
     {
         if (binary.Edition != request.Edition || binary.Role != EngineRole.Client)
             throw new ArgumentException("The binary must match the requested client edition.", nameof(binary));
@@ -25,7 +26,8 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
             _ => throw new ArgumentOutOfRangeException(nameof(renderMode))
         };
         var paths = request with { DataPath = EnginePath(request.DataPath), HomePath = EnginePath(request.HomePath) };
-        var plan = GameLaunchPlan.BuildClient(paths, files, renderer, request.HomePath);
+        var plan = GameLaunchPlan.BuildClient(paths, files, renderer, request.HomePath,
+            display?.Monitor, WindowsDisplays.Adjustment(request.Loadout?.GetValueOrDefault("r_mode") ?? request.Settings.Resolution, display));
         ImmutableArray<string> arguments = plan.Arguments;
         ImmutableArray<PrivateLaunchFile> privateFiles = [];
         if (plan.Link is { } link)

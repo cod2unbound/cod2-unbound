@@ -116,7 +116,8 @@ public sealed partial record GameLaunchPlan(ImmutableArray<string> Arguments, La
     }
 
     internal static GameLaunchPlan BuildClient(ClientLaunchRequest request, IGameFiles? files,
-        string? windowsRenderer = null, string? originalHome = null)
+        string? windowsRenderer = null, string? originalHome = null, int? windowsMonitor = null,
+        DisplayResolution? windowsResolution = null)
     {
         if (!GameSettings.SafeValue(request.DataPath) || !GameSettings.SafeValue(request.HomePath))
             throw new LaunchPlanException("Game paths contain unsupported characters.");
@@ -125,13 +126,16 @@ public sealed partial record GameLaunchPlan(ImmutableArray<string> Arguments, La
         bool migrated = request.Studio is not null;
         var arguments = ImmutableArray.CreateBuilder<string>();
         foreach (var (name, value) in request.Settings.LaunchDvars(migrated))
-            AddVariable(arguments, "+set", name, name.Equals("com_introplayed", StringComparison.OrdinalIgnoreCase) ? intro ? "0" : "1" : value);
+            if ((windowsResolution is null || !name.Equals("r_mode", StringComparison.OrdinalIgnoreCase)) &&
+                (windowsMonitor is null || !name.Equals("r_monitor", StringComparison.OrdinalIgnoreCase)))
+                AddVariable(arguments, "+set", name, name.Equals("com_introplayed", StringComparison.OrdinalIgnoreCase) ? intro ? "0" : "1" : value);
 
         if (request.Loadout is { } loadout)
         {
             var values = loadout.WithComparers(StringComparer.OrdinalIgnoreCase);
             foreach (var (name, value) in request.Settings.LoadoutDefaults(migrated, values))
-                if (windowsRenderer is null || !name.Equals("r_rendererPreference", StringComparison.OrdinalIgnoreCase))
+                if ((windowsRenderer is null || !name.Equals("r_rendererPreference", StringComparison.OrdinalIgnoreCase)) &&
+                    (windowsResolution is null || !name.Equals("r_mode", StringComparison.OrdinalIgnoreCase)))
                     AddVariable(arguments, "+seta", name, value);
         }
 
@@ -168,6 +172,10 @@ public sealed partial record GameLaunchPlan(ImmutableArray<string> Arguments, La
         arguments.AddRange(request.Forwarded);
         if (windowsRenderer is not null)
             AddVariable(arguments, "+set", "r_rendererPreference", windowsRenderer);
+        if (windowsMonitor is > 0 and <= WindowsDisplays.MaxMonitor)
+            AddVariable(arguments, "+set", "r_monitor", windowsMonitor.Value.ToString(CultureInfo.InvariantCulture));
+        if (windowsResolution is { } size)
+            AddVariable(arguments, "+set", "r_mode", size.ToString());
         if (request.Connection is not null)
             arguments.AddRange(request.Connection.ArgumentsFor(request.Link));
 

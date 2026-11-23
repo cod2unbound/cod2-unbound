@@ -265,6 +265,15 @@ public sealed partial class ConfigStudioSession
         };
     }
 
+    public void ProtectLaunchDisplay(string profileId, DisplayResolution? resolution, int? monitor)
+    {
+        if (!reserved || archive is null)
+            throw new ConfigProfileException(ConfigProfileFailure.Conflict);
+        // A disposable connection profile is already isolated and discarded at exit.
+        if (archive.Before.ContainsKey(profileId))
+            WriteArchive(archive with { DisplayOverride = new(profileId, resolution?.ToString(), monitor) });
+    }
+
     public void CommitLaunch(GameProcessIdentity game)
     {
         if (!reserved)
@@ -331,7 +340,9 @@ public sealed partial class ConfigStudioSession
         {
             var original = saved.Before.FirstOrDefault(pair => SameId(pair.Key, profile.Id)).Value;
             var version = original is null ? new ConfigProfileVersion([], null) : original.Version();
-            store.RecordGameSession(profile.Id, version, sessionId: saved.Id);
+            var change = saved.DisplayOverride;
+            store.RecordGameSession(profile.Id, version, sessionId: saved.Id,
+                displayOverride: change is not null && SameId(change.ProfileId, profile.Id) ? change : null);
         }
         if (saved.ConnectionSelection is { } selection)
         {
@@ -379,6 +390,11 @@ public sealed partial class ConfigStudioSession
                     ConfigStudioLaunch.ValidateProfileId(source);
                 }
             }
+            if (saved.DisplayOverride is { } display &&
+                (display.ProfileId is null || !saved.Before.ContainsKey(display.ProfileId) ||
+                 (display.Resolution is not null && !DisplayResolution.TryParse(display.Resolution, out _)) ||
+                 display.Monitor is < 1 or > WindowsDisplays.MaxMonitor))
+                throw InvalidArchive();
             archive = saved;
         }
         catch (Exception error) when (error is JsonException or LaunchPlanException)
@@ -407,8 +423,9 @@ internal sealed record ConfigStudioVersionArchive(byte[] Config, byte[]? Metadat
 internal sealed record ConfigStudioConnectionArchive(byte[] Before, byte[] Applied,
     [property: JsonPropertyName("sourceProfileID")] string? SourceProfileId,
     [property: JsonPropertyName("disposableProfileID")] string? DisposableProfileId);
+public sealed record ConfigStudioDisplayOverride(string ProfileId, string? Resolution, int? Monitor);
 internal sealed record ConfigStudioArchive(string Id, Dictionary<string, ConfigStudioVersionArchive> Before,
-    ConfigStudioConnectionArchive? ConnectionSelection = null);
+    ConfigStudioConnectionArchive? ConnectionSelection = null, ConfigStudioDisplayOverride? DisplayOverride = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]

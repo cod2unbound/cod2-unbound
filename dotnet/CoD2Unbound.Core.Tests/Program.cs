@@ -14,6 +14,7 @@ internal static partial class Program
         ActivationCases();
         LaunchCases();
         SettingsCases();
+        WindowsSettingsCases();
         DirectoryCases();
         ImportCases();
         ImportSessionCases();
