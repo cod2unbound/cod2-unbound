@@ -1376,7 +1376,12 @@ challenge_found:
     if (SV_Cmd_Argc() == 3)
         SV_Cod2xStoreChallengeDigest(i, challenge, SV_Cmd_Argv(2));
 #endif
+#if defined(COD2_X64) && COD2_X64
+    if (Dvar_GetInt("dedicated") == 1 ||
+        (!(*(const dvar_t **)imp_net_lanauthorize)->current.enabled && Sys_IsLANAddress(from))) {
+#else
     if (!(*(const dvar_t **)imp_net_lanauthorize)->current.enabled && Sys_IsLANAddress(from)) {
+#endif
         challenge->pingTime = svsLocal->time;
         NET_OutOfBandPrint(NS_SERVER, from, va("challengeResponse %i", challenge->challenge));
         return;

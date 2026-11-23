@@ -79,8 +79,12 @@ int SV_Cod2xCracked(void)
    even when the name carries another port. */
 const netadr_t *SV_Cod2xMasterAddress(int index)
 {
+    static const netadr_t unlisted = { .type = NA_BAD };
     dvar_t *master = (dvar_t *)sv_cod2xMasters[index];
     netadr_t *address = &sv_cod2xMasterAddresses[index];
+    /* getIp and getIpResponse can reach here without a public heartbeat. */
+    if (com_dedicated && com_dedicated->current.integer == 1)
+        return &unlisted;
     if (address->type == NA_BOT || master->modified) {
         master->modified = 0;
         Com_Printf("Resolving master server %s\n", master->current.string);

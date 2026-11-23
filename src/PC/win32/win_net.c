@@ -840,6 +840,13 @@ void NET_OpenIP(void)
                 char hostname[256];
                 struct hostent *host;
                 int i;
+                uint32_t bindAddress = s ? inet_addr(s) : INADDR_NONE;
+                /* A loopback-only socket needs no machine-name lookup. */
+                if ((ntohl(bindAddress) >> 24) == 127) {
+                    memcpy(localIP[0], &bindAddress, sizeof(localIP[0]));
+                    numIP = 1;
+                    return;
+                }
                 numIP = 0;
                 if (gethostname(hostname, sizeof(hostname)) == -1) {
                     Com_Printf("NET_GetLocalAddress: gethostname: %s\n", strerror(errno));

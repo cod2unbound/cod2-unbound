@@ -63,11 +63,12 @@ internal static partial class Program
                     var swift = GameLaunchPlan.Dedicated(edition, "/Game data", "/Player home", row.Int("port"), listed, "127.0.0.1");
                     Sequence(row.Strings("arguments"), swift.Arguments);
                     var binary = new GameBinary(edition, EngineRole.Dedicated, DedicatedBinary);
-                    var windows = WindowsLaunchPlan.Dedicated(binary, WorkingDirectory, WindowsData, WindowsHome, row.Int("port"), listed, "127.0.0.1");
+                    var windows = WindowsLaunchPlan.Dedicated(binary, WorkingDirectory, WindowsData, WindowsHome, row.Int("port"), listed);
                     var expected = row.Strings("arguments").Select(value => value switch
                     {
                         "\"/Game data\"" => "\"D:/Game data\"",
                         "\"/Player home\"" => "\"C:/User Home/\"",
+                        "127.0.0.1" => "0.0.0.0",
                         _ => value
                     });
                     Sequence(expected, windows.Start.EngineArguments);
@@ -76,6 +77,15 @@ internal static partial class Program
                 });
             }
         }
+        foreach (var edition in Enum.GetValues<GameEdition>())
+            Check($"Windows {edition} loopback hosting stays unlisted even when saved as public", () =>
+            {
+                var binary = new GameBinary(edition, EngineRole.Dedicated, DedicatedBinary);
+                var plan = WindowsLaunchPlan.Dedicated(binary, WorkingDirectory, WindowsData, WindowsHome, 28960,
+                    listed: true, bind: "127.0.0.1");
+                Sequence(new[] { "+set", "net_ip", "127.0.0.1", "+set", "net_port", "28960",
+                    "+set", "dedicated", "1", "+exec", "server.cfg" }, plan.Start.EngineArguments.Skip(6));
+            });
 
         foreach (var edition in Enum.GetValues<GameEdition>())
             foreach (var renderer in Enum.GetValues<WindowsRenderMode>())

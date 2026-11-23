@@ -2,6 +2,7 @@
 #if defined(_WIN32) || defined(COD2_VC71_COMPAT_H)
 
 #    include <stdio.h>
+#    include <stdlib.h>
 #    include <string.h>
 #    include <float.h>
 
@@ -61,6 +62,9 @@ typedef struct {
     char consoleText[512];
     char returnedText[512];
     int windowVisLevel;
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    qboolean hideWindow;
+#endif
     qboolean quitOnClose;
     int windowWidth, windowHeight;
     WNDPROC SysInputLineWndProc;
@@ -154,6 +158,11 @@ void Sys_CreateConsole(HINSTANCE hInstance)
     int swidth, sheight;
     int DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX;
 
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    const char *hide = getenv("COD2_UNBOUND_HIDE_SERVER_CONSOLE");
+    s_wcd.hideWindow = hide && strcmp(hide, "1") == 0;
+#endif
+
     memset(&wc, 0, sizeof(wc));
     wc.style = 0;
     wc.lpfnWndProc = (WNDPROC)ConWndProc;
@@ -224,6 +233,9 @@ void Sys_CreateConsole(HINSTANCE hInstance)
     s_wcd.SysInputLineWndProc =
         (WNDPROC)SetWindowLongPtr(s_wcd.hwndInputLine, GWLP_WNDPROC, (LONG_PTR)InputLineWndProc);
     SendMessage(s_wcd.hwndInputLine, WM_SETFONT, (WPARAM)s_wcd.hfBufferFont, 0);
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    if (!s_wcd.hideWindow)
+#endif
     SetFocus(s_wcd.hwndInputLine);
 
     s_wcd.windowVisLevel = 0;
@@ -233,6 +245,9 @@ void Sys_DestroyConsole(void)
 {
     if (s_wcd.hWnd) {
         ShowWindow(s_wcd.hWnd, SW_HIDE);
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+        if (!s_wcd.hideWindow)
+#endif
         CloseWindow(s_wcd.hWnd);
         DestroyWindow(s_wcd.hWnd);
         s_wcd.hWnd = 0;
@@ -243,6 +258,11 @@ void Sys_DestroyConsole(void)
 void Sys_ShowConsole(int visLevel, qboolean quitOnClose)
 {
     s_wcd.quitOnClose = quitOnClose;
+
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    if (s_wcd.hideWindow)
+        return;
+#endif
 
     if (visLevel == s_wcd.windowVisLevel)
         return;
@@ -272,6 +292,18 @@ void Sys_ShowConsole(int visLevel, qboolean quitOnClose)
 
 char *Sys_ConsoleInput(void)
 {
+#if COD2_WINDOWS_NATIVE && defined(DEDICATED)
+    MSG message;
+    /* The dedicated build has no SDL window to pump the Win32 console. */
+    for (int i = 0; i < 64 && PeekMessage(&message, NULL, 0, 0, PM_REMOVE); ++i) {
+        if (message.message == WM_QUIT) {
+            strcpy(s_wcd.returnedText, "quit\n");
+            return s_wcd.returnedText;
+        }
+        TranslateMessage(&message);
+        DispatchMessage(&message);
+    }
+#endif
     if (s_wcd.consoleText[0] == '\0')
         return NULL;
 

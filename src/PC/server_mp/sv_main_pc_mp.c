@@ -198,6 +198,12 @@ void SV_MatchEnd(void)
 
 const netadr_t *SV_MasterAddress(void)
 {
+#if defined(COD2_X64) && COD2_X64
+    static const netadr_t unlisted = { .type = NA_BAD };
+    /* Query and challenge handlers also call this, outside the heartbeat. */
+    if (com_dedicated && com_dedicated->current.integer == 1)
+        return &unlisted;
+#endif
     if (adr.type == NA_BOT) {
         Com_Printf("Resolving %s\n", "cod2master.activision.com");
 

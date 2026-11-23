@@ -33,6 +33,16 @@ inspection. The compiler controls establish which objects change.
 | Sound global expression | [`snd_driver.c`](../../src/PC/win32/snd_driver.c), `SND_StartAlias2DSample`, `SND_StartAlias3DSample`, `SND_StartAliasStreamOnChannel`, `SND_Update3DChannel`, `SND_InitDriver`, `SND_SetStreamChannelFromSaveInfo` | Dereferences the imported sound-global pointer directly. | Parenthesizes the same dereference in the macro that selects the native or legacy pointer. No legacy player effect. | The stripped Linux i386 object matches upstream. |
 | Ban-list symbol spelling | [`bss.c`](../../src/blobs/bss.c), file-scope `g_banIPs_dvar` alias | Emits the ELF symbol spelling in the assembly alias even on Apple i386. | Emits leading underscores for Mach-O and 32-bit native PE, matching those ABIs. This affects symbol resolution at link time. | Both Apple i386 source projections show the prefix change. The Linux i386 object matches upstream. Mach-O i386 linking was outside the comparison. |
 
+## Native dedicated server privacy
+
+The native Original and CoD2x servers treat `dedicated 1` as unlisted. A
+status or challenge packet cannot trigger the stock master lookup, and
+unlisted challenges are answered by the server without using Activision's
+authorization service. CoD2x also skips master address lookups and scheduled
+server and zPAM update checks in this mode. This applies to the native
+engine on Windows and macOS, including when their launchers host a LAN
+server. Public hosting retains the existing master and update behavior.
+
 ## Checking the record
 
 Each entry names a source file and any Linux i386 objects with a code or data

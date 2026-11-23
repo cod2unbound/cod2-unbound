@@ -27,7 +27,7 @@ internal sealed partial class WindowsHosting
         LoopbackOnly = loopbackOnly;
         root = Path.Join(home, "hosting");
         folder = new(root);
-        var processes = new WindowsProcessSupervisor(inventory, "", logInEngineHome: true);
+        var processes = new WindowsProcessSupervisor(inventory, "", hostedServer: true);
         var endpoint = loopbackOnly ? IPAddress.Loopback : IPAddress.Any;
         files = new(root, loopbackOnly);
         Zpam = new(files, files);

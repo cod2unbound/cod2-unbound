@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory, string logs, bool logInEngineHome = false) : IProcessSupervisor
+internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory, string logs, bool hostedServer = false) : IProcessSupervisor
 {
     public ValueTask<ImmutableArray<int>> FindEngineProcessesAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult<ImmutableArray<int>>([..inventory.FindRunning(role: null, cancellationToken).Select(game => game.Id)]);
@@ -30,14 +30,15 @@ internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory,
                 await stream.WriteAsync(file.Data.AsMemory(), cancellationToken).ConfigureAwait(false);
                 stream.Flush(flushToDisk: true);
             }
-            log = new WindowsSessionLog(logInEngineHome ? Path.Join(start.HomeDirectory, "logs") : logs, start);
+            log = new WindowsSessionLog(hostedServer ? Path.Join(start.HomeDirectory, "logs") : logs, start);
             pipe = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
             cancellationToken.ThrowIfCancellationRequested();
-            var handle = NativeEngineStart.Start(start, pipe, out int id);
+            var handle = NativeEngineStart.Start(start, pipe, hostedServer, out int id);
             try
             {
                 pipe.DisposeLocalCopyOfClientHandle();
-                return new WindowsEngineProcess(handle, id, pipe, log, () => DeletePrivateFiles(start.HomeDirectory, privateFiles));
+                return new WindowsEngineProcess(handle, id, pipe, log, hostedServer,
+                    () => DeletePrivateFiles(start.HomeDirectory, privateFiles));
             }
             catch
             {
@@ -74,14 +75,16 @@ internal sealed class WindowsEngineProcess : IEngineProcess
 {
     private readonly SafeProcessHandle process;
     private readonly WindowsSessionLog sessionLog;
+    private readonly bool hostedServer;
     internal string LogPath { get; }
     internal GameProcessIdentity Identity { get; }
 
     internal WindowsEngineProcess(SafeProcessHandle process, int id, AnonymousPipeServerStream pipe,
-        WindowsSessionLog log, Action cleanUp)
+        WindowsSessionLog log, bool hostedServer, Action cleanUp)
     {
         this.process = process;
         sessionLog = log;
+        this.hostedServer = hostedServer;
         Id = id;
         Identity = new(id, CreationTime(process));
         LogPath = log.Path;
@@ -101,7 +104,12 @@ internal sealed class WindowsEngineProcess : IEngineProcess
             {
                 using var child = Process.GetProcessById(Id);
                 if (CreationTime(child.SafeHandle) == Identity.CreatedAt)
-                    child.CloseMainWindow();
+                {
+                    if (hostedServer)
+                        NativeEngineStart.CloseServerConsole(Id);
+                    else
+                        child.CloseMainWindow();
+                }
             }
             catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception) { }
             try { await Exited.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken).ConfigureAwait(false); }
