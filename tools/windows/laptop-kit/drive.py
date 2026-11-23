@@ -240,6 +240,7 @@ class Kit:
         deadline = time.monotonic() + 1100
         idle = 0
         disconnected = False
+        instruction = ""
         while time.monotonic() < deadline:
             time.sleep(2)
             try:
@@ -254,6 +255,10 @@ class Kit:
                 continue
             if status["Next"].get("Id") != step:
                 return
+            prompt = (status.get("Attention") or "").strip()
+            if prompt and prompt != instruction:
+                print(prompt + " Then let the kit continue. Keep the wording and your answer for the notes step.", flush=True)
+            instruction = prompt
             idle = idle + 1 if status["Task"] != "Running" else 0
             if idle >= 3:
                 if step == "interrupt":

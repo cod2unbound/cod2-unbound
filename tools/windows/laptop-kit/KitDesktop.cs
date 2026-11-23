@@ -26,6 +26,24 @@ public static class KitDesktop {
     [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr window, int mode);
     [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
 
+    public static string SecurityPrompt() {
+        IntPtr window = GetForegroundWindow();
+        if (window == IntPtr.Zero) return "";
+        uint processId;
+        GetWindowThreadProcessId(window, out processId);
+        try {
+            using (var process = Process.GetProcessById((int)processId)) {
+                switch (process.ProcessName.ToLowerInvariant()) {
+                    case "pickerhost":
+                        return WindowClass(window) == "Shell_SystemDialog" ? "windows-security" : "";
+                    case "consent": return "uac";
+                    case "smartscreen": return "smartscreen";
+                    default: return "";
+                }
+            }
+        } catch (ArgumentException) { return ""; }
+    }
+
     public static bool TryFocus(IntPtr window)
     {
         IntPtr foreground = GetForegroundWindow();
@@ -41,7 +59,7 @@ public static class KitDesktop {
                     if (GetForegroundWindow() == foreground) Tap(27);
                     return false;
                 }
-                if (WindowClass(foreground) == "#32770" || name == "consent" || name == "smartscreen" || name == "securityhealthhost" ||
+                if (WindowClass(foreground) == "#32770" || name == "pickerhost" || name == "consent" || name == "smartscreen" || name == "securityhealthhost" ||
                     name == "securityhealthsystray" || name == "windowsdefender" || name == "applicationframehost")
                     return false;
             }

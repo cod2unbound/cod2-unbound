@@ -29,6 +29,7 @@ a key in Windows Credential Manager. Save your work before starting.
    restart and human observations skipped. The laptop may take longer.
 4. If **Windows Security** asks about a game or server, choose **Cancel** for
    this offline sitting. Write the message and what you pressed when asked.
+   If the kit detects the prompt, it waits for up to two and a half minutes.
    If SmartScreen, Smart App Control or UAC blocks a test, record the wording
    and continue. Leave Windows Security settings as they are.
 5. When the paired pictures open, compare the sky, fog, water, lettering and

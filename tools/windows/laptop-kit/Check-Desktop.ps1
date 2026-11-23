@@ -12,6 +12,9 @@ function Initialize-KitDesktop {
 function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Description) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     do {
+        $watch.Stop()
+        Wait-KitSecurity
+        $watch.Start()
         $answer = & $Condition
         if ($answer) { return $answer }
         Start-Sleep -Milliseconds 250
@@ -19,13 +22,33 @@ function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Desc
     throw "Timed out waiting for $Description."
 }
 
-function Focus-KitWindow([IntPtr]$Window) {
-    $deadline = [DateTime]::UtcNow.AddSeconds(8)
+function Wait-KitSecurity {
+    if (-not ('KitDesktop' -as [type])) { return }
+    $prompt = [KitDesktop]::SecurityPrompt()
+    if (-not $prompt) { return }
+    if ($script:KitAttentionTimedOut) { throw 'Windows is still waiting for a person at the laptop. See attention.txt.' }
+    $instruction = switch ($prompt) {
+        'windows-security' { 'Windows Security is open. If it is asking about firewall access, choose Cancel for this offline test.' }
+        'uac' { 'Read the administrator approval prompt on the laptop. Cancel it for the per-user test.' }
+        'smartscreen' { 'Read the SmartScreen message on the laptop. Leave the Windows security settings alone.' }
+    }
+    $attention = Join-Path $Results 'attention.txt'
+    $instruction | Set-Content -LiteralPath $attention -Encoding UTF8
+    Write-Host $instruction
+    $deadline = [DateTime]::UtcNow.AddSeconds(150)
     do {
-        if ([KitDesktop]::TryFocus($Window)) { return }
-        Start-Sleep -Milliseconds 350
+        Start-Sleep -Milliseconds 500
+        if (-not [KitDesktop]::SecurityPrompt()) {
+            Remove-Item -LiteralPath $attention
+            return
+        }
     } while ([DateTime]::UtcNow -lt $deadline)
-    throw 'The test window could not take focus. If Windows Security is open, handle it at the laptop.'
+    $script:KitAttentionTimedOut = $true
+    throw 'Windows is still waiting for a person at the laptop. See attention.txt.'
+}
+
+function Focus-KitWindow([IntPtr]$Window) {
+    Wait-KitCondition { [KitDesktop]::TryFocus($Window) } 8 'the test window to take focus' | Out-Null
 }
 
 function Send-KitCommand([IntPtr]$Window, [string]$Command) {

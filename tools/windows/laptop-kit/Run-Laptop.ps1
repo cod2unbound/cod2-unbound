@@ -46,6 +46,7 @@ function Save-KitReceipt($Step, [string]$Status, [string]$Detail, [int]$Seconds)
 function Invoke-LaptopStep($Step, [string]$Reply) {
     $Private = New-Folder (Join-Path $KitProfile $Step.Id)
     $Results = New-Folder (Join-Path $RunResults $Step.Id)
+    $script:KitAttentionTimedOut = $false
     $watch = [Diagnostics.Stopwatch]::StartNew()
     if ($Step.Id -eq 'interrupt' -and (Test-Path -LiteralPath (Join-Path $KitProfile 'restart-witness.txt'))) {
         $boot = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
