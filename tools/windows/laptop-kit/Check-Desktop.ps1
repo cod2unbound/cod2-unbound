@@ -251,14 +251,20 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
         $window = Get-KitGameWindow $run.Process
         if ($DisplayMode) {
             $log = Join-Path $homePath 'main\console_mp.log'
-            Wait-KitCondition { Test-Path -LiteralPath $log } 40 'the startup log' | Out-Null
+            Wait-KitCondition {
+                (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
+            } 40 'the completed game startup' | Out-Null
             Send-KitCommand $window '/toggleconsole; r_fullscreen; r_mode'
             $mode = [KitDesktop]::CurrentMode()
             if ($mode -ne $DisplayMode) { throw "The display reported $mode after requesting $DisplayMode." }
             Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen'
             $switches = Join-Path $entry.Evidence 'fullscreen-switch.txt'
             [KitDesktop]::Chord(18, 9)
-            Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -ne $window } 8 'Alt+Tab to switch away' | Out-Null
+            Wait-KitCondition {
+                $current = [KitDesktop]::GetForegroundWindow()
+                $current -ne $window -and $current -ne [IntPtr]::Zero -and
+                    [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
+            } 8 'Alt+Tab to switch away' | Out-Null
             $foreground = [KitDesktop]::GetForegroundWindow()
             "Away: shell foreground class $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window))" |
                 Set-Content -LiteralPath $switches -Encoding UTF8
