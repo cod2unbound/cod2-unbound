@@ -34,7 +34,7 @@ if ($Operation -eq 'status') {
     $instruction = ''
     if ($state -eq 'Running' -and -not $status.Done) {
         $attention = Join-Path $resultRoot "$($status.Id)\attention.txt"
-        $instruction = Get-Content -LiteralPath $attention -Raw -ErrorAction SilentlyContinue
+        if ([IO.File]::Exists($attention)) { $instruction = [IO.File]::ReadAllText($attention) }
     }
     @{ Next=$status; Task=$state; Receipts=$receipts; Attention=$instruction } | ConvertTo-Json -Compress -Depth 4
     return
