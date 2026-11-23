@@ -160,6 +160,11 @@ Windows uses the same mixer as macOS, `src/platform/macos_audio.c`, with SDL pla
 reading WAV, and `third_party/minimp3` reading MP3. The original loads `mss32.dll`, which is
 closed-source and 32-bit only.
 
+Stock multiplayer maps can log `ERROR: Sound file 'sound/misc/beep.wav' not found`
+when audio initializes. The stock `beep` alias in `soundaliases/iw_multiplayer2.csv`
+points to a missing asset. Retail Windows 1.3 logs the same warning when loading
+Harbor with audio enabled.
+
 The x64 Original 1.3 client uses SDL for voice capture and the shared Speex and playback paths.
 It opens the default microphone when you use push-to-talk. The CoD2x client follows the upstream
 release with voice chat disabled. The i686 matrix probe uses a stub for voice.
@@ -167,6 +172,13 @@ release with voice chat disabled. The i686 matrix probe uses a stub for voice.
 To check sound with no audio hardware, send it to a file with `SDL_AUDIODRIVER=disk` and
 `SDL_DISKAUDIOFILE=sound.raw`. The file contains 32-bit float PCM at the mix rate selected by
 `snd_khz`, with mono or stereo selected by `snd_stereo`. The defaults are 44.1 kHz and stereo.
+
+## Demo playback
+
+`MAX_PACKET_USERCMDS` can appear as playback returns to the menu. The client still
+builds input commands during playback. At disconnect the stock send path can see
+more than 32 commands since its last packet and logs that it capped the batch.
+Retail 1.3 has the same disconnect and packet limit.
 
 ## The older plain path
 

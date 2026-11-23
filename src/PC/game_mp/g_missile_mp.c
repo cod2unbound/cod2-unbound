@@ -504,7 +504,13 @@ static qboolean G_BounceMissile(gentity_t *ent, trace_t *trace)
     int hitTime = LEVEL_PREVIOUSTIME + (int)((float)(LEVEL_TIME - LEVEL_PREVIOUSTIME) * trace->fraction);
     BG_EvaluateTrajectoryDelta((&_ENT(ent)->s.pos), hitTime, velocity);
 
+#if COD2_WINDOWS_NATIVE
+    /* The retail x87 bounce adds the Y and Z products before X. */
+    dot = velocity[1] * trace->normal[1] + velocity[2] * trace->normal[2]
+        + velocity[0] * trace->normal[0];
+#else
     dot = DotProduct(velocity, trace->normal);
+#endif
 
     VectorMA(velocity, -2.0f * dot, trace->normal, (&_ENT(ent)->s.pos)->trDelta);
 
@@ -518,7 +524,12 @@ static qboolean G_BounceMissile(gentity_t *ent, trace_t *trace)
     if ((_ENT(ent)->s.eFlags) & 0x10000) {
 #endif
 
+#if COD2_WINDOWS_NATIVE
+        speed = sqrtf(velocity[1] * velocity[1] + velocity[2] * velocity[2]
+                    + velocity[0] * velocity[0]);
+#else
         speed = VectorLength(velocity);
+#endif
 
 #if defined(COD2_X64)
         if (speed > 0.0f && dot <= 0.0f) {
@@ -529,7 +540,13 @@ static qboolean G_BounceMissile(gentity_t *ent, trace_t *trace)
             float parallelBounce = weapDef->parallelBounce[surfType];
             float perpBounce = weapDef->perpendicularBounce[surfType];
 
+#if COD2_WINDOWS_NATIVE
+            /* Retail rounds the reciprocal before multiplying by the dot product. */
+            float incidence = (-1.0f / speed) * dot;
+            float bounceFactor = parallelBounce + (perpBounce - parallelBounce) * incidence;
+#else
             float bounceFactor = parallelBounce + (perpBounce - parallelBounce) * (dot / -speed);
+#endif
 
             VectorScale((&_ENT(ent)->s.pos)->trDelta, bounceFactor, (&_ENT(ent)->s.pos)->trDelta);
         }

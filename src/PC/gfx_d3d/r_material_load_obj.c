@@ -1933,7 +1933,15 @@ static MaterialShader *MATERIAL_REGPARM2_ABI COD2_FORCE_ALIGN_ARG_POINTER Materi
             typedef const char *(D3DVTCC * GetBufPtrFn)(void *);
             typedef int(D3DVTCC * ReleaseFn)(void *);
             const char *msgText = ((GetBufPtrFn)msgVtable[3])(messages);
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9
+            extern void Com_DPrintf(const char *fmt, ...);
+            if (hr >= 0 && shaderBlob)
+                Com_DPrintf("compiler message(s) for %s:\n%s\n", path, msgText);
+            else
+                Com_Printf("compiler message(s) for %s:\n%s\n", path, msgText);
+#else
             Com_Printf("compiler message(s) for %s:\n%s\n", path, msgText);
+#endif
             ((ReleaseFn)msgVtable[2])(messages);
         }
 
