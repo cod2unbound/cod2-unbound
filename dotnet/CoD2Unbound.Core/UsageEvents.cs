@@ -35,12 +35,15 @@ public enum UsageKind
 public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, int Number = 0,
     string? First = null, string? Second = null)
 {
+    // Queued setup events with the old value of 1 could also mean a discovered folder was accepted.
+    private const int ExplicitFolderPick = 2;
+
     [JsonInclude]
     internal string? CatalogueSlug { get; init; }
 
     public static UsageEvent Page(UsagePage page) => new(UsageKind.ScreenOpened, (int)page);
     public static UsageEvent Setup(SetupStep step, bool skipped = false, bool ownFiles = false) =>
-        new(skipped ? UsageKind.SetupSkipped : UsageKind.SetupReached, (int)step, ownFiles ? 1 : 0);
+        new(skipped ? UsageKind.SetupSkipped : UsageKind.SetupReached, (int)step, ownFiles ? ExplicitFolderPick : 0);
     public static UsageEvent Start(GameEdition game, WindowsRenderMode renderer, UsageMode mode) =>
         new(UsageKind.GameStarted, (int)game, (int)renderer, (int)mode);
     public static UsageEvent End(bool crashed, int minutes) => new(UsageKind.GameEnded, crashed ? 1 : 0, Number: minutes);
@@ -94,13 +97,12 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
             case UsageKind.SetupReached:
             case UsageKind.SetupSkipped:
                 if (!Put("step", Item(Steps, Choice))) return null;
-                if (Kind == UsageKind.SetupReached && Choice == (int)SetupStep.Data && Other == 1)
+                if (Kind == UsageKind.SetupReached && Choice == (int)SetupStep.Data && Other == ExplicitFolderPick)
                     fields["source"] = "own files";
                 break;
             case UsageKind.GameStarted:
                 if (!Put("game", Edition(Choice)) || !Put("renderer", Renderer(Other))) return null;
                 fields["display_mode"] = Mode(Number);
-                fields["render_scale"] = 100;
                 break;
             case UsageKind.GameEnded:
                 fields["how"] = Choice == 1 ? "crashed" : "closed normally";

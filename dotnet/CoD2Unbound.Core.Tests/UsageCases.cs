@@ -245,6 +245,24 @@ internal static partial class Program
             Equal(10, f.Captures.Count);
             await usage.HoldAsync(true);
         });
+        Usage("only the explicit folder pick produces an own-files marker", async () =>
+        {
+            var f = new UsageFixture();
+            var usage = await f.Start();
+            await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data));
+            await usage.RecordAsync(new(UsageKind.SetupReached, (int)SetupStep.Data, Other: 1));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            usage = await f.Start();
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            var dataSteps = Events(f.Captures).Where(item => Name(item) == "setup step reached").Select(Props).ToArray();
+            Equal(3, dataSteps.Length);
+            Equal(false, dataSteps[0].TryGetProperty("source", out _));
+            Equal(false, dataSteps[1].TryGetProperty("source", out _));
+            Equal("own files", dataSteps[2].GetProperty("source").GetString());
+            await usage.HoldAsync(true);
+        });
         Usage("Windows usage wire schema matches the disclosure table", async () =>
         {
             // Screens needs to explicitly name "app opened" in the revised disclosure.
@@ -254,7 +272,7 @@ internal static partial class Program
                 ["screen opened"] = ("Screens", ["screen"]),
                 ["setup step reached"] = ("Setup", ["step", "source"]),
                 ["setup step skipped"] = ("Setup", ["step"]),
-                ["game started"] = ("Games", ["game", "renderer", "display_mode", "render_scale"]),
+                ["game started"] = ("Games", ["game", "renderer", "display_mode"]),
                 ["game ended"] = ("Games", ["how", "minutes"]),
                 ["server list refreshed"] = ("Servers", ["list"]),
                 ["server joined"] = ("Servers", ["how", "game"]),

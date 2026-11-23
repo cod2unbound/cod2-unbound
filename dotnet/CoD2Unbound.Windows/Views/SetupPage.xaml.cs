@@ -121,7 +121,7 @@ public sealed partial class SetupPage : Page
             session.ShowError(UsageProblem.SaveSetup);
             throw;
         }
-        if (previous == SetupStep.Data && setup.Step == SetupStep.Key)
+        if (previous == SetupStep.Data && setup.Step == SetupStep.Key && setup.DataWasPicked)
             session.Record(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
         KeyInput.Password = "";
         if (setup.Step == SetupStep.Personalize)
@@ -172,7 +172,7 @@ public sealed partial class SetupPage : Page
     {
         if (await shell.PickFolderAsync() is { } path)
         {
-            if (model.Setup.ChooseData(path).State == SetupDataState.Damaged)
+            if (model.Setup.ChooseData(path, picked: true).State == SetupDataState.Damaged)
                 session.ShowError(UsageProblem.GameData);
             Refresh();
         }
