@@ -47,7 +47,7 @@ public sealed partial class MainWindow : Window
         }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
-        useCustomTitleBar = windows11 && AppWindowTitleBar.IsCustomizationSupported();
+        useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();
         if (useCustomTitleBar)
         {
             ExtendsContentIntoTitleBar = true;
@@ -181,6 +181,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateCaptionColors()
     {
+        // Windows 10 supports caption button colors when content extends into the title bar.
         if (!useCustomTitleBar)
             return;
         var foreground = windowTheme.HighContrast ? null : (WindowBar.Foreground as SolidColorBrush)?.Color;

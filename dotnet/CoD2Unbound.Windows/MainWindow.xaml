@@ -14,7 +14,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border x:Name="SolidFrame" Grid.RowSpan="2" Background="{ThemeResource PanelBrush}"
+        <Border x:Name="SolidFrame" Grid.RowSpan="2" Background="{ThemeResource GroundBrush}"
                 IsHitTestVisible="False" />
         <ContentControl x:Name="ClientJumpBar" Visibility="Collapsed" IsTabStop="False"
                         HorizontalContentAlignment="Stretch" />
