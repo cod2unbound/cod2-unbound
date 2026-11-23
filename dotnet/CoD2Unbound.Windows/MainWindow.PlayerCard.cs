@@ -31,7 +31,7 @@ public sealed partial class MainWindow
         {
             await RefreshPlayerAsync();
             if (ContentFrame.Content is HomePage home)
-                home.RenderGame(session.Game.State);
+                home.RenderGameControls(session.Game.State);
         }
         return saved;
     }
