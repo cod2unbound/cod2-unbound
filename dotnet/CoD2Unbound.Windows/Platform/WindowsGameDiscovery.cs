@@ -111,10 +111,13 @@ internal sealed class WindowsGameDiscovery(WindowsEngineInventory inventory) : I
     internal async ValueTask<(WindowsProfileDiscovery Found, string[] Searched)> DiscoverProfilesAsync(
         string? gameData, CancellationToken cancellationToken)
     {
+        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var copies = await DiscoverAsync(cancellationToken);
         var folders = copies.Select(copy => copy.DataPath).Prepend(gameData).OfType<string>()
-            .Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        return WindowsInstalledProfiles.Find(null, folders, cancellationToken);
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var sources = folders.SelectMany(path => new[] { SetupDiscovery.VirtualStoreCopy(local, path), path })
+            .OfType<string>().Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return WindowsInstalledProfiles.Find(null, sources, cancellationToken);
     }
 
     private static string? RegistryValue(RegistryHive hive, RegistryView view, string key, string name)
