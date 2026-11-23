@@ -486,8 +486,8 @@ public sealed partial class SettingsPage : Page
 
         void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
         void AddDownloadPage() => AddLink("Open download page", state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage);
-        void AddWhatsNew(string release) => AddLink("What’s new",
-            (state.Offer is null ? null : state.ReleaseUrl) ?? WindowsReleaseAssets.NotesPage(release));
+        void AddWhatsNew(string release) =>
+            actions.Children.Add(Action("What’s new", () => shell.ShowReleaseNotesAsync(release)));
     }
 
     private static string? LastChecked(DateTimeOffset? time)

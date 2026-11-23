@@ -19,11 +19,14 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
     internal string? Played(string address, bool includeTime) => session.Library.Played.TryGetValue(address, out var date)
         ? includeTime ? TimeInSentence(date) : MatchFacts.Played(date, DateTimeOffset.UtcNow, TimeZoneInfo.Local, includeTime: false)
         : null;
-    internal string? NewsChecked => session.Library.DispatchesCheckedAt is { } date ? TimeInSentence(date) : null;
-    internal ImmutableArray<NewsDispatch> News => NewsFeed.Home(session.Version, session.Library.Dispatches,
-        session.Library.News, session.Library.NewsNext);
-    internal ImmutableArray<NewsDispatch> AllNews => NewsFeed.Home(session.Version, session.Library.Dispatches,
-        session.Library.News, session.Library.NewsNext, rows: 12);
+    internal string NewsFoot => session.Library.DispatchesCheckedAt is { } date ? $"Checked {TimeInSentence(date)}." :
+        "News appears after the first update check.";
+    internal ImmutableArray<NewsDispatch> News => NewsRows(3);
+    internal ImmutableArray<NewsDispatch> AllNews => NewsRows(12);
+    private ImmutableArray<NewsDispatch> NewsRows(int limit) =>
+        session.Library.DispatchesCheckedAt is null && session.Library.Dispatches.IsEmpty &&
+        session.Library.News.IsEmpty && session.Library.NewsNext is null ? [] :
+        NewsFeed.Home(session.Version, session.Library.Dispatches, session.Library.News, session.Library.NewsNext, limit);
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
     internal ImmutableArray<MatchSummary> Matches { get; private set; } = [];
     internal bool UnreadableMatches { get; private set; }
