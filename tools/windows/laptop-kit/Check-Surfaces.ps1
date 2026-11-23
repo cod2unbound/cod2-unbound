@@ -79,6 +79,7 @@ function Invoke-KitSurface([string]$Page) {
                         $hostedProcess = $candidate
                     } else { $candidate.Dispose() }
                 }
+                if (-not $hostedProcess) { throw 'The Hosting picture check could not verify its own server process.' }
                 $export = 'Export for another machine' + [char]0x2026
                 $row = Wait-KitCondition { Find-KitControl $app 'Kit Export' -Name } 12 'the saved Hosting row'
                 $row.SetFocus()
@@ -89,12 +90,6 @@ function Invoke-KitSurface([string]$Page) {
                 Save-KitSurface $app 'hosting-export' @('Cancel')
                 Invoke-KitControl $app 'Cancel' -Name
                 Wait-KitCondition { -not (Find-KitControl $app 'Cancel' -Name) } 12 'the export dialog to close' | Out-Null
-                Focus-KitWindow $app
-                [KitDesktop]::Chord(18, 115)
-                Invoke-KitControl $app 'Stop and quit' -Name
-                Wait-KitCondition {
-                    $run.Process.HasExited -and -not (Request-KitServer $room.Port 'getstatus Kit')
-                } 20 'the Hosting room and launcher to stop' | Out-Null
             }
             'configs' {
                 Invoke-KitControl $app 'ConfigsItem'
@@ -128,31 +123,22 @@ function Invoke-KitSurface([string]$Page) {
         }
     } finally {
         if ($Page -eq 'hosting') {
+            if ($hostedProcess) {
+                try {
+                    # This step checks the export and folder controls. The
+                    # separate Hosting match step proves graceful shutdown.
+                    if (-not $hostedProcess.HasExited) {
+                        $hostedProcess.Kill()
+                        if (-not $hostedProcess.WaitForExit(5000)) { throw 'The owned picture fixture server did not exit.' }
+                    }
+                } finally { $hostedProcess.Dispose() }
+            }
             $logs = Join-Path $LauncherHome 'hosting\servers'
             foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue) {
                 Save-KitEngineAudit (Read-KitText $file.FullName) $Results
                 Save-Text $file.FullName (Join-Path $Results $file.Name)
             }
-            if ($room -and (Request-KitServer $room.Port 'getstatus Kit')) {
-                if (-not $run.Process.HasExited) {
-                    try {
-                        Focus-KitWindow $app
-                        [KitDesktop]::Chord(18, 115)
-                        Invoke-KitControl $app 'Stop and quit' -Name
-                    } catch { }
-                }
-            }
         }
-        try { Stop-KitLauncher $run $Results }
-        finally {
-            if ($hostedProcess) {
-                try {
-                    if (-not $hostedProcess.HasExited) {
-                        $hostedProcess.Kill()
-                        [void]$hostedProcess.WaitForExit(5000)
-                    }
-                } finally { $hostedProcess.Dispose() }
-            }
-        }
+        Stop-KitLauncher $run $Results
     }
 }
