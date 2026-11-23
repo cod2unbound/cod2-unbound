@@ -73,10 +73,10 @@ struct ShareSetupSheet: View {
     private var rows: [(symbol: String, title: String, detail: String)] {
         let sent: String, left: String
         if let prepared = share.prepared {
-            sent = "\(count(prepared.settings, "setting", "settings")) and \(count(prepared.binds, "key bind", "key binds")) from this loadout, the name above and the app’s version."
+            sent = "\(count(prepared.settings, "setting", "settings")) and \(count(prepared.binds, "key bind", "key binds")) from this loadout, the name above, the game and app versions, and how many lines were left out and why."
             left = "Your name in the game, chat lines, passwords, server addresses and file paths: \(count(prepared.leftOut.count, "line", "lines")) here. A config never holds your CD key."
         } else {
-            sent = "The settings and key binds from this loadout, the name above and the app’s version."
+            sent = "The settings and key binds from this loadout, the name above, the game and app versions, and how many lines were left out and why."
             left = "Your name in the game, chat lines, passwords, server addresses and file paths. A config never holds your CD key."
         }
         return [("doc.text", "What is sent", sent), ("lock", "What is left out", left),
@@ -122,7 +122,7 @@ struct SharePreviewSheet: View {
     var body: some View {
         let prepared = share.prepared
         SheetScaffold(icon: .symbol("doc.text"), title: "What is sent",
-                      message: "This text, the name you type and the app’s version, \(ConfigShare.appVersion(app)). Nothing else leaves your Mac.",
+                      message: "This text, the name you type, the game version, the app’s version, \(ConfigShare.appVersion(app)), and the count of left-out lines with their reasons. Nothing else leaves your Mac.",
                       width: 560,
                       actions: [SheetAction(title: copied ? "Copied" : "Copy", role: .leading) { copy() },
                                 .primary("Done") { share.previewShown = false }]) {

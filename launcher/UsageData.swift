@@ -60,23 +60,15 @@ struct UsageEndpoint: Sendable {
 }
 
 /// Main-actor consent and queue state, one per launcher. Disk writes run serially and network
-/// work never blocks the main actor. The setup journal is not a send queue and has no install ID.
+/// work never blocks the main actor. Events enter the queue only after consent.
 @MainActor final class UsageData {
     static let queueLimit = 300
-    static let setupLimit = 24
     private static let batchLimit = 32
     private static let maxAgeMinutes = 7 * 24 * 60
 
-    private struct PendingStep: Codable, Sendable {
-        let minute: Int
-        let event: UsageEvent
-    }
-    private struct SetupJournal: Codable, Sendable {
-        var schemaVersion = 1
-        var steps: [PendingStep] = []
-    }
     private struct SendJournal: Codable, Sendable {
-        var schemaVersion = 1
+        static let currentSchemaVersion = 3
+        var schemaVersion = Self.currentSchemaVersion
         var install: UUID?
         /// Local guard against counting this UTC day twice, including across number resets.
         var lastOpenedDay: Int?
@@ -84,7 +76,6 @@ struct UsageEndpoint: Sendable {
     }
 
     let stateURL: URL
-    let setupURL: URL
     private let endpoint: UsageEndpoint?
     private let now: () -> Date
     private let facts: () -> UsageFacts
@@ -93,11 +84,9 @@ struct UsageEndpoint: Sendable {
     private let firstRetryDelay: TimeInterval
     private let disk = DispatchQueue(label: "com.cod2unbound.usage.disk", qos: .utility)
     private var state = SendJournal()
-    private var setup = SetupJournal()
     private var sendTask: Task<Void, Never>?
     private var sendGeneration = UUID()
     private var retryDelay: TimeInterval
-    private var opened = false
     private(set) var consent: UsageConsent
     var available: Bool { endpoint != nil }
     var shouldAsk: Bool { available && consent == .notAsked }
@@ -110,12 +99,26 @@ struct UsageEndpoint: Sendable {
         self.endpoint = endpoint; self.consent = consent; self.facts = facts; self.now = now; self.eventID = eventID
         self.firstBatchDelay = firstBatchDelay; self.firstRetryDelay = firstRetryDelay; retryDelay = firstRetryDelay
         stateURL = home.appendingPathComponent("usage-data.json")
-        setupURL = home.appendingPathComponent("usage-setup.json")
+        // Earlier launchers recorded setup before the player answered. Never read that journal.
+        try? Self.remove(home.appendingPathComponent("usage-setup.json"))
         guard available else { return }
-        if let stored: SendJournal = Self.read(stateURL, limit: 512 * 1024), stored.schemaVersion == 1 {
+        if let stored: SendJournal = Self.read(stateURL, limit: 512 * 1024),
+           (1...SendJournal.currentSchemaVersion).contains(stored.schemaVersion) {
             state.lastOpenedDay = stored.lastOpenedDay
             if consent == .yes {
                 state = stored
+                if stored.schemaVersion < SendJournal.currentSchemaVersion {
+                    state.events.removeAll {
+                        switch $0.event {
+                        // Older game ends could include minutes from before consent.
+                        case .gameEnded: true
+                        // Version 1 also mixed pre-consent setup and app opens with later events.
+                        case .setupStepReached, .setupStepSkipped, .appOpened: stored.schemaVersion == 1
+                        default: false
+                        }
+                    }
+                    state.schemaVersion = SendJournal.currentSchemaVersion
+                }
                 prune()
             }
         }
@@ -123,15 +126,7 @@ struct UsageEndpoint: Sendable {
             // An interrupted write or a lost local journal cannot silently create a new identity.
             self.consent = .no
         }
-        if self.consent == .notAsked {
-            if let stored: SetupJournal = Self.read(setupURL, limit: 32 * 1024), stored.schemaVersion == 1 {
-                setup.steps = Array(stored.steps.filter { $0.event.isSetupStep }.suffix(Self.setupLimit))
-            }
-            cleanInactiveJournal()
-        } else {
-            try? Self.remove(setupURL)
-            if self.consent == .no { cleanInactiveJournal() }
-        }
+        if self.consent != .yes { cleanInactiveJournal() }
     }
 
     /// The preview uses the same event record and encoder as the batch. Before consent an all-zero
@@ -162,32 +157,20 @@ struct UsageEndpoint: Sendable {
             consent = .no
             state.install = nil
             state.events = []
-            setup.steps = []
             let cleared = cleanInactiveJournal()
-            let setupURL = self.setupURL
-            let removed = disk.sync { (try? Self.remove(setupURL)) != nil }
             do { try persist(.no) } catch { return false }
-            return cleared && removed
+            return cleared
         }
 
         let install = UUID(), stamp = minute, machine = facts()
         var candidate = SendJournal(install: install, lastOpenedDay: state.lastOpenedDay)
         candidate.events.append(occurrence(.usageDataTurnedOn(source), minute: stamp, facts: machine))
-        candidate.events += setup.steps.filter { $0.minute >= stamp - Self.maxAgeMinutes && $0.minute <= stamp }
-            .map { occurrence($0.event, minute: $0.minute, facts: machine) }
-        if opened && shouldCountOpen(day: stamp / 1440) {
-            candidate.lastOpenedDay = stamp / 1440
-            candidate.events.append(occurrence(.appOpened, minute: stamp, facts: machine))
-        }
         guard saveSynchronously(candidate) else { return false }
         do { try persist(.yes) } catch {
             cleanInactiveJournal()
             return false
         }
         state = candidate; consent = .yes
-        setup.steps = []
-        let setupURL = self.setupURL
-        disk.async { try? Self.remove(setupURL) }
         scheduleSend(after: firstBatchDelay)
         return true
     }
@@ -205,7 +188,6 @@ struct UsageEndpoint: Sendable {
     }
 
     func applicationOpened() {
-        opened = true
         guard installNumber != nil else { return }
         let stamp = minute, day = stamp / 1440
         if shouldCountOpen(day: day) {
@@ -219,21 +201,12 @@ struct UsageEndpoint: Sendable {
     }
 
     func record(_ event: UsageEvent) {
-        guard available else { return }
+        guard installNumber != nil else { return }
         switch event {
         case .appOpened, .usageDataTurnedOn: return // Only the consent and app lifecycle own these.
         default: break
         }
-        let stamp = minute
-        if installNumber != nil {
-            enqueue(event, at: stamp)
-        } else if consent == .notAsked && event.isSetupStep {
-            setup.steps.removeAll { $0.minute < stamp - Self.maxAgeMinutes || $0.minute > stamp }
-            setup.steps.append(.init(minute: stamp, event: event))
-            setup.steps = Array(setup.steps.suffix(Self.setupLimit))
-            let setup = self.setup, url = setupURL
-            disk.async { _ = Self.write(setup, to: url) }
-        }
+        enqueue(event, at: minute)
     }
 
     /// Lets the updater finish its local bookkeeping before it asks the app to relaunch.
