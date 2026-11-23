@@ -46,6 +46,9 @@ $candidates = @(Get-KitJoinCandidates $rows 'original')
 if ($candidates.Count -ne 1 -or $candidates[0].Title -notlike 'Stock,*') { throw 'Public candidate restrictions failed.' }
 $refusal = 'Server disconnected: You were kicked for a version mismatch.'
 if ((Find-KitPublicStop ("Server joined.`n$refusal")) -cne $refusal) { throw 'Public refusal message was not preserved.' }
+foreach ($refusal in 'Server uses a different version.', 'Unpure client detected.', 'Anti-cheat required.', 'Checksum mismatch.') {
+    if ((Find-KitPublicStop $refusal) -cne $refusal) { throw "Missed a public refusal: $refusal" }
+}
 $root = Join-Path ([IO.Path]::GetTempPath()) ('kit-tests-' + [guid]::NewGuid().ToString('N'))
 try {
     $main = New-Folder (Join-Path $root 'main')
@@ -54,6 +57,17 @@ try {
     $inventory = @(Get-KitArchiveInventory $root)
     if ($inventory.Count -ne 1 -or $inventory[0] -notmatch 'main[/\\]iw_00\.iwd$') {
         throw 'The inventory must contain only archive names and sizes.'
+    }
+    $timing = @(
+        '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:00:00Z","frameCount":120}',
+        '{"serverAddress":"127.0.0.1:28961","endedAt":"2026-11-23T14:05:00Z","frameCount":120}',
+        '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:05:00Z","frameCount":120,"frameTimeP50MS":24,"unrelated":"do not retain"}'
+    )
+    $stats = New-Folder (Join-Path $main 'stats')
+    $timing | Set-Content -LiteralPath (Join-Path $stats 'matches.jsonl') -Encoding ASCII
+    $record = @(Get-KitPublicMatchTiming $root ([DateTimeOffset]'2026-11-23T14:01:00Z') @('127.0.0.1:28960'))
+    if ($record.Count -ne 1 -or $record[0].frameTimeP50MS -ne 24 -or $record[0].PSObject.Properties['unrelated']) {
+        throw 'Public match timing included an unrelated field or record.'
     }
 } finally { Remove-KitScratch $root }
 'Laptop kit safety checks passed.'

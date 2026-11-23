@@ -20,18 +20,19 @@ function Get-KitJoinCandidates($Rows, [string]$Edition) {
     @($Rows | Where-Object {
         $_.Players -gt 0 -and $_.Players -lt $_.Slots -and $_.Title -match ", $label\b" -and
             $_.Title -notmatch 'needs a password|PunkBuster|anti.cheat'
-    } | Sort-Object @{Expression={ if ($_.Title -match ', (Toujane|Harbor|Burgundy|Carentan|Dawnville|Brecourt|Leningrad),') { 0 } else { 1 } }})
+    } | Sort-Object @{Expression={ if ($_.Title -match ", $label [^,]+, \d+ of \d+ players") { 0 } else { 1 } }},
+        @{Expression={ if ($_.Title -match ', (Toujane|Harbor|Burgundy|Carentan|Dawnville|Brecourt|Leningrad),') { 0 } else { 1 } }})
 }
 
 function Find-KitPublicStop([string]$Text) {
     ($Text -split '\r?\n' | Where-Object {
-        $_ -match '(?i)\b(?:kicked|banned|anti-cheat|cheat violation|invalid checksum|protocol mismatch|version mismatch|unpure client)\b' -and
+        $_ -match '(?i)\b(?:kick(?:ed)?|ban(?:ned)?|anti[ -]?cheat|cheat violation|invalid checksum|checksum (?:failure|mismatch)|protocol mismatch|version mismatch|different (?:game )?version|unpure client)\b' -and
             $_ -notmatch '^(?:dvar set |CoD2x:\s*module detection)'
     } | Select-Object -First 1)
 }
 
 function Read-KitPublicConsole([string]$Log, [long]$Start) {
-    if (-not (Test-Path -LiteralPath $Log)) { return '' }
+    if (-not $Log -or -not (Test-Path -LiteralPath $Log)) { return '' }
     $text = Read-KitText $Log
     if ($text.Length -gt $Start) { return $text.Substring($Start) }
     ''
@@ -43,6 +44,24 @@ function Get-KitPublicHostResult([IntPtr]$App, [string]$RoomName) {
             $row.Element.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
             $detail = Find-KitControl $App 'DetailAddress' -AllowOffscreen
             if ($detail -and $detail.Current.Name -match '^[a-zA-Z0-9.-]+:\d+$') { return $detail.Current.Name }
+        }
+    }
+}
+
+function Start-KitPublicRefresh([IntPtr]$App) {
+    $button = Wait-KitCondition { Find-KitControl $App 'RefreshButton' } 12 'Refresh server list'
+    if ($button.Current.Name -ne 'Stop refresh') { Invoke-KitControl $App 'RefreshButton' }
+}
+
+function Get-KitPublicMatchTiming([string]$HomePath, [DateTimeOffset]$Since, [string[]]$Addresses) {
+    $history = Join-Path $HomePath 'main\stats\matches.jsonl'
+    if (-not (Test-Path -LiteralPath $history -PathType Leaf)) { return }
+    if ((Get-Item -LiteralPath $history).Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
+    foreach ($line in (Read-KitText $history) -split '\r?\n') {
+        if (-not $line) { continue }
+        $record = try { $line | ConvertFrom-Json -ErrorAction Stop } catch { continue }
+        if ($record.serverAddress -in $Addresses -and [DateTimeOffset]$record.endedAt -ge $Since -and $record.frameCount -gt 0) {
+            $record | Select-Object serverAddress,map,endReason,durationSeconds,frameCount,frameTimeP50MS,frameTimeP99MS,frameTimeMaxMS
         }
     }
 }
@@ -77,13 +96,17 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
         Wait-KitCondition { (Request-KitServer $room.Port 'getstatus Kit') -like "*$name*" } 45 'the test room to answer locally' | Out-Null
         if (-not $Local) {
             $watch = [Diagnostics.Stopwatch]::StartNew()
-            Invoke-KitControl $App 'RefreshButton'
+            Invoke-KitControl $App 'All' -Name
+            Set-KitEdit $App 'Search servers, maps or mods' $name -Name
+            Start-KitPublicRefresh $App
             $address = $null
+            $refreshedAgain = $false
             while ($watch.Elapsed.TotalSeconds -lt 60) {
                 Wait-KitSecurity
                 if (-not $address) { $address = Get-KitPublicHostResult $App $name }
-                if (-not $address -and $watch.Elapsed.TotalSeconds -ge 45 -and (Find-KitControl $App 'RefreshButton')) {
-                    Invoke-KitControl $App 'RefreshButton'
+                if (-not $address -and -not $refreshedAgain -and $watch.Elapsed.TotalSeconds -ge 30) {
+                    Start-KitPublicRefresh $App
+                    $refreshedAgain = $true
                 }
                 Start-Sleep -Seconds 2
             }
@@ -100,6 +123,9 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
     finally {
         if ($room) {
             Focus-KitWindow $App
+            if (-not $Local -and (Find-KitControl $App 'Search servers, maps or mods' -Name)) {
+                Set-KitEdit $App 'Search servers, maps or mods' '' -Name
+            }
             Invoke-KitControl $App 'Hosting' -Name
             if (Request-KitServer $room.Port 'getstatus Kit') {
                 Invoke-KitControl $App 'Stop server' -Name
@@ -109,6 +135,12 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
             foreach ($file in Get-ChildItem -LiteralPath $logs -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue) {
                 if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $entry.Evidence $file.Name) }
             }
+            $row = Wait-KitCondition { Find-KitControl $App $name -Name } 12 'the stopped test room'
+            $row.SetFocus()
+            [KitDesktop]::Chord(16, 121)
+            Invoke-KitControl $App ('Delete server' + [char]0x2026) -Name
+            Invoke-KitControl $App 'Delete' -Name
+            Wait-KitCondition { -not (Find-KitHostedServer $name) } 15 'the disposable room to be removed' | Out-Null
         }
     }
     if ($failure) { throw $failure }
@@ -137,60 +169,84 @@ function Join-KitPublicRow([IntPtr]$App, $Row, [string]$Edition, [string]$Eviden
     } 12 'the selected server address'
     Protect-KitText "$address $($Row.Title)" | Add-Content -LiteralPath (Join-Path $Evidence 'servers-joined.txt') -Encoding UTF8
     Invoke-KitControl $App 'JoinButton'
-    $version = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x' }
+    $version = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x 1.4.6.8' }
     if (Find-KitControl $App "Launch with $version" -Name) { Invoke-KitControl $App "Launch with $version" -Name }
+    $address
 }
 
-function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition) {
+function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [string]$HomePath = $AppDataRoot) {
     $entry = New-RunContext "play-$Edition"
-    $log = Join-Path $AppDataRoot 'main\console_mp.log'
+    $logs = Join-Path $HomePath 'logs'
+    $log = $null
     $game = $null
     $gameWindow = [IntPtr]::Zero
-    $activeEdition = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x' }
-    $traceOffset = 0
+    $activeEdition = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x 1.4.6.8' }
+    $addresses = @()
+    $since = $null
     try {
         Focus-KitWindow $App
         Invoke-KitControl $App 'ServersItem'
         Invoke-KitControl $App 'All' -Name
         $watch = [Diagnostics.Stopwatch]::StartNew()
-        Invoke-KitControl $App 'RefreshButton'
+        Start-KitPublicRefresh $App
         Wait-KitCondition { Get-KitPublicRows $App | Select-Object -First 1 } 65 'the first public server' | Out-Null
         "First server after $($watch.ElapsedMilliseconds) ms." |
             Set-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt') -Encoding UTF8
-        Wait-KitCondition { Find-KitControl $App 'RefreshButton' } 65 'the server refresh to finish' | Out-Null
+        Wait-KitCondition {
+            $refresh = Find-KitControl $App 'RefreshButton'
+            $refresh -and $refresh.Current.Name -ne 'Stop refresh'
+        } 65 'the server refresh to finish' | Out-Null
         $rows = @(Get-KitPublicRows $App)
-        "Accessible rows: $($rows.Count)." | Add-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt')
+        $status = Find-KitControl $App 'RefreshStatus'
+        if (-not $status -or $status.Current.Name -notmatch '^\d+ answered\.') {
+            throw 'The public masters did not confirm a completed refresh.'
+        }
+        Protect-KitText "$($status.Current.Name) Accessible rows: $($rows.Count)." |
+            Add-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt') -Encoding UTF8
         Save-KitWindow $App (Join-Path $entry.Evidence 'public-list.png')
         $candidates = @(Get-KitJoinCandidates $rows $Edition)
         if ($candidates.Count -lt 2) {
             throw [NotSupportedException]::new("The list did not expose two populated $activeEdition servers with room and no password.")
         }
-        $since = Get-Date
-        Join-KitPublicRow $App $candidates[0] $Edition $entry.Evidence
+        # Engine history timestamps use whole seconds.
+        $started = [DateTime]::UtcNow
+        $since = [DateTimeOffset]::FromUnixTimeSeconds(([DateTimeOffset]$started).ToUnixTimeSeconds())
+        $addresses += Join-KitPublicRow $App $candidates[0] $Edition $entry.Evidence
         # A server can require a different game version, which is an explicit
         # launcher choice. A password or download dialog never gets accepted here.
-        $game = Wait-KitCondition {
+        $candidate = Wait-KitCondition {
             if (Find-KitControl $App "Launch with $activeEdition" -Name) {
                 Invoke-KitControl $App "Launch with $activeEdition" -Name
             }
             $image = Get-Binary $Edition -Root $InstallRoot
             Get-Process -Name 'cod2_win32' -ErrorAction SilentlyContinue | Where-Object {
-                $_.Path -ieq $image -and $_.StartTime -ge $since -and $_.SessionId -eq $Launcher.SessionId
+                $_.Path -ieq $image -and $_.StartTime.ToUniversalTime() -ge $started -and $_.SessionId -eq $Launcher.SessionId
             } | Select-Object -First 1
         } 50 "the $activeEdition installed game process"
-        $owner = Get-CimInstance Win32_Process -Filter "ProcessId=$($game.Id)"
-        if ($owner.ParentProcessId -ne $Launcher.Id) { throw 'The installed play launcher did not start this process.' }
+        $owner = Get-CimInstance Win32_Process -Filter "ProcessId=$($candidate.Id)"
+        $null = $candidate.Handle
+        if ($owner.ParentProcessId -ne $Launcher.Id -or
+            [Math]::Abs(($candidate.StartTime - $owner.CreationDate).TotalMilliseconds) -ge 1) {
+            $candidate.Dispose()
+            throw 'The installed play launcher did not start this process.'
+        }
+        $game = $candidate
+        $log = Wait-KitCondition {
+            Get-ChildItem -LiteralPath $logs -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue |
+                Where-Object { $_.CreationTimeUtc -ge $started -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
+                Sort-Object CreationTimeUtc -Descending | Select-Object -First 1 -ExpandProperty FullName
+        } 15 'the new game log'
         $gameWindow = Get-KitGameWindow $game
         Watch-KitPublicConnection $log 0 'CL_InitCGame:' 65 $entry.Evidence
         Focus-KitWindow $gameWindow
-        Send-KitCommand $gameWindow '/toggleconsole; cmd team spectator'
+        # Wait in the initial spectator state. Do not pick a team or send chat.
         Save-KitWindow $gameWindow (Join-Path $entry.Evidence 'public-first-game.png')
         Watch-KitPublicConnection $log 0 '' 120 $entry.Evidence
         if ($game.HasExited) { throw 'The game closed during the two-minute observation.' }
         $traceOffset = (Read-KitPublicConsole $log 0).Length
 
         Focus-KitWindow $App
-        Join-KitPublicRow $App $candidates[1] $Edition $entry.Evidence
+        $addresses += Join-KitPublicRow $App $candidates[1] $Edition $entry.Evidence
         Watch-KitPublicConnection $log $traceOffset 'CL_InitCGame:' 65 $entry.Evidence
         if ($game.HasExited) { throw 'The earlier game exited during the second join.' }
         Focus-KitWindow $gameWindow
@@ -212,15 +268,29 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition) {
         'Two joins used the same game process. Return to game and Close game both worked.' |
             Add-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt')
     } finally {
-        $text = Read-KitPublicConsole $log 0
+        try { Stop-KitOwnedGame $game $gameWindow }
+        finally { if ($game) { $game.Dispose() } }
+        $text = if ($log) { Read-KitPublicConsole $log 0 }
         if ($text) {
+            if ($line = Find-KitPublicStop $text) {
+                Protect-KitText $line | Set-Content -LiteralPath (Join-Path $entry.Evidence 'server-refusal.txt') -Encoding UTF8
+            }
             $lines = $text -split '\r?\n' | Where-Object {
-                $_ -match '(?i)challenge|authoriz|protocol|downloading|download complete|lost device|^CoD2x: (?:No updates available|Update available)|slow frame|CL_InitCGame|connecting to'
+                $_ -match '(?i)challenge|authoriz|protocol|download|lost device|^CoD2x: (?:No updates available|Update available)|CL_InitCGame|connecting to|^(?:Using D3D9 adapter|Direct3D 9 adapter|Direct3D device:)'
             }
             Protect-KitText ($lines -join "`n") |
                 Set-Content -LiteralPath (Join-Path $entry.Evidence 'connection.txt') -Encoding UTF8
         }
-        Stop-KitOwnedGame $game $gameWindow
+        if ($addresses.Count) {
+            $timing = @(Get-KitPublicMatchTiming $HomePath $since $addresses)
+            if ($timing.Count) {
+                Protect-KitText (ConvertTo-Json -InputObject $timing -Depth 3) |
+                    Set-Content -LiteralPath (Join-Path $entry.Evidence 'match-timing.json') -Encoding UTF8
+            } else {
+                'The game recorded no match timing for these server addresses during the run.' |
+                    Set-Content -LiteralPath (Join-Path $entry.Evidence 'match-timing.txt') -Encoding UTF8
+            }
+        }
     }
 }
 
