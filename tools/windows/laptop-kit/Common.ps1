@@ -6,6 +6,9 @@ if (-not $LocalData -and $Mode -eq 'Status') { $LocalData = $Kit }
 $AppDataRoot = Join-Path $LocalData 'CoD2 Unbound'
 
 function Assert-Offline {
+    # An online PC is allowed only when the Mac driver asked for it. Every start
+    # stays pinned to this PC by the loopback endpoints in Start-KitProcess.
+    if ($env:COD2_KIT_ONLINE -eq '1') { return }
     $routes = @(Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0', '::/0') })
     if ($routes.Count) { throw 'Unplug internet access and disconnect Wi-Fi and VPN. Only an isolated LAN with no gateway is allowed.' }
 }

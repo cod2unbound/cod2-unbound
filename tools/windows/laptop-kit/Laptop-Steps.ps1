@@ -81,6 +81,9 @@ $Steps = @(
         $windows = Get-KitWindowsVersion
         "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build), Windows PowerShell $($PSVersionTable.PSVersion)" |
             Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
+        $gateways = @(Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0', '::/0') }).Count
+        "Default routes: $gateways. Online run allowed by the driver: $($env:COD2_KIT_ONLINE -eq '1')." |
+            Set-Content -LiteralPath (Join-Path $Results 'network.txt') -Encoding UTF8
         Test-KitFiles
         $captured = @()
         if ($GamePath) {

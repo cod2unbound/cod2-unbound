@@ -110,13 +110,14 @@ class UtmTransport:
 
 
 class Kit:
-    def __init__(self, transport, name, output, game_path, arm_rehearsal):
+    def __init__(self, transport, name, output, game_path, arm_rehearsal, online=False):
         self.transport = transport
         self.name = name
         self.output = output
         self.game_path = game_path or ""
         self.utm = isinstance(transport, UtmTransport)
         self.arm_rehearsal = self.utm or arm_rehearsal
+        self.online = online
         if self.utm:
             sid = powershell_literal(transport.sid)
             self.prefix = f"$profile=(Get-ItemProperty ('HKLM:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\'+{sid})).ProfileImagePath;"
@@ -172,6 +173,8 @@ class Kit:
             args += f" -Sid {powershell_literal(self.transport.sid)}"
         if self.arm_rehearsal:
             args += " -ArmRehearsal"
+        if self.online:
+            args += " -Online"
         return self.exec("& (Join-Path $stage 'CoD2-Unbound-Windows-Kit\\Remote-Kit.ps1') -Stage $stage" + args)
 
     def status(self):
@@ -298,6 +301,8 @@ def main():
     parser.add_argument("user", nargs="?")
     parser.add_argument("--utm-sid")
     parser.add_argument("--arm-rehearsal", action="store_true")
+    parser.add_argument("--online", action="store_true",
+                        help="allow a PC that still has an internet route; every start stays on loopback")
     parser.add_argument("--kit", type=Path, default=os.environ.get("COD2_KIT_ZIP"))
     parser.add_argument("--run", default="laptop")
     parser.add_argument("--output", required=True, type=Path)
@@ -328,7 +333,7 @@ def main():
     with args.kit.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     args.output.mkdir(parents=True, exist_ok=True)
-    driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path, args.arm_rehearsal)
+    driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path, args.arm_rehearsal, args.online)
     driver.deploy(args.kit.resolve(), digest)
     driver.run(args.steps)
 
