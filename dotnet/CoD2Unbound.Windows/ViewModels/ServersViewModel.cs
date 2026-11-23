@@ -10,7 +10,7 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal ServerSort Sort { get; private set; } = ServerSort.Ping;
     internal bool Ascending { get; private set; } = true;
     internal string Search { get; set; } = "";
-    internal ServerFilters Filters => session.ServerPreferences.Filters;
+    internal ServerFilters Filters { get; private set; } = session.ServerPreferences.Filters;
     internal bool IsFavorite(string address) => session.Library.Favorites.Contains(address);
     internal DateTimeOffset? CachedAt => session.Library.CachedAt;
     internal bool GameRunning => session.Game.State.Running;
@@ -27,7 +27,11 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal Task RefreshAsync(IProgress<ServerRefreshState> progress, CancellationToken token) =>
         session.RefreshServersAsync(Scope, progress, token);
 
-    internal Task SetFiltersAsync(ServerFilters filters) => session.SaveFiltersAsync(filters);
+    internal Task SetFiltersAsync(ServerFilters filters)
+    {
+        Filters = filters;
+        return session.SaveFiltersAsync(filters);
+    }
     internal Task FavoriteAsync(GameServer server) => session.ToggleFavoriteAsync(server.Address);
 }
 

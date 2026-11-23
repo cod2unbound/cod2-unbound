@@ -7,8 +7,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Shapes;
-using Windows.ApplicationModel.DataTransfer;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -20,13 +20,12 @@ public sealed partial class ServersPage : Page
     private readonly ServersViewModel model;
     private readonly WindowsLauncherSession session;
     private readonly MapPreviews previews;
-    private readonly Lazy<ConfigReadyCheck> readiness = new(() =>
-        new(ConfigCatalog.LoadBundled(), ConfigRules.LoadBundled(), TimeProvider.System));
     private HostingPage? hosting;
-    private GameServer? currentReadyServer;
     private string? currentMap;
     private CancellationTokenSource? refreshing;
     private bool ready;
+    private bool renderingRows;
+    private ImmutableArray<GameServer>? liveRows;
 
     internal ServersPage(MainWindow shell, WindowsLauncherSession session, ServerScope scope, string? address)
     {
@@ -35,6 +34,8 @@ public sealed partial class ServersPage : Page
         model = new(session, scope);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        AutomationProperties.SetHeadingLevel(EmptyHeading, AutomationHeadingLevel.Level2);
+        ServerList.AddHandler(KeyDownEvent, new KeyEventHandler(OnServerListKeyDown), true);
         ActualThemeChanged += (_, _) => Render();
         Scopes.SelectedItem = Scopes.Items[(int)scope];
         ready = true;
@@ -42,12 +43,15 @@ public sealed partial class ServersPage : Page
         Render(address);
     }
 
-    private void Render(string? address = null, ImmutableArray<GameServer>? live = null)
+    private void Render(string? address = null)
     {
         address ??= (ServerList.SelectedItem as ServerRow)?.Server.Address;
-        var rows = model.Visible(live).Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
+        var rows = model.Visible(liveRows).Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
+        renderingRows = true;
         ServerList.ItemsSource = rows;
         ServerList.SelectedItem = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
+        renderingRows = false;
+        RenderEmpty(rows.Length == 0);
         int count = model.Filters.Count;
         string filters = count == 0 ? "Filters" : $"Filters ({count})";
         FilterButton.Content = IconLabel("Filter", filters);
@@ -93,6 +97,8 @@ public sealed partial class ServersPage : Page
             SearchBox.Visibility = BrowserSubtitle.Visibility = IsVisible(!showHosting);
         HostingContent.Visibility = NewHost.Visibility = IsVisible(showHosting);
         if (showHosting)
+            ClearRecent.Visibility = Visibility.Collapsed;
+        if (showHosting)
         {
             session.Opened(UsagePage.Hosting);
             await shell.ShowProblemAsync(async () =>
@@ -118,7 +124,7 @@ public sealed partial class ServersPage : Page
     internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
 
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
-        Details.Width = args.NewSize.Width >= 1000 ? 320 : 300;
+        Details.Width = args.NewSize.Width >= 1000 ? 380 : Math.Clamp(args.NewSize.Width * 0.44, 225, 340);
 
     private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
@@ -131,7 +137,10 @@ public sealed partial class ServersPage : Page
             return;
         var server = entry.Server;
         if (ContainingListItem(row) is { } item)
+        {
             AutomationProperties.SetName(item, entry.Label);
+            item.ContextFlyout = BuildRowMenu(entry);
+        }
         var facts = ServerFacts.From(server);
         bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
@@ -187,27 +196,17 @@ public sealed partial class ServersPage : Page
         bool favorite = model.IsFavorite(server.Address);
         button.Content = Fluent(favorite ? "StarFilled" : "Star", 16, filled: favorite);
         button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
-        string action = favorite ? "Remove from Favorites" : "Add to Favorites";
+        string action = favorite ? "Remove from favorites" : "Add to favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
         ToolTipService.SetToolTip(button, action);
     }
-
-    private async void OnCopyAddress(object sender, RoutedEventArgs args) => await shell.ShowProblemAsync(() =>
-    {
-        if (ServerList.SelectedItem is ServerRow row)
-        {
-            var data = new DataPackage();
-            data.SetText(row.Server.Address);
-            Clipboard.SetContent(data);
-        }
-        return Task.CompletedTask;
-    });
 
     private void OnSearch(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (!ready)
             return;
         model.Search = SearchBox.Text;
+        UpdateClearFilters();
         Render();
     }
 
@@ -240,13 +239,17 @@ public sealed partial class ServersPage : Page
         }
     }
 
-    private void OnSelectionChanged(object sender, SelectionChangedEventArgs args) => RenderDetails();
+    private void OnSelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (!renderingRows)
+            RenderDetails();
+    }
 
     private void RenderDetails()
     {
         if (ServerList.SelectedItem is not ServerRow row)
         {
-            currentReadyServer = null;
+            ClearReadyCheck();
             Details.Visibility = Visibility.Collapsed;
             return;
         }
@@ -261,6 +264,7 @@ public sealed partial class ServersPage : Page
         DetailVersion.Text = facts.VersionLabel;
         DetailMod.Text = string.IsNullOrWhiteSpace(server.Mod) ? "None" : server.Mod;
         DetailAccess.Text = facts.Access;
+        DetailFull.Visibility = IsVisible(facts.Occupancy == ServerOccupancy.Full);
         DetailRoster.Text = "Roster · " + row.Players;
         Roster.Children.Clear();
         foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
@@ -278,43 +282,8 @@ public sealed partial class ServersPage : Page
             Roster.Children.Add(columns);
         }
         SetFavorite(FavoriteButton, server);
-        _ = ShowReadinessAsync(server);
+        UpdateReadyCheck(server);
         UpdateJoinButton();
-    }
-
-    private void UpdateJoinButton()
-    {
-        bool isRefreshing = refreshing is not null;
-        JoinButton.IsEnabled = !isRefreshing && !model.GameRunning;
-        string label = isRefreshing ? "Refreshing…" : "Launch";
-        JoinButtonLabel.Text = label;
-        AutomationProperties.SetName(JoinButton, label);
-    }
-
-    private async Task ShowReadinessAsync(GameServer server)
-    {
-        if (ReferenceEquals(currentReadyServer, server))
-            return;
-        currentReadyServer = server;
-        DetailReady.Visibility = Visibility.Collapsed;
-        if (server.ObservedAt is not { } date || DateTimeOffset.UtcNow - date > TimeSpan.FromMinutes(1))
-            return;
-
-        await shell.ShowProblemAsync(async () =>
-        {
-            var active = await session.ReadLoadoutAsync();
-            if (active is null)
-                return;
-            var mode = server.IsCod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock;
-            var dialect = server.IsCod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
-            var store = new ConfigProfileStore(new WindowsConfigProfiles(session.HomePath, 0), dialect, () => session.ClientIsRunning);
-            var report = await Task.Run(() => readiness.Value.Evaluate(server, store.Read(active.Id), mode));
-            if (ReferenceEquals(currentReadyServer, server) && report.Status == ConfigReadyStatus.MatchesKnownRules)
-            {
-                DetailReady.Text = $"Your {active.DisplayName} loadout is ready for this server";
-                DetailReady.Visibility = Visibility.Visible;
-            }
-        });
     }
 
     private async void RenderMapArtwork(string map)
@@ -327,34 +296,6 @@ public sealed partial class ServersPage : Page
         if (await previews.GetAsync(map) is { } image && currentMap == map)
             DetailArt.Source = image;
     }
-
-    private void OnFiltersOpening(object sender, object args)
-    {
-        var filters = model.Filters;
-        FilterEdition.SelectedIndex = (int)filters.Version;
-        string[] codes = ["dm", "tdm", "sd", "ctf", "hq"];
-        var modes = codes.Select(code => new ComboBoxItem { Content = GameModes.Long(code), Tag = code }).ToList();
-        modes.Insert(0, new ComboBoxItem { Content = "All" });
-        FilterMode.ItemsSource = modes;
-        FilterMode.SelectedItem = modes.FirstOrDefault(mode => Equals(mode.Tag, filters.Mode)) ?? modes[0];
-        var limits = ServerFilters.PingLimits.Select(ping => new ComboBoxItem { Content = $"{ping} ms", Tag = ping }).ToList();
-        limits.Insert(0, new ComboBoxItem { Content = "Any" });
-        FilterPing.ItemsSource = limits;
-        FilterPing.SelectedItem = limits.FirstOrDefault(limit => Equals(limit.Tag, filters.MaxPing)) ?? limits[0];
-        HideEmpty.IsChecked = filters.HideEmpty;
-        HideFull.IsChecked = filters.HideFull;
-        HidePassworded.IsChecked = filters.HidePassworded;
-    }
-
-    private async void OnApplyFilters(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
-    {
-        var filters = new ServerFilters((ServerEditionFilter)FilterEdition.SelectedIndex,
-            (FilterMode.SelectedItem as ComboBoxItem)?.Tag as string, (FilterPing.SelectedItem as ComboBoxItem)?.Tag as int?,
-            HideEmpty.IsChecked == true, HideFull.IsChecked == true, HidePassworded.IsChecked == true);
-        await model.SetFiltersAsync(filters);
-        FilterButton.Flyout.Hide();
-        Render();
-    });
 
     private async void OnFavorite(object sender, RoutedEventArgs args)
     {
@@ -401,7 +342,8 @@ public sealed partial class ServersPage : Page
                 {
                     if (refreshing != cancellation)
                         return;
-                    Render(live: state.Servers);
+                    liveRows = state.Servers;
+                    Render();
                     if (state.Refreshing)
                         RefreshStatus.Text = WithCacheAge(state.Asked == 0 ? "Asking the master servers for the list…" :
                             $"Checking {state.Asked} servers. {state.Finished} checked, {state.Answered} answered.");
@@ -413,6 +355,7 @@ public sealed partial class ServersPage : Page
             finally
             {
                 refreshing = null;
+                liveRows = null;
                 RefreshGlyph.Glyph = (string)Application.Current.Resources["FluentRefresh"];
                 AutomationProperties.SetName(RefreshButton, "Refresh server list");
                 ToolTipService.SetToolTip(RefreshButton, "Refresh server list (Ctrl+R)");
@@ -431,23 +374,30 @@ public sealed partial class ServersPage : Page
 
     private async Task ShowConnectAsync(ServerLink? link = null)
     {
-        if (await shell.PromptServerAsync(link?.Target.Address, link) is { } entry)
-            await JoinAsync(entry.Target, entry.Edition is null ? UsageJoin.TypedAddress : UsageJoin.Link, entry.Edition);
+        var dialog = new ConnectDialog(session.ServerQuery, session.Library, shell.IsHighContrast, link)
+        {
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary || dialog.Target is not { } target)
+            return;
+        if (dialog.AddFavorite)
+        {
+            await session.AddFavoriteAsync(target.Address);
+            shell.RefreshFavorites();
+        }
+        if (dialog.Observation is { } server)
+            await session.RememberServerAsync(server);
+        var source = dialog.RequestedEdition is null ? UsageJoin.TypedAddress : UsageJoin.Link;
+        string? status = await shell.JoinServerAsync(target, source, dialog.RequestedEdition, dialog.Observation, alreadyLookedUp: true);
+        Render(target.Address);
+        if (status is not null)
+            RefreshStatus.Text = status;
     }
 
     private async void OnJoin(object sender, RoutedEventArgs args)
     {
-        if (refreshing is not null || ServerList.SelectedItem is not ServerRow row)
-            return;
-        var source = model.Scope == ServerScope.Favorites ? UsageJoin.Favorite : UsageJoin.List;
-        await shell.RunAsync(() => JoinAsync(new(row.Server.Address, null), source, known: row.Server));
-    }
-
-    private async Task JoinAsync(ServerAddress target, UsageJoin source, GameEdition? edition = null, GameServer? known = null)
-    {
-        if (await shell.JoinServerAsync(target, source, edition, known) is { } status)
-            RefreshStatus.Text = status;
-        RenderDetails();
+        if (ServerList.SelectedItem is ServerRow row)
+            await LaunchRowAsync(row);
     }
 
     internal Task UpdateGameStateAsync()

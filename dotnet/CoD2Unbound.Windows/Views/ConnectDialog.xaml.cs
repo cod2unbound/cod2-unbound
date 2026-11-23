@@ -1,70 +1,187 @@
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class ConnectDialog : ContentDialog
 {
-    private readonly string? linkedAddress;
+    private readonly ServerQueryClient query;
     private readonly ServerLink? openedLink;
-    private readonly bool passwordRequired;
+    private readonly bool highContrast;
+    private string? queriedAddress;
+    private CancellationTokenSource? lookup;
+    private Task lookupTask = Task.CompletedTask;
+    private bool open;
+    private bool accepting;
 
-    internal ConnectDialog(string? address = null, ServerLink? link = null, bool passwordRequired = false)
+    internal ConnectDialog(ServerQueryClient query, LauncherLibrary library, bool highContrast, ServerLink? link = null)
     {
-        this.passwordRequired = passwordRequired;
+        this.query = query;
         openedLink = link;
-        linkedAddress = link?.Target.Address ?? (passwordRequired ? address : null);
+        this.highContrast = highContrast;
         InitializeComponent();
-        AddressBox.Text = address ?? "";
         if (link is not null)
         {
+            AddressBox.Text = link.Target.Address;
             AddressBox.IsReadOnly = true;
             PasswordInput.Password = link.Target.Password ?? "";
             DefaultButton = ContentDialogButton.Close;
         }
-        if (passwordRequired)
-        {
-            AddressBox.IsReadOnly = true;
-            Description.Text = "This server requires a password.";
-            PasswordInput.Header = "Password";
-        }
-        UpdateTarget();
+        else
+            BuildRecent(library);
         Opened += (_, _) =>
         {
-            UpdateTarget();
-            (address is null ? (Control)AddressBox : PasswordInput).Focus(FocusState.Programmatic);
+            open = true;
+            AddressBox.Focus(FocusState.Programmatic);
+            UpdateAddress();
         };
+        Closed += (_, _) =>
+        {
+            open = false;
+            lookup?.Cancel();
+        };
+        PrimaryButtonClick += CompleteLookup;
     }
 
     internal ServerAddress? Target { get; private set; }
     internal GameEdition? RequestedEdition { get; private set; }
+    internal GameServer? Observation { get; private set; }
+    internal bool AddFavorite => Favorite.IsChecked == true;
 
     internal static string EditionName(GameEdition edition) => edition == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3";
 
-    private void OnEntryChanged(object sender, RoutedEventArgs args) => UpdateTarget();
-
-    private void UpdateTarget()
+    private void BuildRecent(LauncherLibrary library)
     {
-        if (AddressBox is null || PasswordInput is null || Description is null)
+        if (library.Recent.IsEmpty)
             return;
-        string input = AddressBox.Text.Trim();
-        var link = openedLink ?? (linkedAddress is null ? ServerLink.Parse(input) : null);
-        bool hasScheme = input.StartsWith("cod2://", StringComparison.OrdinalIgnoreCase) ||
-            input.StartsWith("cod2x://", StringComparison.OrdinalIgnoreCase);
-        var address = linkedAddress is not null ? new ServerAddress(linkedAddress, null) :
-            hasScheme ? link?.Target : ServerAddress.Parse(input);
-        RequestedEdition = link?.Edition;
-        string password = PasswordInput.Password;
-        if (password.Length == 0)
-            password = address?.Password ?? "";
-        string? passwordProblem = ServerAddress.PasswordProblem(password);
-        Description.Text = passwordProblem ?? (passwordRequired ? "This server requires a password." :
-            RequestedEdition is { } edition ? $"This link requests {EditionName(edition)}." :
-            address is null && input.Length > 0 ? "Enter a server address or a CoD2 Unbound server link." :
-            "For a server that isn’t in the list, or one a friend sent you.");
-        Target = address is null || (passwordRequired && password.Length == 0) || passwordProblem is not null
-            ? null : address with { Password = password.Length == 0 ? null : password };
+        var heading = Caption("Recent addresses");
+        AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
+        RecentAddresses.Children.Add(heading);
+        foreach (string address in library.Recent.Take(4))
+        {
+            var server = library.Cache.FirstOrDefault(item => item.Address == address);
+            string name = server is null ? "Not seen in the list" : QuakeColors.Plain(server.Name);
+            string date = library.Played.TryGetValue(address, out var played) ? $"  ·  {played.ToLocalTime():dd MMM}" : "";
+            var button = new Button
+            {
+                Style = StyleFor("SubtleAction"), HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                Content = new StackPanel
+                {
+                    Spacing = 2,
+                    Children = { MonoCaption(address), new TextBlock { Text = name + date, TextTrimming = TextTrimming.CharacterEllipsis } }
+                }
+            };
+            AutomationProperties.SetName(button, $"Use {address}, {name}{date}");
+            button.Click += (_, _) =>
+            {
+                AddressBox.Text = address;
+                AddressBox.Focus(FocusState.Programmatic);
+            };
+            RecentAddresses.Children.Add(button);
+        }
+    }
+
+    private void OnAddressChanged(object sender, TextChangedEventArgs args)
+    {
+        if (open)
+            UpdateAddress();
+    }
+
+    private void OnPasswordChanged(object sender, RoutedEventArgs args)
+    {
+        if (open)
+            UpdateEntry();
+    }
+
+    private ServerConnectEntry UpdateEntry()
+    {
+        var entry = ServerConnectEntry.Parse(AddressBox.Text, PasswordInput.Password);
+        Target = entry.Target;
+        RequestedEdition = openedLink?.Edition ?? entry.Edition;
+        Validation.Text = entry.PasswordProblem ?? "";
+        Validation.Visibility = IsVisible(entry.PasswordProblem is not null);
         IsPrimaryButtonEnabled = Target is not null;
+        return entry;
+    }
+
+    private void UpdateAddress()
+    {
+        var entry = UpdateEntry();
+        if (queriedAddress == entry.Address && entry.Address is not null)
+            return;
+        lookup?.Cancel();
+        queriedAddress = entry.Address;
+        Observation = null;
+        if (entry.Address is { } address)
+            lookupTask = AskAsync(address);
+        else
+            ShowAnswer(entry.InvalidAddress
+                ? "Use a host name or IP address, with an optional port from 1 to 65535. For example, 203.0.113.24:28960."
+                : "", "NegativeBrush");
+    }
+
+    private async Task AskAsync(string address)
+    {
+        using var request = new CancellationTokenSource();
+        lookup = request;
+        ShowAnswer($"Asking {address}…", "CaptionBrush", asking: true);
+        try
+        {
+            GameServer? result;
+            try { result = await ServerConnectEntry.AskAsync(query, address, request.Token); }
+            catch (Exception error) when (error is IOException or System.Net.Sockets.SocketException) { result = null; }
+            if (request.IsCancellationRequested)
+                return;
+            Observation = result;
+            if (result is null)
+            {
+                ShowAnswer($"Nothing answered at {address}. Check the address and port. You can still launch; the game will try to connect.",
+                    "AddressBrush");
+                return;
+            }
+
+            string locked = result.PasswordRequired ? " · needs a password" : "";
+            ShowAnswer($"{QuakeColors.Plain(result.Name)} answered · {MapCatalog.DisplayName(result.Map)} · " +
+                $"{result.PlayerCount} of {result.MaxPlayers} players · {result.Ping} ms{locked}", "PositiveBrush");
+            if (result.PasswordRequired && !accepting)
+                PasswordInput.Focus(FocusState.Programmatic);
+        }
+        catch (OperationCanceledException) when (request.IsCancellationRequested) { }
+        finally
+        {
+            if (ReferenceEquals(lookup, request))
+                lookup = null;
+        }
+    }
+
+    private async void CompleteLookup(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        accepting = true;
+        var deferral = args.GetDeferral();
+        try
+        {
+            while (!lookupTask.IsCompleted)
+                await lookupTask;
+            args.Cancel = Target is null;
+        }
+        finally
+        {
+            accepting = false;
+            deferral.Complete();
+        }
+    }
+
+    private void ShowAnswer(string text, string color, bool asking = false)
+    {
+        LookupLine.Visibility = IsVisible(text.Length != 0);
+        Asking.Visibility = IsVisible(asking);
+        Asking.IsActive = asking;
+        Answer.Foreground = ThemeBrush(color, ActualTheme, highContrast);
+        Answer.Text = text;
     }
 }
