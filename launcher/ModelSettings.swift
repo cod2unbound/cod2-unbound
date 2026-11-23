@@ -443,12 +443,13 @@ extension KeyStore {
     var crashReportFields: [(name: String, value: String)] {
         let facts = snapshot ? CrashReporting.Facts(release: version, macOS: "27.0", model: "Mac16,7") : CrashReporting.Facts.current(release: version)
         return [("What failed", "The report’s first reason line, such as the signal that stopped the game"),
-                ("When", "The time the report was written"),
+                ("When", "The time the report was written, and the time it was sent"),
+                ("Report number", "Made at random for this report"),
                 ("CoD2 Unbound", facts.release),
                 ("Game version", "CoD2x or Original 1.3, whichever crashed"),
                 ("macOS", facts.macOS),
                 ("Mac model", facts.model),
-                ("The report", "The crash or freeze report the game wrote, with your Mac’s user name replaced by ~ and every command line removed")]
+                ("The report", "The crash or freeze report the game wrote, and the report’s filename. Home folder paths are shortened to ~ and command-line entries are removed.")]
     }
     var matchSummaryCount: Int { studio.checkup.matchCount }
     func refreshMatchCount() { if !snapshot { studio.checkup.refreshMatches(home: home) } }

@@ -359,36 +359,48 @@ struct SheetScaffold<Content: View, Note: View>: View {
     var title: String
     var message: String?
     var width: CGFloat = 520
+    var scrollHeight: CGFloat?
     var actions: [SheetAction]
     @ViewBuilder var content: Content
     @ViewBuilder var note: Note
     @Environment(\.palette) private var palette
     @FocusState private var focusedAction: Int?
-    init(icon: SheetIcon, title: String, message: String? = nil, width: CGFloat = 520, actions: [SheetAction],
-         @ViewBuilder content: () -> Content, @ViewBuilder note: () -> Note) {
-        self.icon = icon; self.title = title; self.message = message; self.width = width; self.actions = actions
-        self.content = content(); self.note = note()
+    init(icon: SheetIcon, title: String, message: String? = nil, width: CGFloat = 520, scrollHeight: CGFloat? = nil,
+         actions: [SheetAction], @ViewBuilder content: () -> Content, @ViewBuilder note: () -> Note) {
+        self.icon = icon; self.title = title; self.message = message; self.width = width; self.scrollHeight = scrollHeight
+        self.actions = actions; self.content = content(); self.note = note()
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 14) {
-                iconView
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(palette.heading)
-                        .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-                    if let message {
-                        Text(message).font(.system(size: 13)).foregroundStyle(palette.secondary).lineSpacing(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            if let scrollHeight {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) { sheetContents }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Spacer(minLength: 0)
+                .frame(height: scrollHeight)
+            } else {
+                sheetContents
             }
-            content
             actionBar
         }
         .padding(22)
         .frame(width: width, alignment: .leading)
         .environment(\.formContext, .inset)
+    }
+    @ViewBuilder private var sheetContents: some View {
+        HStack(alignment: .top, spacing: 14) {
+            iconView
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(palette.heading)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                if let message {
+                    Text(message).font(.system(size: 13)).foregroundStyle(palette.secondary).lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        content
     }
     @ViewBuilder private var iconView: some View {
         switch icon {
@@ -447,8 +459,10 @@ struct SheetScaffold<Content: View, Note: View>: View {
     }
 }
 extension SheetScaffold where Note == EmptyView {
-    init(icon: SheetIcon, title: String, message: String? = nil, width: CGFloat = 520, actions: [SheetAction], @ViewBuilder content: () -> Content) {
-        self.init(icon: icon, title: title, message: message, width: width, actions: actions, content: content, note: { EmptyView() })
+    init(icon: SheetIcon, title: String, message: String? = nil, width: CGFloat = 520, scrollHeight: CGFloat? = nil,
+         actions: [SheetAction], @ViewBuilder content: () -> Content) {
+        self.init(icon: icon, title: title, message: message, width: width, scrollHeight: scrollHeight,
+                  actions: actions, content: content, note: { EmptyView() })
     }
 }
 

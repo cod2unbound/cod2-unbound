@@ -169,7 +169,7 @@ struct MediaEntry: Identifiable {
     var usageStepInSetup = false
     /// A `cod2unbound://setup/<id>` link that waits for setup to finish (ModelUsage.swift).
     var pendingSetupLink: String?
-    var usageGameStartedAt: Date?
+    var usageGameStart: (time: Date, install: UUID)?
     var usageSettingsBaseline: GameSettings?
     var usageJoinSheetContext: (address: String, source: UsageJoinSource)?
     var usageDismissedJoinContext: (address: String, source: UsageJoinSource)?
@@ -703,7 +703,6 @@ struct MediaEntry: Identifiable {
         guard let app = apps.first else { return false }
         attachedGames = Dictionary(uniqueKeysWithValues: apps.map { ($0.processIdentifier, $0) })
         gameRunning = true; gameStartedAt = Date()
-        usageGameStartedAt = app.launchDate
         do { try configStudio?.reconcileGames(Set(attachedGames.keys)) } catch { notice = error.localizedDescription }
         // ship-shell: hide the windows if the player wants them hidden while playing (ModelShell.swift).
         gameTookOver()
@@ -723,7 +722,11 @@ struct MediaEntry: Identifiable {
         }
     }
     private func synchronizeGames() {
-        if let engine, !engine.isRunning { lastExitCode = engine.terminationStatus; self.engine = nil }
+        if let engine, !engine.isRunning {
+            let code = engine.terminationStatus
+            lastExitCode = code; self.engine = nil
+            recordUsageGameEnd(code: code, at: Date())
+        }
         let expected = gameExecutables
         let identifier = (Bundle.main.bundleIdentifier ?? "") + ".game"
         let apps = NSRunningApplication.runningApplications(withBundleIdentifier: identifier).filter {
@@ -733,7 +736,7 @@ struct MediaEntry: Identifiable {
         var pids = Set(attachedGames.keys)
         if let engine, engine.isRunning { pids.insert(engine.processIdentifier) }
         let wasRunning = gameRunning
-        if !pids.isEmpty && !wasRunning { gameStartedAt = Date(); usageGameStartedAt = apps.first?.launchDate }
+        if !pids.isEmpty && !wasRunning { gameStartedAt = Date() }
         gameRunning = !pids.isEmpty
         do { try configStudio?.reconcileGames(pids) } catch { notice = error.localizedDescription }
         if wasRunning && !gameRunning { gameEnded(code: lastExitCode); lastExitCode = nil }
@@ -816,17 +819,15 @@ struct MediaEntry: Identifiable {
             process.standardOutput = log.pipe; process.standardError = log.pipe
             process.terminationHandler = { [weak self] process in
                 log.finish()
-                let code = process.terminationStatus
                 let pid = process.processIdentifier
                 Task { @MainActor in
                     guard let self, self.engine?.processIdentifier == pid else { return }
-                    self.lastExitCode = code; self.engine = nil; self.synchronizeGames()
+                    self.synchronizeGames()
                 }
             }
             try PrivateFile.write(Data(try settings.launchConfig(migrated: configLaunch != nil).utf8), to: home.appendingPathComponent("main/launcher.cfg"))
             try process.run(); log.closeParentWriter(); engine = process; gameRunning = true; gameStartedAt = Date(); crashReport = nil; notice = ""
-            usageGameStartedAt = gameStartedAt
-            recordUsage(.gameStarted(engine: gameEngine, renderer: renderer, mode: UsageDisplayMode(rawValue: settings.fullscreen) ?? .unknown, scale: settings.renderScale))
+            recordUsageGameStart(engine: gameEngine, renderer: renderer)
             configStudio?.gameLaunched(pid: process.processIdentifier)
             // The engine records the films as played as soon as it starts, even if the player quits during them.
             if plan.playsIntroFilms { settings.introFilmsPlayed = true; flushSettings() }
@@ -897,13 +898,6 @@ struct MediaEntry: Identifiable {
         let outcome = GameExit.outcome(code: code, sessionLog: { GameSessionLog.latest(home: home) },
                                        crashReport: { CrashReports.latest(in: home, since: started) })
         let reports = closed ? [] : CrashReports.all(in: home, since: started)
-        if usageConsent == .yes, let start = usageGameStartedAt {
-            let usageReports = start < started && !closed ? CrashReports.all(in: home, since: start) : reports
-            if let how = UsageGameEnd.observed(code: code, requestedQuit: quittingGame, reports: usageReports) {
-                recordUsage(.gameEnded(how, minutes: max(0, Int(Date().timeIntervalSince(start) / 60))))
-            }
-        }
-        usageGameStartedAt = nil
         if outcome.unexpected {
             recordUsage(.errorShown(.gameEndedUnexpectedly))
             crashReport = outcome.report

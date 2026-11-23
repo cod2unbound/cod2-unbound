@@ -450,7 +450,7 @@ struct ReportDetails: Equatable, Sendable {
     }
     var text: String { lines.joined(separator: "\n") }
     /// A new issue on the project's bug form, its fields filled from these lines (GitHub's issue-form
-    /// query parameters, by field id). Nothing is sent until the person posts it in the browser.
+    /// query parameters, by field id). The person decides whether to post the issue.
     func issueURL(repository: String = "cod2unbound/cod2-unbound") -> URL? {
         var parts = URLComponents(string: "https://github.com/\(repository)/issues/new")
         parts?.queryItems = [
@@ -468,15 +468,21 @@ struct ReportDetails: Equatable, Sendable {
 /// (Network.swift, ModelSettings.swift, Core.swift's AppUpdate and CoD2xFiles, ConfigImport, the engine's
 /// cod2x_features.c update check); README.md's “What the app sends” says the same.
 enum PrivacyContacts {
+    static let noticeTitle = "Read the full privacy notice"
+    static let noticeURL = URL(string: "https://cod2unbound.com/privacy")!
     static let lines: [(who: String, when: String)] = [
-        ("Master servers", "Activision’s and the CoD2x project’s, when the server list refreshes. The game also asks them and the key server, as the original does."),
-        ("Game servers", "Those in the list when it refreshes, and the one you join. CoD2x servers also get a hash of CoD2x’s ID for this Mac."),
-        ("The CoD2x project", "With CoD2x, its update check each time the game’s menu opens: your CoD2x version, a hash of your CD key, CoD2x’s IDs for this Mac and a short description of it. Mod files a server needs come from its site."),
-        ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download CoD2x’s menus and icons, or zPAM for a server you host. Nothing about you."),
-        ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers. A CoD2x server asks the CoD2x project about new versions."),
-        ("Crash reports", "Only with a switch above on, once for each crash or freeze."),
+        ("Master servers", "The launcher asks Activision’s and the CoD2x project’s for server addresses when the list refreshes. In the game’s own browser, Original 1.3 asks Activision’s and CoD2x asks both."),
+        ("Activision’s key server", "When the game checks your key for online play, as the original game does: your CD key, a hash of it and your anonymous-play setting."),
+        ("Game servers", "The launcher asks servers in the list for their status when it refreshes, and checks an address you enter. A server you join gets your player name, a hash of your CD key, game settings and a server password if used. CoD2x also sends its IDs for this Mac. The server gets what you do in the match, including any text or voice chat you send."),
+        ("Addresses a server names", "A server can name a web address for the game to download maps and mods from, and with CoD2x, one to upload the match recording to."),
+        ("The CoD2x project", "With CoD2x, its update check each time the game’s menu opens: your CoD2x version, a hash of your CD key, CoD2x’s IDs for this Mac, worked out from its hardware, and a short description of macOS: its version and build, the country from the language setting if available, and whether it runs in a virtual machine or as administrator. This is how CoD2x’s update check works; CoD2x servers use the same IDs when you join. zPAM files a server needs come from its site."),
+        ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download the Steam download tool, CoD2x’s menus and icons, or zPAM for a server you host. Report a Problem opens a GitHub form in your browser with your app and game versions, macOS version, Mac model, shader status and display already filled in."),
+        ("Steam", "Only when you choose to download the game in setup. The download tool talks to Steam to sign in and fetch the game you own."),
+        ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers, with its settings and the names, scores and pings of the players on it. A CoD2x server, even one for your network only, asks the CoD2x project about new versions, with its CoD2x version, platform and installed zPAM version if present."),
+        ("Crash reports", "Only with the CoD2 Unbound crash reports switch above on. The launcher remembers reports the service accepted."),
+        ("CoD2x crash reports", "Only with the CoD2x crash reports switch above on when you start CoD2x. It sends what failed, the CoD2x version, system details and recent CoD2x log text. A fatal error can include a stack trace. A crash or freeze in CoD2x’s own code also includes its time, server and process details, the game’s command line and folder paths, loaded modules, and the affected thread’s stack, registers and samples of its memory. These crash and freeze reports go out on a later start, including any still waiting from earlier runs."),
         ("Config links", "Only a link you paste into Configs to import from it."),
-        ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you. And when you choose Share Setup: the cleaned config, the name you type and the app’s version. It posts them publicly on GitHub and keeps no address."),
+        ("cod2unbound.com", "As a fallback for updates and the news on Home. When you choose Share Setup: the cleaned config, the name you type, the game and app versions, and how many lines were left out and why. The setup is posted publicly on GitHub. Stop Sharing sends the request number and its private token."),
     ]
 }
 

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 @main @MainActor enum UsageDataTests {
@@ -10,6 +11,8 @@ import Foundation
         try check(UsageEndpoint(key: "phc_fixture", override: nil)?.url.absoluteString == "https://eu.i.posthog.com/batch/", "EU endpoint")
         let fixture = Fixture(root: root, endpoint: endpoint)
         try await consent(fixture)
+        try await legacySendJournal(fixture)
+        try await gameSessionConsent(fixture)
         try await retryAndRotation(fixture)
         try await bounds(fixture)
         try await privacy(fixture)
@@ -80,73 +83,231 @@ import Foundation
     }
 
     static func consent(_ f: Fixture) async throws {
-        let first = f.usage("yes")
-        first.applicationOpened()
-        first.record(.screenOpened(.home))
-        _ = first.sampleEventJSON
-        await first.savePendingEvents()
-        try check(f.bodyLines().isEmpty && first.installNumber == nil && !FileManager.default.fileExists(atPath: first.stateURL.path)
-                  && !FileManager.default.fileExists(atPath: first.setupURL.path), "ordinary activity and preview did not write before consent")
-        first.record(.setupStepReached(.gameData, source: .ownFiles))
-        await first.savePendingEvents()
-        try check(FileManager.default.fileExists(atPath: first.setupURL.path) && !FileManager.default.fileExists(atPath: first.stateURL.path), "only local setup journal before consent")
-        f.clock.now += 125
-        let restarted = f.usage("yes")
-        restarted.applicationOpened()
-        restarted.setConsent(.yes, source: .setup) { _ in }
-        let number = try require(restarted.installNumber)
-        try await f.wait("no batch after yes") { f.events().count == 3 }
-        try await f.wait("accepted batch did not drain") { restarted.queuedCount == 0 }
-        let events = f.events()
-        try check(events.compactMap { $0["event"] as? String } == ["usage data turned on", "setup step reached", "app opened"], "consent first, persisted setup second")
-        try check(events.allSatisfy { $0["distinct_id"] as? String == number.uuidString.lowercased() }, "one new install number")
-        try check(events[1]["timestamp"] as? String == "2027-01-15T08:00:00Z", "original setup minute")
-        try check(!FileManager.default.fileExists(atPath: restarted.setupURL.path), "setup journal cleared after yes")
-        await restarted.savePendingEvents()
-        let sameDay = f.usage("yes", .yes)
+        // Use the actual setup action, sheet answer and Settings binding. All share the real sender.
+        _ = NSApplication.shared.setActivationPolicy(.prohibited)
+        let model = LauncherModel()
+        try check(model.home.path.hasPrefix(f.root.path + "/"), "launcher model uses the private test home")
+        model.booted = true
+        for source in [UsageConsentSource.setup, .sheet, .settings] {
+            let start = f.bodyLines().count
+            let folder = "consent-" + source.rawValue
+            let home = f.root.appendingPathComponent(folder)
+            let legacy = home.appendingPathComponent("usage-setup.json")
+            try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+            let oldStep = UsageEvent.setupStepReached(.welcome)
+            let minute = Int(f.clock.now.timeIntervalSince1970 / 60)
+            let event = try JSONSerialization.jsonObject(with: JSONEncoder().encode(oldStep))
+            let journal = try JSONSerialization.data(withJSONObject: ["schemaVersion": 1, "steps": [["minute": minute, "event": event]]])
+            try journal.write(to: legacy)
+            let usage = f.usage(folder)
+            model.usageData = usage
+            model.onboard = source == .setup
+            usage.holdSending = model.onboard
+            usage.applicationOpened()
+            model.recordUsage(.screenOpened(.home))
+            model.recordUsage(.setupStepReached(.gameData, source: .ownFiles))
+            model.recordUsage(.setupStepSkipped(.cdKey))
+            _ = usage.sampleEventJSON
+            await usage.savePendingEvents()
+            try check(f.bodyLines().count == start && usage.installNumber == nil &&
+                      !FileManager.default.fileExists(atPath: usage.stateURL.path) &&
+                      !FileManager.default.fileExists(atPath: legacy.path), "no send, install number or setup journal before consent")
+
+            switch source {
+            case .setup:
+                model.setupStep = .usage
+                model.nextSetup() // Records Ready after committing the answer.
+            case .sheet:
+                model.setUsageConsent(send: true, source: .sheet)
+            case .settings:
+                model.usageSwitch = true
+            }
+            if source != .setup { model.recordUsage(.setupStepReached(.ready)) }
+            let number = try require(usage.installNumber)
+            if source == .setup {
+                try await Task.sleep(for: .milliseconds(300))
+                try check(f.bodyLines().count == start, "nothing sent before setup ends")
+                model.onboard = false
+            }
+            try await f.wait("batch did not drain after yes in \(source.rawValue)") { usage.queuedCount == 0 }
+            let events = f.events(since: start)
+            try check(events.compactMap { $0["event"] as? String } == ["usage data turned on", "setup step reached"],
+                      "yes in \(source.rawValue) transmitted activity from before the answer")
+            let properties = events.compactMap { $0["properties"] as? [String: Any] }
+            try check(properties[0]["where"] as? String == source.rawValue && properties[1]["step"] as? String == "Ready",
+                      "only the source of the yes and the step after the yes were sent")
+            try check(events.allSatisfy { $0["distinct_id"] as? String == number.uuidString.lowercased() }, "one new install number")
+            await usage.savePendingEvents()
+            try check(!FileManager.default.fileExists(atPath: legacy.path), "legacy setup journal removed")
+        }
+
+        let start = f.bodyLines().count
+        let accepted = f.usage("consent-settings", .yes)
+        accepted.applicationOpened(); accepted.applicationOpened()
+        try await f.wait("first post-consent launch missing") { accepted.queuedCount == 0 }
+        await accepted.savePendingEvents()
+        let sameDay = f.usage("consent-settings", .yes)
         sameDay.applicationOpened(); sameDay.applicationOpened()
         try check(sameDay.queuedCount == 0, "app-open suppressed across restarts and repeat calls")
         f.clock.now += 86_400
         sameDay.applicationOpened(); sameDay.applicationOpened()
-        try await f.wait("next day app-open missing") { f.events().count == 4 }
         try await f.wait("next day app-open did not drain") { sameDay.queuedCount == 0 }
+        try check(f.events(since: start).compactMap { $0["event"] as? String } == ["app opened", "app opened"],
+                  "one event per UTC day opened after consent")
 
+        let beforeNo = f.bodyLines().count
         let refused = f.usage("no")
         refused.applicationOpened(); refused.record(.setupStepReached(.welcome))
         refused.setConsent(.no, source: .sheet) { _ in }
         refused.record(.setupStepReached(.ready))
         await refused.savePendingEvents()
-        try check(!FileManager.default.fileExists(atPath: refused.setupURL.path) && refused.installNumber == nil && refused.queuedCount == 0, "no clears the setup journal and discards later steps")
-        try check(f.events().count == 4, "no sent nothing")
+        try check(refused.installNumber == nil && refused.queuedCount == 0 && f.bodyLines().count == beforeNo, "no sent nothing")
         let unwritable = f.usage("settings-save-fails")
         unwritable.record(.setupStepReached(.welcome))
-        unwritable.applicationOpened()
-        let accepted = unwritable.setConsent(.yes, source: .sheet) { _ in throw Failure(message: "write failed") }
-        try check(!accepted && unwritable.shouldAsk && unwritable.installNumber == nil &&
+        let saved = unwritable.setConsent(.yes, source: .sheet) { _ in throw Failure(message: "write failed") }
+        try check(!saved && unwritable.shouldAsk && unwritable.installNumber == nil &&
                   !FileManager.default.fileExists(atPath: unwritable.stateURL.path), "a failed preferences write cannot enable the sender")
-        try check(FileManager.default.fileExists(atPath: unwritable.setupURL.path) && f.events().count == 4,
-                  "failed opt-in leaves only the local setup history")
         let disabled = f.usage("disabled", enabled: false)
         disabled.setConsent(.yes, source: .settings) { _ in throw Failure(message: "missing key persisted consent") }
         disabled.applicationOpened(); disabled.record(.setupStepReached(.welcome))
         await disabled.savePendingEvents()
         try check(!disabled.available && !disabled.shouldAsk && disabled.installNumber == nil &&
-                  !FileManager.default.fileExists(atPath: disabled.setupURL.path), "no key disables usage data and its local journals")
-        print("PASS: consent, pre-question journal, unavailable build, daily app open")
+                  !FileManager.default.fileExists(atPath: disabled.stateURL.path), "a build with no key does not write a send journal")
+        print("PASS: setup, one-time sheet and Settings send only events from consent onward, no sends nothing, daily app open")
+    }
 
-        // A yes given in setup waits on the Mac until setup ends (the welcome says nothing leaves during setup).
-        let sentBefore = f.events().count
-        let inSetup = f.usage("held-in-setup")
-        inSetup.holdSending = true
-        inSetup.record(.setupStepReached(.welcome))
-        inSetup.setConsent(.yes, source: .setup) { _ in }
-        inSetup.record(.setupStepReached(.ready))
-        try await Task.sleep(for: .milliseconds(450))
-        try check(f.events().count == sentBefore && inSetup.queuedCount == 3, "nothing is sent while setup is open")
-        inSetup.holdSending = false
-        try await f.wait("held events were not sent after setup") { f.events().count == sentBefore + 3 }
-        try await f.wait("held events did not drain") { inSetup.queuedCount == 0 }
-        print("PASS: a yes in setup is held on the Mac until setup ends, then sent")
+    static func gameSessionConsent(_ f: Fixture) async throws {
+        enum Change: String, CaseIterable { case unchanged, offAndOn, reset }
+        let model = LauncherModel()
+        try check(model.home.path.hasPrefix(f.root.path + "/"), "game sessions use the private test home")
+        model.booted = true
+
+        func startGame() {
+            model.gameRunning = true
+            model.gameStartedAt = f.clock.now
+            model.recordUsageGameStart(engine: .cod2x, renderer: .metal)
+        }
+
+        func endGame() {
+            model.gameRunning = false
+            model.recordUsageGameEnd(code: 0, at: model.gameStartedAt.addingTimeInterval(185))
+        }
+
+        func gameEvents(since start: Int) -> [[String: Any]] {
+            f.events(since: start).filter { ["game started", "game ended"].contains($0["event"] as? String ?? "") }
+        }
+
+        for source in [UsageConsentSource.setup, .sheet, .settings] {
+            let first = f.bodyLines().count
+            let usage = f.usage("game-opt-in-" + source.rawValue)
+            model.usageData = usage
+            model.onboard = source == .setup
+            startGame()
+            switch source {
+            case .setup:
+                model.setupStep = .usage
+                model.nextSetup()
+                model.onboard = false
+            case .sheet:
+                model.setUsageConsent(send: true, source: .sheet)
+            case .settings:
+                model.usageSwitch = true
+            }
+            try check(usage.installNumber != nil, "yes granted during play in \(source.rawValue)")
+            endGame()
+            try await f.wait("mid-game opt-in batch did not drain") { usage.queuedCount == 0 }
+            try check(gameEvents(since: first).isEmpty, "yes in \(source.rawValue) sent duration for a game started before consent")
+        }
+
+        for change in Change.allCases {
+            let first = f.bodyLines().count
+            let folder = "game-consent-" + change.rawValue
+            let usage = f.usage(folder)
+            model.usageData = usage
+            model.usageSwitch = true
+            let startNumber = try require(usage.installNumber)
+            startGame()
+            try await f.wait("game start did not drain") { usage.queuedCount == 0 }
+            let started = gameEvents(since: first)
+            try check(started.count == 1 && started.first?["event"] as? String == "game started" &&
+                      started.first?["distinct_id"] as? String == startNumber.uuidString.lowercased(),
+                      "one game start recorded with the original install number")
+
+            switch change {
+            case .offAndOn:
+                model.usageSwitch = false
+                model.usageSwitch = true
+            case .reset:
+                try check(model.resetUsageNumber(), "reset during play succeeded")
+            case .unchanged:
+                usage.holdSending = true // Exercise the recorded end after reopening the send journal.
+            }
+            let endNumber = try require(usage.installNumber)
+            try check((endNumber == startNumber) == (change == .unchanged), "install number after \(change)")
+            endGame()
+            let sender: UsageData
+            if change == .unchanged {
+                await usage.savePendingEvents()
+                sender = f.usage(folder, .yes)
+                sender.applicationOpened()
+            } else {
+                sender = usage
+            }
+            try await f.wait("game end batch did not drain") { sender.queuedCount == 0 }
+            let events = gameEvents(since: first)
+            if change == .unchanged {
+                let end = events.last
+                let properties = end?["properties"] as? [String: Any]
+                try check(events.count == 2 && end?["event"] as? String == "game ended" &&
+                          end?["distinct_id"] as? String == startNumber.uuidString.lowercased() &&
+                          properties?["minutes"] as? Int == 3 && properties?["how"] as? String == "closed normally",
+                          "yes before launch sends start and end with the same install number and elapsed minutes")
+            } else {
+                try check(events.count == 1, "\(change) sent the old game's duration under a new install number")
+            }
+        }
+        let first = f.bodyLines().count
+        let attached = f.usage("game-already-running")
+        model.usageData = attached
+        model.gameRunning = true // No start event when attaching.
+        model.gameStartedAt = f.clock.now
+        model.usageSwitch = true
+        endGame()
+        try await f.wait("reattached game batch did not drain") { attached.queuedCount == 0 }
+        try check(gameEvents(since: first).isEmpty, "reattaching never supplies a recorded game start")
+        print("PASS: game duration requires a start under the same install number")
+    }
+
+    static func legacySendJournal(_ f: Fixture) async throws {
+        let minute = Int(f.clock.now.timeIntervalSince1970 / 60)
+        let events: [UsageEvent] = [
+            .usageDataTurnedOn(.setup), .setupStepReached(.welcome), .appOpened, .setupStepReached(.ready),
+            .gameStarted(engine: .cod2x, renderer: .metal, mode: .windowed, scale: 100),
+            .gameEnded(.normal, minutes: 3), .loadoutMade,
+        ]
+        let occurrences = events.map { UsageOccurrence(id: UUID(), minute: minute, event: $0, facts: .preview) }
+        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(occurrences))
+        for schema in [1, 2] {
+            let folder = "legacy-send-\(schema)"
+            let home = f.root.appendingPathComponent(folder)
+            try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+            let install = UUID()
+            let journal = try JSONSerialization.data(withJSONObject: [
+                "schemaVersion": schema, "install": install.uuidString, "lastOpenedDay": minute / 1440, "events": encoded,
+            ])
+            try journal.write(to: home.appendingPathComponent("usage-data.json"))
+            let start = f.bodyLines().count
+            let usage = f.usage(folder, .yes)
+            usage.applicationOpened()
+            try await f.wait("legacy batch did not drain") { usage.queuedCount == 0 }
+            let setupEvents = schema == 1 ? [] : ["setup step reached", "app opened", "setup step reached"]
+            let sent = f.events(since: start).compactMap { $0["event"] as? String }
+            try check(!sent.contains("game ended"), "schema \(schema) sent a pending game end of uncertain consent")
+            try check(usage.installNumber == install &&
+                      sent == ["usage data turned on"] + setupEvents + ["game started", "loadout made"],
+                      "schema \(schema) keeps the install number and unambiguous events")
+        }
+        print("PASS: legacy send journal preserves the install number and unambiguous pending events")
     }
 
     static func retryAndRotation(_ f: Fixture) async throws {
@@ -185,10 +346,6 @@ import Foundation
 
     static func bounds(_ f: Fixture) async throws {
         let usage = f.usage("bounds")
-        for _ in 0..<(UsageData.setupLimit + 3) { usage.record(.setupStepReached(.welcome)) }
-        await usage.savePendingEvents()
-        let local = try require(JSONSerialization.jsonObject(with: Data(contentsOf: usage.setupURL)) as? [String: Any])
-        try check((local["steps"] as? [Any])?.count == UsageData.setupLimit, "setup journal has a small cap")
         let start = f.bodyLines().count
         usage.setConsent(.yes, source: .setup) { _ in }
         f.clock.now += 8 * 86_400
@@ -200,7 +357,7 @@ import Foundation
         let minutes = events.compactMap { ($0["properties"] as? [String: Any])?["minutes"] as? Int }
         try check(minutes == Array(8..<(UsageData.queueLimit + 8)), "only newest events sent in queue order")
         try check(f.bodyLines().count > start + 1, "sent multiple batches")
-        print("PASS: setup cap, event cap, expiry, oldest-first removal and batching")
+        print("PASS: event cap, expiry, oldest-first removal and batching")
     }
 
     static func privacy(_ f: Fixture) async throws {
@@ -267,30 +424,87 @@ import Foundation
             .setupWithdrawn, .hostingStarted(.network, engine: .original),
             .updateOffered(try require(UsageVersion("0.4.2")), try require(UsageVersion("0.4.3"))),
             .updateInstalled(try require(UsageVersion("0.4.2")), try require(UsageVersion("0.4.3"))),
-            .settingChanged(.extraLaunchOptions), .errorShown(.gameCouldNotStart)
+            .settingChanged(.extraLaunchOptions), .settingChanged(.toggle(.rawMouse, true)), .errorShown(.gameCouldNotStart),
+            .setupStepReached(.welcome), .serverJoined(.typedAddress, engine: nil)
         ]
         usage.applicationOpened()
         for event in launcherEvents {
-            if case .serverJoined = event { f.clock.forcedEventID = sampleID }
+            if case .serverJoined(.list, _) = event { f.clock.forcedEventID = sampleID }
             usage.record(event)
         }
         try await f.wait("all event types did not send") { usage.queuedCount == 0 }
         let bytes = f.bodyLines().dropFirst(start).joined(separator: "\n")
         try check(sensitive.allSatisfy { !bytes.contains($0) } && !bytes.contains("$ip") && !bytes.contains("$geoip_disable"), "unexpected data in payload")
         let events = f.events(since: start)
-        try check(Set(events.compactMap { $0["event"] as? String }).count == 21, "every event kind was sent")
+        try disclosure(events, for: launcherEvents + [.appOpened, .usageDataTurnedOn(.settings)])
         for event in events {
             let properties = try require(event["properties"] as? [String: Any])
             try check(properties["$process_person_profile"] as? Bool == false && properties["$lib"] as? String == "cod2unbound-launcher",
                       "anonymous capture properties")
-            try check(["app", "macos", "mac_model", "chip", "display_width", "display_height", "display_hz", "language"].allSatisfy { properties[$0] != nil },
-                      "all device facts are present")
             try check((event["timestamp"] as? String)?.hasSuffix(":00Z") == true, "timestamp only to the minute")
         }
-        let sent = try require(events.first { $0["event"] as? String == "server joined" })
+        let sent = try require(events.first { $0["uuid"] as? String == sampleID.uuidString.lowercased() })
         let preview = try require(JSONSerialization.jsonObject(with: Data(sample.utf8)) as? [String: Any])
         try check(NSDictionary(dictionary: preview).isEqual(to: sent), "preview event and actual batch event match field for field")
-        print("PASS: all 21 event kinds, hostile inputs, exact wire preview and shared device metadata")
+        print("PASS: all 21 event kinds and every wire property mapped to disclosure rows, hostile inputs, exact wire preview")
+    }
+
+    private typealias Disclosure = (name: String, row: UsagePreviewGroup, fields: Set<String>)
+
+    /// Keep this exhaustive so a new event case requires a disclosure row even before adding a fixture.
+    private static func disclosure(for event: UsageEvent) -> Disclosure {
+        switch event {
+        case .appOpened: ("app opened", .screens, [])
+        case .screenOpened: ("screen opened", .screens, ["screen"])
+        case .setupStepReached: ("setup step reached", .setup, ["step", "source"])
+        case .setupStepSkipped: ("setup step skipped", .setup, ["step"])
+        case .gameStarted: ("game started", .games, ["game", "renderer", "display_mode", "render_scale"])
+        case .gameEnded: ("game ended", .games, ["how", "minutes"])
+        case .serverListRefreshed: ("server list refreshed", .servers, ["list"])
+        case .serverJoined: ("server joined", .servers, ["how", "game"])
+        case .playerSetupViewed: ("player setup viewed", .playerSetups, ["setup_id"])
+        case .playerSetupTried: ("player setup tried", .playerSetups, ["setup_id"])
+        case .playerSetupImported: ("player setup imported", .playerSetups, ["setup_id"])
+        case .loadoutMade: ("loadout made", .playerSetups, [])
+        case .checkRun: ("check run", .playerSetups, [])
+        case .setupShared: ("setup shared", .playerSetups, [])
+        case .setupWithdrawn: ("setup withdrawn", .playerSetups, [])
+        case .hostingStarted: ("hosting started", .hosting, ["reach", "game"])
+        case .updateOffered: ("update offered", .updates, ["from", "to"])
+        case .updateInstalled: ("update installed", .updates, ["from", "to"])
+        case .settingChanged: ("setting changed", .settings, ["setting", "value"])
+        case .errorShown: ("error shown", .problems, ["kind"])
+        case .usageDataTurnedOn: ("usage data turned on", .everyEvent, ["where"])
+        }
+    }
+
+    private static func disclosure(_ captures: [[String: Any]], for events: [UsageEvent]) throws {
+        let rows = Set(UsagePreviewGroup.allCases)
+        let envelope: [UsagePreviewGroup: Set<String>] = [.everyEvent: ["event", "distinct_id", "uuid", "timestamp", "properties"]]
+        let shared: [UsagePreviewGroup: Set<String>] = [
+            .macAndCountry: ["app", "macos", "mac_model", "chip", "display_width", "display_height", "display_hz", "language"],
+            .everyEvent: ["$lib", "$process_person_profile"],
+        ]
+        let envelopeFields = Set(envelope.values.flatMap { $0 })
+        let sharedFields = Set(shared.values.flatMap { $0 })
+        let declarations = events.map { disclosure(for: $0) }
+        let used = Set(declarations.map(\.row)).union(envelope.keys).union(shared.keys)
+        try check(used == rows.subtracting([.never]), "each disclosure row accounts for its named events or fields")
+        try check(used.allSatisfy { !UsageDataQuestion.group($0).detail.isEmpty }, "wire fields map to visible disclosure text")
+
+        var actualFields: [String: Set<String>] = [:]
+        for capture in captures {
+            try check(Set(capture.keys) == envelopeFields, "unaccounted event envelope field")
+            let name = try require(capture["event"] as? String)
+            let fields = Set(try require(capture["properties"] as? [String: Any]).keys)
+            try check(sharedFields.isSubset(of: fields), "missing shared property in \(name)")
+            actualFields[name, default: []].formUnion(fields.subtracting(sharedFields))
+        }
+        try check(Set(actualFields.keys) == Set(declarations.map(\.name)), "Every wire event needs a disclosure row")
+        for entry in declarations {
+            try check(actualFields[entry.name] == entry.fields,
+                      "Properties for \(entry.name) changed. Review the \(UsageDataQuestion.group(entry.row).title) disclosure row.")
+        }
     }
 
     /// What the usage screens read from the model: the fixed example, the preview state the harness
@@ -311,8 +525,8 @@ import Foundation
                   "the example is a server joined from the list on the boards' Mac")
         try check(!after.contains("address") && !after.contains("hostname") && !after.contains("$ip"), "the example names no server and no address")
 
-        try check(UsagePreviewGroup.allCases.map { UsageDataQuestion.group($0).title } == ["Screens and features", "Settings", "This Mac, your country", "Problems", "Never"],
-                  "See What’s Sent lists the five groups in the board's order")
+        try check(UsagePreviewGroup.allCases.map { UsageDataQuestion.group($0).title } == ["Screens", "Setup", "Games", "Servers", "Player setups", "Hosting", "Updates", "Settings", "Problems", "This Mac, your country", "With every event", "Never"],
+                  "See What’s Sent lists the twelve groups in the board's order")
         try check(UsageDataQuestion.rows.map(\.title) == ["What is sent", "What never is", "Where it goes"], "the question's three rows")
 
         let model = LauncherModel(snapshot: true)
@@ -335,7 +549,7 @@ import Foundation
         try check(model.usageConsent == .no && model.usageInstallNumberShort == nil, "off forgets the number")
         model.restartSetup(at: .data)
         try check(!model.setupSteps.contains(.usage) && model.setupSteps.count == 7, "once answered, setup is seven steps again")
-        print("PASS: usage screens' model: fixed example through the sender's encoder, five groups, preview answers, setup step 7 of 8")
+        print("PASS: usage screens' model: fixed example through the sender's encoder, ordered disclosure rows, preview answers, setup step 7 of 8")
     }
 
     static func settings() throws {

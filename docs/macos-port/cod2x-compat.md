@@ -127,7 +127,13 @@ These are acquisition mappings, not recorded machine values. The nine labeled te
 - Upstream author-branding text is not required. Native application identity remains explicit.
 - Updater checks and content updates exist; upstream executable binaries are not installed. Native app updates are the supported way forward.
 - cod2x links are restricted to connect/password. Downloads validate certificates.
-- Crash reports follow fault ownership. macOS diagnostics replace Windows minidumps and registry/VirtualStore machinery.
+- Crash reports follow fault ownership. The Mac CoD2x crash and freeze body carries a single thread’s
+  diagnostics, selected server settings, command line, module paths, system and process details,
+  and recent CoD2x log text. The install ID and console buffer are empty. CoD2x error reports have a shorter
+  body. See [what the Mac app sends](../../README.md#what-the-app-sends).
+- The macOS CoD2x client update check sends computed hardware IDs and a system description.
+  The Mac machine-history provider leaves the install number and old and changed hardware details
+  empty. The IDs are derived from hardware values, which can include serial numbers, on this Mac.
 - CoD2x voice is intentionally disabled as upstream; Original 1.3 uses its separate voice path. PunkBuster remains unavailable, not an equivalent replacement.
 
 ## Verification scope
