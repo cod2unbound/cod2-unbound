@@ -31,6 +31,12 @@ public enum UsageKind
     UpdateDownloading, UpdateVerifying, UpdateReady, UpdateInstalling, SettingChanged, ErrorShown, TurnedOn
 }
 
+public sealed class UsageGameStart
+{
+    internal UsageGameStart(Guid install) => Install = install;
+    internal Guid Install { get; }
+}
+
 /// The journal stores typed choices. The encoder checks them again after a restart.
 public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, int Number = 0,
     string? First = null, string? Second = null)
@@ -44,9 +50,9 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
     public static UsageEvent Page(UsagePage page) => new(UsageKind.ScreenOpened, (int)page);
     public static UsageEvent Setup(SetupStep step, bool skipped = false, bool ownFiles = false) =>
         new(skipped ? UsageKind.SetupSkipped : UsageKind.SetupReached, (int)step, ownFiles ? ExplicitFolderPick : 0);
-    public static UsageEvent Start(GameEdition game, WindowsRenderMode renderer, UsageMode mode) =>
+    internal static UsageEvent Start(GameEdition game, WindowsRenderMode renderer, UsageMode mode) =>
         new(UsageKind.GameStarted, (int)game, (int)renderer, (int)mode);
-    public static UsageEvent End(bool crashed, int minutes) => new(UsageKind.GameEnded, crashed ? 1 : 0, Number: minutes);
+    internal static UsageEvent End(bool crashed, int minutes) => new(UsageKind.GameEnded, crashed ? 1 : 0, Number: minutes);
     public static UsageEvent Join(UsageJoin source, GameEdition game) => new(UsageKind.ServerJoined, (int)source, (int)game);
     public static UsageEvent Problem(UsageProblem kind) => new(UsageKind.ErrorShown, (int)kind);
     public static UsageEvent Update(UsageKind kind, string from, string to) => new(kind, First: Version(from), Second: Version(to));

@@ -121,7 +121,7 @@ public sealed partial class UsageData
     public const int QueueLimit = 300;
     public const string JournalFile = "usage-data.json";
     public const string SetupFile = "usage-setup.json";
-    private const int JournalSchema = 2;
+    private const int JournalSchema = 3;
     private const int BatchLimit = 32;
     private const int Age = 7 * 24 * 60;
 
@@ -173,15 +173,18 @@ public sealed partial class UsageData
         if (!Available)
             return;
         if (await ReadAsync<Journal>(JournalFile, 512 * 1024).ConfigureAwait(false) is
-            { SchemaVersion: 1 or JournalSchema, Events: not null } loaded)
+            { SchemaVersion: >= 1 and <= JournalSchema, Events: not null } loaded)
         {
             journal = journal with { LastOpenedDay = loaded.LastOpenedDay };
             if (saved == UsageConsent.Yes && loaded.Install is { } install && install != Guid.Empty)
             {
                 // A v1 queue may mix pre-consent and post-consent setup steps within the same minute.
-                var events = loaded.SchemaVersion == 1
-                    ? loaded.Events.Where(item => item?.Event is not { IsSetup: true })
-                    : loaded.Events;
+                IEnumerable<UsageOccurrence> events = loaded.Events;
+                if (loaded.SchemaVersion == 1)
+                    events = events.Where(item => item?.Event is not { IsSetup: true });
+                // Versions 1 and 2 could queue a game end without a start under the same consent.
+                if (loaded.SchemaVersion < 3)
+                    events = events.Where(item => item?.Event is not { Kind: UsageKind.GameEnded });
                 journal = journal with { Install = install, Events = Prune(events) };
             }
         }
@@ -294,20 +297,44 @@ public sealed partial class UsageData
         finally { gate.Release(); }
     }
 
-    public async Task RecordAsync(UsageEvent? item)
+    public Task RecordAsync(UsageEvent? item)
     {
-        if (InstallNumber is not { } install || item is null || item.Kind is UsageKind.AppOpened or UsageKind.TurnedOn)
-            return;
+        if (InstallNumber is not { } install || item is null || item.Kind is
+            UsageKind.AppOpened or UsageKind.TurnedOn or UsageKind.GameStarted or UsageKind.GameEnded)
+            return Task.CompletedTask;
+        return RecordAsync(item, install);
+    }
+
+    public async Task<UsageGameStart?> RecordGameStartAsync(Guid? installAtLaunch, GameEdition game,
+        WindowsRenderMode renderer, UsageMode mode)
+    {
+        if (installAtLaunch is not { } install ||
+            !await RecordAsync(UsageEvent.Start(game, renderer, mode), install).ConfigureAwait(false))
+            return null;
+        return new(install);
+    }
+
+    public async Task RecordGameEndAsync(Task<UsageGameStart?> start, bool crashed, int minutes)
+    {
+        if (await start.ConfigureAwait(false) is { } recorded)
+            await RecordAsync(UsageEvent.End(crashed, minutes), recorded.Install).ConfigureAwait(false);
+    }
+
+    private async Task<bool> RecordAsync(UsageEvent item, Guid install)
+    {
+        if (InstallNumber != install)
+            return false;
         var machine = await facts().ConfigureAwait(false);
         await gate.WaitAsync().ConfigureAwait(false);
         try
         {
             if (InstallNumber != install || item.AddProperties(new(StringComparer.Ordinal)) is null)
-                return;
+                return false;
             var occurrence = new UsageOccurrence(newEventId(), Minute, item, machine);
             journal = journal with { Events = Prune([.. journal.Events, occurrence]) };
             await SaveAsync().ConfigureAwait(false);
             Schedule();
+            return ReferenceEquals(journal.Events.LastOrDefault(), occurrence);
         }
         finally { gate.Release(); }
     }

@@ -106,7 +106,7 @@ internal static partial class Program
             await first.RecordAsync(UsageEvent.Page(UsagePage.Home));
             var stored = (await f.Disk.ReadAsync(UsageData.JournalFile, default))!.Value;
             string legacy = Encoding.UTF8.GetString(stored.AsSpan())
-                .Replace("\"SchemaVersion\":2", "\"SchemaVersion\":1", StringComparison.Ordinal);
+                .Replace("\"SchemaVersion\":3", "\"SchemaVersion\":1", StringComparison.Ordinal);
             await f.Disk.WriteAsync(UsageData.JournalFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
 
             var usage = await f.Start();
@@ -228,21 +228,107 @@ internal static partial class Program
             await Until(() => off.QueuedCount == 0);
             await off.HoldAsync(true);
         });
+        foreach (var source in Enum.GetValues<UsageSource>())
+            Usage($"yes in {source} during a game sends neither start nor end", async () =>
+            {
+                var f = new UsageFixture();
+                var usage = await f.Start(setup: source == UsageSource.Setup);
+                var started = StartGame(usage);
+                await started;
+                Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, source, f.Persist));
+                f.Clock.Now += TimeSpan.FromMinutes(12);
+                await usage.RecordGameEndAsync(started, false, 12);
+                await usage.HoldAsync(false);
+                await Until(() => usage.QueuedCount == 0);
+                CheckSent(f, "usage data turned on");
+                await usage.HoldAsync(true);
+            });
+        Usage("yes before a game sends the start and the end under one install number", async () =>
+        {
+            var f = new UsageFixture();
+            var usage = await f.Start(setup: false);
+            Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+            var install = usage.InstallNumber;
+            var started = StartGame(usage);
+            await started;
+            await Until(() => usage.QueuedCount == 0);
+            f.Clock.Now += TimeSpan.FromMinutes(12);
+            await usage.RecordGameEndAsync(started, true, 12);
+            await Until(() => usage.QueuedCount == 0);
+            var received = Events(f.Captures);
+            Sequence(new[] { "usage data turned on", "game started", "game ended" }, received.Select(Name));
+            Equal(true, received.All(item => item.GetProperty("distinct_id").GetGuid() == install));
+            Equal(12, Props(received[2]).GetProperty("minutes").GetInt32());
+            Equal("crashed", Props(received[2]).GetProperty("how").GetString());
+            await usage.HoldAsync(true);
+        });
+        foreach (bool reset in new[] { false, true })
+            Usage(reset ? "resetting the install number during a game suppresses its end"
+                : "turning off and on during a game suppresses its end", async () =>
+            {
+                var f = new UsageFixture();
+                var usage = await f.Start(setup: false);
+                Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+                var install = usage.InstallNumber;
+                var started = StartGame(usage);
+                await started;
+                await Until(() => usage.QueuedCount == 0);
+                if (reset)
+                    Equal(true, await usage.ResetAsync());
+                else
+                {
+                    Equal(true, await usage.SetConsentAsync(UsageConsent.No, UsageSource.Settings, f.Persist));
+                    Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+                }
+                Equal(false, install == usage.InstallNumber);
+                f.Clock.Now += TimeSpan.FromMinutes(12);
+                await usage.RecordGameEndAsync(started, false, 12);
+                await Until(() => usage.QueuedCount == 0);
+                string[] expected = reset ? ["usage data turned on", "game started"]
+                    : ["usage data turned on", "game started", "usage data turned on"];
+                CheckSent(f, expected);
+                await usage.HoldAsync(true);
+            });
+        Usage("legacy delivery journals drop game ends whose consent cannot be determined", async () =>
+        {
+            var f = new UsageFixture();
+            var old = await f.Start(setup: false);
+            Equal(true, await old.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+            var started = StartGame(old);
+            await started;
+            await Until(() => old.QueuedCount == 0);
+            await old.HoldAsync(true);
+            await old.RecordGameEndAsync(started, false, 12);
+            await old.RecordAsync(UsageEvent.Page(UsagePage.Home));
+            var stored = (await f.Disk.ReadAsync(UsageData.JournalFile, default))!.Value;
+            string legacy = Encoding.UTF8.GetString(stored.AsSpan())
+                .Replace("\"SchemaVersion\":3", "\"SchemaVersion\":2", StringComparison.Ordinal);
+            await f.Disk.WriteAsync(UsageData.JournalFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+
+            var usage = await f.Start(setup: false);
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            CheckSent(f, "usage data turned on", "game started", "screen opened");
+            await usage.HoldAsync(true);
+        });
         Usage("send caps, expiry, FIFO batching", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist);
             f.Clock.Now += TimeSpan.FromDays(8);
-            for (int i = 0; i < UsageData.QueueLimit + 8; i++)
-                await usage.RecordAsync(UsageEvent.End(false, i));
+            int gameCount = UsageData.QueueLimit / 2 + 4;
+            for (int i = 0; i < gameCount; i++)
+                await usage.RecordGameEndAsync(StartGame(usage), false, i);
             Equal(UsageData.QueueLimit, usage.QueuedCount);
             await usage.HoldAsync(false);
             await Until(() => usage.QueuedCount == 0);
             var received = Events(f.Captures);
             Equal(UsageData.QueueLimit, received.Length);
-            Equal(true, received.All(item => Name(item) == "game ended"));
-            Sequence(Enumerable.Range(8, UsageData.QueueLimit), received.Select(item => Props(item).GetProperty("minutes").GetInt32()));
+            Sequence(Enumerable.Range(4, gameCount - 4).SelectMany(_ => new[] { "game started", "game ended" }),
+                received.Select(Name));
+            Sequence(Enumerable.Range(4, gameCount - 4), received.Where(item => Name(item) == "game ended")
+                .Select(item => Props(item).GetProperty("minutes").GetInt32()));
             Equal(10, f.Captures.Count);
             await usage.HoldAsync(true);
         });
@@ -322,9 +408,11 @@ internal static partial class Program
             var usage = await f.Start();
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
             await usage.OpenedAsync();
+            await usage.RecordGameEndAsync(StartGame(usage), false, 12);
             var signed = SignedUsageCatalogue();
             string setupId = signed.Index.Entries.Single().Id;
-            foreach (var kind in Enum.GetValues<UsageKind>().Except([UsageKind.AppOpened, UsageKind.TurnedOn]))
+            foreach (var kind in Enum.GetValues<UsageKind>().Except([UsageKind.AppOpened, UsageKind.TurnedOn,
+                UsageKind.GameStarted, UsageKind.GameEnded]))
             {
                 var item = kind switch
                 {
@@ -577,6 +665,12 @@ internal static partial class Program
             Equal(false, envelope.Contains("windows_arch", StringComparison.Ordinal));
             Equal(false, envelope.Contains("\"dsn\"", StringComparison.Ordinal));
         });
+
+        static Task<UsageGameStart?> StartGame(UsageData usage) =>
+            usage.RecordGameStartAsync(usage.InstallNumber, GameEdition.Cod2x, WindowsRenderMode.Direct3D9, UsageMode.Borderless);
+
+        static void CheckSent(UsageFixture f, params string[] expected) =>
+            Equal(string.Join(", ", expected), string.Join(", ", Events(f.Captures).Select(Name)));
 
         static void Usage(string name, Func<Task> test) => Check("usage " + name, () => test().GetAwaiter().GetResult());
     }

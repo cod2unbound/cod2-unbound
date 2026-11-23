@@ -255,9 +255,10 @@ Usage requests use the PostHog EU ingestion endpoint without redirects, cookies,
 or ambient credentials. The launcher records app opens at most once per UTC day,
 screen opens, and setup steps reached or skipped. A confirmed game folder gets
 the `own files` marker only if the player picked it in setup. The launcher
-records game starts with edition, renderer and display mode, game exits with
-normal or unexpected exit and runtime in whole minutes, and server list refreshes
-with the active tab. Join attempts record method and edition when the launcher
+records game starts with edition, renderer and display mode, and server list
+refreshes with the active tab. It records the exit type and runtime in whole
+minutes only if the game’s start was recorded under the same install number.
+Join attempts record method and edition when the launcher
 starts the game. It also records public player setup catalogue IDs for views,
 tries and imports, loadouts and config checks, hosting reach and edition,
 update stages and versions, setting names and encoded choices, and error kinds.

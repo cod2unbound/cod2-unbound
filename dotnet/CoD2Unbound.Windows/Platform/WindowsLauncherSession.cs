@@ -15,7 +15,7 @@ internal sealed class WindowsLauncherSession
     private readonly WindowsEngineInventory inventory;
     internal GameLifecycle Game { get; }
     internal WindowsReports Reports { get; }
-    private (DateTimeOffset Started, GameEdition Edition, int Process, bool CrashConsent)? launchedGame;
+    private (DateTimeOffset Started, GameEdition Edition, int Process, bool CrashConsent, Task<UsageGameStart?> UsageStart)? launchedGame;
     private const string UsageUpdateReceipt = "usage-update.txt";
     private (UpdatePhase Phase, string? Version, UpdateFailureStage? Failed, UpdateIssue Issue)? observedUpdate;
     internal ServerQueryClient ServerQuery { get; }
@@ -252,6 +252,8 @@ internal sealed class WindowsLauncherSession
             throw new IOException("Wait for the launcher update to finish before opening the game.");
         var settings = Settings.Working;
         var request = new ClientLaunchRequest(edition ?? settings.Engine, settings, Setup.DataPath, HomePath) { Link = link, Demo = demo };
+        var usage = Reports.Usage;
+        var installAtLaunch = usage.InstallNumber;
         GameStartState start;
         try { start = await Game.StartAsync(request, SetupComplete); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or LaunchPlanException or System.ComponentModel.Win32Exception)
@@ -264,8 +266,8 @@ internal sealed class WindowsLauncherSession
         if (start == GameStartState.Started)
         {
             launchedGame = (Game.State.StartedAt ?? DateTimeOffset.UtcNow, request.Edition, Game.State.Games[0].Id,
-                SetupComplete && settings.CrashReportsAsked && settings.SendCrashReports);
-            Record(UsageEvent.Start(request.Edition, Renderer, UsageEvent.ModeFor(settings.Fullscreen)));
+                SetupComplete && settings.CrashReportsAsked && settings.SendCrashReports,
+                usage.RecordGameStartAsync(installAtLaunch, request.Edition, Renderer, UsageEvent.ModeFor(settings.Fullscreen)));
             ClientStarted?.Invoke();
         }
         return start;
@@ -276,7 +278,8 @@ internal sealed class WindowsLauncherSession
         if (state.Running || state.LastExit is not { } exit || launchedGame is not { } launched)
             return;
         launchedGame = null;
-        Record(UsageEvent.End(exit.Unexpected, (int)(DateTimeOffset.UtcNow - launched.Started).TotalMinutes));
+        _ = Reports.Usage.RecordGameEndAsync(launched.UsageStart, exit.Unexpected,
+            (int)(DateTimeOffset.UtcNow - launched.Started).TotalMinutes);
         if (exit.Unexpected)
         {
             ShowError(UsageProblem.GameExit);
