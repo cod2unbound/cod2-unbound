@@ -47,6 +47,11 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         session.Setup.ChooseData(session.Setup.DataPath);
         Loadouts = await session.ReadLoadoutChoicesAsync();
         await session.Game.ReconcileAsync();
+        await RefreshMatchesAsync();
+    }
+
+    internal async Task RefreshMatchesAsync()
+    {
         Matches = [];
         UnreadableMatches = false;
         if (Settings.MatchSummariesEnabled)

@@ -457,14 +457,22 @@ public sealed partial class MainWindow : Window
                 attemptedUpdate = now;
                 using var request = new CancellationTokenSource();
                 updateRequest = request;
-                try { await session.CheckUpdatesAsync(automatic: true, request.Token); }
+                try { await CheckUpdatesAndRefreshNewsAsync(automatic: true, request.Token); }
                 finally { updateRequest = null; }
             }
             if (lastGame?.Running == state.Running && lastGame.LastExit == state.LastExit)
                 return;
+            bool ended = !state.Running && state.LastExit is not null;
             lastGame = state;
             if (ContentFrame.Content is HomePage home)
-                home.RenderGame(state);
+            {
+                if (ended)
+                    await home.RefreshPlayHistoryAsync();
+                else
+                    home.RenderGame(state);
+            }
+            if (ended && ContentFrame.Content is LibraryPage library)
+                library.Render();
             if (ContentFrame.Content is ServersPage servers)
                 await servers.UpdateGameStateAsync();
             if (ContentFrame.Content is ConfigsPage configs)
@@ -485,6 +493,13 @@ public sealed partial class MainWindow : Window
             settings.RefreshUpdates(state);
         else if (ContentFrame.Content is HomePage home)
             home.RefreshUpdate(state);
+    }
+
+    private async Task CheckUpdatesAndRefreshNewsAsync(bool automatic, CancellationToken cancellationToken)
+    {
+        await session.CheckUpdatesAsync(automatic, cancellationToken);
+        if (ContentFrame.Content is HomePage home)
+            home.RenderNews();
     }
 
     internal async Task RunUpdateAsync(bool install)
@@ -512,7 +527,7 @@ public sealed partial class MainWindow : Window
                 }
             }
             else
-                await session.CheckUpdatesAsync(automatic: false, request.Token);
+                await CheckUpdatesAndRefreshNewsAsync(automatic: false, request.Token);
         }
         finally { updateRequest = null; }
     }

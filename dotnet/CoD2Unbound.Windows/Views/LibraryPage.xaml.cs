@@ -48,7 +48,7 @@ public sealed partial class LibraryPage : Page
             await shell.ShowProblemAsync(() => { Render(); return Task.CompletedTask; });
     }
 
-    private void Render()
+    internal void Render()
     {
         var kind = CurrentKind;
         var items = library.List(kind, Search.Text);

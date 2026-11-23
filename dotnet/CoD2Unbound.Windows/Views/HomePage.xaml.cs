@@ -66,16 +66,6 @@ public sealed partial class HomePage : Page
     {
         await model.RefreshAsync();
         RefreshUpdate(session.Updates.State);
-        var last = model.LastServer;
-        string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
-        if (last is not null)
-        {
-            HeroLead.Text = string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
-            if (map is not null)
-                HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
-        }
-        RenderHeroDetail();
-
         var settings = model.Settings;
         settingLoadout = true;
         var loadouts = model.Loadouts.Select(profile => new ComboBoxItem
@@ -95,10 +85,31 @@ public sealed partial class HomePage : Page
         settingLoadout = false;
         RenderDisplay();
 
+        RenderNews();
+        await RenderPlayHistoryAsync();
+    }
+
+    internal async Task RefreshPlayHistoryAsync()
+    {
+        await model.RefreshMatchesAsync();
+        await RenderPlayHistoryAsync();
+    }
+
+    private async Task RenderPlayHistoryAsync()
+    {
+        var last = model.LastServer;
+        string? map = last is null || last.Map == "Unknown" ? null : MapCatalog.Key(last.Map);
+        if (last is not null)
+        {
+            HeroLead.Text = string.Join(" · ", new[] { "LAST PLAYED", map is null ? null : MapCatalog.Region(map)?.ToUpperInvariant() }.OfType<string>());
+            if (map is not null)
+                HeroTitle.Text = MapCatalog.DisplayName(map).ToUpperInvariant();
+        }
+        RenderHeroDetail();
+
         RenderRecent();
         RenderGame(model.Game);
         RenderMatch();
-        RenderNews();
         if (map is not null && await model.ReadArtAsync(map) is { } art)
             ApplyArtwork(art);
     }
@@ -248,7 +259,7 @@ public sealed partial class HomePage : Page
         await dialog.ShowAsync();
     });
 
-    private void RenderNews()
+    internal void RenderNews()
     {
         NewsRows.Children.Clear();
         NewsChecked.Text = model.NewsChecked is { } checkedAt ? $"Checked {checkedAt}." : "";
@@ -387,7 +398,10 @@ public sealed partial class HomePage : Page
             status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
         else
             await model.LaunchAsync();
-        RenderGame(model.Game);
+        if (model.Game.Running)
+            await RenderPlayHistoryAsync();
+        else
+            RenderGame(model.Game);
         if (status is not null && !model.Game.Running)
         {
             LaunchReason.Text = status;

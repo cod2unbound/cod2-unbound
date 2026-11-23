@@ -23,6 +23,7 @@ internal sealed class WindowsLauncherSession
     internal UdpEndpoint[]? TestMaster { get; }
     internal ServerBrowserPreferences ServerPreferences { get; private set; } = ServerBrowserPreferences.Default;
     internal ServerBrowser Browser { get; }
+    private readonly SemaphoreSlim libraryWrites = new(1);
     internal LauncherLibrary Library { get; private set; } = new();
     internal WindowsRenderMode Renderer => Settings.Working.WindowsRenderer ?? WindowsRenderMode.Direct3D9;
     internal LauncherUpdates Updates { get; }
@@ -144,7 +145,7 @@ internal sealed class WindowsLauncherSession
         if (result == GameStartState.Started)
         {
             Record(UsageEvent.Join(source, edition ?? Settings.Working.Engine));
-            await SaveLibraryAsync(Library.Joined(address.Address, TimeProvider.System.GetUtcNow()));
+            await UpdateLibraryAsync(library => library.Joined(address.Address, TimeProvider.System.GetUtcNow()));
         }
         return result;
     }
@@ -343,10 +344,14 @@ internal sealed class WindowsLauncherSession
 
     internal async Task CheckUpdatesAsync(bool automatic, CancellationToken cancellationToken = default)
     {
-        var result = await Updates.CheckAsync(Library, automatic, cancellationToken);
-        var next = result.Library;
-        if (next.DispatchesCheckedAt != Library.DispatchesCheckedAt)
-            await SaveLibraryAsync(Library with { Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt });
+        var before = Library;
+        var next = (await Updates.CheckAsync(before, automatic, cancellationToken)).Library;
+        if (!ReferenceEquals(before, next))
+            await UpdateLibraryAsync(library => library with
+            {
+                Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt,
+                News = next.News, NewsNext = next.NewsNext
+            });
     }
 
     internal void ObserveUpdate(LauncherUpdateState state)
@@ -428,7 +433,7 @@ internal sealed class WindowsLauncherSession
         try
         {
             var next = await Browser.RefreshAsync(Library, Library.Cache, progress, cancellationToken, TestMaster);
-            await SaveLibraryAsync(next);
+            await UpdateLibraryAsync(library => library with { Cache = next.Cache, CachedAt = next.CachedAt });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Net.Sockets.SocketException)
         {
@@ -437,15 +442,21 @@ internal sealed class WindowsLauncherSession
         }
     }
 
-    internal Task ToggleFavoriteAsync(string address) => SaveLibraryAsync(Library with
+    internal Task ToggleFavoriteAsync(string address) => UpdateLibraryAsync(library => library with
     {
-        Favorites = Library.Favorites.Contains(address) ? Library.Favorites.Remove(address) : Library.Favorites.Add(address)
+        Favorites = library.Favorites.Contains(address) ? library.Favorites.Remove(address) : library.Favorites.Add(address)
     });
 
-    internal async Task SaveLibraryAsync(LauncherLibrary library)
+    private async Task UpdateLibraryAsync(Func<LauncherLibrary, LauncherLibrary> update)
     {
-        await library.SaveAsync(folder);
-        Library = library;
+        await libraryWrites.WaitAsync();
+        try
+        {
+            var library = update(Library);
+            await library.SaveAsync(folder);
+            Library = library;
+        }
+        finally { libraryWrites.Release(); }
     }
 
     internal async Task UpdateSettingsAsync(GameSettings choice)
