@@ -1,6 +1,3 @@
-using System.Collections.Immutable;
-using CoD2Unbound.Core;
-
 namespace CoD2Unbound.Windows.Platform;
 
 internal sealed partial class WindowsLauncherSession
@@ -17,7 +14,4 @@ internal sealed partial class WindowsLauncherSession
             Library = Library with { NotifiedUpdates = Library.NotifiedUpdates.Add(version) };
         }
     }
-
-    internal Task ClearRecentServersAsync() => UpdateLibraryAsync(library =>
-        library with { Recent = [], Played = ImmutableDictionary<string, DateTimeOffset>.Empty });
 }
