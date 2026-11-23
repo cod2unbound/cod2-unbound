@@ -26,6 +26,9 @@ extern void MacServer_CheckQuit(void);
 /* The Windows CoD2x client has the same hooks, in src/win32/win_cod2x.c. */
 #if COD2_WINDOWS_NATIVE
 #include "win32/win_paths.h"
+#if COD2_X64 && !defined(DEDICATED)
+#include "win32/win_launcher_join.h"
+#endif
 #endif
 #if COD2_WINDOWS_NATIVE && defined(COD2_X64) && COD2_X64 && \
     defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)
@@ -509,6 +512,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     char cwd[256];
 
 #if COD2_WINDOWS_NATIVE
+#if COD2_X64 && !defined(DEDICATED)
+    Win_LauncherJoinStartup();
+#endif
     lpCmdLine = Win_CommandLine();
     if (!lpCmdLine || !Win_ConfigurePaths(lpCmdLine)) return 1;
 #endif
@@ -647,6 +653,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     getcwd(cwd, sizeof(cwd));
     Com_Printf("Working directory: %s\n", cwd);
+#if COD2_WINDOWS_NATIVE && COD2_X64 && !defined(DEDICATED)
+    Win_LauncherJoinInit();
+#endif
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(Sys_WebFrame, 0, 1);
@@ -680,6 +689,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
                 WinInput_WaitIfMinimized();
         }
 #endif
+#endif
+#if COD2_WINDOWS_NATIVE && COD2_X64 && !defined(DEDICATED)
+        Win_LauncherJoinFrame();
 #endif
         Com_Frame();
 #if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64) && COD2_X64 && \
