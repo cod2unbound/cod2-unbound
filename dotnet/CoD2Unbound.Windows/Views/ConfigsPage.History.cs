@@ -217,7 +217,7 @@ public sealed partial class ConfigsPage
 
     private static string HistoryTitle(ConfigHistoryEntry entry) => entry.Source switch
     {
-        ConfigHistorySource.GameSession => "Changed while you played",
+        ConfigHistorySource.GameSession when !entry.Before.Matches(entry.After) => "Changed while you played",
         ConfigHistorySource.Migration => "Brought over your launcher settings",
         ConfigHistorySource.Restore => "Restored a snapshot",
         _ => entry.Summary

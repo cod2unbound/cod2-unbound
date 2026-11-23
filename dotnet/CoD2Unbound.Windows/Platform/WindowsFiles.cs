@@ -7,6 +7,8 @@ namespace CoD2Unbound.Windows.Platform;
 
 internal sealed class WindowsFiles : IGameFiles
 {
+    internal const int MaximumStudioFileBytes = 16 * 1024 * 1024;
+
     public bool IsRegularFile(string root, string relativePath)
     {
         try
@@ -169,7 +171,7 @@ internal sealed class WindowsSettingsFolder(string root, bool allowNestedWrites 
 
     public async ValueTask<ImmutableArray<byte>?> ReadAsync(string name, CancellationToken cancellationToken)
     {
-        const int maxBytes = 1024 * 1024;
+        int maxBytes = name == ConfigStudioSession.ArchivePath ? WindowsFiles.MaximumStudioFileBytes : 1024 * 1024;
         try
         {
             using var input = WindowsFiles.Open(Root, name);

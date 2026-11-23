@@ -34,6 +34,12 @@ public sealed partial class ServersPage
         DetailReady.Content = null;
     }
 
+    internal void RefreshActiveLoadout()
+    {
+        ClearReadyCheck();
+        RenderDetails();
+    }
+
     private void UpdateReadyCheck(GameServer server)
     {
         bool playing = model.GameRunning;

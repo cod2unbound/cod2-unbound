@@ -137,8 +137,8 @@ public sealed partial class ConfigProfileStore(
     public static async ValueTask<ConfigProfile?> ReadActiveForDisplayAsync(ISettingsFolder home,
         CancellationToken cancellationToken = default, ConfigDialect? dialect = null)
     {
-        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
-        return selected.ProfileId is { } id
+        var (selected, _) = await ReadDisplaySelectionAsync(home, cancellationToken).ConfigureAwait(false);
+        return selected is { } id
             ? await ReadForDisplayAsync(home, id, id, cancellationToken, dialect).ConfigureAwait(false)
             : null;
     }
@@ -146,10 +146,11 @@ public sealed partial class ConfigProfileStore(
     public static async ValueTask<ImmutableArray<ConfigProfile>> ReadChoicesAsync(ISettingsFolder home, IEnumerable<string> ids,
         CancellationToken cancellationToken = default, ConfigDialect dialect = ConfigDialect.Stock)
     {
-        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
+        var (selected, disposable) = await ReadDisplaySelectionAsync(home, cancellationToken).ConfigureAwait(false);
         var result = ImmutableArray.CreateBuilder<ConfigProfile>();
         foreach (string id in ids.Where(ValidIdentifier).Distinct(StringComparer.OrdinalIgnoreCase))
-            if (await ReadForDisplayAsync(home, id, selected.ProfileId, cancellationToken, dialect).ConfigureAwait(false) is { } profile)
+            if (!id.Equals(disposable, StringComparison.OrdinalIgnoreCase) &&
+                await ReadForDisplayAsync(home, id, selected, cancellationToken, dialect).ConfigureAwait(false) is { } profile)
                 result.Add(profile);
         return [.. result.OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
     }
@@ -179,8 +180,8 @@ public sealed partial class ConfigProfileStore(
     public static async ValueTask<string?> ReadPlayerNameAsync(ISettingsFolder home, ConfigDialect dialect,
         CancellationToken cancellationToken = default, bool preserveColors = false)
     {
-        var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
-        if (selected.ProfileId is not { } id ||
+        var (selected, _) = await ReadDisplaySelectionAsync(home, cancellationToken).ConfigureAwait(false);
+        if (selected is not { } id ||
             await home.ReadAsync(DirectoryName(id) + ConfigName, cancellationToken).ConfigureAwait(false) is not { } config)
             return null;
         string? name = new ConfigDocument(config.AsSpan(), dialect).EffectiveSetting("name");
@@ -373,6 +374,24 @@ public sealed partial class ConfigProfileStore(
             files.Read(directory + MetadataName), files.Read(ChainPath(id)));
 
     private ConfigActiveSelection Selection() => ParseSelection(files.Read(Active));
+
+    private static async ValueTask<(string? SelectedId, string? DisposableId)> ReadDisplaySelectionAsync(
+        ISettingsFolder home, CancellationToken cancellationToken)
+    {
+        var active = await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false);
+        var snapshot = await home.ReadAsync(ConfigStudioSession.ArchivePath, cancellationToken).ConfigureAwait(false);
+        if (snapshot is not { } bytes)
+        {
+            // Reconciliation may have restored active.txt and removed the archive between reads.
+            active = await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false);
+            return (ParseSelection(active).ProfileId, null);
+        }
+
+        var connection = ConfigStudioSession.ReadArchive(bytes).ConnectionSelection;
+        if (connection is not null && active is { } current && current.AsSpan().SequenceEqual(connection.Applied))
+            active = [.. connection.Before];
+        return (ParseSelection(active).ProfileId, connection?.DisposableProfileId);
+    }
 
     private static ConfigActiveSelection ParseSelection(ImmutableArray<byte>? bytes)
     {

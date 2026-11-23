@@ -101,6 +101,31 @@ internal static partial class Program
             Equal(false, studio.IsTemporaryServerLoadout);
             Equal("Main", store.ActiveSelection().ProfileId);
             Equal("333", store.Read("Main").Document.EffectiveSetting("com_maxfps"));
+            Equal(0, store.History("Main").Count(entry => entry.Source == ConfigHistorySource.GameSession));
+
+            prepared = studio.PrepareClientLaunch(new(GameEdition.Cod2x, new(), "data", "home") { Link = link, ServerLoadout = choice });
+            var game = new GameProcessIdentity(41, clock.GetUtcNow());
+            string temporary = prepared.Studio!.ProfileId;
+            studio.CommitLaunch(game);
+            files.Files[$"main/players/{temporary}/config_mp.cfg"] = ImportBytes("seta com_maxfps 250\n");
+            var home = new MemoryPlatform("/game-home");
+            foreach (var (path, bytes) in files.Files)
+                home.WriteAsync(path, bytes, default).GetAwaiter().GetResult();
+            var display = Sync(ConfigProfileStore.ReadChoicesAsync(home, ["Main", "Scrim", temporary], dialect: ConfigDialect.Cod2x));
+            Equal(2, display.Length);
+            Equal("Main", display.Single(profile => profile.IsActive).Id);
+            Equal("Main", Sync(ConfigProfileStore.ReadActiveForDisplayAsync(home))?.Id);
+
+            // Finish with a new Studio instance, as Windows does when it reconciles after exit.
+            studio = new(files, ConfigDialect.Cod2x, () => false, clock);
+            studio.ReconcileGames([]);
+            studio.ReconcileGames([]);
+            Equal("Main", store.ActiveSelection().ProfileId);
+            Equal(false, files.DirectoryExists($"main/players/{temporary}"));
+            var gameEntry = store.History("Main").Single(entry => entry.Source == ConfigHistorySource.GameSession);
+            Equal(true, gameEntry.Before.Matches(gameEntry.After));
+            Equal("333", store.Read("Main").Document.EffectiveSetting("com_maxfps"));
+            Equal(0, store.History("Scrim").Count(entry => entry.Source == ConfigHistorySource.GameSession));
         });
 
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())

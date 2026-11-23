@@ -411,6 +411,8 @@ public sealed partial class MainWindow : Window
             await home.RefreshAsync();
         else if (ContentFrame.Content is ConfigsPage configs)
             configs.RefreshActiveLoadout();
+        else if (ContentFrame.Content is ServersPage servers)
+            servers.RefreshActiveLoadout();
     }
 
     internal void RefreshFavorites()

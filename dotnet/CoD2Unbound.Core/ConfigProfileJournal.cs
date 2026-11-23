@@ -115,7 +115,7 @@ public sealed partial class ConfigProfileStore
     }
 
     public void RecordGameSession(string id, ConfigProfileVersion before, string summary = "Game session", string? sessionId = null,
-        ConfigStudioDisplayOverride? displayOverride = null)
+        ConfigStudioDisplayOverride? displayOverride = null, bool recordUnchanged = false)
     {
         using var lease = files.Acquire(default);
         CheckWritable();
@@ -134,7 +134,7 @@ public sealed partial class ConfigProfileStore
                 Write(directory + ConfigName, current.Config);
             }
         }
-        if (current.Matches(before))
+        if (!recordUnchanged && current.Matches(before))
             return;
 
         var history = ReadHistory(directory);

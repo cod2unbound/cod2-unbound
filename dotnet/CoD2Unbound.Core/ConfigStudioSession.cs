@@ -17,7 +17,7 @@ public sealed record ConfigStudioState(ImmutableArray<ConfigProfile> Profiles, C
 /// <summary>Coordinates Studio state on the launcher's serialized command queue.</summary>
 public sealed partial class ConfigStudioSession
 {
-    private const string ArchivePath = "main/players/.studio-game-session.json";
+    public const string ArchivePath = "main/players/.studio-game-session.json";
     private readonly IConfigProfileFiles files;
     private readonly Func<bool> verifiedGameRunning;
     private readonly TimeProvider clock;
@@ -353,6 +353,7 @@ public sealed partial class ConfigStudioSession
     {
         if (!reserved)
             throw new ConfigProfileException(ConfigProfileFailure.Conflict);
+        MarkDisposableGameStarted();
         games = games.Add(game);
         reserved = false;
     }
@@ -374,6 +375,9 @@ public sealed partial class ConfigStudioSession
             ReloadArchive();
             Archive();
         }
+        if (starting && archive?.ConnectionSelection is { DisposableProfileId: not null } connection &&
+            store.ActiveSelection().OriginalBytes is { } active && active.AsSpan().SequenceEqual(connection.Applied))
+            MarkDisposableGameStarted();
         if (!IsReadOnly)
         {
             ReloadArchive();
@@ -407,6 +411,12 @@ public sealed partial class ConfigStudioSession
         WriteArchive(new(newIdentifier().ToString("D"), snapshots));
     }
 
+    private void MarkDisposableGameStarted()
+    {
+        if (archive is { ConnectionSelection: { DisposableProfileId: not null, GameStarted: false } connection } saved)
+            WriteArchive(saved with { ConnectionSelection = connection with { GameStarted = true } });
+    }
+
     private void FinishSession()
     {
         if (archive is not { } saved)
@@ -416,8 +426,11 @@ public sealed partial class ConfigStudioSession
             var original = saved.Before.FirstOrDefault(pair => SameId(pair.Key, profile.Id)).Value;
             var version = original is null ? new ConfigProfileVersion([], null) : original.Version();
             var change = saved.DisplayOverride;
-            store.RecordGameSession(profile.Id, version, sessionId: saved.Id,
-                displayOverride: change is not null && SameId(change.ProfileId, profile.Id) ? change : null);
+            bool disposableGame = saved.ConnectionSelection is { GameStarted: true, SourceProfileId: { } sourceId } &&
+                SameId(sourceId, profile.Id);
+            store.RecordGameSession(profile.Id, version, disposableGame ? "Played with temporary server settings" : "Game session",
+                sessionId: saved.Id, displayOverride: change is not null && SameId(change.ProfileId, profile.Id) ? change : null,
+                recordUnchanged: disposableGame);
         }
         if (saved.ConnectionSelection is { } selection)
         {
@@ -429,14 +442,10 @@ public sealed partial class ConfigStudioSession
         archive = null;
     }
 
-    private void ReloadArchive()
-    {
-        if (files.Read(ArchivePath) is not { } bytes)
-        {
-            archive = null;
-            return;
-        }
+    private void ReloadArchive() => archive = files.Read(ArchivePath) is { } bytes ? ReadArchive(bytes) : null;
 
+    internal static ConfigStudioArchive ReadArchive(ImmutableArray<byte> bytes)
+    {
         try
         {
             var saved = JsonSerializer.Deserialize(bytes.AsSpan(), StudioArchiveJson.Default.ConfigStudioArchive);
@@ -470,7 +479,7 @@ public sealed partial class ConfigStudioSession
                  (display.Resolution is not null && !DisplayResolution.TryParse(display.Resolution, out _)) ||
                  display.Monitor is < 1 or > WindowsDisplays.MaxMonitor))
                 throw InvalidArchive();
-            archive = saved;
+            return saved;
         }
         catch (Exception error) when (error is JsonException or LaunchPlanException)
         {
@@ -497,7 +506,8 @@ internal sealed record ConfigStudioVersionArchive(byte[] Config, byte[]? Metadat
 }
 internal sealed record ConfigStudioConnectionArchive(byte[] Before, byte[] Applied,
     [property: JsonPropertyName("sourceProfileID")] string? SourceProfileId,
-    [property: JsonPropertyName("disposableProfileID")] string? DisposableProfileId);
+    [property: JsonPropertyName("disposableProfileID")] string? DisposableProfileId,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool GameStarted = false);
 public sealed record ConfigStudioDisplayOverride(string ProfileId, string? Resolution, int? Monitor);
 internal sealed record ConfigStudioArchive(string Id, Dictionary<string, ConfigStudioVersionArchive> Before,
     ConfigStudioConnectionArchive? ConnectionSelection = null, ConfigStudioDisplayOverride? DisplayOverride = null);

@@ -23,7 +23,7 @@ internal sealed class WindowsConfigProfiles(string home, nint owner, FileStream?
         public void Dispose() { }
     }
 
-    public ImmutableArray<byte>? Read(string path) => ReadBounded(home, path, 16 * 1024 * 1024);
+    public ImmutableArray<byte>? Read(string path) => ReadBounded(home, path, WindowsFiles.MaximumStudioFileBytes);
 
     internal static ImmutableArray<byte>? ReadBounded(string root, string path, int maximum, bool allowOversized = false)
     {

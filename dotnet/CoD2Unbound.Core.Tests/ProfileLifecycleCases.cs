@@ -71,8 +71,8 @@ internal static partial class Program
         {
             var files = new FixtureProfileFiles();
             var store = new ConfigProfileStore(files, ConfigDialect.Stock);
-            store.Create("Main", "Main", new("seta r_monitor 2\n"u8, ConfigDialect.Stock));
-            store.Create("Scrim", "Scrim", new("seta r_monitor 6\n"u8, ConfigDialect.Stock));
+            store.Create("Main", "Main", new("seta r_monitor 2\nseta name MainPlayer\n"u8, ConfigDialect.Stock));
+            store.Create("Scrim", "Scrim", new("seta r_monitor 6\nseta name ScrimPlayer\n"u8, ConfigDialect.Stock));
             store.Select("Main", null);
             var studio = new ConfigStudioSession(files, ConfigDialect.Stock, () => false, new FixedClock());
             var request = new ClientLaunchRequest(GameEdition.Original, new(), "data", "home")
@@ -84,6 +84,13 @@ internal static partial class Program
             Equal("Scrim", prepared.Studio?.ProfileId);
             Equal("Scrim", store.ActiveSelection().ProfileId);
             Equal("6", prepared.Loadout?["r_monitor"]);
+            var home = new MemoryPlatform("/game-home");
+            foreach (var (path, bytes) in files.Files)
+                home.WriteAsync(path, bytes, default).GetAwaiter().GetResult();
+            Equal("Main", Sync(ConfigProfileStore.ReadActiveForDisplayAsync(home))?.Id);
+            var choices = Sync(ConfigProfileStore.ReadChoicesAsync(home, ["Main", "Scrim"]));
+            Equal("Main", choices.Single(profile => profile.IsActive).Id);
+            Equal("MainPlayer", Sync(ConfigProfileStore.ReadPlayerNameAsync(home, ConfigDialect.Stock)));
             studio.CancelLaunch();
             Equal("Main", store.ActiveSelection().ProfileId);
         });
