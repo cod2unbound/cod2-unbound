@@ -108,8 +108,8 @@ public sealed partial class MainWindow
         yield return Action(ShellCommand.RefreshServers, "Refresh server list");
         yield return Action(ShellCommand.Launch, LastJumpServer is { } server ? $"Launch on {QuakeColors.Plain(server.Name)}" : "Launch");
         yield return Action(ShellCommand.OpenGameMenu, "Open game menu");
-        var game = session.Game.State;
-        foreach (var action in JumpIndex.GameActions(game.Running, game.Quitting))
+        foreach (var action in JumpIndex.GameActions(CanRunShellCommand(ShellCommand.ReturnToGame),
+                     closingGame: !CanRunShellCommand(ShellCommand.CloseGame)))
             yield return action;
         yield return Action(ShellCommand.Import, "Import config…");
         yield return Action(ShellCommand.Paste, "Paste config");

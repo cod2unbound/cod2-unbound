@@ -23,8 +23,6 @@ public static class LauncherShortcuts
     [
         new(ShellCommand.Launch, "Launch", ["Ctrl+Enter"]),
         new(ShellCommand.OpenGameMenu, "Open game menu", ["Ctrl+Shift+Enter"]),
-        new(ShellCommand.ReturnToGame, "Return to game", []),
-        new(ShellCommand.CloseGame, "Close game", []),
         new(ShellCommand.Home, "Home", ["Ctrl+1"]),
         new(ShellCommand.Servers, "Servers", ["Ctrl+2"]),
         new(ShellCommand.Library, "Library", ["Ctrl+3"]),

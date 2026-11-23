@@ -77,6 +77,7 @@ internal static partial class Program
             Equal(true, actions.Single(action => action.Id == nameof(ShellCommand.ReturnToGame)).Enabled);
             Equal(false, actions.Single(action => action.Id == nameof(ShellCommand.CloseGame)).Enabled);
             Equal(true, JumpIndex.GameActions(running: false, closingGame: false).All(action => !action.Enabled));
+            Equal(true, LauncherShortcuts.All.All(shortcut => !shortcut.Chords.IsEmpty));
         });
     }
 }
