@@ -53,6 +53,10 @@ function Start-KitPublicRefresh([IntPtr]$App) {
     if ($button.Current.Name -ne 'Stop refresh') { Invoke-KitControl $App 'RefreshButton' }
 }
 
+function Get-KitPublicAnsweredCount([string]$Message) {
+    if ($Message -match '^(\d+) servers? answered\.') { [int]$Matches[1] }
+}
+
 function Get-KitPublicMatchTiming([string]$HomePath, [DateTimeOffset]$Since, [string[]]$Addresses) {
     $history = Join-Path $HomePath 'main\stats\matches.jsonl'
     if (-not (Test-Path -LiteralPath $history -PathType Leaf)) { return }
@@ -197,8 +201,9 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
             $refresh -and $refresh.Current.Name -ne 'Stop refresh'
         } 65 'the server refresh to finish' | Out-Null
         $rows = @(Get-KitPublicRows $App)
-        $status = Find-KitControl $App 'RefreshStatus'
-        if (-not $status -or $status.Current.Name -notmatch '^\d+ answered\.') {
+        $status = Find-KitControl $App 'RefreshStatus' -AllowOffscreen
+        $answered = if ($status) { Get-KitPublicAnsweredCount $status.Current.Name }
+        if ($null -eq $answered) {
             throw 'The public masters did not confirm a completed refresh.'
         }
         Protect-KitText "$($status.Current.Name) Accessible rows: $($rows.Count)." |

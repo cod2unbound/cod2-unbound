@@ -35,6 +35,11 @@ foreach ($pair in @(@($false,$false), @($true,$true))) {
     }
 }
 Assert-KitPublicPlay $true $false
+if ((Get-KitPublicAnsweredCount '1 server answered.') -ne 1 -or
+    (Get-KitPublicAnsweredCount '2 servers answered. Updated just now.') -ne 2 -or
+    $null -ne (Get-KitPublicAnsweredCount 'Refresh stopped. 2 servers answered.')) {
+    throw 'The public refresh must use the launcher completion text.'
+}
 $rows = @(
     [pscustomobject]@{Players=0; Slots=10; Title='Empty, Toujane, Original 1.3'}
     [pscustomobject]@{Players=12; Slots=12; Title='Full, Toujane, Original 1.3'}
