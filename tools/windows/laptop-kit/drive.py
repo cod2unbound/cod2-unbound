@@ -190,6 +190,7 @@ class Kit:
 
     def run(self, limit):
         collected = 0
+        restart_recovery_attempted = False
         marker = self.output / "pending-step"
         while True:
             status = self.status()
@@ -203,7 +204,7 @@ class Kit:
                     receipt = self.recover(step)
                     print(f"{receipt['Line']} ({receipt['Seconds']} s)", flush=True)
                     collected += 1
-                if pending == step:
+                if pending == step and status["Task"] != "Running":
                     marker.unlink()
                     pending = None
                 if limit and collected >= limit:
@@ -221,7 +222,12 @@ class Kit:
                 return
             step = next_step["Id"]
             response = ""
-            if next_step["Prompt"]:
+            restart_recovery = pending == step == "interrupt" and next_step["Prompt"]
+            if restart_recovery:
+                if restart_recovery_attempted:
+                    raise ValueError("The restart has no receipt. Sign back in on the laptop and resume the same run.")
+                restart_recovery_attempted = True
+            elif next_step["Prompt"]:
                 response = input(next_step["Prompt"] + "\n> ").strip()
             pending_file = marker.with_suffix(".tmp")
             pending_file.write_text(step + "\n")
@@ -233,13 +239,26 @@ class Kit:
     def wait(self, step):
         deadline = time.monotonic() + 1100
         idle = 0
+        disconnected = False
         while time.monotonic() < deadline:
             time.sleep(2)
-            status = self.status()
+            try:
+                status = self.status()
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                if step != "interrupt":
+                    raise
+                if not disconnected:
+                    print("The connection dropped during the restart check. Sign in at the laptop when Windows returns.", flush=True)
+                    disconnected = True
+                time.sleep(8)
+                continue
             if status["Next"].get("Id") != step:
                 return
             idle = idle + 1 if status["Task"] != "Running" else 0
             if idle >= 3:
+                if step == "interrupt":
+                    # The next loop queues only bookkeeping, without a new restart approval.
+                    return
                 raise ValueError("The desktop task returned without a receipt. Check that the same Windows user is signed in and inspect worker-error.txt in the run folder.")
         raise TimeoutError("The Windows step exceeded its time limit. Re-run this command with the same --run and --output to retrieve its receipt.")
 
