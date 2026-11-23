@@ -89,6 +89,7 @@ internal sealed class WindowsLauncherSession
     internal LauncherSettingsSession Settings { get; private set; } = null!;
     internal SetupSession Setup { get; private set; } = null!;
     internal bool SetupComplete { get; private set; }
+    internal int LastSettingsPane { get; set; }
 
     internal async Task InitializeAsync()
     {
@@ -141,13 +142,21 @@ internal sealed class WindowsLauncherSession
         catch (DirectoryNotFoundException) { return []; }
     }
 
-    internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null, UsageJoin source = UsageJoin.List)
+    internal async Task<GameStartState> JoinAsync(ServerAddress address, GameEdition? edition = null, UsageJoin source = UsageJoin.List,
+        GameServer? observation = null)
     {
         var result = await LaunchAsync(LaunchLink.Direct(address.Address, address.Password ?? ""), edition);
         if (result == GameStartState.Started)
         {
             Record(UsageEvent.Join(source, edition ?? Settings.Working.Engine));
-            await UpdateLibraryAsync(library => library.Joined(address.Address, TimeProvider.System.GetUtcNow()));
+            await UpdateLibraryAsync(library =>
+            {
+                var joined = library.Joined(address.Address, TimeProvider.System.GetUtcNow());
+                return observation is null ? joined : joined with
+                {
+                    Cache = [.. joined.Cache.Where(server => server.Address != observation.Address), observation]
+                };
+            });
         }
         return result;
     }
@@ -244,7 +253,7 @@ internal sealed class WindowsLauncherSession
         var dialect = Settings.Working.Engine == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock;
         string? name = await ConfigProfileStore.ReadPlayerNameAsync(gameFolder, dialect);
         return (string.IsNullOrWhiteSpace(name) ? "Player" : name, loadout?.DisplayName,
-            Setup.HasStoredKey ? "CD key verified" : "CD key needed");
+            Setup.HasStoredKey ? "CD key verified" : "No CD key stored");
     }
 
     internal bool ClientIsRunning => Game.State.Running || !inventory.FindRunning(EngineRole.Client, default).IsEmpty;

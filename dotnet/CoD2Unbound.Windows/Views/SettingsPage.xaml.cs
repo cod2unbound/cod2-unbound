@@ -35,7 +35,7 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
-        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : 0];
+        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : session.LastSettingsPane];
         Panes.SelectedItem = initial;
         Loaded += (_, _) =>
         {
@@ -61,6 +61,7 @@ public sealed partial class SettingsPage : Page
         if (pane >= 0 && lastPane != pane)
         {
             lastPane = pane;
+            session.LastSettingsPane = pane;
             session.Opened(UsagePage.General + pane);
         }
         switch (pane)
@@ -132,7 +133,7 @@ public sealed partial class SettingsPage : Page
 
     private Button OpenConfigs()
     {
-        var button = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs));
+        var button = Action("Open Configs", shell.OpenResolutionAsync);
         button.Style = StyleFor("SubtleLinkAction");
         return button;
     }
@@ -259,7 +260,13 @@ public sealed partial class SettingsPage : Page
             value => ChangeAsync(Current with { MatchSummariesEnabled = value }));
         var delete = Action("Delete summaries…", async () =>
         {
-            if (session.Game.State.Running || !await ConfirmAsync("Delete match summaries?", "Delete the match summaries on this PC?", "Delete summaries"))
+            int count = session.ReadMatches().Length;
+            if (session.ClientIsRunning || count == 0 ||
+                !await ConfirmAsync("Delete match summaries?",
+                    count == 1 ? "Delete the one match summary on this PC?" : $"Delete all {count} match summaries on this PC?",
+                    "Delete summaries"))
+                return;
+            if (session.ClientIsRunning)
                 return;
             await session.DeleteMatchHistoryAsync();
             Render();

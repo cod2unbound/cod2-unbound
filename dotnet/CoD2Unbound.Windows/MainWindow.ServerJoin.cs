@@ -29,10 +29,11 @@ public sealed partial class MainWindow
             serverAdmission.LookUpFinished(target.Address, cancelled: false);
         }
         var decision = requested is { } edition
-            ? new ServerAdmissionResult(ServerAdmissionAction.Launch, edition,
-                session.HasClient(edition) ? null : $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(edition)}.")
-            : await CheckServerEditionAsync(target, known);
-        if (decision.Problem is { } problem)
+            ? new ServerAdmissionResult(ServerAdmissionAction.Launch, edition)
+            : CheckServerEdition(target, known);
+        string? problem = decision.Problem ?? (session.HasClient(decision.Edition) ? null :
+            $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(decision.Edition)}.");
+        if (problem is not null)
         {
             session.ShowError(UsageProblem.ServerVersion);
             return problem;
@@ -56,7 +57,7 @@ public sealed partial class MainWindow
                 return null;
         }
 
-        return (await session.JoinAsync(target, decision.Edition, source)) switch
+        return (await session.JoinAsync(target, decision.Edition, source, known)) switch
         {
             GameStartState.Started => "Launching Call of Duty 2…",
             GameStartState.NeedsSetup or GameStartState.MissingData => "Choose a complete game data folder before launching.",
@@ -64,21 +65,11 @@ public sealed partial class MainWindow
         };
     }
 
-    private async Task<ServerAdmissionResult> CheckServerEditionAsync(ServerAddress target, GameServer? known)
+    private ServerAdmissionResult CheckServerEdition(ServerAddress target, GameServer? known)
     {
         var link = LaunchLink.Direct(target.Address, target.Password ?? "");
         var edition = session.Settings.Working.Engine;
         var installed = Enum.GetValues<GameEdition>().Where(session.HasClient).ToHashSet();
-        var result = serverAdmission.Evaluate(link, known, edition, installed, alwaysUseServerVersion: false);
-        if (result.Action != ServerAdmissionAction.LookUp)
-            return result;
-        bool queried = false;
-        try
-        {
-            known = await session.ServerQuery.ServerAsync(target.Address);
-            queried = true;
-        }
-        finally { serverAdmission.LookUpFinished(target.Address, cancelled: !queried); }
         return serverAdmission.Evaluate(link, known, edition, installed, alwaysUseServerVersion: false);
     }
 }

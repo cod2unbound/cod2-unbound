@@ -266,6 +266,13 @@ public sealed partial class MainWindow : Window
             configs.OpenCheckup();
     });
 
+    internal async Task OpenResolutionAsync()
+    {
+        await NavigateAsync(LauncherPlace.Configs);
+        if (ContentFrame.Content is ConfigsPage configs)
+            configs.OpenResolution();
+    }
+
     internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null,
         bool refreshServers = true)
     {

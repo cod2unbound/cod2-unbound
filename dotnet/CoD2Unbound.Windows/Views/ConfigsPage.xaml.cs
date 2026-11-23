@@ -96,6 +96,17 @@ public sealed partial class ConfigsPage : Page
         ShowStudio();
     }
 
+    internal void OpenResolution()
+    {
+        if (model.Model.Jump("r_mode").FirstOrDefault(spec => spec.Name == "r_mode") is not { } resolution)
+            return;
+        studioTab = 0;
+        expert = true;
+        category = resolution.Setting.Group;
+        query = resolution.Name;
+        ShowStudio();
+    }
+
     private void RenderLoadouts()
     {
         var state = model.State;

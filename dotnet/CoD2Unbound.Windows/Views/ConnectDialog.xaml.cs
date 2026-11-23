@@ -48,15 +48,23 @@ public sealed partial class ConnectDialog : ContentDialog
     {
         if (AddressBox is null || PasswordInput is null || Description is null)
             return;
-        var link = openedLink ?? (linkedAddress is null ? ServerLink.Parse(AddressBox.Text.Trim()) : null);
-        var address = linkedAddress is null ? link?.Target ?? ServerAddress.Parse(AddressBox.Text) : new ServerAddress(linkedAddress, null);
+        string input = AddressBox.Text.Trim();
+        var link = openedLink ?? (linkedAddress is null ? ServerLink.Parse(input) : null);
+        bool hasScheme = input.StartsWith("cod2://", StringComparison.OrdinalIgnoreCase) ||
+            input.StartsWith("cod2x://", StringComparison.OrdinalIgnoreCase);
+        var address = linkedAddress is not null ? new ServerAddress(linkedAddress, null) :
+            hasScheme ? link?.Target : ServerAddress.Parse(input);
         RequestedEdition = link?.Edition;
-        if (!passwordRequired)
-            Description.Text = RequestedEdition is { } edition ? $"This link requests {EditionName(edition)}." :
-                "For a server that isn’t in the list, or one a friend sent you.";
         string password = PasswordInput.Password;
-        Target = address is null || (passwordRequired && password.Length == 0) || ServerAddress.PasswordProblem(password) is not null ? null :
-            password.Length == 0 ? address : address with { Password = password };
+        if (password.Length == 0)
+            password = address?.Password ?? "";
+        string? passwordProblem = ServerAddress.PasswordProblem(password);
+        Description.Text = passwordProblem ?? (passwordRequired ? "This server requires a password." :
+            RequestedEdition is { } edition ? $"This link requests {EditionName(edition)}." :
+            address is null && input.Length > 0 ? "Enter a server address or a CoD2 Unbound server link." :
+            "For a server that isn’t in the list, or one a friend sent you.");
+        Target = address is null || (passwordRequired && password.Length == 0) || passwordProblem is not null
+            ? null : address with { Password = password.Length == 0 ? null : password };
         IsPrimaryButtonEnabled = Target is not null;
     }
 }
