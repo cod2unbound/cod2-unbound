@@ -135,6 +135,12 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
     public ValueTask<bool> RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+#if UPDATE_FIXTURES
+        if (WindowsLauncherSession.HasFixtureHome &&
+            Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_CLOSE_GAME") is { } closeFixture &&
+            (closeFixture == "refuse" || (closeFixture == "force" && !force)))
+            return ValueTask.FromResult(false);
+#endif
         try
         {
             using var client = Process.GetProcessById(target.Id);

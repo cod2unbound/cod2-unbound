@@ -47,6 +47,10 @@ internal sealed partial class WindowsLauncherSession
         return null;
     }
 
+#if UPDATE_FIXTURES
+    internal static bool HasFixtureHome => FixtureHome() is not null;
+#endif
+
     internal static string ResolveHome() => FixtureHome() ?? Path.Join(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CoD2 Unbound");
 
