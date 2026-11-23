@@ -78,11 +78,7 @@ function Invoke-KitOpenDemo([string]$Edition) {
     $exe = Get-KitStartTarget
     $demo = Join-Path $RunResults "match-$Edition-connect\kit-match-$Edition.dm_1"
     Stop-KitIfMissing $demo 'The loopback match did not save a demo.'
-    $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
-    Stop-KitIfMissing $complete 'The launcher setup did not finish.'
-    $LauncherHome = Join-Path $Private 'launcher-profile'
-    $settingsFolder = New-Folder (Join-Path $LauncherHome 'launcher')
-    Copy-Item -LiteralPath $complete -Destination $settingsFolder
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile $Edition 'dx9'
@@ -116,15 +112,11 @@ function Invoke-KitOpenDemo([string]$Edition) {
 function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
-    Stop-KitIfMissing $complete 'The launcher setup did not finish.'
     Stop-KitIfMissing $KeyMarker 'The sample key check was skipped.'
     Invoke-TestKey 'verify'
     # A previous demo or match can rewrite the active profile's engine config.
     # Start each connection route with the same setup completion and a new profile.
-    $LauncherHome = Join-Path $Private 'launcher-profile'
-    $settingsFolder = New-Folder (Join-Path $LauncherHome 'launcher')
-    Copy-Item -LiteralPath $complete -Destination $settingsFolder
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile $Edition 'dx9'

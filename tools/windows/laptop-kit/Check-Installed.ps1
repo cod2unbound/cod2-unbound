@@ -79,6 +79,15 @@ function Set-KitLauncherProfile([string]$Edition, [string]$Renderer) {
         Set-Content -LiteralPath (Join-Path $main 'autoexec.cfg') -Encoding Ascii
 }
 
+function New-KitLauncherTestHome([string]$Source, [string]$PrivateRun) {
+    $complete = Join-Path $Source 'launcher\.launcher-setup-complete'
+    Stop-KitIfMissing $complete 'The launcher setup did not finish.'
+    $testHome = Join-Path $PrivateRun 'launcher-profile'
+    $settings = New-Folder (Join-Path $testHome 'launcher')
+    Copy-Item -LiteralPath $complete -Destination $settings
+    $testHome
+}
+
 function Stop-KitLauncher($Run, [string]$Evidence) {
     if (-not $Run.Process.HasExited) { [void]$Run.Process.CloseMainWindow() }
     Complete-KitProcess $Run $Evidence 12 | Out-Null
@@ -136,7 +145,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
 function Invoke-KitFaults {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    Stop-KitIfMissing (Join-Path $LauncherHome 'launcher\.launcher-setup-complete') 'Launcher setup did not finish.'
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile 'original' 'dx9'
