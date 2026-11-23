@@ -2,12 +2,14 @@
 """Drive the same scheduled Windows step via OpenSSH or the scratch UTM guest."""
 import argparse
 import base64
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
 from pathlib import Path
 import plistlib
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -94,8 +96,30 @@ class UtmTransport:
 
     def exec(self, script, timeout=45):
         self.check()
-        return capture(["osascript", str(HERE / "utm-kit.applescript"), str(timeout), encode(script)],
-                       timeout + 15)
+        receipt = rf"C:\Windows\Temp\cod2-kit-{secrets.token_hex(12)}.json"
+        path = powershell_literal(receipt)
+        program = [UTM, "exec", SCRATCH, "--cmd",
+                   r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+                   "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand"]
+        wrapper = ("try { $out=[string](& {\n" + script +
+                   "\n} | Out-String -Width 6000); $errorText=$null }"
+                   " catch { $out=$null; $errorText=$_.Exception.Message };"
+                   f"$p={path}; $text=@{{Output=$out; Error=$errorText}}|ConvertTo-Json -Compress;"
+                   "[IO.File]::WriteAllText(($p+'.tmp'),$text,[Text.UTF8Encoding]::new($false));"
+                   "[IO.File]::Move(($p+'.tmp'),$p);")
+        subprocess.run([*program, encode(wrapper)], check=True, timeout=20)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            result = subprocess.run([UTM, "file", "pull", SCRATCH, receipt],
+                                    capture_output=True, timeout=20)
+            if result.returncode == 0 and result.stdout:
+                data = json.loads(result.stdout)
+                subprocess.run([*program, encode(f"[IO.File]::Delete({path})")], check=True, timeout=20)
+                if data["Error"]:
+                    raise ValueError(data["Error"])
+                return data["Output"].strip()
+            time.sleep(0.5)
+        raise subprocess.TimeoutExpired(program[:3], timeout)
 
     def push(self, local, remote):
         self.check()
@@ -110,7 +134,8 @@ class UtmTransport:
 
 
 class Kit:
-    def __init__(self, transport, name, output, game_path, arm_rehearsal, online=False):
+    def __init__(self, transport, name, output, game_path, arm_rehearsal, online=False, graphics_label="Default",
+                 internet_play=False):
         self.transport = transport
         self.name = name
         self.output = output
@@ -118,6 +143,11 @@ class Kit:
         self.utm = isinstance(transport, UtmTransport)
         self.arm_rehearsal = self.utm or arm_rehearsal
         self.online = online
+        self.graphics_label = graphics_label
+        self.internet_play = internet_play
+        if internet_play and (not online or self.arm_rehearsal or
+                              getattr(transport, "host", "") in ("localhost", "127.0.0.1", "::1")):
+            raise ValueError("Internet play requires an online physical laptop run.")
         if self.utm:
             sid = powershell_literal(transport.sid)
             self.prefix = f"$profile=(Get-ItemProperty ('HKLM:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\'+{sid})).ProfileImagePath;"
@@ -175,6 +205,11 @@ class Kit:
             args += " -ArmRehearsal"
         if self.online:
             args += " -Online"
+        if self.internet_play:
+            args += " -InternetPlay"
+        if operation == "queue":
+            args += f" -GraphicsLabel {powershell_literal(self.graphics_label)}"
+            args += f" -DriverUtc {powershell_literal(datetime.now(timezone.utc).isoformat())}"
         return self.exec("& (Join-Path $stage 'CoD2-Unbound-Windows-Kit\\Remote-Kit.ps1') -Stage $stage" + args)
 
     def status(self):
@@ -280,7 +315,7 @@ def pack(folder):
         with zipfile.ZipFile(path) as packet:
             for item in packet.infolist():
                 print(f"{item.filename} ({item.file_size} bytes)")
-    if input("Review the pictures, sound, demos and any raw memory dumps. Type PACK to make one ZIP.\n> ").strip() != "PACK":
+    if input("Review the pictures, sound and test demos. Type PACK to make one ZIP.\n> ").strip() != "PACK":
         return
     result = folder / "CoD2-Unbound-results.zip"
     pending = result.with_suffix(".partial")
@@ -302,14 +337,19 @@ def main():
     parser.add_argument("--utm-sid")
     parser.add_argument("--arm-rehearsal", action="store_true")
     parser.add_argument("--online", action="store_true",
-                        help="allow a PC that still has an internet route; every start stays on loopback")
+                        help="allow a PC that still has an internet route; fixture tests stay on loopback")
+    parser.add_argument("--internet-play", action="store_true",
+                        help="run only the separate consented play checks with the installed Public build")
     parser.add_argument("--kit", type=Path, default=os.environ.get("COD2_KIT_ZIP"))
     parser.add_argument("--run", default="laptop")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--game-path")
+    parser.add_argument("--graphics-label", choices=("Default", "Intel", "Radeon"), default="Default")
     parser.add_argument("--pack-only", action="store_true")
     parser.add_argument("--steps", type=int, default=0, help="pause after pulling this many steps")
     args = parser.parse_args()
+    if args.internet_play and (not args.online or args.utm_sid or args.arm_rehearsal):
+        parser.error("--internet-play requires --online on the physical laptop")
     if args.pack_only or (args.output / "completed.txt").exists():
         pack(args.output)
         return
@@ -333,7 +373,8 @@ def main():
     with args.kit.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     args.output.mkdir(parents=True, exist_ok=True)
-    driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path, args.arm_rehearsal, args.online)
+    driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path,
+                 args.arm_rehearsal, args.online, args.graphics_label, args.internet_play)
     driver.deploy(args.kit.resolve(), digest)
     driver.run(args.steps)
 

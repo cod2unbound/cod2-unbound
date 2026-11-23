@@ -5,12 +5,16 @@ param(
     [ValidatePattern('^[a-zA-Z0-9_-]{1,48}$')][string]$RunId = 'laptop',
     [ValidateSet('Run','Status','Step')][string]$Mode = 'Run',
     [ValidatePattern('^[a-z0-9-]*$')][string]$ExpectedStep,
-    [string]$Answer
+    [string]$Answer,
+    [ValidateSet('Default','Intel','Radeon')][string]$GraphicsLabel = 'Default',
+    [string]$DriverUtc,
+    [switch]$InternetPlay
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays',
-    'Check-Launcher','Check-Installer','Check-Desktop','Check-Diagnostics','Check-Installed','Check-Frames','Check-Updates','Check-Loopback') {
+    'Check-Launcher','Check-Installer','Check-Desktop','Check-Diagnostics','Check-Installed','Check-Frames',
+    'Check-Updates','Check-Loopback','Check-Surfaces','Check-Identity','Check-PublicPlay') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
@@ -21,6 +25,21 @@ $GamePathFile = Join-Path $KitProfile 'game-path.txt'
 $UpdateTrustFile = Join-Path $RunResults 'preflight\update-trust.txt'
 $script:KitSerials = @()
 . (Join-Path $PSScriptRoot 'Laptop-Steps.ps1')
+if ($InternetPlay) {
+    $Steps = @(
+        Add-KitStep 'preflight' 'Check this laptop and the kit for internet play' {
+            Assert-KitPublicPlay ($env:COD2_KIT_ONLINE -eq '1') ($env:COD2_KIT_ARM_REHEARSAL -eq '1')
+            Save-KitPreflightComputer | Set-Content -LiteralPath (Join-Path $Results 'monitors.txt') -Encoding UTF8
+            Test-KitFiles
+            $path = if ($GamePath) { Get-DataRoot $GamePath } else { Find-KitDefaultRetail }
+            if ($path) { [IO.File]::WriteAllText($GamePathFile, $path) }
+        }
+        Add-KitStep 'public-play' 'Use the installed play build on real game servers' {
+            Invoke-KitPublicPlay
+        } 'The play build will use your verified key to join real game servers and briefly list test rooms. Type YES to begin, or press Enter to leave this part out' -Consent
+        Add-KitStep 'cleanup' 'Remove this run’s temporary files' { Remove-KitScratch $KitProfile }
+    )
+}
 
 function Get-KitUpdateSkip([string]$Id) {
     if ($Id -notmatch '^(update-[1-5]|interrupt|restore)$') { return }
@@ -115,7 +134,7 @@ if ($Mode -eq 'Status') {
     return
 }
 
-Assert-StandardUser
+Assert-StandardUser -RecordOlderWindows
 $script:KitSerials = Get-KitSerials
 foreach ($location in @($AppDataRoot, (Split-Path $KitProfile -Parent), $KitProfile,
         (Join-Path $Kit 'results'), $RunResults)) {

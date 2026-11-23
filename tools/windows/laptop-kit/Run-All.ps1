@@ -4,12 +4,13 @@ param(
     [string]$GamePath,
     [string]$RetailPath,
     [string]$RunId = 'laptop',
+    [ValidateSet('Default','Intel','Radeon')][string]$GraphicsLabel = 'Default',
     [Parameter(ParameterSetName = 'Extras', Mandatory)][switch]$Extras,
     [Parameter(ParameterSetName = 'Lan', Mandatory)][switch]$LanOnly
 )
 
 if (-not ($Extras -or $LanOnly)) {
-    & (Join-Path $PSScriptRoot 'Run-Laptop.ps1') -GamePath $GamePath -RunId $RunId
+    & (Join-Path $PSScriptRoot 'Run-Laptop.ps1') -GamePath $GamePath -RunId $RunId -GraphicsLabel $GraphicsLabel
     return
 }
 
@@ -67,7 +68,7 @@ if ($Extras) {
     $group = Read-Host 'Choose one group by number, or press Enter to quit'
     if (-not $group) { return }
     if ($group -notmatch '^[1-7]$') { throw 'Choose a number from the list.' }
-    Write-Host "See Part B in START-HERE.md for $($groups[[int]$group - 1])."
+    Write-Host "See Part B in FOR-ENGINEERS.md for $($groups[[int]$group - 1])."
 }
 $prompt = if ($LanOnly -or $group -in '2','3') { 'Check that both PCs are on the same network with internet access disconnected.' }
     else { 'Close CoD2 and Steam and disconnect from the internet.' }

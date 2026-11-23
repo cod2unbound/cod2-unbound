@@ -13,12 +13,12 @@ function Assert-Offline {
     if ($routes.Count) { throw 'Unplug internet access and disconnect Wi-Fi and VPN. Only an isolated LAN with no gateway is allowed.' }
 }
 
-function Assert-StandardUser {
+function Assert-StandardUser([switch]$RecordOlderWindows) {
     $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
     $arch = $env:PROCESSOR_ARCHITECTURE
     $armRehearsal = $arch -eq 'ARM64' -and $env:COD2_KIT_ARM_REHEARSAL -eq '1'
     if (($arch -ne 'AMD64' -and -not $armRehearsal) -or -not [Environment]::Is64BitProcess -or
-        [int]$version.CurrentBuildNumber -lt 19041) {
+        (-not $RecordOlderWindows -and [int]$version.CurrentBuildNumber -lt 19041)) {
         throw 'Use 64-bit Windows PowerShell on Windows 10 (22H2) or Windows 11, on an x64 PC. The minimum Windows build is 19041.'
     }
     $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -34,7 +34,7 @@ function Get-KitWindowsVersion {
     $family = if ([int]$version.CurrentBuildNumber -ge 22000) { 'Windows 11' } else { 'Windows 10' }
     $release = if ($version.DisplayVersion) { $version.DisplayVersion } else { $version.ReleaseId }
     [pscustomobject]@{ Family = $family; Release = $release; Edition = $version.EditionID
-        Build = "$($version.CurrentBuildNumber).$($version.UBR)" }
+        Build = "$($version.CurrentBuildNumber).$($version.UBR)"; BuildNumber = [int]$version.CurrentBuildNumber }
 }
 
 function New-KitLock {

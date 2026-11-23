@@ -22,7 +22,7 @@ function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch
 }
 
 function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
-    if ($Value -match '^(?:Use key from disc install|UseDiscKey|ImportInstall|Import.*(?:install|disc|retail))') {
+    if ($Value -match '^(?:Use key from disc install|UseDiscKey|ImportInstall|Import.*(?:install|disc|retail)|From your Call of Duty 2 install)') {
         throw [ArgumentException]::new('Retail action is forbidden during kit automation.')
     }
     $action = Wait-KitCondition {
@@ -39,19 +39,30 @@ function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [swit
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
     $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
     if (Test-Path -LiteralPath $complete) { return }
-    foreach ($step in 'welcome','game-data','key','crash','usage','ready') {
+    foreach ($step in 'welcome','game-data','key','personalize','crash','usage','ready') {
         switch ($step) {
             'key' {
-                $stored = Wait-KitCondition {
-                    (Find-KitControl $Window 'KeyInput') -or (Find-KitControl $Window 'ReplaceKey')
+                Wait-KitCondition {
+                    (Find-KitControl $Window 'CD key' -Name) -or
+                    (Find-KitControl $Window ('Replace' + [char]0x2026) -Name)
                 } 12 'the CD key page'
-                $box = Find-KitControl $Window 'KeyInput'
+                $box = Find-KitControl $Window 'CD key' -Name
                 if ($box) {
                     Focus-KitWindow $Window
                     $box.SetFocus()
                     [Windows.Forms.SendKeys]::SendWait('000000000000000086D3')
                 }
+                Focus-KitWindow $Window
+                Save-KitWindow $Window (Join-Path $Evidence 'setup-key.png')
                 Invoke-KitControl $Window 'SetupNext'
+            }
+            'personalize' {
+                Wait-KitCondition {
+                    Find-KitControl $Window 'How the game fills your screen' -Name -AllowOffscreen
+                } 12 'personalization choices' | Out-Null
+                Focus-KitWindow $Window
+                Save-KitWindow $Window (Join-Path $Evidence 'setup-personalize.png')
+                Invoke-KitControl $Window 'SetupAlternate'
             }
             { $_ -in 'usage','crash' } {
                 Wait-KitCondition { Find-KitControl $Window 'DeclineReport' } 12 'the reporting choice' | Out-Null
@@ -59,20 +70,25 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
                 Save-KitWindow $Window (Join-Path $Evidence "setup-$step.png")
                 Invoke-KitControl $Window 'DeclineReport'
             }
-            default { Invoke-KitControl $Window 'SetupNext' }
+            default {
+                Wait-KitCondition { Find-KitControl $Window 'SetupNext' } 12 'Setup Continue' | Out-Null
+                Focus-KitWindow $Window
+                Save-KitWindow $Window (Join-Path $Evidence "setup-$step.png")
+                Invoke-KitControl $Window 'SetupNext'
+            }
         }
         Start-Sleep -Milliseconds 550
     }
     Wait-KitCondition { Test-Path -LiteralPath $complete } 15 'setup completion' | Out-Null
 }
 
-function Set-KitLauncherProfile([string]$Edition, [string]$Renderer) {
+function Set-KitLauncherProfile([string]$Edition, [string]$Renderer, [string]$Display = 'windowed', [string]$Resolution = '800x600') {
     $settings = New-Folder (Join-Path $LauncherHome 'launcher')
     [IO.File]::WriteAllText((Join-Path $settings 'data-path.txt'), $GamePath)
     [IO.File]::WriteAllText((Join-Path $KitProfile 'empty-releases.json'), '[]')
     $mode = if ($Renderer -eq 'dx7') { 'DirectX7' } else { 'Direct3D9' }
     @{
-        engine=$Edition; windowsRenderer=$mode; fullscreen='windowed'; resolution='800x600'
+        engine=$Edition; windowsRenderer=$mode; fullscreen=$Display; resolution=$Resolution
         hideWhilePlaying=$false; rawMouse=$true
         advanced="logfile 2`nnet_ip 127.0.0.1`nnet_noipx 1`nnet_lanauthorize 0`ncl_allowDownload 0`nsv_allowDownload 0"
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $settings 'launcher-settings.json') -Encoding Ascii
@@ -152,6 +168,7 @@ function Invoke-KitFaults {
     $exe = Get-KitStartTarget
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
+    Wait-KitCondition { [KitDesktop]::QuietDesktop(2500) } 30 'a quiet desktop for the freeze check' | Out-Null
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile 'original' 'dx9'
     $settingsPath = Join-Path $LauncherHome 'launcher\launcher-settings.json'
@@ -185,6 +202,18 @@ function Invoke-KitFaults {
         $game = Get-KitOwnedGame 'original' $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
         Start-Sleep -Seconds 4
+        try { Focus-KitWindow $window }
+        catch {
+            Wait-KitCondition { [KitDesktop]::QuietDesktop(2500) } 20 'a quiet desktop before retrying focus' | Out-Null
+            try { Focus-KitWindow $window }
+            catch {
+                $front = [KitDesktop]::GetForegroundWindow()
+                if ($front -eq $app) { Save-KitWindow $app (Join-Path $Results 'fault-foreground-launcher.png') }
+                "Foreground window class: $([KitDesktop]::WindowClass($front)). A picture is kept only for the kit launcher." |
+                    Set-Content -LiteralPath (Join-Path $Results 'fault-foreground.txt') -Encoding UTF8
+                throw
+            }
+        }
         Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
         Send-KitCommand $window '/toggleconsole; devmap mp_toujane'
         Wait-KitCondition {

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Assemble a test kit from checked package and prior evidence outputs."""
 import argparse
+from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
 import shutil
@@ -51,11 +52,14 @@ def copy_fixtures(args, kit):
 def assemble(args):
     with tempfile.TemporaryDirectory(prefix="kit-stage-", dir=args.output.parent) as temporary:
         kit = Path(temporary) / NAME
-        # Reuse the existing licensed-data-free server and retail fixture inputs.
+        # Reuse the checked, licensed-data-free evidence inputs.
+        fixture_sources = {"replays", "probes"}
+        if not args.wine:
+            fixture_sources.add("frame-references")
         with ZipFile(args.baseline) as baseline:
             for member in baseline.namelist():
                 parts = Path(member).parts
-                if len(parts) < 3 or parts[0] != NAME or parts[1] not in {"replays", "probes"}:
+                if len(parts) < 3 or parts[0] != NAME or parts[1] not in fixture_sources:
                     continue
                 if member.endswith("/") or ".." in parts or "\\" in member:
                     continue
@@ -71,7 +75,8 @@ def assemble(args):
         copy_file(source_root / "tests/launcher/fixtures/core-parity/directory.json",
                   kit / "launcher-fixtures/directory.json")
         copy_file(args.probe, kit / "probes/media-probe.exe")
-        copy_fixtures(args, kit)
+        if args.wine:
+            copy_fixtures(args, kit)
         for path in (args.release / "artifacts").iterdir():
             if path.name != "SHA256SUMS":
                 copy_file(path, kit / "install" / path.name)
@@ -84,9 +89,12 @@ def assemble(args):
         write_manifest(kit / "portable", "SHA256SUMS")
         launcher_revision = (args.release / "work/SOURCE_REVISION").read_text().strip()
         kit_revision = subprocess.check_output(["git", "-C", str(source_root), "rev-parse", "HEAD"], text=True).strip()
+        revision_time = subprocess.check_output(
+            ["git", "-C", str(source_root), "show", "-s", "--format=%ct", kit_revision], text=True)
+        build_date = datetime.fromtimestamp(int(revision_time), timezone.utc).date()
         (kit / "BUILD.txt").write_text(
             f"Engine source {args.engine}\nLauncher source {launcher_revision}\n"
-            f"Kit scripts and guides {kit_revision}\n"
+            f"Kit scripts and guides {kit_revision}\nKit date {build_date}\n"
             f"Package version {(layout / 'RELEASE_VERSION').read_text().strip()}\n"
             "Upgrade fixture version 0.3.9. Both test packages use the same product source.\n",
             encoding="ascii",
@@ -114,7 +122,13 @@ def assemble(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for argument in ("baseline", "release", "previous", "probe", "wine", "windows-original", "windows-cod2x", "output"):
+    for argument in ("baseline", "release", "previous", "probe", "output"):
         parser.add_argument(f"--{argument}", required=True, type=Path)
+    for argument in ("wine", "windows-original", "windows-cod2x"):
+        parser.add_argument(f"--{argument}", type=Path)
     parser.add_argument("--engine", required=True)
-    assemble(parser.parse_args())
+    arguments = parser.parse_args()
+    reference_overrides = (arguments.wine, arguments.windows_original, arguments.windows_cod2x)
+    if any(reference_overrides) and not all(reference_overrides):
+        parser.error("--wine, --windows-original and --windows-cod2x must be supplied together")
+    assemble(arguments)

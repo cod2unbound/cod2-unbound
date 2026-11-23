@@ -14,6 +14,52 @@ function Test-KitFiles {
     'All kit checksums matched.' | Set-Content -LiteralPath (Join-Path $Results 'kit-checksums.txt')
 }
 
+function Save-KitPreflightComputer {
+    $version = Get-KitWindowsVersion
+    $now = [DateTimeOffset]::UtcNow
+    $clock = if ($DriverUtc) {
+        $delta = [math]::Round(($now - [DateTimeOffset]::Parse($DriverUtc)).TotalSeconds)
+        if ([math]::Abs($delta) -gt 300) { Write-Warning 'Windows and the Mac differ by over five minutes. Check the Windows date and time.' }
+        "Windows clock relative to Mac: $delta seconds."
+    } else {
+        $stamp = Select-String -LiteralPath (Join-Path $Kit 'BUILD.txt') -Pattern '^Kit date (\d{4})-' | Select-Object -First 1
+        if ($stamp -and $now.Year -lt [int]$stamp.Matches[0].Groups[1].Value) {
+            Write-Warning 'The Windows clock predates this kit. Check the Windows date and time before trusting signatures.'
+            'Windows clock predates this kit.'
+        } else { 'Windows clock recorded.' }
+    }
+    $enough = $version.BuildNumber -ge 19041
+    @("$($version.Family) $($version.Release) $($version.Edition), build $($version.Build)",
+        "Windows PowerShell $($PSVersionTable.PSVersion); launcher Windows build floor 19041 met: $enough",
+        "Windows UTC $($now.ToString('o')); $clock", "Graphics run label: $GraphicsLabel") |
+        Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
+    if (-not $enough) { throw 'This Windows version is too old for the launcher. Run Windows Update and restart, then use a new run name. Build 19041 or later is required.' }
+    Initialize-KitDesktop
+    $context = [KitDesktop]::SetThreadDpiAwarenessContext([IntPtr](-4))
+    try {
+        foreach ($screen in [Windows.Forms.Screen]::AllScreens) {
+            $dpi = [KitDesktop]::DisplayDpi($screen.Bounds.Left, $screen.Bounds.Top)
+            $scale = if ($dpi -match '^(\d+)x') { "$([math]::Round([int]$Matches[1] * 100 / 96))%" } else { 'unavailable' }
+            "$($screen.DeviceName) $($screen.Bounds) primary=$($screen.Primary) DPI=$dpi scaling=$scale"
+        }
+    } finally {
+        if ($context -ne [IntPtr]::Zero) { [void][KitDesktop]::SetThreadDpiAwarenessContext($context) }
+    }
+}
+
+function Save-KitGraphicsPreferences([string]$Root, [string]$Evidence) {
+    $key = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
+    $data = foreach ($rel in 'launcher\CoD2Unbound.Windows.exe','original\cod2_win32.exe','cod2x\cod2_win32.exe',
+        'original\cod2_win32_ded.exe','cod2x\cod2_win32_ded.exe') {
+        $path = Join-Path $Root $rel
+        $value = Get-ItemPropertyValue -LiteralPath $key -Name $path -ErrorAction SilentlyContinue
+        [pscustomobject]@{ Program=$rel; Preference=if ($value) { $value } else { 'System default' } }
+    }
+    $gpu = @(Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion)
+    @{ Adapters=$gpu; Programs=@($data); RunLabel=$GraphicsLabel } | ConvertTo-Json -Depth 5 |
+        Set-Content -LiteralPath (Join-Path $Evidence 'graphics-preferences.json') -Encoding UTF8
+}
+
 function Save-Signatures([string[]]$Paths, [string]$Destination) {
     $signed = foreach ($path in $Paths) {
         $signature = Get-AuthenticodeSignature -LiteralPath $path

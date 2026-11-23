@@ -133,7 +133,9 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-    Set-KitLauncherProfile $Edition 'dx9'
+    if ($Route -eq 'fullscreen') {
+        Set-KitLauncherProfile $Edition 'dx9' 'exclusive' ([KitDesktop]::CurrentMode())
+    } else { Set-KitLauncherProfile $Edition 'dx9' }
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
     $demoName = "kit-match-$Edition"
@@ -141,10 +143,17 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     if ($Route -eq 'connect' -and (Test-Path -LiteralPath $recording)) { Remove-Item -LiteralPath $recording }
     $port = if ($Edition -eq 'original') { 29792 } else { 29791 }
     $settings = Get-KitLauncherSettings
-    $launcher = $server = $master = $game = $hostedProcess = $null
+    $launcher = $server = $second = $master = $game = $hostedProcess = $null
     $hostName = "Kit $Edition"
     $window = [IntPtr]::Zero
     $password = 'kit' + [guid]::NewGuid().ToString('N')
+    $secondPort = $port + 20
+    $joinPassword = 'kit' + [guid]::NewGuid().ToString('N')
+    if ($Route -eq 'handoff') {
+        # Keep the saved test password in Fixture's in-process store.
+        # The engine continues to read the sample key through Windows.
+        $settings.COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS = '0'
+    }
     try {
         if ($Route -ne 'hosting') {
             $entry = New-RunContext 'local-server'
@@ -158,11 +167,23 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 (Request-KitServer $port 'getstatus Kit') -match '\\sv_hostname\\Kit-Loopback'
             } 45 'the kit loopback server' | Out-Null
         }
-        if ($Route -eq 'list') {
+        if ($Route -eq 'handoff') {
+            $secondEntry = New-RunContext 'password-server'
+            $secondArgs = (Get-EngineArgs $secondEntry.Folder $GamePath -Port $secondPort) +
+                " +set dedicated 1 +set g_gametype dm +set sv_hostname Kit-Password +set g_password $joinPassword" +
+                " +set rcon_password $password +map mp_toujane"
+            $second = Start-KitProcess (Get-Binary $Edition -Server -Root $InstallRoot) $secondArgs $secondEntry.Folder -NoWindow
+            Wait-KitCondition {
+                if ($second.Process.HasExited) { throw 'The password server exited before answering.' }
+                (Request-KitServer $secondPort 'getstatus Kit') -match 'Kit-Password'
+            } 45 'the password-protected loopback server' | Out-Null
+        }
+        if ($Route -in 'list','handoff') {
             $entryMaster = New-RunContext 'local-master'
             $ready = Join-Path $entryMaster.Folder 'port.txt'
             $masterPath = Join-Path $Kit 'Local-Master.ps1'
             $argsText = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -ServerPort {1} -Ready "{2}"' -f $masterPath,$port,$ready
+            if ($Route -eq 'handoff') { $argsText += " -SecondPort $secondPort" }
             $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
             $master = Start-KitProcess $ps $argsText $entryMaster.Folder -NoWindow
             $settings.COD2_UNBOUND_TEST_MASTER_PORT = Wait-KitCondition {
@@ -175,7 +196,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         Invoke-KitControl $app 'ServersItem'
         $since = Get-Date
         switch ($Route) {
-            'connect' {
+            { $_ -in 'connect','fullscreen' } {
                 Invoke-KitControl $app ('Connect to address' + [char]0x2026) -Name
                 Set-KitEdit $app 'AddressBox' "127.0.0.1:$port"
                 Invoke-KitControl $app 'Connect' -Name
@@ -185,11 +206,17 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Open-KitAssociation ("${scheme}://127.0.0.1:$port") $scheme $exe
                 Invoke-KitControl $app 'Connect' -Name
             }
-            'list' {
+            { $_ -in 'list','handoff' } {
                 Invoke-KitControl $app 'All' -Name
                 Invoke-KitControl $app 'RefreshButton'
                 # The only fixture result is selected by the browser. Its TextBlock has no action.
                 Wait-KitCondition { Find-KitControl $app 'Kit-Loopback' -Name } 25 'the loopback server in the list' | Out-Null
+                if ($Route -eq 'handoff') {
+                    Select-KitServerRow $app 'Kit-Loopback'
+                    Wait-KitCondition { Find-KitControl $app 'DetailReady' -AllowOffscreen } 15 'the server ready check' | Out-Null
+                    Focus-KitWindow $app
+                    Save-KitWindow $app (Join-Path $Results 'servers-ready.png')
+                }
                 Invoke-KitControl $app 'JoinButton'
             }
             'hosting' {
@@ -244,7 +271,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             if ($status -match '(?m)^-?\d+ +(\d+) +"[^"\r\n]+"\r?$' -and [int]$Matches[1] -lt 999) { $status }
         } 75 'a named, active player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
-        if ($Route -in 'connect','hosting') {
+        if ($Route -in 'connect','hosting','fullscreen','handoff') {
             # The server can report an active slot before the client accepts game input.
             Wait-KitCondition {
                 (Test-Path -LiteralPath $console) -and
@@ -252,6 +279,27 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             } 35 'the joined client to finish loading its first map' | Out-Null
             Enter-KitPlay $window
             Save-KitFrame $window $LauncherHome $Results 'kit-loopback-playing'
+        }
+        if ($Route -eq 'handoff') {
+            Invoke-KitSecondServer $app $game $port $secondPort $joinPassword
+        }
+        if ($Route -eq 'fullscreen') {
+            Invoke-KitTaskSwitch $window $LauncherHome $Results 'kit-match'
+            $position = Join-Path $Results 'position.txt'
+            $viewPattern = '(?m)^\( *-?\d+(?:\.\d+)? +[^\r\n]+?\)(?: *:.*)?$'
+            Send-KitCommand $window '/toggleconsole; viewpos'
+            $before = [regex]::Matches((Read-KitText $console), $viewPattern) | Select-Object -Last 1
+            if (-not $before) { throw 'The game did not report its position after returning.' }
+            [KitDesktop]::KeyEvent(87, $false)
+            try { Start-Sleep -Milliseconds 850 } finally { [KitDesktop]::KeyEvent(87, $true) }
+            Send-KitCommand $window '/toggleconsole; viewpos'
+            $after = [regex]::Matches((Read-KitText $console), $viewPattern) | Select-Object -Last 1
+            @($before.Value, $after.Value) | Set-Content -LiteralPath $position
+            if (-not $after -or $before.Value -eq $after.Value -or -not (Get-KitNamedPlayer $port)) {
+                throw 'The named player did not move after returning to the match.'
+            }
+            Select-String -LiteralPath $console -Pattern 'lost device|device lost|recover.*device' |
+                ForEach-Object Line | Set-Content -LiteralPath (Join-Path $Results 'device-recovery.txt')
         }
         if ($Route -eq 'connect') {
             $summaryPath = Join-Path $LauncherHome 'main\stats\matches.jsonl'
@@ -360,12 +408,20 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             $logs = Join-Path $LauncherHome 'hosting\servers'
             foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
-                if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $Results $file.Name) }
+                if ($since -and $file.LastWriteTime -ge $since) {
+                    if ($file.Name -like 'engine-*.log') { Save-KitEngineAudit (Read-KitText $file.FullName) $Results }
+                    Save-Text $file.FullName (Join-Path $Results $file.Name)
+                }
             }
         }
         if ($master) {
             if (-not $master.Process.HasExited) { $master.Process.Kill() }
             Complete-KitProcess $master $entryMaster.Evidence 5 | Out-Null
+        }
+        if ($second) {
+            if (-not $second.Process.HasExited) { Stop-SetupServer $password $secondPort }
+            Complete-KitProcess $second $secondEntry.Evidence 8 | Out-Null
+            Save-GameEvidence $secondEntry.Folder $secondEntry.Evidence
         }
         if ($server) {
             if (-not $server.Process.HasExited) { Stop-SetupServer $password $port }
@@ -373,4 +429,87 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             Save-GameEvidence $serverHome $entry.Evidence
         }
     }
+}
+
+function Get-KitNamedPlayer([int]$Port) {
+    $status = Request-KitServer $Port 'getstatus Kit'
+    if ($status -match '(?m)^-?\d+ +(\d+) +"Kit Player"\r?$' -and [int]$Matches[1] -lt 999) { $status }
+}
+
+function Select-KitServerRow([IntPtr]$Window, [string]$ServerName) {
+    $selection = Wait-KitCondition {
+        $node = Find-KitControl $Window $ServerName -Name
+        while ($node) {
+            $action = $null
+            if ($node.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$action)) {
+                return $action
+            }
+            $node = [Windows.Automation.TreeWalker]::RawViewWalker.GetParent($node)
+        }
+    } 30 "the server row for $ServerName"
+    $selection.Select()
+}
+
+function Complete-KitJoinPassword([IntPtr]$Window, [string]$Name, [string]$Password) {
+    $field = Wait-KitCondition {
+        Find-KitControl $Window "Password for $Name" -Name
+    } 18 'the password prompt for the second server'
+    Focus-KitWindow $Window
+    $field.SetFocus()
+    [Windows.Forms.SendKeys]::SendWait($Password)
+    $remember = Find-KitControl $Window 'Remember for this server, on this PC only' -Name
+    if (-not $remember) { throw 'The remember-password choice was missing.' }
+    $remember.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
+    Save-KitWindow $Window (Join-Path $Results 'server-password.png')
+    Invoke-KitControl $Window 'PrimaryButton'
+}
+
+function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$SecondPort, [string]$JoinPassword) {
+    $evidence = Join-Path $Results 'handoff.txt'
+    $tag = 0x434F4432
+    foreach ($probe in @(
+        @{ Text="connect 127.0.0.1:$SecondPort"; Tag=0 }
+        @{ Text='connect 127.0.0.1:65536'; Tag=$tag }
+        @{ Text=("connect 127.0.0.1:$SecondPort " + ('x' * 2048)); Tag=$tag }
+    )) {
+        if ([KitDesktop]::SendJoinProbe($Game.Id, $probe.Text, $probe.Tag) -or -not (Get-KitNamedPlayer $FirstPort)) {
+            throw 'The game accepted an invalid request or left the first server.'
+        }
+    }
+    'Wrong message tag, invalid port and oversized payload refused. Player stayed on the first server.' |
+        Set-Content -LiteralPath $evidence -Encoding UTF8
+    Focus-KitWindow $App
+    Select-KitServerRow $App 'Kit-Password'
+    Invoke-KitControl $App 'JoinButton'
+    Complete-KitJoinPassword $App 'Kit-Password' $JoinPassword
+    $status = Wait-KitCondition { Get-KitNamedPlayer $SecondPort } 60 'Kit Player to join the password-protected server'
+    Wait-KitCondition { -not (Get-KitNamedPlayer $FirstPort) } 15 'Kit Player to leave the first server' | Out-Null
+    if ($Game.HasExited) { throw 'The game process that joined the first server exited during the handoff.' }
+    "Same game PID $($Game.Id). First server no longer lists Kit Player. Second server status:" |
+        Add-Content -LiteralPath $evidence
+    Protect-KitText $status | Add-Content -LiteralPath $evidence
+
+    Focus-KitWindow $App
+    Invoke-KitControl $App 'JoinButton'
+    Wait-KitCondition { Find-KitControl $App 'Saved on this PC. Untick to forget it when you launch.' -Name } 15 'the remembered password' | Out-Null
+    Save-KitWindow $App (Join-Path $Results 'server-password-saved.png')
+    Invoke-KitControl $App 'Cancel' -Name
+    Invoke-KitControl $App 'HomeItem'
+    foreach ($name in 'Return to game','Close game') {
+        Wait-KitCondition { Find-KitControl $App $name -Name } 15 $name | Out-Null
+    }
+    Save-KitWindow $App (Join-Path $Results 'launcher-playing.png')
+    [KitDesktop]::Chord(18, 115)
+    foreach ($name in 'Close launcher only','Close both','Cancel') {
+        Wait-KitCondition { Find-KitControl $App $name -Name } 15 $name | Out-Null
+    }
+    Save-KitWindow $App (Join-Path $Results 'launcher-close-question.png')
+    Invoke-KitControl $App 'Cancel' -Name
+    Invoke-KitControl $App 'Return to game' -Name
+    $gameWindow = Get-KitGameWindow $Game
+    Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $gameWindow } 8 'Return to game to bring the game forward' | Out-Null
+    Focus-KitWindow $App
+    Invoke-KitControl $App 'Close game' -Name
+    if (-not $Game.WaitForExit(18000)) { throw 'Close game did not stop the test game.' }
+    'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
 }

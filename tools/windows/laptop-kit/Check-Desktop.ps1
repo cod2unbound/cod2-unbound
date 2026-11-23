@@ -224,14 +224,39 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
     }
 }
 
-function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode) {
+function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evidence, [string]$Label) {
+    $switches = Join-Path $Evidence 'fullscreen-switch.txt'
+    [KitDesktop]::Chord(18, 9)
+    Wait-KitCondition {
+        $current = [KitDesktop]::GetForegroundWindow()
+        $current -ne $Window -and $current -ne [IntPtr]::Zero -and
+            [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
+    } 8 'Alt+Tab to switch away' | Out-Null
+    $foreground = [KitDesktop]::GetForegroundWindow()
+    "Away: shell foreground class $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window))" |
+        Set-Content -LiteralPath $switches -Encoding UTF8
+    [KitDesktop]::Chord(18, 9)
+    try {
+        Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $window } 8 'Alt+Tab to return' | Out-Null
+        'Alt+Tab returned foreground to the game.' | Add-Content -LiteralPath $switches
+    } catch {
+        $foreground = [KitDesktop]::GetForegroundWindow()
+        "Alt+Tab selected $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window)). Trying a direct window restore." |
+            Add-Content -LiteralPath $switches
+        Focus-KitWindow $window
+    }
+    Save-KitFrame $window $HomePath $Evidence "$Label-return"
+    "The restored game rendered at $([KitDesktop]::CurrentMode())." | Add-Content -LiteralPath $switches
+}
+
+function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode, [switch]$Borderless) {
     Initialize-KitDesktop
     $entry = New-RunContext 'game'
     $homePath = Join-Path $entry.Folder 'profile'
     New-TestProfile $homePath
     $argsText = (Get-EngineArgs $homePath $GamePath) +
         " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set net_noudp 1 +set com_introPlayed 1 +set g_gametype dm"
-    if ($DisplayMode) { $argsText += " +set r_fullscreen 1 +set r_mode $DisplayMode" }
+    if ($DisplayMode) { $argsText += " +set r_fullscreen 1 +set r_borderless $([int]$Borderless.IsPresent) +set r_mode $DisplayMode" }
     else { $argsText += ' +set r_fullscreen 0 +set r_mode 800x600' }
     $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder
     $window = [IntPtr]::Zero
@@ -245,29 +270,15 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
             Send-KitCommand $window '/toggleconsole; r_fullscreen; r_mode'
             $mode = [KitDesktop]::CurrentMode()
             if ($mode -ne $DisplayMode) { throw "The display reported $mode after requesting $DisplayMode." }
-            Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen'
-            $switches = Join-Path $entry.Evidence 'fullscreen-switch.txt'
-            [KitDesktop]::Chord(18, 9)
-            Wait-KitCondition {
-                $current = [KitDesktop]::GetForegroundWindow()
-                $current -ne $window -and $current -ne [IntPtr]::Zero -and
-                    [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
-            } 8 'Alt+Tab to switch away' | Out-Null
-            $foreground = [KitDesktop]::GetForegroundWindow()
-            "Away: shell foreground class $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window))" |
-                Set-Content -LiteralPath $switches -Encoding UTF8
-            [KitDesktop]::Chord(18, 9)
-            try {
-                Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $window } 8 'Alt+Tab to return' | Out-Null
-                'Alt+Tab returned foreground to the game.' | Add-Content -LiteralPath $switches
-            } catch {
-                $foreground = [KitDesktop]::GetForegroundWindow()
-                "Alt+Tab selected $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window)). Trying a direct window restore." |
-                    Add-Content -LiteralPath $switches
-                Focus-KitWindow $window
+            if ($Borderless) {
+                $facts = [KitDesktop]::WindowFacts($window)
+                $facts | Set-Content -LiteralPath (Join-Path $entry.Evidence 'borderless.txt') -Encoding UTF8
+                if (-not [KitDesktop]::FillsMonitorWithoutFrame($window)) { throw "Borderless window geometry did not match the monitor. $facts" }
+                Save-KitFrame $window $homePath $entry.Evidence 'kit-borderless'
+            } else {
+                Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen'
+                Invoke-KitTaskSwitch $window $homePath $entry.Evidence 'kit-fullscreen'
             }
-            Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen-return'
-            "The restored game rendered at $([KitDesktop]::CurrentMode())." | Add-Content -LiteralPath $switches
         } else {
             Invoke-MapPictures $homePath $entry.Evidence $window $Renderer
         }

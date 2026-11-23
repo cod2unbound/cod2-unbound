@@ -1,0 +1,108 @@
+function Save-KitSurface([IntPtr]$Window, [string]$Name, [string[]]$Controls) {
+    foreach ($control in $Controls) {
+        Wait-KitCondition { Find-KitControl $Window $control -Name -AllowOffscreen } 12 $control | Out-Null
+    }
+    Focus-KitWindow $Window
+    Save-KitWindow $Window (Join-Path $Results "$Name.png")
+    $Controls | Add-Content -LiteralPath (Join-Path $Results 'automation-names.txt') -Encoding UTF8
+}
+
+function Invoke-KitSurface([string]$Page) {
+    Stop-KitIfNoGame
+    Initialize-KitDesktop
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    $exe = Get-KitStartTarget
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
+    Set-KitLauncherProfile 'original' 'dx9'
+    $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    try {
+        $app = Get-KitLauncherWindow $run.Process
+        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'Home to open' | Out-Null
+        [void][KitDesktop]::ShowWindow($app, 3)
+        Focus-KitWindow $app
+        switch ($Page) {
+            'home' {
+                Invoke-KitControl $app 'Open game menu' -Name
+                Save-KitSurface $app 'game-menu' @('Original 1.3','CoD2x')
+                [KitDesktop]::Tap(27)
+                $news = if (Find-KitControl $app 'See all' -Name) { 'See all' } else { "What$([char]0x2019)s New" }
+                Invoke-KitControl $app $news -Name
+                Save-KitSurface $app 'news' @('Done')
+                Invoke-KitControl $app 'Done' -Name
+            }
+            'jump' {
+                [KitDesktop]::Chord(17, 75)
+                $box = Wait-KitCondition { Find-KitControl $app 'Jump to' -Name } 12 'the Jump to box'
+                $box.SetFocus()
+                [Windows.Forms.SendKeys]::SendWait('keyboard shortcuts')
+                Save-KitSurface $app 'jump-search' @('Keyboard shortcuts')
+                [KitDesktop]::Tap(13)
+                Save-KitSurface $app 'shortcuts' @('Done')
+                Invoke-KitControl $app 'Done' -Name
+            }
+            'hosting' {
+                Invoke-KitControl $app 'ServersItem'
+                Invoke-KitControl $app 'Hosting' -Name
+                Invoke-KitControl $app 'NewHost'
+                Set-KitEdit $app 'Server name' 'Kit Export' -Name
+                Invoke-KitControl $app 'Start Server' -Name
+                $room = Wait-KitCondition { Find-KitHostedServer 'Kit Export' } 20 'the disposable Hosting room'
+                Wait-KitCondition { (Request-KitServer $room.Port 'getstatus Kit') -match 'Kit Export' } 45 'the Hosting room to start' | Out-Null
+                $export = 'Export for another machine' + [char]0x2026
+                Save-KitSurface $app 'hosting-folder' @($export,'Show its folder in File Explorer')
+                Invoke-KitControl $app $export -Name
+                Save-KitSurface $app 'hosting-export' @('Cancel')
+                Invoke-KitControl $app 'Cancel' -Name
+                Invoke-KitControl $app 'Stop server' -Name
+                Wait-KitCondition { -not (Request-KitServer $room.Port 'getstatus Kit') } 20 'the Hosting room to stop' | Out-Null
+            }
+            'configs' {
+                Invoke-KitControl $app 'ConfigsItem'
+                Invoke-KitControl $app 'Binds' -Name
+                Save-KitSurface $app 'config-binds' @('Find an action or key')
+                Invoke-KitControl $app 'History' -Name
+                Save-KitSurface $app 'config-history' @('Save a snapshot now')
+                Invoke-KitControl $app 'Check a config' -Name
+                Save-KitSurface $app 'config-checker' @('Check a loadout')
+            }
+            'library' {
+                Invoke-KitControl $app 'LibraryItem'
+                Invoke-KitControl $app 'MatchesSection'
+                Save-KitSurface $app 'library-matches' @('Match history')
+                Invoke-KitControl $app 'DemosSection'
+                Save-KitSurface $app 'library-demos' @('Find a file','Show in File Explorer')
+                Invoke-KitControl $app 'ScreenshotsSection'
+                Save-KitSurface $app 'library-screenshots' @('Find a file','Show in File Explorer')
+            }
+            'settings' {
+                Invoke-KitControl $app 'Settings' -Name
+                Invoke-KitControl $app 'Display' -Name
+                Save-KitSurface $app 'settings-display' @('Display','Mode','Graphics')
+                Invoke-KitControl $app 'About' -Name
+                $report = 'Report a problem' + [char]0x2026
+                Save-KitSurface $app 'settings-about' @($report,'Acknowledgements')
+                Invoke-KitControl $app $report -Name
+                Save-KitSurface $app 'problem-report' @('Copy details','Cancel')
+                Invoke-KitControl $app 'Cancel' -Name
+            }
+        }
+    } finally {
+        if ($Page -eq 'hosting') {
+            $logs = Join-Path $LauncherHome 'hosting\servers'
+            foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue) {
+                Save-KitEngineAudit (Read-KitText $file.FullName) $Results
+                Save-Text $file.FullName (Join-Path $Results $file.Name)
+            }
+            if ($room -and (Request-KitServer $room.Port 'getstatus Kit')) {
+                if (-not $run.Process.HasExited) {
+                    try {
+                        Focus-KitWindow $app
+                        [KitDesktop]::Chord(18, 115)
+                        Invoke-KitControl $app 'Stop and quit' -Name
+                    } catch { }
+                }
+            }
+        }
+        Stop-KitLauncher $run $Results
+    }
+}

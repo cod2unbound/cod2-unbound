@@ -93,14 +93,19 @@ function Add-KitStep([string]$Id, [string]$Title, [scriptblock]$Action, [string]
 
 $Steps = @(
     Add-KitStep 'preflight' 'Kit files and offline checks' {
-        $windows = Get-KitWindowsVersion
-        "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build), Windows PowerShell $($PSVersionTable.PSVersion)" |
-            Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
+        Save-KitPreflightComputer | Set-Content -LiteralPath (Join-Path $Results 'monitors.txt') -Encoding UTF8
         $gateways = @(Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0', '::/0') }).Count
         "Default routes: $gateways. Online run allowed by the driver: $($env:COD2_KIT_ONLINE -eq '1')." |
             Set-Content -LiteralPath (Join-Path $Results 'network.txt') -Encoding UTF8
         Test-KitFiles
         [IO.File]::WriteAllText($UpdateTrustFile, (Get-KitUpdateTrust).Status)
+        if (Test-Path -LiteralPath $KeyMarker) {
+            Invoke-TestKey 'verify'
+        } else {
+            Assert-NoSavedKitKey
+            [IO.File]::WriteAllText($KeyMarker, 'sample')
+            Invoke-TestKey 'seed'
+        }
         $captured = @()
         if ($GamePath) {
             [IO.File]::WriteAllText($GamePathFile, (Get-DataRoot $GamePath))
@@ -144,11 +149,7 @@ $Steps = @(
     Add-KitStep 'shaders' 'Stock shaders on the Windows compiler' { Invoke-KitShaderTable }
     Add-KitStep 'firewall-before' 'Firewall rules before first start' { Save-KitFirewallStep 'before' }
     Add-KitStep 'key' 'Windows reads the sample key' {
-        Assert-NoSavedKitKey
-        [IO.File]::WriteAllText($KeyMarker, 'sample')
-        Invoke-TestKey 'seed'
         Invoke-TestKey 'check'
-        Invoke-TestKey 'clear'
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
@@ -196,11 +197,14 @@ $Steps = @(
         Initialize-KitDesktop
         Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
         $exe = Get-KitStartTarget
+        Save-KitGraphicsPreferences $InstallRoot $Results
         $settings = New-Folder (Join-Path $LauncherHome 'launcher')
         [IO.File]::WriteAllText((Join-Path $settings 'data-path.txt'), $GamePath)
         [IO.File]::WriteAllText((Join-Path $KitProfile 'empty-releases.json'), '[]')
         foreach ($number in 1..2) {
-            $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+            $settings = Get-KitLauncherSettings
+            if ($number -eq 1) { $settings.COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS = '0' }
+            $run = Start-KitProcess $exe '' $LauncherHome $settings
             try {
                 $trace = Join-Path $LauncherHome 'startup-timing.log'
                 $id = $run.Process.Id
@@ -220,6 +224,12 @@ $Steps = @(
                 if ($done.TimedOut -or $done.ExitCode -ne 0) { throw 'The launcher did not close cleanly.' }
             }
         }
+    }
+    foreach ($surface in 'home','jump','hosting','configs','library','settings') {
+        Add-KitStep "launcher-$surface" "Launcher $surface controls and pictures" {
+            param($step)
+            Invoke-KitSurface $step.Variant
+        } -Variant $surface
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
@@ -265,6 +275,12 @@ $Steps = @(
                 if ([KitDesktop]::CurrentMode() -ne $desktop) { throw 'Windows did not return to the desktop resolution.' }
             } -Edition $edition -Variant $variant
         }
+        Add-KitStep "borderless-$edition" "$name Direct3D 9 borderless at desktop size" {
+            param($step)
+            Stop-KitIfNoGame
+            Initialize-KitDesktop
+            Invoke-AutomaticClient $step.Edition $GamePath 'dx9' ([KitDesktop]::CurrentMode()) -Borderless
+        } -Edition $edition
     }
     Add-KitStep 'audio' 'Sound loopback and volume ratio' {
         $audio = Join-Path $RunResults 'direct-original-dx9\game'
@@ -283,7 +299,7 @@ $Steps = @(
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
-        foreach ($route in 'connect','link','list','hosting') {
+        foreach ($route in 'connect','link','list','hosting','handoff','fullscreen') {
             Add-KitStep "match-$edition-$route" "$name loopback through $route" {
                 param($step)
                 Invoke-KitLoopback $step.Edition $step.Variant
@@ -295,6 +311,10 @@ $Steps = @(
             param($step)
             Invoke-KitOpenDemo $step.Edition
         } -Edition $edition
+    }
+    Add-KitStep 'identity-cod2x' 'Compare the CoD2x identifier with the 1.4.6.8 algorithm on this PC' {
+        Stop-KitIfNoGame
+        Invoke-KitHwidCheck (Get-Binary 'cod2x') $GamePath
     }
     foreach ($attempt in 1..5) {
         Add-KitStep "update-$attempt" "In-app update $attempt of 5 from the installed shortcut" {

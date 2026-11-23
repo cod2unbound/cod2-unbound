@@ -1,6 +1,7 @@
 #Requires -Version 5.1
 param([string]$Stage, [string]$Operation, [string]$Step, [string]$Answer, [string]$GamePath,
-    [string]$Sid, [switch]$ArmRehearsal, [switch]$Online)
+    [string]$Sid, [switch]$ArmRehearsal, [switch]$Online, [switch]$InternetPlay,
+    [ValidateSet('Default','Intel','Radeon')][string]$GraphicsLabel = 'Default', [string]$DriverUtc)
 $ErrorActionPreference = 'Stop'
 $kit = Join-Path $Stage 'CoD2-Unbound-Windows-Kit'
 $runner = Join-Path $kit 'Run-Laptop.ps1'
@@ -8,6 +9,9 @@ $taskName = "CoD2UnboundKit-$([IO.Path]::GetFileName($Stage))"
 $runName = [IO.Path]::GetFileName($Stage)
 $resultRoot = Join-Path $kit "results\$runName"
 $reply = Join-Path $Stage 'request.json'
+if ($InternetPlay -and (-not $Online -or $ArmRehearsal)) {
+    throw 'Internet play requires an online physical laptop run.'
+}
 
 function Get-DesktopTask {
     try { $taskFolder.GetTask($taskName) }
@@ -25,7 +29,7 @@ if ($Operation -in 'status','queue','finish') {
 }
 
 if ($Operation -eq 'status') {
-    $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
+    $status = & $runner -RunId $runName -Mode Status -InternetPlay:$InternetPlay | ConvertFrom-Json
     $task = Get-DesktopTask
     $state = if (-not $task) { 'Absent' } elseif ($task.State -in 2,4) { 'Running' } else { 'Ready' }
     $receipts = @(Get-ChildItem -LiteralPath $resultRoot -Directory -ErrorAction SilentlyContinue | Where-Object {
@@ -40,7 +44,7 @@ if ($Operation -eq 'status') {
     return
 }
 if ($Operation -eq 'queue') {
-    $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
+    $status = & $runner -RunId $runName -Mode Status -InternetPlay:$InternetPlay | ConvertFrom-Json
     if ($status.Done -or $status.Id -cne $Step) { throw 'The Windows step has already changed.' }
     $task = Get-DesktopTask
     if ($task -and $task.State -in 2,4) { throw 'The Windows step is already running.' }
@@ -60,7 +64,8 @@ if ($Operation -eq 'queue') {
     $definition.Settings.MultipleInstances = 2  # TASK_INSTANCES_IGNORE_NEW
     $definition.Settings.DisallowStartIfOnBatteries = $false
     $definition.Settings.StopIfGoingOnBatteries = $false
-    @{ Step=$Step; Answer=$Answer; GamePath=$GamePath; ArmRehearsal=$ArmRehearsal.IsPresent; Online=$Online.IsPresent } |
+    @{ Step=$Step; Answer=$Answer; GamePath=$GamePath; ArmRehearsal=$ArmRehearsal.IsPresent; Online=$Online.IsPresent
+        GraphicsLabel=$GraphicsLabel; DriverUtc=$DriverUtc; InternetPlay=$InternetPlay.IsPresent } |
         ConvertTo-Json -Compress | Set-Content -LiteralPath $reply -Encoding UTF8
     $workerLog = Join-Path $Stage 'worker-error.txt'
     if (Test-Path -LiteralPath $workerLog) { Remove-Item -LiteralPath $workerLog }
@@ -74,7 +79,8 @@ if ($Operation -eq 'worker') {
     if ($request.ArmRehearsal) { $env:COD2_KIT_ARM_REHEARSAL = '1' }
     if ($request.Online) { $env:COD2_KIT_ONLINE = '1' }
     try {
-        & $runner -RunId $runName -Mode Step -ExpectedStep $request.Step -Answer $request.Answer -GamePath $request.GamePath
+        & $runner -RunId $runName -Mode Step -ExpectedStep $request.Step -Answer $request.Answer -GamePath $request.GamePath `
+            -GraphicsLabel $request.GraphicsLabel -DriverUtc $request.DriverUtc -InternetPlay:([bool]$request.InternetPlay)
     } catch {
         $workerLog = Join-Path $Stage 'worker-error.txt'
         [IO.File]::WriteAllText($workerLog, $_.Exception.Message)
@@ -99,7 +105,7 @@ if ($Operation -eq 'archive') {
     return
 }
 if ($Operation -eq 'finish') {
-    $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
+    $status = & $runner -RunId $runName -Mode Status -InternetPlay:$InternetPlay | ConvertFrom-Json
     if (-not $status.Done) { throw 'There are unfinished Windows steps.' }
     $task = Get-DesktopTask
     if ($task -and $task.State -in 2,4) { throw 'Wait for the last Windows step to exit.' }

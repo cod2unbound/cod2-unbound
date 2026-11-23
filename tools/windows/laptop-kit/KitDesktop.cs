@@ -34,6 +34,36 @@ public static class KitDesktop {
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr window);
+    [StructLayout(LayoutKind.Sequential)] struct LastInput { public uint Size; public uint Ticks; }
+    [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LastInput input);
+
+    public static bool QuietDesktop(uint milliseconds)
+    {
+        var input = new LastInput { Size = (uint)Marshal.SizeOf(typeof(LastInput)) };
+        return GetLastInputInfo(ref input) && unchecked((uint)Environment.TickCount - input.Ticks) >= milliseconds;
+    }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string windowClass, string title);
+    [StructLayout(LayoutKind.Sequential)] struct CopyData { public IntPtr Tag; public uint Size; public IntPtr Data; }
+    [DllImport("user32.dll")] static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr sender,
+        ref CopyData input, uint flags, uint milliseconds, out IntPtr result);
+
+    public static bool SendJoinProbe(int gamePid, string payload, int tag)
+    {
+        IntPtr window = FindWindowEx(new IntPtr(-3), IntPtr.Zero, "CoD2Unbound.LauncherJoin.1", gamePid.ToString());
+        uint owner;
+        if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out owner) == 0 || owner != gamePid)
+            throw new InvalidOperationException("The running kit game's join receiver was not found.");
+        byte[] bytes = Encoding.ASCII.GetBytes(payload + "\0");
+        IntPtr data = Marshal.AllocHGlobal(bytes.Length);
+        try {
+            Marshal.Copy(bytes, 0, data, bytes.Length);
+            var input = new CopyData { Tag = new IntPtr(tag), Size = (uint)bytes.Length, Data = data };
+            IntPtr result;
+            if (SendMessageTimeout(window, 0x4A, IntPtr.Zero, ref input, 2, 3000, out result) == IntPtr.Zero)
+                throw new InvalidOperationException("The running game did not answer the join probe.");
+            return result != IntPtr.Zero;
+        } finally { Marshal.FreeHGlobal(data); }
+    }
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out Rect value, int size);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
 
@@ -100,7 +130,7 @@ public static class KitDesktop {
                 throw new InvalidOperationException("Move the kit window onto the screen.");
             using (var bitmap = new Bitmap(bounds.Width, bounds.Height))
             using (var canvas = Graphics.FromImage(bitmap)) {
-                canvas.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
+                canvas.CopyFromScreen(bounds.Location, System.Drawing.Point.Empty, bounds.Size);
                 if (GetForegroundWindow() != window || bounds != Rectangle.Intersect(monitor, Frame(window)))
                     throw new InvalidOperationException("The foreground or window position changed during capture.");
                 ExcludeOverlappingWindows(canvas, window, bounds);

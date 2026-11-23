@@ -93,6 +93,9 @@ function Get-RetailPath([string]$Provided, [string]$Selected) {
 
 function Test-RetailMouse([string]$RetailPath) {
     if (-not $RetailPath) { Write-Host 'Retail mouse comparison skipped.'; return }
+    if (-not (Test-ClassicKeyIsAbsent)) {
+        throw 'This old-game probe requires a lab installation without a retail key in the Windows registry.'
+    }
     $entry = New-RunContext 'retail-mouse'
     $exe = Join-Path $RetailPath 'CoD2MP_s.exe'
     $renderer = Join-Path $RetailPath 'gfx_d3d_mp_x86_s.dll'

@@ -11,10 +11,16 @@ function Invoke-Setup([string]$Exe, [string]$Label, [string]$Options = '') {
     Assert-Offline
     $detail = New-RunContext $Label
     $rawLog = Join-Path $detail.Folder 'setup.log'
+    Initialize-KitDesktop
+    Write-Host 'Setup may show SmartScreen or ask for administrator approval. Read and answer the prompt yourself.'
     try {
         $p = Start-Process -FilePath $Exe -ArgumentList "$Options /LOG=`"$rawLog`"" -PassThru
         try {
-            if (-not $p.WaitForExit(180000)) {
+            $deadline = [DateTime]::UtcNow.AddMinutes(3)
+            while (-not $p.WaitForExit(500) -and [DateTime]::UtcNow -lt $deadline) {
+                Wait-KitSecurity
+            }
+            if (-not $p.HasExited) {
                 if (-not $p.HasExited) { $p.Kill() }
                 throw 'Setup timed out. Read any prompt still on the screen before continuing.'
             }
