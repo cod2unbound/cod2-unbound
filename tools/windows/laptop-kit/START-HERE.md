@@ -50,8 +50,10 @@ a key in Windows Credential Manager. Save your work before starting.
 6. Browse Home and **Settings > Privacy**. Start Narrator with **Windows + Ctrl
    + Enter**. Tab through both pages. Write one line about labels, focus order
    or controls that are hard to reach. Turn Narrator off with the same
-   shortcut. Windows 10 uses a solid background and a standard title bar
-   with **Jump to** below it. Windows 11 can show Mica. If you try high
+   shortcut. Windows 10 uses a solid background and, where supported, the
+   taller title bar with **Jump to** and the Windows caption buttons. If
+   Windows uses its standard title bar, **Jump to** moves below it. Windows 11
+   can show Mica. If you try high
    contrast, Windows 10 puts it in **Settings > Ease of Access > High
    contrast**. Windows 11 puts it in **Settings > Accessibility > Contrast
    themes**. Restore your usual theme afterward.
