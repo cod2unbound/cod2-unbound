@@ -6,19 +6,21 @@ function Get-KitLauncherWindow($Process) {
     } 55 'the launcher window'
 }
 
-function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name) {
+function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     $root = [Windows.Automation.AutomationElement]::FromHandle($Window)
     $property = if ($Name) { [Windows.Automation.AutomationElement]::NameProperty }
         else { [Windows.Automation.AutomationElement]::AutomationIdProperty }
     $condition = [Windows.Automation.PropertyCondition]::new($property, $Value)
     $scope = [Windows.Automation.TreeScope]::Descendants
     foreach ($control in $root.FindAll($scope, $condition)) {
-        if ($control.Current.IsEnabled -and -not $control.Current.IsOffscreen) { return $control }
+        if ($control.Current.IsEnabled -and ($AllowOffscreen -or -not $control.Current.IsOffscreen)) { return $control }
     }
 }
 
-function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name) {
-    $node = Wait-KitCondition { Find-KitControl $Window $Value -Name:$Name } 12 "launcher control $Value"
+function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    $node = Wait-KitCondition {
+        Find-KitControl $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen
+    } 12 "launcher control $Value"
     foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
         $action = $null
         if ($node.TryGetCurrentPattern($pattern, [ref]$action)) {
