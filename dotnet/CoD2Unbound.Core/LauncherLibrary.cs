@@ -26,6 +26,8 @@ public sealed record LauncherLibrary
             .ToImmutableDictionary(StringComparer.Ordinal) };
     }
 
+    public LauncherLibrary ClearRecent() => this with { Recent = [], Played = Played.Clear() };
+
     public static LauncherLibrary Read(ReadOnlyMemory<byte> bytes)
     {
         if (bytes.Length > 16 * 1024 * 1024)

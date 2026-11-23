@@ -73,6 +73,7 @@ internal sealed class WindowsProcessSupervisor(WindowsEngineInventory inventory,
 internal sealed class WindowsEngineProcess : IEngineProcess
 {
     private readonly SafeProcessHandle process;
+    private readonly WindowsSessionLog sessionLog;
     internal string LogPath { get; }
     internal GameProcessIdentity Identity { get; }
 
@@ -80,11 +81,14 @@ internal sealed class WindowsEngineProcess : IEngineProcess
         WindowsSessionLog log, Action cleanUp)
     {
         this.process = process;
+        sessionLog = log;
         Id = id;
         Identity = new(id, CreationTime(process));
         LogPath = log.Path;
         Exited = ObserveAsync(pipe, log, cleanUp);
     }
+
+    internal void Protect(string secret) => sessionLog.Protect(secret);
 
     public int Id { get; }
     public Task<int> Exited { get; }
@@ -196,6 +200,8 @@ internal sealed class WindowsSessionLog : IDisposable
     }
 
     internal string Path { get; }
+
+    internal void Protect(string secret) => filter.Protect(secret);
 
     internal async Task DrainAsync(AnonymousPipeServerStream pipe, CancellationToken cancellationToken)
     {

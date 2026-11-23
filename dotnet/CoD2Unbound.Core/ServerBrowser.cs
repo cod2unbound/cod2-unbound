@@ -161,8 +161,10 @@ public sealed record ServerAddress(string Address, string? Password)
         return !text.Contains(' ') && ServerBrowser.TryAddress(text) is { } address ? new(address, null) : null;
     }
 
-    public static string? JoinLink(string address) =>
-        ServerBrowser.TryAddress(address) is { } normalized ? "cod2x://%2Bconnect+" + normalized + "/" : null;
+    public static string? JoinLink(string address, GameEdition edition = GameEdition.Cod2x) =>
+        ServerBrowser.TryAddress(address) is { } normalized
+            ? (edition == GameEdition.Original ? "cod2://" : "cod2x://") + "%2Bconnect+" + normalized + "/"
+            : null;
 
     public static string? PasswordProblem(string password) => password.Any(character => character is < ' ' or >= '\x7f' or '"' or ';' or '\\')
         ? "Passwords can’t contain quotation marks, semicolons, backslashes or letters outside plain English." : null;

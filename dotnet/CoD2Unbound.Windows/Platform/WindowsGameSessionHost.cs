@@ -9,6 +9,7 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
     Func<GameSettings> settings, Func<WindowsRenderMode> renderer, Func<ValueTask> saveIntro) : IGameSessionHost
 {
     private string? latestLog;
+    private WeakReference<WindowsEngineProcess>? ownedClient;
     private ImmutableHashSet<GameProcessIdentity>? reconciledGames;
     private bool reserving;
     private bool migrationComplete;
@@ -21,6 +22,7 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
     {
         var child = (WindowsEngineProcess)process;
         latestLog = child.LogPath;
+        ownedClient = new(child);
         return child.Identity;
     }
 
@@ -120,8 +122,14 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         }
     }
 
-    public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(GameLinkDelivery.Failed);
+    public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (ownedClient?.TryGetTarget(out var process) == true && process.Identity == target)
+            process.Protect(link.Password);
+
+        return new(Task.Run(() => WindowsRunningGameJoin.Deliver(target, link), cancellationToken));
+    }
 
     public ValueTask RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
     {

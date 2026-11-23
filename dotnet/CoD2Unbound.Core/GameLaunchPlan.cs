@@ -102,6 +102,7 @@ public sealed record ClientLaunchRequest(GameEdition Edition, GameSettings Setti
     public ImmutableArray<string> Forwarded { get; init; } = [];
     public ConfigStudioLaunch? Studio { get; init; }
     public ConfigConnectionLaunch? Connection { get; init; }
+    public ServerLaunchLoadout? ServerLoadout { get; init; }
     public ImmutableDictionary<string, string>? Loadout { get; init; }
 }
 
