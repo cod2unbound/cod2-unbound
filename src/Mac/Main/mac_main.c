@@ -27,7 +27,7 @@ extern void MacServer_CheckQuit(void);
 #if COD2_WINDOWS_NATIVE
 #include "win32/win_paths.h"
 #endif
-#if defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE && defined(COD2_X64) && COD2_X64 && \
+#if COD2_WINDOWS_NATIVE && defined(COD2_X64) && COD2_X64 && \
     defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)
 #define COD2_WIN_CODX_CLIENT 1
 #include "platform/cod2x_native.h"
@@ -682,7 +682,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 #endif
 #endif
         Com_Frame();
-#if (defined(__APPLE__) || (defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE)) && defined(COD2_X64) && COD2_X64 && \
+#if (defined(__APPLE__) || COD2_WINDOWS_NATIVE) && defined(COD2_X64) && COD2_X64 && \
     defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED)
         Cod2xNative_FrameDone();
 #endif
