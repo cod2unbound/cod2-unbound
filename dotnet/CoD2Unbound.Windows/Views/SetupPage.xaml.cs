@@ -60,7 +60,7 @@ public sealed partial class SetupPage : Page
         (SetupTitle.Text, SetupDescription.Text) = Setup.Step switch
         {
             SetupStep.Data => ("Find your game data",
-                "Choose the Call of Duty 2 folder from your own copy. CoD2 Unbound uses the files where they are."),
+                "Choose the Call of Duty 2 folder from your own copy. CoD2 Unbound uses the files where they are. Nothing is copied."),
             SetupStep.Key => ("Enter your CD key",
                 "The 20-character key that came with your game. Many multiplayer servers require it."),
             SetupStep.Personalize => ("Make it yours", "Two things most players set first. Skip this to keep your current choices."),
@@ -132,10 +132,11 @@ public sealed partial class SetupPage : Page
         Pips.Children.Clear();
         for (int position = 1; position <= 7; position++)
         {
+            string brush = position == step ? "AccentFillColorDefaultBrush" : position < step ? "TertiaryBrush" : "PanelStrokeBrush";
             var pip = new Border
             {
-                Width = position == step ? 18 : 7, Height = 7, CornerRadius = new(4),
-                Background = ThemeBrush(position <= step ? "AccentFillColorDefaultBrush" : "TertiaryBrush", ActualTheme, shell.IsHighContrast)
+                Width = position == step ? 18 : 7, Height = 4, CornerRadius = new(2),
+                Background = ThemeBrush(brush, ActualTheme, shell.IsHighContrast)
             };
             AutomationProperties.SetAccessibilityView(pip, AccessibilityView.Raw);
             Pips.Children.Add(pip);
@@ -195,10 +196,10 @@ public sealed partial class SetupPage : Page
         };
         nameEditor = editor;
         editor.Edited += UpdateContinue;
-        StepContent.Children.Add(editor);
 
-        var buttons = new RadioButtons { Header = "How the game fills your screen" };
-        AutomationProperties.SetName(buttons, "How the game fills your screen");
+        const string modeLabel = "How the game fills your screen";
+        var buttons = new RadioButtons();
+        AutomationProperties.SetName(buttons, modeLabel);
         var descriptions = new[]
         {
             "Fills the screen. Switching apps is instant.", "The game takes over the display. Switching apps takes a moment.",
@@ -211,8 +212,9 @@ public sealed partial class SetupPage : Page
         }
         buttons.SelectedIndex = Math.Max(0, Array.IndexOf(ModeValues, Setup.Personalization?.Display ?? session.Settings.Working.Fullscreen));
         modes = buttons;
-        StepContent.Children.Add(buttons);
-        StepContent.Children.Add(Caption("Change your name from the player card or your display mode in Settings."));
+        var display = new StackPanel { Spacing = 6, Children = { new TextBlock { Text = modeLabel }, DataCard(buttons) } };
+        StepContent.Children.Add(DataCard(editor, display,
+            Caption("Change your name from the player card or your display mode in Settings.")));
     }
 
     private async Task RenderReadyAsync()
