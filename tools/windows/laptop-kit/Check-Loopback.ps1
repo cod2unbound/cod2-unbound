@@ -231,7 +231,11 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         } 75 'a named, active player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
         if ($Route -in 'connect','hosting') {
-            Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
+            # The server can report an active slot before the client accepts game input.
+            Wait-KitCondition {
+                (Test-Path -LiteralPath $console) -and
+                    (Select-String -LiteralPath $console -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
+            } 35 'the joined client to finish loading its first map' | Out-Null
             Enter-KitPlay $window
             Save-KitFrame $window $LauncherHome $Results 'kit-loopback-playing'
         }
