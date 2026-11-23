@@ -2,6 +2,56 @@ function Assert-KitPublicPlay([bool]$Online, [bool]$Rehearsal) {
     if (-not $Online -or $Rehearsal) { throw 'Internet play requires an online physical laptop run.' }
 }
 
+function New-KitPublicStartInfo([string]$Image) {
+    $info = [Diagnostics.ProcessStartInfo]::new($Image)
+    $info.UseShellExecute = $false
+    foreach ($name in @($info.EnvironmentVariables.Keys)) {
+        if ($name -match '^(?:COD2X_TEST_|COD2_UNBOUND_TEST_|COD2_USAGE_URL$|COD2_CRASH_URL$)') {
+            $info.EnvironmentVariables.Remove($name)
+        }
+    }
+    $info
+}
+
+function Wait-KitCurrentUpdater([string]$Log, $Game, [string]$Evidence) {
+    Wait-KitCondition {
+        if ($Game.HasExited) { throw 'CoD2x closed before its update service replied.' }
+        if (-not (Test-Path -LiteralPath $Log -PathType Leaf)) { return }
+        $console = Read-KitText $Log
+        if ($console -match 'CoD2x: Update available|CoD2x: Downloading') {
+            throw 'The CoD2x service offered an update during the 1.4.6.8 check.'
+        }
+        $console -match 'CoD2x: No updates available\.'
+    } 45 'the CoD2x current-version reply' | Out-Null
+    (Read-KitText $Log) -split '\r?\n' | Where-Object {
+        $_ -match '^(Auto-Updater:|CoD2x: No updates available\.|Direct3D 9 adapter:)'
+    } | ForEach-Object { Protect-KitText $_ } |
+        Set-Content -LiteralPath (Join-Path $Evidence 'cod2x-updater.txt') -Encoding UTF8
+}
+
+function Invoke-KitPublicUpdater([string]$Binary, [string]$DataPath) {
+    $entry = New-RunContext 'cod2x-updater'
+    New-TestProfile $entry.Folder
+    $before = (Get-FileHash -LiteralPath $Binary).Hash
+    $info = New-KitPublicStartInfo $Binary
+    $info.WorkingDirectory = $entry.Folder
+    $info.EnvironmentVariables['HOME'] = $entry.Folder
+    $info.EnvironmentVariables['CFFIXED_USER_HOME'] = $entry.Folder
+    $info.EnvironmentVariables['COD2_PROFILE_CHOSEN'] = '1'
+    $info.Arguments = (Get-EngineArgs $entry.Folder $DataPath -Address '0.0.0.0') +
+        ' +set r_fullscreen 0 +set r_mode 800x600 +set r_aaSamples 1 +set com_introPlayed 1'
+    $game = [Diagnostics.Process]::Start($info)
+    $window = [IntPtr]::Zero
+    try {
+        $window = Get-KitGameWindow $game
+        Wait-KitCurrentUpdater (Join-Path $entry.Folder 'main\console_mp.log') $game $entry.Evidence
+    } finally {
+        try { Stop-KitOwnedGame $game $window } finally { $game.Dispose() }
+    }
+    if ((Get-FileHash -LiteralPath $Binary).Hash -ne $before) { throw 'The CoD2x binary changed during its update check.' }
+    'The installed binary was unchanged.' | Add-Content -LiteralPath (Join-Path $entry.Evidence 'cod2x-updater.txt')
+}
+
 function Get-KitPublicRows([IntPtr]$Window) {
     $list = Find-KitControl $Window 'ServerList'
     if (-not $list) { return }
@@ -31,11 +81,17 @@ function Find-KitPublicStop([string]$Text) {
     } | Select-Object -First 1)
 }
 
-function Read-KitPublicConsole([string]$Log, [long]$Start) {
-    if (-not $Log -or -not (Test-Path -LiteralPath $Log)) { return '' }
-    $text = Read-KitText $Log
-    if ($text.Length -gt $Start) { return $text.Substring($Start) }
-    ''
+function Read-KitPublicConsole([IntPtr]$Window, [string]$Dump) {
+    foreach ($attempt in 1..3) {
+        if (Test-Path -LiteralPath $Dump) { Remove-Item -LiteralPath $Dump }
+        Send-KitCommand $Window "/toggleconsole; condump $([IO.Path]::GetFileName($Dump))"
+        try {
+            Wait-KitCondition { Test-Path -LiteralPath $Dump -PathType Leaf } 5 'the private game console receipt' | Out-Null
+            return (Read-KitText $Dump)
+        } catch {
+            if ($attempt -eq 3 -or $script:KitAttentionTimedOut) { throw }
+        }
+    }
 }
 
 function Get-KitPublicHostResult([IntPtr]$App, [string]$RoomName) {
@@ -168,17 +224,22 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local,
     if ($failure) { throw $failure }
 }
 
-function Watch-KitPublicConnection([string]$Log, [long]$Start, [string]$Needle, [int]$Seconds, [string]$Evidence) {
+function Watch-KitPublicConnection([IntPtr]$Window, [string]$Dump, [string]$Marker,
+    [string]$Needle, [int]$Seconds, [string]$Evidence) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     do {
         Wait-KitSecurity
-        $text = Read-KitPublicConsole $Log $Start
+        $text = Read-KitPublicConsole $Window $Dump
+        if ($Marker) {
+            $offset = $text.LastIndexOf($Marker, [StringComparison]::Ordinal)
+            $text = if ($offset -ge 0) { $text.Substring($offset) } else { '' }
+        }
         if ($line = Find-KitPublicStop $text) {
             Protect-KitText $line | Add-Content -LiteralPath (Join-Path $Evidence 'server-refusal.txt') -Encoding UTF8
             throw $line
         }
         if ($Needle -and $text -match $Needle) { return }
-        Start-Sleep -Milliseconds 500
+        Start-Sleep -Seconds 3
     } while ($watch.Elapsed.TotalSeconds -lt $Seconds)
     if ($Needle) { throw "The game did not report $Needle within $Seconds seconds." }
 }
@@ -198,8 +259,7 @@ function Join-KitPublicRow([IntPtr]$App, $Row, [string]$Edition, [string]$Eviden
 
 function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [string]$HomePath = $AppDataRoot) {
     $entry = New-RunContext "play-$Edition"
-    $logs = Join-Path $HomePath 'logs'
-    $log = $null
+    $dump = Join-Path $HomePath ('main\kit-play-' + [guid]::NewGuid().ToString('N') + '.txt')
     $game = $null
     $gameWindow = [IntPtr]::Zero
     $activeEdition = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x 1.4.6.8' }
@@ -254,32 +314,24 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
             throw 'The installed play launcher did not start this process.'
         }
         $game = $candidate
-        $log = Wait-KitCondition {
-            Get-ChildItem -LiteralPath $logs -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue |
-                Where-Object { $_.CreationTimeUtc -ge $started -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
-                Sort-Object CreationTimeUtc -Descending | Select-Object -First 1 -ExpandProperty FullName
-        } 15 'the new game log'
         $gameWindow = Get-KitGameWindow $game
-        Watch-KitPublicConnection $log 0 'CL_InitCGame:' 65 $entry.Evidence
+        Start-Sleep -Seconds 2
+        Watch-KitPublicConnection $gameWindow $dump '' 'CL_InitCGame:' 65 $entry.Evidence
         Focus-KitWindow $gameWindow
         # Wait in the initial spectator state. Do not pick a team or send chat.
         Save-KitWindow $gameWindow (Join-Path $entry.Evidence 'public-first-game.png')
-        Watch-KitPublicConnection $log 0 '' 120 $entry.Evidence
+        Watch-KitPublicConnection $gameWindow $dump '' '' 120 $entry.Evidence
         if ($game.HasExited) { throw 'The game closed during the two-minute observation.' }
-        $traceOffset = (Read-KitPublicConsole $log 0).Length
+        $marker = 'kit_join_' + [guid]::NewGuid().ToString('N')
+        Send-KitCommand $gameWindow "/toggleconsole; echo $marker"
 
         Focus-KitWindow $App
         $addresses += Join-KitPublicRow $App $candidates[1] $Edition $entry.Evidence
-        Watch-KitPublicConnection $log $traceOffset 'CL_InitCGame:' 65 $entry.Evidence
+        Start-Sleep -Seconds 2
+        Watch-KitPublicConnection $gameWindow $dump $marker 'CL_InitCGame:' 65 $entry.Evidence
         if ($game.HasExited) { throw 'The earlier game exited during the second join.' }
         Focus-KitWindow $gameWindow
         Save-KitWindow $gameWindow (Join-Path $entry.Evidence 'public-second-game.png')
-        if ($Edition -eq 'cod2x') {
-            $clientLog = Read-KitPublicConsole $log 0
-            if ($clientLog -notmatch 'CoD2x: No updates available\.' -or $clientLog -match 'CoD2x: Update available|CoD2x: Downloading') {
-                throw 'The CoD2x service did not confirm that version 1.4.6.8 was current without a download.'
-            }
-        }
 
         Focus-KitWindow $App
         Invoke-KitControl $App 'HomeItem'
@@ -291,7 +343,9 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
     } finally {
         try { Stop-KitOwnedGame $game $gameWindow }
         finally { if ($game) { $game.Dispose() } }
-        $text = if ($log) { Read-KitPublicConsole $log 0 }
+        $text = if (Test-Path -LiteralPath $dump) {
+            try { Read-KitText $dump } finally { Remove-Item -LiteralPath $dump }
+        }
         if ($text) {
             if ($line = Find-KitPublicStop $text) {
                 Protect-KitText $line | Set-Content -LiteralPath (Join-Path $entry.Evidence 'server-refusal.txt') -Encoding UTF8
@@ -336,13 +390,7 @@ function Invoke-KitPublicPlay {
     Save-KitGraphicsPreferences $InstallRoot $Results
     # WinUI and its child game use the installed Public product path.
     # Remove any test override inherited by the scheduled worker.
-    $info = [Diagnostics.ProcessStartInfo]::new($exe)
-    $info.UseShellExecute = $false
-    foreach ($name in @($info.EnvironmentVariables.Keys)) {
-        if ($name -match '^(?:COD2X_TEST_|COD2_UNBOUND_TEST_|COD2_USAGE_URL$|COD2_CRASH_URL$)') {
-            $info.EnvironmentVariables.Remove($name)
-        }
-    }
+    $info = New-KitPublicStartInfo $exe
     $app = [Diagnostics.Process]::Start($info)
     try {
         $window = Get-KitLauncherWindow $app
@@ -355,7 +403,11 @@ function Invoke-KitPublicPlay {
         $version = (Read-InstalledVersion 'HKCU' $InstallRoot)
         Save-KitSurface $window 'public-launcher-update' @("CoD2 Unbound $version is up to date")
         foreach ($edition in 'original','cod2x') {
-            if ($edition -eq 'cod2x') { Invoke-KitHwidCheck (Get-Binary $edition -Root $InstallRoot) $GamePath }
+            if ($edition -eq 'cod2x') {
+                $binary = Get-Binary $edition -Root $InstallRoot
+                Invoke-KitHwidCheck $binary $GamePath
+                Invoke-KitPublicUpdater $binary $GamePath
+            }
             Invoke-KitPublicEdition $window $app $edition
             Invoke-KitPublicHosting $window $edition -Local
             Invoke-KitPublicHosting $window $edition
