@@ -77,16 +77,31 @@ public sealed partial class HostingPage
             friendly = new() { Header = "Friendly fire", IsOn = server.FriendlyFire };
             maps = [.. HostingConfig.Maps(server)];
 
-            Content.Children.Add(Heading(isNew ? "New Server" : server.Name));
-            start = page.Action("Start Server", () => PersistAsync(startServer: true), "R");
+            Content.Children.Add(Heading(isNew ? "New server" : server.Name));
+            start = page.Action("Start server", () => PersistAsync(startServer: true), "R");
             start.Style = StyleFor("LauncherAccentButton");
             start.Visibility = IsVisible(!editingRunning);
-            save = page.Action(isNew ? "Save Server" : "Save Changes", () => PersistAsync(startServer: false), "S");
-            var secondary = page.Action(isNew ? "Cancel" : "Export…",
-                isNew ? page.ShowServerAsync : () => page.ExportAsync(Current()), "X");
-            Content.Children.Add(Buttons(start, save, editingRunning ? page.Action("Cancel", page.ShowServerAsync, "C") : secondary));
+            save = page.Action(isNew ? "Save server" : "Save changes", () => PersistAsync(startServer: false), "S");
             if (editingRunning)
-                Content.Children.Add(Caption("Changes apply the next time this server starts."));
+            {
+                var phase = Caption("");
+                page.phaseText = phase;
+                page.UpdatePhaseText(page.State(server));
+                Content.Children.Add(phase);
+                save.Style = StyleFor("LauncherAccentButton");
+                Content.Children.Add(Buttons(page.Action("Cancel", page.ShowServerAsync, "U"), save));
+                Content.Children.Add(new InfoBar
+                {
+                    IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational,
+                    Message = "Changes apply the next time this server starts."
+                });
+                name.Loaded += (_, _) => name.Focus(FocusState.Programmatic);
+            }
+            else
+            {
+                Content.Children.Add(isNew ? Buttons(start, save, page.Action("Cancel", page.ShowServerAsync, "U"))
+                    : Buttons(start, save));
+            }
 
             var state = page.State(server);
             if (state is { Phase: HostedPhase.PortBusy, NextPort: { } next })
@@ -132,8 +147,8 @@ public sealed partial class HostingPage
             Content.Children.Add(columns);
 
             if (!isNew && !editingRunning)
-                Content.Children.Add(Buttons(page.Action("Delete Server…", DeleteAsync),
-                    page.Action("Open Log Folder", () => OpenAsync(page.hosting.LogFolder(server.Id)))));
+                Content.Children.Add(Buttons(page.Action(DeleteTitle, () => page.DeleteServerAsync(server)),
+                    page.Action("Open log folder", () => OpenAsync(page.hosting.LogFolder(server.Id)))));
 
             timer = page.DispatcherQueue.CreateTimer();
             timer.Interval = TimeSpan.FromMilliseconds(200);
@@ -293,16 +308,6 @@ public sealed partial class HostingPage
                 indexInGrid++;
             }
             await dialog.ShowAsync();
-        }
-
-        private async Task DeleteAsync()
-        {
-            var prompt = page.Dialog($"Delete “{server.Name}”?", Body("This removes the server from Hosting."), "Delete");
-            if (await prompt.ShowAsync() == ContentDialogResult.Primary)
-            {
-                await page.hosting.DeleteAsync(server.Id);
-                await page.RefreshAsync();
-            }
         }
 
         private HostedServer Current() => server with

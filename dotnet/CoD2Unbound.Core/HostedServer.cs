@@ -32,6 +32,9 @@ public sealed record HostedServer(string Id, string Name, GameEdition Engine, Ho
         new(id ?? Guid.NewGuid().ToString(), name, edition, HostedReach.Network, 12, "", RandomPassword(),
             HostedRules.Public, "tdm", false, "sd:comp", ["mp_toujane", "mp_carentan", "mp_burgundy"], DefaultPort);
 
+    public static HostedServer? FindSaved(ImmutableArray<HostedServer> servers, string id) =>
+        servers.FirstOrDefault(server => server.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
     public static string RandomPassword()
     {
         const string alphabet = "abcdefghjkmnpqrstuvwxyz23456789";

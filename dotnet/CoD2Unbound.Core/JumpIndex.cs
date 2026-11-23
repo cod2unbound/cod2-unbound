@@ -48,6 +48,19 @@ public static class JumpIndex
         new(JumpGroup.Actions, nameof(ShellCommand.CloseGame), "Close game", Enabled: running && !closingGame)
     ];
 
+    public static IEnumerable<JumpTarget> HostingActions(Func<ShellCommand, bool> canRun)
+    {
+        yield return Action(ShellCommand.ExportHostedServer, "Export for another machine…", "hosting dedicated server");
+        yield return Action(ShellCommand.RevealHostedServer, "Show its folder in File Explorer", "hosting hosted server folder");
+        yield return Action(ShellCommand.DeleteHostedServer, "Delete server…", "hosting hosted server");
+        yield return Action(ShellCommand.RevealHostedExport, "Show exported server folder", "hosting export file explorer");
+        yield return Action(ShellCommand.RetryHostedExport, "Try server export again", "hosting retry failed export");
+
+        JumpTarget Action(ShellCommand command, string title, string searchName) =>
+            new(JumpGroup.Actions, command.ToString(), title, SearchName: searchName,
+                Keys: LauncherShortcuts.Keys(command), Enabled: canRun(command));
+    }
+
     private static int Rank(JumpTarget item, string query)
     {
         if (Comparison.Compare(item.Title, query, Options) == 0 || Comparison.Compare(item.SearchName, query, Options) == 0)

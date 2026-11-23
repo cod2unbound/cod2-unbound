@@ -24,12 +24,21 @@ public sealed partial class HostingPage : Page
     private Dashboard? dashboard;
     private HostForm? form;
 
-    internal HostingPage(MainWindow shell, WindowsLauncherSession session)
+    internal HostingPage(MainWindow shell, WindowsLauncherSession session, Button exportButton, InfoBar exportStatus)
     {
         this.shell = shell;
         this.session = session;
+        this.exportButton = exportButton;
+        this.exportStatus = exportStatus;
         hosting = session.Hosting;
         InitializeComponent();
+        exportButton.Click += async (_, _) => await shell.RunAsync(ExportSelectedAsync);
+        exportStatus.Closed += (_, _) =>
+        {
+            exportFeedback = null;
+            exportStatus.ActionButton = null;
+            exportStatus.Visibility = Visibility.Collapsed;
+        };
         Unloaded += (_, _) => EndForm();
     }
 
@@ -52,9 +61,17 @@ public sealed partial class HostingPage : Page
 
     private void OnServerRowChanged(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is HostedServer server && !args.InRecycleQueue)
+        if (args.ItemContainer is not ListViewItem item)
+            return;
+        if (args.InRecycleQueue)
         {
-            AutomationProperties.SetName(args.ItemContainer, server.Name);
+            item.ContextFlyout = null;
+            return;
+        }
+        if (args.Item is HostedServer server)
+        {
+            AutomationProperties.SetName(item, server.Name);
+            AttachRowMenu(item);
             args.RegisterUpdateCallback((_, update) => UpdateRow(server, update.ItemContainer as ListViewItem));
         }
     }
@@ -62,7 +79,20 @@ public sealed partial class HostingPage : Page
     private void UpdateRow(HostedServer server, ListViewItem? item)
     {
         if (item?.ContentTemplateRoot is FrameworkElement root && root.FindName("HostRowStatus") is TextBlock detail)
-            detail.Text = $"{Edition(server)} · {PhaseTitle(State(server).Phase)}";
+        {
+            var state = State(server);
+            string status = state switch
+            {
+                { Phase: HostedPhase.Running, Status: { } live } =>
+                    $"Running · {live.Players.Length} of {live.MaxPlayers} · {MapCatalog.DisplayName(HostingCatalog.StockMap(live.Map))}",
+                { Phase: HostedPhase.Stopped } => $"Stopped · {Edition(server)}",
+                _ => $"{Edition(server)} · {PhaseTitle(state.Phase)}"
+            };
+            if (detail.Text != status)
+                detail.Text = status;
+            if (AutomationProperties.GetHelpText(item) != status)
+                AutomationProperties.SetHelpText(item, status);
+        }
     }
 
     private async void OnServerChanged(object sender, SelectionChangedEventArgs args)
@@ -80,17 +110,17 @@ public sealed partial class HostingPage : Page
         phaseText = null;
         actionFeedback = null;
         DetailScroll.ChangeView(null, 0, null, true);
+        exportButton.Visibility = IsVisible(Selected is not null);
         if (Selected is not { } server)
         {
-            var empty = EmptyState("Live", "Host Your Own Server",
+            var empty = EmptyState("Live", "Host your own server",
                 "Run a server on this PC with Original 1.3 or CoD2x, or write the files for a server on another machine.");
             empty.MaxWidth = 520;
             empty.HorizontalAlignment = HorizontalAlignment.Center;
             empty.Margin = new Thickness(12, 44, 12, 0);
-            var create = Action("New Server", NewAsync);
+            var create = Action("New server", NewAsync);
             create.Style = StyleFor("LauncherAccentButton");
-            empty.Children.Add(Buttons(create, Action("Write a server.cfg…", () =>
-                ExportAsync(HostedServer.New(edition: session.Settings.Working.Engine)), "X")));
+            empty.Children.Add(Buttons(create, Action("Write a server.cfg…", ExportSelectedAsync, "X")));
             Details.Children.Add(empty);
             return;
         }
@@ -138,23 +168,35 @@ public sealed partial class HostingPage : Page
     {
         foreach (var host in hosts)
             UpdateRow(host, Servers.ContainerFromItem(host) as ListViewItem);
-        if (Selected is not { } server || form is { IsNew: true } or { EditingRunning: true })
+        if (Selected is not { } server || form is { IsNew: true })
             return;
         var state = State(server);
+        if (form is { EditingRunning: true })
+        {
+            UpdatePhaseText(state);
+            return;
+        }
         if (shownPhase != state.Phase && (dashboard is null || !hosting.IsActive(server.Id)))
         {
             await ShowServerAsync();
             return;
         }
-        if (dashboard is not { } live || phaseText is null)
+        if (dashboard is not { } live)
             return;
         shownPhase = state.Phase;
+        UpdatePhaseText(state);
+        await live.UpdateAsync(state);
+    }
+
+    private void UpdatePhaseText(HostedRunState state)
+    {
+        if (phaseText is null)
+            return;
         string phase = PhaseTitle(state.Phase);
         if (state is { Phase: HostedPhase.Running, Since: { } since })
-            phase += $" · {Math.Max(0, (int)(DateTimeOffset.UtcNow - since).TotalMinutes)} min";
+            phase = $"Running for {Math.Max(0, (int)(DateTimeOffset.UtcNow - since).TotalMinutes)} min";
         if (phaseText.Text != phase)
             phaseText.Text = phase;
-        await live.UpdateAsync(state);
     }
 
     private async Task JoinAsync(HostedServer server)
@@ -200,27 +242,9 @@ public sealed partial class HostingPage : Page
         EndForm();
         Details.Children.Clear();
         dashboard = null;
+        exportButton.Visibility = Visibility.Collapsed;
         ShowForm(fresh, isNew: true);
         return Task.CompletedTask;
-    }
-
-    private async Task ExportAsync(HostedServer server)
-    {
-        var passwords = new ToggleSwitch { Header = "Include passwords", OffContent = "Off", OnContent = "On" };
-        var match = new ToggleSwitch { Header = "Include zPAM match settings", IsOn = true, OffContent = "Off", OnContent = "On",
-            Visibility = IsVisible(server.Rules == HostedRules.Zpam) };
-        var content = new StackPanel { Spacing = 8, Children =
-        {
-            Body("Write a folder you can copy to a Linux or Windows server."),
-            SettingRow("server.cfg", "Server name, rules, maps and limits."),
-            SettingRow("Start commands", "One for Linux and one for Windows."),
-            match, passwords,
-            Caption("Leave passwords off to write CHANGE_ME in their place. Game files are never included.")
-        } };
-        if (await Dialog($"Export “{server.Name}” for Another Machine", content, "Choose Folder…").ShowAsync() != ContentDialogResult.Primary ||
-            await shell.PickFolderAsync("Choose where to write the server files") is not { } parent)
-            return;
-        await OpenAsync(await hosting.ExportAsync(server, parent, passwords.IsOn, match.IsOn));
     }
 
     private ContentDialog Dialog(string title, UIElement content, string primary = "", string close = "Cancel") => new()

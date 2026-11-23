@@ -6,7 +6,7 @@ using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsHosting
+internal sealed partial class WindowsHosting
 {
     private const string ServersFile = "hosted-servers.json";
     private readonly string root;
@@ -68,24 +68,9 @@ internal sealed class WindowsHosting
         {
             await using var lease = await WindowsGameSessionHost.OpenLeaseAsync(root, ".hosted-servers.lock", default);
             var saved = await ReadAsync();
-            var previous = saved.FirstOrDefault(item => item.Id.Equals(server.Id, StringComparison.OrdinalIgnoreCase));
+            var previous = HostedServer.FindSaved(saved, server.Id);
             int index = previous is null ? -1 : saved.IndexOf(previous);
             await folder.WriteAsync(ServersFile, HostedServerJson.Write(index >= 0 ? saved.SetItem(index, server) : saved.Add(server)), default);
-        }
-        finally { writes.Release(); }
-    }
-
-    internal async Task DeleteAsync(string id)
-    {
-        await writes.WaitAsync();
-        try
-        {
-            await using var lease = await WindowsGameSessionHost.OpenLeaseAsync(root, ".hosted-servers.lock", default);
-            if (IsActive(id))
-                throw new IOException("Stop the server before deleting it.");
-            var saved = await ReadAsync();
-            await folder.WriteAsync(ServersFile, HostedServerJson.Write(
-                [.. saved.Where(server => !server.Id.Equals(id, StringComparison.OrdinalIgnoreCase))]), default);
         }
         finally { writes.Release(); }
     }
@@ -141,7 +126,7 @@ internal sealed class WindowsHosting
         return await session.ExportAsync(server, parent, template, Zpam.State(server.ZpamLine).Release, passwords, matchSettings);
     }
 
-    internal string LogFolder(string id) => WindowsFiles.Under(root, $"servers/{id}/logs");
+    internal string LogFolder(string id) => Path.Join(ServerFolder(id), "logs");
     internal Task<string?> ReadLogAsync(string id) => WindowsLauncherSession.ReadLatestLogAsync(LogFolder(id), 24 * 1024);
 
     internal (HostedJoinAddresses Addresses, bool Wifi) JoinAddresses(HostedServer server)

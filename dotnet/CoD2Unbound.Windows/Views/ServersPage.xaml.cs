@@ -97,7 +97,7 @@ public sealed partial class ServersPage : Page
         RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility =
             SearchBox.Visibility = BrowserSubtitle.Visibility = IsVisible(!showHosting);
-        HostingContent.Visibility = NewHost.Visibility = IsVisible(showHosting);
+        HostingContent.Visibility = HostingActions.Visibility = HostingExportFeedback.Visibility = IsVisible(showHosting);
         if (showHosting)
             ClearRecent.Visibility = Visibility.Collapsed;
         if (showHosting)
@@ -105,7 +105,7 @@ public sealed partial class ServersPage : Page
             session.Opened(UsagePage.Hosting);
             await shell.ShowProblemAsync(async () =>
             {
-                hosting ??= new HostingPage(shell, session);
+                hosting ??= new HostingPage(shell, session, ExportHost, HostingExportStatus);
                 HostingContent.Content = hosting;
                 await hosting.RefreshAsync();
             });
@@ -119,7 +119,7 @@ public sealed partial class ServersPage : Page
     private async void OnNewHostedServer(object sender, RoutedEventArgs args)
     {
         if (hosting is not null)
-            await hosting.NewAsync();
+            await shell.RunAsync(hosting.NewAsync);
     }
 
     internal void UpdateContrast() => Render();

@@ -35,6 +35,20 @@ internal static partial class Program
             Equal("m_yaw", JumpIndex.Search(entries, "horizontal", settingsOnly: true).Single().Id);
             Equal(0, JumpIndex.Search(entries, "aim", settingsOnly: true).Length);
         });
+        Check("Hosting actions are searchable and advertise their contextual shortcuts", () =>
+        {
+            var actions = JumpIndex.HostingActions(command => command == ShellCommand.ExportHostedServer);
+            var export = JumpIndex.Search(actions, "export another machine").Single();
+            Equal(ShellCommand.ExportHostedServer.ToString(), export.Id);
+            Equal("Alt+X", export.Keys);
+            Equal(true, export.Enabled);
+            var reveal = JumpIndex.Search(actions, "hosted server folder").Single();
+            Equal(ShellCommand.RevealHostedServer.ToString(), reveal.Id);
+            Equal(false, reveal.Enabled);
+            Equal(true, reveal.Keys.StartsWith("Shift+F10", StringComparison.Ordinal));
+            Equal(5, actions.Count());
+        });
+
         Check("Shortcut help and routing share the command and chord list", () =>
         {
             Equal("Ctrl+R or F5", LauncherShortcuts.Keys(ShellCommand.RefreshServers));

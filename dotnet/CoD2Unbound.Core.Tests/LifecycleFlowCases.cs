@@ -173,6 +173,36 @@ internal static partial class Program
             Sequence(match.After.Config, restoredAfter.After.Config);
         });
 
+        Check("Hosting exports the saved settings without changing a running server", () =>
+        {
+            var processes = new TestProcessSupervisor();
+            var gameFiles = new MemoryPlatform("C:/data");
+            foreach (string archive in GameArchives.Required)
+                gameFiles.PutFile(archive);
+            var files = new TestHostingFiles();
+            var session = new HostingSession(processes, files, gameFiles, new StatusUdp(), new AdvancingClock(), _ => true, "127.0.0.1");
+            var active = HostedServer.New("scrim", "Live name") with { AdminPassword = "old-password" };
+            var binary = new GameBinary(active.Engine, EngineRole.Dedicated, "C:/engine.exe");
+            _ = session.StartAsync(active, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult();
+            session.PollAsync().GetAwaiter().GetResult();
+            var before = Sync(session.SnapshotAsync())[active.Id];
+            Equal(HostedPhase.Running, before.Phase);
+
+            var saved = active with { Name = "Saved name", AdminPassword = "new-password", Port = 28990 };
+            var list = HostedServerJson.Read(HostedServerJson.Write([HostedServer.New("other"), saved]).AsSpan());
+            Equal(null, HostedServer.FindSaved(list, "missing"));
+            var target = HostedServer.FindSaved(list, "SCRIM")!;
+            Equal("C:/exports/saved-name-server", Sync(session.ExportAsync(target, "C:/exports", null, null, false, true)));
+            var config = new ConfigDocument(Encoding.UTF8.GetBytes(files.Export!["server.cfg"]), ConfigDialect.Cod2x);
+            Equal("Saved name", config.EffectiveSetting("sv_hostname"));
+            Equal("CHANGE_ME", config.EffectiveSetting("rcon_password"));
+            Equal(true, files.Export["start-windows.bat"].Contains("+set net_port 28990", StringComparison.Ordinal));
+            Equal(before, Sync(session.SnapshotAsync())[active.Id]);
+            Equal(1, processes.Starts.Count);
+            Equal(false, processes.Process!.Exited.IsCompleted);
+            session.StopAllAsync().GetAwaiter().GetResult();
+        });
+
         Check("Hosting publishes private config, polls status, reaps a server and exports", () =>
         {
             var processes = new TestProcessSupervisor();
