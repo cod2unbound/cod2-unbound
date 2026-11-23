@@ -1186,7 +1186,7 @@ void Console_Key(int key)
         Console_HistoryDown();
         return;
     }
-#if defined(COD2_X64) && COD2_X64 && defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE && defined(COD2_CODX) && COD2_CODX
+#if defined(COD2_X64) && COD2_X64 && COD2_WINDOWS_NATIVE && defined(COD2_CODX) && COD2_CODX
     {
         /* CoD2x console.cpp: numpad 8 and 2 browse the history only with NumLock off;
            with it on they type their digit. */

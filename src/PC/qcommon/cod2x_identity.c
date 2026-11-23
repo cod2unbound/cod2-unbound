@@ -9,7 +9,7 @@
    each value from their closest source. Only the hash leaves the machine. */
 #include "cdkey_hash.h"
 #include <stdio.h>
-#if defined(_WIN32) && defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+#if defined(_WIN32) && COD2_WINDOWS_NATIVE && !defined(DEDICATED)
 #define COD2X_HWID_WMI 1
 #define COBJMACROS
 #include <stdlib.h>

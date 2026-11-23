@@ -121,7 +121,7 @@ static void cr_emit_common(int fd, const char *crashDesc)
 #    include <windows.h>
 #    include <dbghelp.h>
 #    if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX && !defined(DEDICATED) && \
-        defined(COD2_WINDOWS_NATIVE) && COD2_WINDOWS_NATIVE
+        COD2_WINDOWS_NATIVE
 /* CoD2x's crash dialog, report name and restart offer (src/win32/win_cod2x.c). */
 #        define CR_COD2X_DIALOG 1
 #        include "win32/win_cod2x.h"
