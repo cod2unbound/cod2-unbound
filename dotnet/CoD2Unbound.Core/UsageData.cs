@@ -119,16 +119,13 @@ internal sealed record UsageOccurrence(Guid Id, long Minute, UsageEvent Event, U
 public sealed partial class UsageData
 {
     public const int QueueLimit = 300;
-    public const int SetupLimit = 24;
     public const string JournalFile = "usage-data.json";
     public const string SetupFile = "usage-setup.json";
+    private const int JournalSchema = 2;
     private const int BatchLimit = 32;
     private const int Age = 7 * 24 * 60;
 
-    private sealed record Step(long Minute, SetupStep Name, bool Skipped, bool OwnFiles);
-    private sealed record Steps(int SchemaVersion, Step[] Items);
     private sealed record Journal(int SchemaVersion, Guid? Install, long? LastOpenedDay, UsageOccurrence[] Events);
-    [JsonSerializable(typeof(Steps))]
     [JsonSerializable(typeof(Journal))]
     private sealed partial class UsageJournalJson : JsonSerializerContext;
 
@@ -142,12 +139,10 @@ public sealed partial class UsageData
     private readonly TimeSpan firstRetry;
     private readonly Func<Guid> newEventId;
     private readonly SemaphoreSlim gate = new(1);
-    private Journal journal = new(1, null, null, []);
-    private Step[] steps = [];
+    private Journal journal = new(JournalSchema, null, null, []);
     private volatile Answer answer = new(UsageConsent.NotAsked, null);
     private CancellationTokenSource? delivery;
     private bool held = true;
-    private bool opened;
 
     public UsageData(ISettingsFolder storage, UsageEndpoint? endpoint, Func<ValueTask<UsageFacts>> facts,
         Func<Uri, byte[], CancellationToken, ValueTask<bool>> send, TimeProvider? clock = null,
@@ -173,25 +168,26 @@ public sealed partial class UsageData
     public async Task InitializeAsync(UsageConsent saved, bool setupActive)
     {
         held = setupActive;
+        // Older launchers saved setup steps before consent. Discard the file without reading it.
+        await DeleteAsync(SetupFile).ConfigureAwait(false);
         if (!Available)
             return;
-        if (await ReadAsync<Journal>(JournalFile, 512 * 1024).ConfigureAwait(false) is { SchemaVersion: 1, Events: not null } loaded)
+        if (await ReadAsync<Journal>(JournalFile, 512 * 1024).ConfigureAwait(false) is
+            { SchemaVersion: 1 or JournalSchema, Events: not null } loaded)
         {
             journal = journal with { LastOpenedDay = loaded.LastOpenedDay };
             if (saved == UsageConsent.Yes && loaded.Install is { } install && install != Guid.Empty)
-                journal = loaded with { Events = Prune(loaded.Events) };
+            {
+                // A v1 queue may mix pre-consent and post-consent setup steps within the same minute.
+                var events = loaded.SchemaVersion == 1
+                    ? loaded.Events.Where(item => item?.Event is not { IsSetup: true })
+                    : loaded.Events;
+                journal = journal with { Install = install, Events = Prune(events) };
+            }
         }
         if (saved == UsageConsent.Yes && journal.Install is null)
             saved = UsageConsent.No;
         answer = new(saved, journal.Install);
-        if (saved == UsageConsent.NotAsked)
-        {
-            if (await ReadAsync<Steps>(SetupFile, 32 * 1024).ConfigureAwait(false) is { SchemaVersion: 1, Items: not null } stored)
-                steps = stored.Items.Where(step => step is not null && Current(step.Minute) && ValidStep(step.Name))
-                    .TakeLast(SetupLimit).ToArray();
-        }
-        else
-            await DeleteAsync(SetupFile).ConfigureAwait(false);
         if (saved != UsageConsent.Yes)
             await ClearJournalAsync().ConfigureAwait(false);
     }
@@ -210,16 +206,14 @@ public sealed partial class UsageData
             if (choice == Consent)
             {
                 await persist(choice).ConfigureAwait(false);
-                return choice != UsageConsent.No ||
-                    (await ClearJournalAsync().ConfigureAwait(false) & await DeleteAsync(SetupFile).ConfigureAwait(false));
+                return choice != UsageConsent.No || await ClearJournalAsync().ConfigureAwait(false);
             }
             if (choice == UsageConsent.No)
             {
                 Stop();
                 answer = new(choice, null);
-                steps = [];
                 journal = journal with { Install = null, Events = [] };
-                bool cleared = await ClearJournalAsync().ConfigureAwait(false) & await DeleteAsync(SetupFile).ConfigureAwait(false);
+                bool cleared = await ClearJournalAsync().ConfigureAwait(false);
                 await persist(choice).ConfigureAwait(false);
                 return cleared;
             }
@@ -229,12 +223,8 @@ public sealed partial class UsageData
             var candidate = journal with
             {
                 Install = Guid.NewGuid(),
-                Events = [new(newEventId(), stamp, new(UsageKind.TurnedOn, (int)source), machine),
-                    .. steps.Where(step => Current(step.Minute)).Select(step => new UsageOccurrence(newEventId(), step.Minute,
-                        UsageEvent.Setup(step.Name, step.Skipped, step.OwnFiles), machine))]
+                Events = [new(newEventId(), stamp, new(UsageKind.TurnedOn, (int)source), machine)]
             };
-            if (opened)
-                candidate = AddDailyOpen(candidate, stamp, machine);
             if (!await WriteAsync(JournalFile, candidate).ConfigureAwait(false))
                 return false;
             try { await persist(choice).ConfigureAwait(false); }
@@ -245,8 +235,6 @@ public sealed partial class UsageData
             }
             journal = candidate;
             answer = new(choice, journal.Install);
-            steps = [];
-            await DeleteAsync(SetupFile).ConfigureAwait(false);
             Schedule();
             return true;
         }
@@ -287,12 +275,13 @@ public sealed partial class UsageData
 
     public async Task OpenedAsync()
     {
-        var machine = InstallNumber is null ? null : await facts().ConfigureAwait(false);
+        if (InstallNumber is not { } install)
+            return;
+        var machine = await facts().ConfigureAwait(false);
         await gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            opened = true;
-            if (InstallNumber is null || machine is null)
+            if (InstallNumber != install)
                 return;
             // Events queued before hardware reporting keep their original facts and get the current hardware once.
             if (machine.Hardware is { } hardware && journal.Events.Any(item => item.Facts.Hardware is null))
@@ -307,29 +296,18 @@ public sealed partial class UsageData
 
     public async Task RecordAsync(UsageEvent? item)
     {
-        if (!Available || item is null || item.Kind is UsageKind.AppOpened or UsageKind.TurnedOn)
+        if (InstallNumber is not { } install || item is null || item.Kind is UsageKind.AppOpened or UsageKind.TurnedOn)
             return;
-        var machine = InstallNumber is null ? null : await facts().ConfigureAwait(false);
+        var machine = await facts().ConfigureAwait(false);
         await gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            long stamp = Minute;
-            if (InstallNumber is not null && machine is not null)
-            {
-                var occurrence = new UsageOccurrence(newEventId(), stamp, item, machine);
-                if (item.AddProperties(new(StringComparer.Ordinal)) is null)
-                    return;
-                journal = journal with { Events = Prune([.. journal.Events, occurrence]) };
-                await SaveAsync().ConfigureAwait(false);
-                Schedule();
-            }
-            else if (Consent == UsageConsent.NotAsked && held && item.IsSetup && ValidStep((SetupStep)item.Choice))
-            {
-                steps = steps.Where(step => Current(step.Minute)).Append(new(stamp, (SetupStep)item.Choice,
-                    item.Kind == UsageKind.SetupSkipped, item.Choice == (int)SetupStep.Data && item.Other == 1))
-                    .TakeLast(SetupLimit).ToArray();
-                await WriteAsync(SetupFile, new Steps(1, steps)).ConfigureAwait(false);
-            }
+            if (InstallNumber != install || item.AddProperties(new(StringComparer.Ordinal)) is null)
+                return;
+            var occurrence = new UsageOccurrence(newEventId(), Minute, item, machine);
+            journal = journal with { Events = Prune([.. journal.Events, occurrence]) };
+            await SaveAsync().ConfigureAwait(false);
+            Schedule();
         }
         finally { gate.Release(); }
     }
@@ -347,7 +325,6 @@ public sealed partial class UsageData
             : current;
 
     private bool Current(long stamp) => stamp <= Minute && stamp >= Minute - Age;
-    private static bool ValidStep(SetupStep step) => Enum.IsDefined(step) && step != SetupStep.Complete;
     private UsageOccurrence[] Prune(IEnumerable<UsageOccurrence> values) =>
         values.Where(item => item is { Event: not null, Facts: not null } && item.Id != Guid.Empty && Current(item.Minute) &&
             item.Event.AddProperties(new(StringComparer.Ordinal)) is not null).TakeLast(QueueLimit).ToArray();

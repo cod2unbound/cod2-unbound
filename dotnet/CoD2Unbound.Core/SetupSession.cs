@@ -28,6 +28,7 @@ public sealed class SetupSession
 
     public SetupStep Step { get; private set; }
     public SetupDataChoice Data { get; private set; }
+    public bool DataWasPicked { get; private set; }
     public string DataPath => Data.State == SetupDataState.Found ? Data.Path : confirmedData;
     public bool HasStoredKey { get; private set; }
     public bool ReplacingKey { get; private set; }
@@ -61,7 +62,12 @@ public sealed class SetupSession
     public static CrashConsentQuestion ConsentOwed(bool hasService, bool asked, bool sending) =>
         !hasService || asked ? CrashConsentQuestion.Nothing : sending ? CrashConsentQuestion.Answered : CrashConsentQuestion.Ask;
 
-    public SetupDataChoice ChooseData(string path) => Data = Inspect(path);
+    public SetupDataChoice ChooseData(string path, bool picked = false)
+    {
+        Data = Inspect(path);
+        DataWasPicked = picked;
+        return Data;
+    }
 
     public async ValueTask<bool> ContinueAsync(string keyInput = "", CancellationToken cancellationToken = default)
     {
@@ -71,7 +77,7 @@ public sealed class SetupSession
                 Step = SetupStep.Data;
                 break;
             case SetupStep.Data:
-                if (Data.State != SetupDataState.Found || ChooseData(Data.Path).State != SetupDataState.Found)
+                if (Data.State != SetupDataState.Found || ChooseData(Data.Path, picked: DataWasPicked).State != SetupDataState.Found)
                     return false;
                 if (!GameSettings.SafeEngineText(Data.Path) || !GameSettings.SafeEngineText(folder.Root))
                     throw new InvalidDataException("Choose a path without quotes, plus signs, semicolons or control characters.");
@@ -169,7 +175,7 @@ public sealed class SetupSession
     {
         if (!canCancel)
             return false;
-        Data = Inspect(confirmedData);
+        ChooseData(confirmedData);
         ReplacingKey = false;
         canCancel = false;
         Step = SetupStep.Complete;

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace CoD2Unbound.Core.Tests;
 
@@ -16,7 +17,7 @@ internal static partial class Program
 
     private static void UsageCases()
     {
-        Usage("nothing before an answer, only setup steps on disk", async () =>
+        Usage("nothing recorded or written before an answer", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
@@ -28,37 +29,61 @@ internal static partial class Program
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.JournalFile, default));
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
-            string setup = Encoding.UTF8.GetString((await f.Disk.ReadAsync(UsageData.SetupFile, default))!.Value.AsSpan());
-            Equal(false, setup.Contains("Install", StringComparison.Ordinal));
-            Equal(false, setup.Contains("First", StringComparison.Ordinal));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
+            Equal(0, usage.QueuedCount);
             Equal(0, f.Captures.Count);
         });
-        Usage("restarted setup journal, consent ordering and held delivery", async () =>
+        Usage("yes in setup sends only consent and later steps, after setup finishes", async () =>
         {
             var f = new UsageFixture();
-            var before = await f.Start();
-            await before.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
-            f.Clock.Now += TimeSpan.FromMinutes(3);
             var usage = await f.Start();
             await usage.OpenedAsync();
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Home));
+            f.Clock.Now += TimeSpan.FromMinutes(3);
             Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist));
             await usage.RecordAsync(UsageEvent.Setup(SetupStep.Ready));
             await Task.Delay(40);
             Equal(0, f.Captures.Count);
-            Equal(4, usage.QueuedCount);
+            Equal(2, usage.QueuedCount);
             var install = usage.InstallNumber;
             await usage.HoldAsync(false);
             await Until(() => usage.QueuedCount == 0);
             var received = Events(f.Captures);
-            Sequence(new[] { "usage data turned on", "setup step reached", "app opened", "setup step reached" },
-                received.Select(Name));
-            Equal("2027-01-15T08:00:00Z", received[1].GetProperty("timestamp").GetString());
-            Equal("own files", Props(received[1]).GetProperty("source").GetString());
+            Sequence(new[] { "usage data turned on", "setup step reached" }, received.Select(Name));
+            Equal("setup", Props(received[0]).GetProperty("where").GetString());
+            Equal("Ready", Props(received[1]).GetProperty("step").GetString());
+            Equal("2027-01-15T08:03:00Z", received[1].GetProperty("timestamp").GetString());
             Equal(true, received.All(item => item.GetProperty("distinct_id").GetGuid() == install));
+            await usage.HoldAsync(true);
+        });
+        Usage("yes later in Settings never sends earlier setup or a legacy pre-consent file", async () =>
+        {
+            var f = new UsageFixture();
+            long minute = f.Clock.Now.ToUnixTimeSeconds() / 60;
+            string legacy = $$"""
+                {"SchemaVersion":1,"Items":[{"Minute":{{minute}},"Name":{{(int)SetupStep.Data}},"Skipped":false,"OwnFiles":true}]}
+                """;
+            await f.Disk.WriteAsync(UsageData.SetupFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+            var setup = await f.Start();
+            await setup.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            var usage = await f.Start(setup: false);
+            await usage.OpenedAsync();
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Privacy));
+            f.Clock.Now += TimeSpan.FromMinutes(3);
+            Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Display));
+            await Until(() => usage.QueuedCount == 0);
+            var received = Events(f.Captures);
+            Sequence(new[] { "usage data turned on", "screen opened" }, received.Select(Name));
+            Equal("settings", Props(received[0]).GetProperty("where").GetString());
+            Equal("Settings › Display", Props(received[1]).GetProperty("screen").GetString());
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             await usage.HoldAsync(true);
         });
-        Usage("no clears the pre-question journal and stays off", async () =>
+        Usage("no stays off across setup and restart", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
@@ -71,6 +96,24 @@ internal static partial class Program
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             Equal(0, f.Captures.Count);
+        });
+        Usage("legacy delivery journals drop setup events whose consent cannot be determined", async () =>
+        {
+            var f = new UsageFixture();
+            var first = await f.Start();
+            Equal(true, await first.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist));
+            await first.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            await first.RecordAsync(UsageEvent.Page(UsagePage.Home));
+            var stored = (await f.Disk.ReadAsync(UsageData.JournalFile, default))!.Value;
+            string legacy = Encoding.UTF8.GetString(stored.AsSpan())
+                .Replace("\"SchemaVersion\":2", "\"SchemaVersion\":1", StringComparison.Ordinal);
+            await f.Disk.WriteAsync(UsageData.JournalFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+
+            var usage = await f.Start();
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            Sequence(new[] { "usage data turned on", "screen opened" }, Events(f.Captures).Select(Name));
+            await usage.HoldAsync(true);
         });
         Usage("failed settings write and missing install stay inactive", async () =>
         {
@@ -85,7 +128,7 @@ internal static partial class Program
             Equal(true, usage.ShouldAsk);
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.JournalFile, default));
-            Equal(true, (await f.Disk.ReadAsync(UsageData.SetupFile, default)).HasValue);
+            Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             f.Saved = UsageConsent.Yes;
             Equal(UsageConsent.No, (await f.Start()).Consent);
             Equal(0, f.Captures.Count);
@@ -104,17 +147,17 @@ internal static partial class Program
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             Equal(0, f.Captures.Count);
         });
-        Usage("app opened once per UTC day across restarts and resets", async () =>
+        Usage("consented app opens count once per UTC day across restarts and resets", async () =>
         {
             var f = new UsageFixture();
             var first = await f.Start(setup: false);
-            await first.OpenedAsync();
             await first.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
             await Until(() => first.QueuedCount == 0);
             await first.HoldAsync(true);
             var same = await f.Start(setup: false);
             await same.OpenedAsync();
             await same.OpenedAsync();
+            await Until(() => same.QueuedCount == 0);
             Equal(0, same.QueuedCount);
             Equal(true, await same.ResetAsync());
             await same.OpenedAsync();
@@ -185,15 +228,10 @@ internal static partial class Program
             await Until(() => off.QueuedCount == 0);
             await off.HoldAsync(true);
         });
-        Usage("setup and send caps, expiry, FIFO batching", async () =>
+        Usage("send caps, expiry, FIFO batching", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
-            for (int i = 0; i < UsageData.SetupLimit + 3; i++)
-                await usage.RecordAsync(UsageEvent.Setup(SetupStep.Welcome));
-            var bytes = (await f.Disk.ReadAsync(UsageData.SetupFile, default))!.Value;
-            using var setup = JsonDocument.Parse(bytes.AsMemory());
-            Equal(UsageData.SetupLimit, setup.RootElement.GetProperty("Items").GetArrayLength());
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist);
             f.Clock.Now += TimeSpan.FromDays(8);
             for (int i = 0; i < UsageData.QueueLimit + 8; i++)
@@ -208,17 +246,139 @@ internal static partial class Program
             Equal(10, f.Captures.Count);
             await usage.HoldAsync(true);
         });
-        Usage("all Windows event kinds, hostile inputs, shared facts and exact preview", async () =>
+        Usage("only the explicit folder pick produces an own-files marker", async () =>
+        {
+            var f = new UsageFixture();
+            var usage = await f.Start();
+            await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data));
+            await usage.RecordAsync(new(UsageKind.SetupReached, (int)SetupStep.Data, Other: 1));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            usage = await f.Start();
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            var dataSteps = Events(f.Captures).Where(item => Name(item) == "setup step reached").Select(Props).ToArray();
+            Equal(3, dataSteps.Length);
+            Equal(false, dataSteps[0].TryGetProperty("source", out _));
+            Equal(false, dataSteps[1].TryGetProperty("source", out _));
+            Equal("own files", dataSteps[2].GetProperty("source").GetString());
+            await usage.HoldAsync(true);
+        });
+        Usage("Windows usage wire schema matches the disclosure table", async () =>
+        {
+            var events = new Dictionary<string, (string Row, string[] Properties)>(StringComparer.Ordinal)
+            {
+                ["app opened"] = ("Screens", []),
+                ["screen opened"] = ("Screens", ["screen"]),
+                ["setup step reached"] = ("Setup", ["step", "source"]),
+                ["setup step skipped"] = ("Setup", ["step"]),
+                ["game started"] = ("Games", ["game", "renderer", "display_mode"]),
+                ["game ended"] = ("Games", ["how", "minutes"]),
+                ["server list refreshed"] = ("Servers", ["list"]),
+                ["server joined"] = ("Servers", ["how", "game"]),
+                ["player setup viewed"] = ("Player setups", ["setup_id"]),
+                ["player setup tried"] = ("Player setups", ["setup_id"]),
+                ["player setup imported"] = ("Player setups", ["setup_id"]),
+                ["loadout made"] = ("Player setups", []),
+                ["check run"] = ("Player setups", []),
+                ["hosting started"] = ("Hosting", ["reach", "game"]),
+                ["update offered"] = ("Updates", ["from", "to"]),
+                ["update downloading"] = ("Updates", ["from", "to"]),
+                ["update verifying"] = ("Updates", ["from", "to"]),
+                ["update ready"] = ("Updates", ["from", "to"]),
+                ["update installing"] = ("Updates", ["from", "to"]),
+                ["update installed"] = ("Updates", ["from", "to"]),
+                ["setting changed"] = ("Settings", ["setting", "value"]),
+                ["error shown"] = ("Problems", ["kind"]),
+                ["usage data turned on"] = ("With every event", ["where"])
+            };
+            (string Row, string[] Properties)[] shared =
+            [
+                ("This PC, your country", ["app", "windows", "pc_model", "processor", "processor_cores",
+                    "pc_arch", "app_arch", "memory_gb", "graphics", "graphics_memory_gb", "graphics_driver",
+                    "display_width", "display_height", "display_hz", "language"]),
+                // Fixed PostHog metadata identifies the sender and requests no person profile.
+                ("With every event", ["$lib", "$process_person_profile"])
+            ];
+            string[] envelope = ["event", "properties", "distinct_id", "timestamp", "uuid"]; // With every event
+            string[] previewRows = ["Screens", "Setup", "Games", "Servers", "Player setups", "Hosting",
+                "Updates", "Settings", "Problems", "This PC, your country", "With every event", "Never"];
+            CheckFields("mapped disclosure rows", previewRows,
+                events.Values.Select(entry => entry.Row).Concat(shared.Select(entry => entry.Row)).Append("Never"));
+
+            // The WinUI assembly is Windows-only. Read the literal row list used to build the preview.
+            using var source = typeof(Program).Assembly.GetManifestResourceStream("WindowsPrivacyPresentation.cs")
+                ?? throw new InvalidDataException("Windows privacy presentation source is missing.");
+            using var reader = new StreamReader(source);
+            var rowList = Regex.Match(reader.ReadToEnd(), @"(?s)\bUsagePreviewRows\s*=\s*\[(?<rows>.*?)\];");
+            var displayedRows = Regex.Matches(rowList.Groups["rows"].Value, """(?m)^\s*\("([^"]+)",""")
+                .Select(row => row.Groups[1].Value).ToArray();
+            if (!previewRows.SequenceEqual(displayedRows, StringComparer.Ordinal))
+                throw new InvalidDataException($"Windows usage preview rows differ. Expected [{string.Join(", ", previewRows)}]. " +
+                    $"Found [{string.Join(", ", displayedRows)}].");
+            Equal(Enum.GetValues<UsageKind>().Length, events.Count);
+
+            var f = new UsageFixture();
+            var usage = await f.Start();
+            await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
+            await usage.OpenedAsync();
+            var signed = SignedUsageCatalogue();
+            string setupId = signed.Index.Entries.Single().Id;
+            foreach (var kind in Enum.GetValues<UsageKind>().Except([UsageKind.AppOpened, UsageKind.TurnedOn]))
+            {
+                var item = kind switch
+                {
+                    UsageKind.SetupReached => UsageEvent.Setup(SetupStep.Data, ownFiles: true),
+                    UsageKind.ServerJoined => UsageEvent.Join(UsageJoin.List, GameEdition.Cod2x),
+                    UsageKind.SetupViewed or UsageKind.SetupTried or UsageKind.SetupImported => UsageEvent.Catalogue(kind, signed, setupId),
+                    UsageKind.UpdateOffered or UsageKind.UpdateInstalled or UsageKind.UpdateDownloading or UsageKind.UpdateVerifying or
+                        UsageKind.UpdateReady or UsageKind.UpdateInstalling => UsageEvent.Update(kind, "0.4.2", "0.5.0"),
+                    _ => new UsageEvent(kind)
+                };
+                await usage.RecordAsync(item);
+            }
+            // Settings without a fixed choice must also pass the disclosure check.
+            foreach (var setting in Enum.GetValues<UsageSetting>())
+                await usage.RecordAsync(new(UsageKind.SettingChanged, (int)setting, setting == UsageSetting.TextureFiltering ? 2 : 1));
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            foreach (var request in f.Captures)
+            {
+                using var batch = JsonDocument.Parse(request);
+                CheckFields("PostHog request wrapper", ["api_key", "batch"],
+                    batch.RootElement.EnumerateObject().Select(field => field.Name));
+            }
+            var received = Events(f.Captures);
+            CheckFields("event names", events.Keys, received.Select(item => Name(item)!).Distinct());
+            foreach (var group in received.GroupBy(item => Name(item)!))
+            {
+                var row = events[group.Key];
+                foreach (var item in group)
+                    CheckFields("With every event fields", envelope, item.EnumerateObject().Select(field => field.Name));
+                var actual = group.SelectMany(item => Props(item).EnumerateObject().Select(field => field.Name)).Distinct();
+                CheckFields($"{row.Row} fields for {group.Key}", shared.SelectMany(fields => fields.Properties).Concat(row.Properties), actual);
+            }
+            await usage.HoldAsync(true);
+
+            static void CheckFields(string scope, IEnumerable<string> expected, IEnumerable<string> actual)
+            {
+                var names = actual.ToHashSet(StringComparer.Ordinal);
+                var extra = names.Except(expected).ToArray();
+                var missing = expected.Except(names).ToArray();
+                if (extra.Length != 0 || missing.Length != 0)
+                    throw new InvalidDataException($"Usage disclosure differs for {scope}. Unlisted: [{string.Join(", ", extra)}]. Unseen: [{string.Join(", ", missing)}].");
+            }
+        });
+        Usage("hostile inputs, shared facts and exact preview", async () =>
         {
             string[] hostile = ["PRIVATE-HANDLE", "000000000000000086D3", "203.0.113.97:28960",
                 "C:\\Users\\PRIVATE-HANDLE\\game", "seta name \"SECRET\"", "private-slug", "S-1-5-21-8871",
                 "AA-BB-CC-DD-EE-FF", "95fcdc44-36ef-49f8-9726-bce60a27bc47", "PHYSIC-SERIAL123"];
             var f = new UsageFixture();
             var usage = await f.Start();
-            await usage.OpenedAsync();
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
+            await usage.OpenedAsync();
             var signed = SignedUsageCatalogue();
-            string setupId = signed.Index.Entries.Single().Id;
             foreach (string value in hostile)
             {
                 Equal<UsageEvent?>(null, UsageEvent.Catalogue(UsageKind.SetupViewed, signed, value));
@@ -233,17 +393,6 @@ internal static partial class Program
                     await usage.RecordAsync(item);
             }
             f.Facts = WindowsFacts;
-            foreach (var eventKind in Enum.GetValues<UsageKind>().Except([UsageKind.AppOpened, UsageKind.TurnedOn, UsageKind.ServerJoined]))
-            {
-                var item = eventKind switch
-                {
-                    UsageKind.SetupViewed or UsageKind.SetupTried or UsageKind.SetupImported => UsageEvent.Catalogue(eventKind, signed, setupId),
-                    UsageKind.UpdateOffered or UsageKind.UpdateInstalled or UsageKind.UpdateDownloading or UsageKind.UpdateVerifying or
-                        UsageKind.UpdateReady or UsageKind.UpdateInstalling => UsageEvent.Update(eventKind, "0.4.2", "0.5.0"),
-                    _ => new UsageEvent(eventKind)
-                };
-                await usage.RecordAsync(item);
-            }
             f.ForcedId = Guid.Parse("e2f92677-15c0-4f83-b336-1f0998f4b27b");
             string preview = (await usage.PreviewAsync())!;
             f.ForcedId = Guid.Parse("e2f92677-15c0-4f83-b336-1f0998f4b27b");
@@ -251,7 +400,6 @@ internal static partial class Program
             await usage.HoldAsync(false);
             await Until(() => usage.QueuedCount == 0);
             var received = Events(f.Captures);
-            Equal(Enum.GetValues<UsageKind>().Length, received.Select(Name).Distinct().Count());
             string wire = string.Join("\n", f.Captures.Select(bytes => Encoding.UTF8.GetString(bytes)));
             Equal(false, hostile.Any(value => wire.Contains(value, StringComparison.Ordinal)));
             Equal(false, wire.Contains("$geoip_disable", StringComparison.Ordinal));

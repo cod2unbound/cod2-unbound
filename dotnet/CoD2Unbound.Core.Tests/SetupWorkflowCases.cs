@@ -65,6 +65,24 @@ internal static partial class Program
             Equal("new\n", Encoding.UTF8.GetString(saved!.Value.AsSpan()));
         });
 
+        Check("Setup distinguishes explicitly picking a folder from accepting the same discovered folder", () =>
+        {
+            var setup = new SetupSession(new ArchiveChoices(), new MemoryPlatform("home"), new TestSecrets(),
+                "old", false, step: SetupStep.Data);
+            Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(false, setup.DataWasPicked);
+
+            setup.Back();
+            Equal(SetupDataState.Found, setup.ChooseData("old", picked: true).State);
+            Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(true, setup.DataWasPicked);
+
+            setup.Back();
+            setup.ChooseData("old");
+            Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+            Equal(false, setup.DataWasPicked);
+        });
+
         Check("Replacing a CD key preserves the stored key until confirmation", () =>
         {
             var storage = new MemoryPlatform("home");

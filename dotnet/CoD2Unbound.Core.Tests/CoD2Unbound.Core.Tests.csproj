@@ -7,6 +7,7 @@
     <Compile Include="../CoD2Unbound.Windows/Platform/SetupPublisher.cs" Link="Windows/SetupPublisher.cs" />
     <Compile Include="../CoD2Unbound.Windows/Platform/WindowsFiles.cs" Link="Windows/WindowsFiles.cs" />
     <Compile Include="../CoD2Unbound.Windows/Platform/WindowsReleaseSource.cs" Link="Windows/WindowsReleaseSource.cs" />
+    <EmbeddedResource Include="../CoD2Unbound.Windows/Views/PrivacyPresentation.cs" LogicalName="WindowsPrivacyPresentation.cs" />
     <None Include="../../tests/launcher/fixtures/core-parity/*.json" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
