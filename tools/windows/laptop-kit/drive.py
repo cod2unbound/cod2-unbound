@@ -24,6 +24,13 @@ def powershell_literal(value):
     return "'" + value.replace("'", "''") + "'"
 
 
+def ssh_option(key, value):
+    # OpenSSH parses an -o value as a config line even when argv preserves spaces.
+    if any(ord(char) < 32 or char == '"' for char in value):
+        raise ValueError(f"Invalid characters in SSH option {key}.")
+    return f'{key}="{value.replace("%", "%%")}"'
+
+
 def encode(script):
     script = ("$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';"
               "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);") + script
@@ -47,14 +54,14 @@ class SshTransport:
             "-o", "KbdInteractiveAuthentication=no", "-o", "NumberOfPasswordPrompts=0",
             "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=5",
             "-o", "ServerAliveCountMax=2", "-o", "ClearAllForwardings=yes",
-            "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "-o", f"User={user}",
+            "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "-o", ssh_option("User", user),
             "-o", "ControlMaster=no", "-o", "ControlPath=none",
             "-o", "Port=" + os.environ.get("COD2_KIT_SSH_PORT", "22"),
         ]
         if identity := os.environ.get("COD2_KIT_SSH_IDENTITY"):
             self.options += ["-i", identity, "-o", "IdentitiesOnly=yes"]
         if known_hosts := os.environ.get("COD2_KIT_SSH_KNOWN_HOSTS"):
-            self.options += ["-o", "UserKnownHostsFile=" + known_hosts]
+            self.options += ["-o", ssh_option("UserKnownHostsFile", known_hosts)]
         self.remote = f"[{host}]" if ":" in host else host
 
     def exec(self, script, timeout=45):
