@@ -12,6 +12,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#if COD2_APPLE_SDK
+#if defined(__APPLE__)
+#define PB_UNAVAILABLE "PunkBuster is unavailable in the native Mac engine. Choose a server that does not require it."
+#else
+#define PB_UNAVAILABLE "PunkBuster is unavailable in this engine. Choose a server that does not require it."
+#endif
+#endif
+
 extern cg_t cgArray[1];
 /* see cg_local.h: `cg` is a const pointer to the real object, so `cg->field` folds
  * into a single absolute access. */
@@ -4472,7 +4481,7 @@ void UI_RunMenuScript(const char **args)
                                        sharedUiInfo.serverStatus.displayServers[selectedServer]) == 1 &&
                 !Dvar_GetBool("cl_punkbuster")) {
 #if COD2_APPLE_SDK /* both game versions: there is no PunkBuster for this engine */
-                Dvar_SetStringByName("com_errorMessage", "PunkBuster is unavailable in the native Mac engine. Choose a server that does not require it.");
+                Dvar_SetStringByName("com_errorMessage", PB_UNAVAILABLE);
                 Menus_OpenByName(&uiInfo->uiDC, "error_popmenu");
 #else
                 Menus_OpenByName(&uiInfo->uiDC, "joinpb_popmenu");
@@ -4660,7 +4669,7 @@ void UI_RunMenuScript(const char **args)
 #if COD2_APPLE_SDK /* both game versions: there is no PunkBuster for this engine */
             Dvar_SetBoolByName("cl_punkbuster", 0);
             if (status) {
-                Dvar_SetStringByName("com_errorMessage", "PunkBuster is unavailable in the native Mac engine. Choose a server that does not require it.");
+                Dvar_SetStringByName("com_errorMessage", PB_UNAVAILABLE);
                 Menus_OpenByName(&uiInfo->uiDC, "error_popmenu");
             }
 #else
