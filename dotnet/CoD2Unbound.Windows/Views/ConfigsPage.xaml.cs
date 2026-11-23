@@ -234,10 +234,11 @@ public sealed partial class ConfigsPage : Page
             model.Opened(pages[index]);
             if (studioModes is not null)
                 studioModes.Visibility = IsVisible(index == 0);
+            UpdateHistorySnapshotButton();
             RenderStudioBody();
         });
         AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
-        Detail.Children.Add(tabs);
+        AddStudioTabs(tabs, profile);
         var title = new StackPanel { Spacing = 2, Children = { Heading(profile.Profile.DisplayName) } };
         var subtitle = new List<string>();
         if (profile.Profile.Id.Equals("main", StringComparison.OrdinalIgnoreCase))
@@ -307,6 +308,7 @@ public sealed partial class ConfigsPage : Page
     private void RenderStudioBody()
     {
         studioBody.Children.Clear();
+        UpdateHistorySnapshotButton();
         var state = model.State;
         if (state.Current is not { } profile)
             return;
@@ -554,47 +556,6 @@ public sealed partial class ConfigsPage : Page
     }
 
     private static string Distance(double cm) => $"{cm:F1} cm per full turn";
-
-    private void ShowHistory(ConfigStudioState state, ConfigProfileRead profile)
-    {
-        studioBody.Children.Add(new TextBlock { Text = "History", Style = StyleFor("SectionTitle") });
-        if (state.History.IsEmpty)
-            AddStudioEmpty("History", "No changes recorded yet",
-                "Changes to this loadout appear here. Undo anytime from History.");
-        foreach (var entry in state.History.Reverse())
-        {
-            var restore = Action("Restore…", async () =>
-            {
-                var dialog = Dialog("Restore this loadout?", Caption($"Choose a version of the loadout from “{entry.Summary}”."),
-                    "Restore before");
-                dialog.SecondaryButtonText = "Restore after";
-                dialog.DefaultButton = ContentDialogButton.Close;
-                var choice = await dialog.ShowAsync();
-                if (choice == ContentDialogResult.None)
-                    return;
-                model.RestoreHistory(profile, entry,
-                    choice == ContentDialogResult.Primary ? ConfigSnapshotRevision.Before : ConfigSnapshotRevision.After);
-                await RefreshStudioAsync();
-            });
-            restore.IsEnabled = !state.ReadOnly;
-            studioBody.Children.Add(SettingRow(entry.Summary, entry.Date.LocalDateTime.ToString("g", CultureInfo.CurrentCulture), restore));
-        }
-    }
-
-    private void AddStudioEmpty(string icon, string heading, string detail)
-    {
-        var state = EmptyState(icon, heading, detail);
-        state.HorizontalAlignment = HorizontalAlignment.Center;
-        state.VerticalAlignment = VerticalAlignment.Center;
-        foreach (UIElement child in state.Children)
-        {
-            if (child is FrameworkElement element)
-                element.HorizontalAlignment = HorizontalAlignment.Center;
-            if (child is TextBlock text)
-                text.TextAlignment = TextAlignment.Center;
-        }
-        studioBody.Children.Add(new Grid { MinHeight = 214, Children = { state } });
-    }
 
     private async void OnDiscoverPlaceChanged(object sender, SelectionChangedEventArgs args)
     {
