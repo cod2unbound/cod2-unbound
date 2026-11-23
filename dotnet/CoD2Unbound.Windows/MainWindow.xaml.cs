@@ -551,7 +551,10 @@ public sealed partial class MainWindow : Window
                 await CompleteCloseAsync();
             }
             if (!flushedForClose && !windowsSessionEnding)
+            {
                 ScheduleActivation();
+                RefreshTaskbarJumpList();
+            }
         }
     }
 

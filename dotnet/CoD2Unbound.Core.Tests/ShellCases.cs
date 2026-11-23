@@ -44,5 +44,25 @@ internal static partial class Program
             var chords = LauncherShortcuts.All.SelectMany(item => item.Chords).ToArray();
             Equal(chords.Length, chords.Distinct().Count());
         });
+        Check("Taskbar actions round-trip and recent destinations contain only an address", () =>
+        {
+            var entries = TaskbarJumpList.Recent(
+                Enumerable.Range(1, 7).Select(index => new GameServer($"127.0.0.1:{28960 + index}",
+                    System.Collections.Immutable.ImmutableDictionary<string, string>.Empty.Add("hostname", "^1Night sessions"), 0, [])),
+                ["--join-recent=127.0.0.1:28961"]);
+            Equal(5, entries.Length);
+            Equal("Night sessions", entries[0].Title);
+            Equal(new TaskbarActivation(ShellCommand.Launch, "127.0.0.1:28962"), TaskbarJumpList.Parse(entries[0].Arguments));
+            Sequence(new[] { ShellCommand.Launch, ShellCommand.OpenGameMenu, ShellCommand.Connect },
+                TaskbarJumpList.Tasks.Select(task => TaskbarJumpList.Parse(task.Arguments)!.Command));
+            Equal(null, TaskbarJumpList.Parse("--join-recent=127.0.0.1 password secret"));
+        });
+        Check("Jump to lists running game actions and disables close while a close is pending", () =>
+        {
+            var actions = JumpIndex.GameActions(running: true, closingGame: true);
+            Equal(true, actions.Single(action => action.Id == nameof(ShellCommand.ReturnToGame)).Enabled);
+            Equal(false, actions.Single(action => action.Id == nameof(ShellCommand.CloseGame)).Enabled);
+            Equal(true, JumpIndex.GameActions(running: false, closingGame: false).All(action => !action.Enabled));
+        });
     }
 }

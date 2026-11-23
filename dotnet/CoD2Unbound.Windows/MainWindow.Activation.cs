@@ -45,6 +45,15 @@ public sealed partial class MainWindow
 
     private async Task OpenActivationAsync(string input)
     {
+        if (TaskbarJumpList.Parse(input) is { } task)
+        {
+            if (task.Command == ShellCommand.Connect)
+                await ConnectFromShellAsync();
+            else
+                await LaunchFromShellAsync(task.Command == ShellCommand.Launch, task.Address);
+            return;
+        }
+
         if (input.StartsWith(WindowsUpdateNotifications.ActivationPrefix, StringComparison.Ordinal) &&
             input[WindowsUpdateNotifications.ActivationPrefix.Length..] is { } version && UpdateNotification.IsVersion(version))
         {
