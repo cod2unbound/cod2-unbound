@@ -177,7 +177,7 @@ import Foundation
 /// Privacy (UsageData, SetupUsage, SheetUsageAsk, SheetUsagePreview and SetPrivacyUsage boards).
 enum UsageDataQuestion {
     static let rows: [(symbol: String, title: String, detail: String)] = [
-        ("doc.text", "What is sent", "Which screens you open and what you use there, such as setup steps, the games you start (game version and graphics settings) and how long they ran, joining servers, the player setups you view or import, and the settings you change, with the choice you pick from a set list. With the time to the minute, the app’s version, your macOS version, your Mac’s model and chip, your display, your system language and the country you connect from."),
+        ("doc.text", "What is sent", "That you opened the launcher, which screens you open and what you use there, such as setup steps, the games you start (game version and graphics settings) and how long they ran, asking the game to join a server, the player setups you view or import, and the settings you change, with the choice you pick from a set list. With the time to the minute, the app’s version, your macOS version, your Mac’s model and chip, your display, your system language and the country you connect from."),
         ("lock", "What never is", "Your name, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type. Your network address is used once to work out your country and continent, then discarded; nothing finer than the country is kept."),
         ("globe", "Where it goes", "To PostHog, a service hosted in the EU, where only this project can see it. A random install number made on this Mac links your sessions; turning this off forgets it."),
     ]
@@ -199,7 +199,7 @@ enum UsageDataQuestion {
     static func group(_ group: UsagePreviewGroup) -> (title: String, detail: String) {
         switch group {
         case .screens: ("Screens", "Which screens you open, such as Servers or Settings › Display. Opening the launcher is counted at most once a day.")
-        case .setup: ("Setup", "Each step you reach or skip, and whether your game files came from Steam or your own copy.")
+        case .setup: ("Setup", "Each step you reach or skip after you say yes, and whether your game files came from Steam or your own copy.")
         case .games: ("Games", "Each game you start, with its game version (CoD2x or Original 1.3), graphics (Metal or OpenGL), display mode and render scale. When the launcher can tell, how the game ended (closed normally, crashed or froze) and how many minutes it ran.")
         case .servers: ("Servers", "Refreshing the list, and which tab: All, Favorites or Recent. Asking the game to join a server: how (from the list, a favorite, a link or a typed address) and its game version when known, never which server.")
         case .playerSetups: ("Player setups", "The public catalogue ID of each player setup you view, try or import, such as “harrow”. That you made a loadout, checked a config, or shared or withdrew a setup, nothing more.")
@@ -208,7 +208,7 @@ enum UsageDataQuestion {
         case .settings: ("Settings", "Which settings you change, by name. For a setting with a set list of choices, such as a switch, the game version, appearance, display mode, graphics, render scale or texture sharpness, also the choice you pick. Never what you type into a field.")
         case .problems: ("Problems", "Errors the launcher shows you, by kind, such as “the game couldn’t start”.")
         case .macAndCountry: ("This Mac, your country", "The app’s version, your macOS version, your Mac’s model and chip, your display’s size and refresh rate, your system language, and the country and continent your connection comes from (worked out from your network address, which is then discarded).")
-        case .everyEvent: ("With every event", "The time, to the minute; a random number for the event; and the install number. When you say yes, also where: in setup, in the question or in Settings. It also says it came from the launcher and asks PostHog to leave it out of person profiles.")
+        case .everyEvent: ("With every event", "The time, to the minute; a random number for the event; and the install number. When you say yes, also where: in setup, in the question or in Settings. Each event also says it comes from the launcher and asks PostHog not to build a person profile from it.")
         case .never: ("Never", "Your name, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.")
         }
     }

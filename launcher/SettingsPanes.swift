@@ -431,7 +431,7 @@ struct PrivacyPane: View {
     @Environment(\.palette) private var palette
     var body: some View {
         SettingsPaneScroll {
-            Banner(.tip, symbol: "lock", message: "Choose which reports and usage data to share. The game and launcher also contact the services listed below.")
+            Banner(.tip, symbol: "lock", message: "CoD2 Unbound has no account. Its crash reports and usage data stay off unless you turn them on. The game and the launcher also contact the services listed below.")
             FormSection("Sharing") {
                 FormGroup {
                     // Only a build with a report receiver offers it; without one nothing is ever sent.
@@ -444,7 +444,7 @@ struct PrivacyPane: View {
                         }
                     }
                     FormRow("Send CoD2x crash reports to the CoD2x project",
-                            detail: "Errors and faults in CoD2x’s own code, sent by CoD2x to the people who make it. Reports can include recent CoD2x log text. A crash or freeze report also includes folder paths, loaded libraries and part of the game’s memory. Changes apply the next time CoD2x starts.",
+                            detail: "Errors and faults in CoD2x’s own code, sent by CoD2x to the people who make it. Reports can include recent CoD2x log text. A crash or freeze report also includes the game’s command line, folder paths, loaded libraries and part of the game’s memory. Changes apply the next time CoD2x starts.",
                             isOn: $model.settings.sendCoD2xReports)
                     // Only a build with the sending key offers it; without one nothing is ever sent.
                     if model.usageAvailable {
