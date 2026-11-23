@@ -78,9 +78,8 @@ function Add-KitStep([string]$Id, [string]$Title, [scriptblock]$Action, [string]
 
 $Steps = @(
     Add-KitStep 'preflight' 'Kit files and offline checks' {
-        $os = Get-CimInstance -ClassName Win32_OperatingSystem
-        $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-        "$($os.Caption), $($version.DisplayVersion), build $($os.BuildNumber).$($version.UBR), Windows PowerShell $($PSVersionTable.PSVersion)" |
+        $windows = Get-KitWindowsVersion
+        "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build), Windows PowerShell $($PSVersionTable.PSVersion)" |
             Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
         Test-KitFiles
         $captured = @()

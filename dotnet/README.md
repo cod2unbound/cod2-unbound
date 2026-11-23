@@ -159,7 +159,8 @@ editions and the already-running path. Follow with Servers and Hosting.
 Bind Config Studio, Library and Settings as their canvas flows are approved.
 Build against the [view model contracts](PORT-MAP.md#view-model-contracts).
 
-Use Windows 11 x64, the .NET 10 SDK, Windows SDK 10.0.26100 or a newer SDK
+Use Windows 10 (22H2) or Windows 11 on x64, the .NET 10 SDK,
+Windows SDK 10.0.26100 or a newer SDK
 supported by the pinned framework, and Windows App SDK 2.7.0. Set up Visual
 Studio 2026 with WinUI application development or Windows App Development CLI
 0.6+ with the C# WinUI template. Use a standard-user account plus explicitly

@@ -93,6 +93,9 @@ try {
     $Private = New-Folder (Join-Path $AppDataRoot "Windows Kit\$stamp")
     $Results = New-Folder (Join-Path $Kit "results\$stamp")
     $summary = Join-Path $Results 'automatic-checks.txt'
+    $windows = Get-KitWindowsVersion
+    "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build)" |
+        Set-Content -LiteralPath $summary
 
     Test-KitFiles
     Write-Host 'PASS - All kit files copied correctly'

@@ -724,7 +724,7 @@ public sealed partial class ConfigsPage
         {
             bool saved = IsSaved();
             string label = saved ? "Remove from Saved" : "Save for later";
-            action.Content = Fluent(saved ? "BookmarkFilled" : "Bookmark", 20, filled: saved);
+            action.Content = Fluent(saved ? "BookmarkFilled" : "Bookmark", 20);
             AutomationProperties.SetName(action, label);
             ToolTipService.SetToolTip(action, label);
         }

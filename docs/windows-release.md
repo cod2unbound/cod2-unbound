@@ -135,7 +135,7 @@ a game runs and sends the player to the release page when the install cannot
 be replaced.
 
 - Use the same check cadence and consent on Windows. Select the installer for
-  Windows 11 x64 and compare its numeric version with the installed
+  x64 PCs running Windows 10 (22H2) or Windows 11 and compare its numeric version with the installed
   `RELEASE_VERSION`. The Add/Remove Programs entry exposes the same version.
   Check the release asset's SHA-256 and Authenticode trust, timestamp, and
   expected publisher before running it. Keep downloads in private staging.
@@ -156,7 +156,7 @@ be replaced.
   binaries until the new server runs.
 
 Website release data needs platform `windows`, architecture `x64`, minimum
-OS Windows 11, version and download URLs, SHA-256 and byte sizes for the
+OS Windows 10 (22H2) or Windows 11, version and download URLs, SHA-256 and byte sizes for the
 installer, server ZIP and catalog, plus the publisher identity and licensed
 game data prerequisite. Expose the ZIP and catalog together and label the
 server download separately from the installer. Keep macOS assets in their
@@ -168,5 +168,6 @@ Pass a fresh directory produced by `release.sh test`, a lower-version
 test-signed installer, and optionally the licensed data directory to
 `tools/windows/check-package.sh`. Keep the resulting logs with the release.
 Wine exercises installer behavior, loopback server queries and file
-preservation. Windows 11 still needs testing for actual elevation, default
-handlers, publisher trust, SmartScreen, Smart App Control and Defender.
+preservation. Windows 10 (22H2) and Windows 11 still need native x64
+checks for actual elevation, default handlers, publisher trust, SmartScreen and
+Defender. Check Smart App Control on Windows 11 where available.

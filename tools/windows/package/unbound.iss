@@ -32,7 +32,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 SetupArchitecture=x64
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-MinVersion=10.0.22000
+MinVersion=10.0.19041
 OutputDir={#Artifacts}
 OutputBaseFilename=CoD2-Unbound-{#ReleaseVersion}-windows-x64-setup
 SignedUninstaller=yes
@@ -51,6 +51,8 @@ UninstallDisplayIcon={app}\launcher\{#Launcher}
 #endif
 
 [Messages]
+WinVersionTooLowError=CoD2 Unbound requires Windows 10 (22H2) or Windows 11. The minimum Windows build is 19041.
+WindowsVersionNotSupported=CoD2 Unbound Setup needs an x64-compatible PC running Windows 10 (22H2) or Windows 11.
 ConfirmUninstall=Remove %1 and its installed files? Your loadouts, settings, screenshots, demos and CD key will stay in place.
 
 [Files]

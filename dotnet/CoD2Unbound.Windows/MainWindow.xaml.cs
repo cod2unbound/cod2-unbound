@@ -4,6 +4,7 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
 using CoD2Unbound.Windows.ViewModels;
 using static CoD2Unbound.Windows.Views.PagePresentation;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.System;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -19,6 +20,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly WindowsLauncherSession session = new();
     private readonly ThemeSettings windowTheme;
+    private readonly bool useCustomTitleBar;
     private bool busy;
     private bool loaded;
     private double sizedAtScale;
@@ -38,16 +40,33 @@ public sealed partial class MainWindow : Window
         StartupTrace.Mark("window constructor");
         InitializeComponent();
         StartupTrace.Mark("window XAML");
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(WindowBar);
+        bool windows11 = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        if (windows11 && MicaController.IsSupported())
+        {
+            SystemBackdrop = new MicaBackdrop();
+            SolidFrame.Visibility = Visibility.Collapsed;
+        }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
-        WindowBar.IconSource = new BitmapIconSource
+        useCustomTitleBar = windows11 && AppWindowTitleBar.IsCustomizationSupported();
+        if (useCustomTitleBar)
         {
-            UriSource = new Uri(Path.Combine(assets, "mark-16.png")),
-            ShowAsMonochrome = false
-        };
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(WindowBar);
+            WindowBar.IconSource = new BitmapIconSource
+            {
+                UriSource = new Uri(Path.Combine(assets, "mark-16.png")),
+                ShowAsMonochrome = false
+            };
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        }
+        else
+        {
+            WindowBar.Content = null;
+            WindowBar.Visibility = Visibility.Collapsed;
+            ClientJumpBar.Content = JumpHost;
+            ClientJumpBar.Visibility = Visibility.Visible;
+        }
         windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
         windowTheme.Changed += OnSystemThemeChanged;
         Root.ActualThemeChanged += OnAppThemeChanged;
@@ -128,6 +147,8 @@ public sealed partial class MainWindow : Window
 
     private void OnJumpHostSizeChanged(object sender, SizeChangedEventArgs args)
     {
+        if (!useCustomTitleBar)
+            return;
         // The native title and caption buttons reserve different widths on each side.
         double hostLeft = JumpHost.TransformToVisual(WindowBar).TransformPoint(default).X;
         double hostWidth = args.NewSize.Width;
@@ -161,6 +182,8 @@ public sealed partial class MainWindow : Window
 
     private void UpdateCaptionColors()
     {
+        if (!useCustomTitleBar)
+            return;
         var foreground = windowTheme.HighContrast ? null : (WindowBar.Foreground as SolidColorBrush)?.Color;
         var caption = AppWindow.TitleBar;
         caption.ButtonForegroundColor = foreground;
@@ -431,7 +454,7 @@ public sealed partial class MainWindow : Window
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
-            var icon = Fluent("StarFilled", 16, filled: true);
+            var icon = Fluent("StarFilled", 16);
             if (!IsHighContrast)
                 icon.Foreground = ThemeBrush("FavoriteBrush", Root.ActualTheme, false);
             Nav.MenuItems.Add(new NavigationViewItem

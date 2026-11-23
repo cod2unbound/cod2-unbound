@@ -4,55 +4,63 @@
     <FontFamily x:Key="StencilBold">ms-appx:///Assets/BigShouldersStencilDisplay-Bold.ttf#Big Shoulders Stencil Display</FontFamily>
     <FontFamily x:Key="CourierPrime">ms-appx:///Assets/CourierPrime-Regular.ttf#Courier Prime</FontFamily>
 
-    <!-- Fluent UI System Icons from Microsoft, 6c2c9075cf89 (MIT). -->
-    <FontFamily x:Key="FluentRegular">ms-appx:///Assets/FluentSystemIcons-Regular.ttf#FluentSystemIcons-Regular</FontFamily>
-    <x:String x:Key="FluentHome">&#xF480;</x:String>
-    <x:String x:Key="FluentLive">&#xF4F0;</x:String>
-    <x:String x:Key="FluentVideoClip">&#xEDFF;</x:String>
-    <x:String x:Key="FluentStack">&#xF792;</x:String>
-    <x:String x:Key="FluentSettings">&#xF6A9;</x:String>
-    <x:String x:Key="FluentAdd">&#xF109;</x:String>
-    <x:String x:Key="FluentAddSmall">&#xF108;</x:String>
-    <x:String x:Key="FluentSearch">&#xF68F;</x:String>
-    <x:String x:Key="FluentFilter">&#xF406;</x:String>
-    <x:String x:Key="FluentBookmark">&#xF1F5;</x:String>
-    <x:String x:Key="FluentCopy">&#xF32B;</x:String>
-    <x:String x:Key="FluentRefresh">&#xF13D;</x:String>
-    <x:String x:Key="FluentDesktop">&#xF359;</x:String>
-    <x:String x:Key="FluentCheck">&#xE305;</x:String>
-    <x:String x:Key="FluentCheckCircle">&#xF297;</x:String>
-    <x:String x:Key="FluentChevronDown">&#xF2A2;</x:String>
-    <x:String x:Key="FluentChevronUp">&#xF2B5;</x:String>
-    <x:String x:Key="FluentChevronRight">&#xF2AF;</x:String>
-    <x:String x:Key="FluentPeopleCommunity">&#xF5B0;</x:String>
-    <x:String x:Key="FluentPerson">&#xF5BD;</x:String>
-    <x:String x:Key="FluentShieldCheckmark">&#xEAC8;</x:String>
-    <x:String x:Key="FluentArrowDownload">&#xF150;</x:String>
-    <x:String x:Key="FluentPlayOutline">&#xE990;</x:String>
-    <x:String x:Key="FluentGauge">&#xF0B54;</x:String>
-    <x:String x:Key="FluentChevronLeft">&#xF2AA;</x:String>
-    <x:String x:Key="FluentHistory">&#xE707;</x:String>
-    <x:String x:Key="FluentFolder">&#xF418;</x:String>
-    <x:String x:Key="FluentDocument">&#xF378;</x:String>
-    <x:String x:Key="FluentStar">&#xF70F;</x:String>
-    <x:String x:Key="FluentLock">&#xE78E;</x:String>
-    <x:String x:Key="FluentLockClosed">&#xE78F;</x:String>
-    <x:String x:Key="FluentEye">&#xE5F2;</x:String>
-    <x:String x:Key="FluentShare">&#xF6AF;</x:String>
-    <x:String x:Key="FluentTag">&#xEC70;</x:String>
-    <x:String x:Key="FluentMore">&#xE824;</x:String>
-    <x:String x:Key="FluentImage">&#xF489;</x:String>
-    <x:String x:Key="FluentHeartPulse">&#xE701;</x:String>
-    <FontFamily x:Key="FluentFilled">ms-appx:///Assets/FluentSystemIcons-Filled.ttf#FluentSystemIcons-Filled</FontFamily>
-    <x:String x:Key="FluentBookmarkFilled">&#xF1F5;</x:String>
-    <x:String x:Key="FluentPlay">&#xE9A2;</x:String>
-    <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
+    <!-- These code points are shared by Segoe Fluent Icons and Segoe MDL2 Assets. -->
+    <x:String x:Key="FluentHome">&#xE80F;</x:String>
+    <x:String x:Key="FluentLive">&#xE870;</x:String>
+    <x:String x:Key="FluentVideoClip">&#xE714;</x:String>
+    <x:String x:Key="FluentStack">&#xE7C4;</x:String>
+    <x:String x:Key="FluentSettings">&#xE713;</x:String>
+    <x:String x:Key="FluentAdd">&#xE710;</x:String>
+    <x:String x:Key="FluentAddSmall">&#xE710;</x:String>
+    <x:String x:Key="FluentSearch">&#xE721;</x:String>
+    <x:String x:Key="FluentFilter">&#xE71C;</x:String>
+    <x:String x:Key="FluentBookmark">&#xE8A4;</x:String>
+    <x:String x:Key="FluentCopy">&#xE8C8;</x:String>
+    <x:String x:Key="FluentRefresh">&#xE72C;</x:String>
+    <x:String x:Key="FluentDesktop">&#xE7F3;</x:String>
+    <x:String x:Key="FluentCheck">&#xE73E;</x:String>
+    <x:String x:Key="FluentCheckCircle">&#xE930;</x:String>
+    <x:String x:Key="FluentChevronDown">&#xE70D;</x:String>
+    <x:String x:Key="FluentChevronUp">&#xE70E;</x:String>
+    <x:String x:Key="FluentChevronRight">&#xE76C;</x:String>
+    <x:String x:Key="FluentPeopleCommunity">&#xE716;</x:String>
+    <x:String x:Key="FluentPerson">&#xE77B;</x:String>
+    <x:String x:Key="FluentShieldCheckmark">&#xEA18;</x:String>
+    <x:String x:Key="FluentArrowDownload">&#xE896;</x:String>
+    <x:String x:Key="FluentPlayOutline">&#xE768;</x:String>
+    <x:String x:Key="FluentGauge">&#xEC4A;</x:String>
+    <x:String x:Key="FluentChevronLeft">&#xE76B;</x:String>
+    <x:String x:Key="FluentHistory">&#xE81C;</x:String>
+    <x:String x:Key="FluentFolder">&#xE8B7;</x:String>
+    <x:String x:Key="FluentDocument">&#xE8A5;</x:String>
+    <x:String x:Key="FluentStar">&#xE734;</x:String>
+    <x:String x:Key="FluentLock">&#xE72E;</x:String>
+    <x:String x:Key="FluentLockClosed">&#xE72E;</x:String>
+    <x:String x:Key="FluentEye">&#xE890;</x:String>
+    <x:String x:Key="FluentShare">&#xE72D;</x:String>
+    <x:String x:Key="FluentTag">&#xE8EC;</x:String>
+    <x:String x:Key="FluentMore">&#xE712;</x:String>
+    <x:String x:Key="FluentImage">&#xE91B;</x:String>
+    <x:String x:Key="FluentHeartPulse">&#xE95E;</x:String>
+    <x:String x:Key="FluentBookmarkFilled">&#xE728;</x:String>
+    <x:String x:Key="FluentPlay">&#xE768;</x:String>
+    <x:String x:Key="FluentStarFilled">&#xE735;</x:String>
+    <x:String x:Key="FluentStop">&#xE71A;</x:String>
 
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
         <Setter Property="HighContrastAdjustment" Value="None" />
     </Style>
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
+    </Style>
+    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter">
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="IsTabStop" Value="True" />
+    </Style>
+    <Style x:Key="SolidCrashFlyoutPresenter" TargetType="FlyoutPresenter"
+           BasedOn="{StaticResource CrashFlyoutPresenter}">
+        <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
     </Style>
 
     <Style x:Key="HeroTitle" TargetType="TextBlock">

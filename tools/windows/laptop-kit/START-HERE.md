@@ -50,10 +50,15 @@ a key in Windows Credential Manager. Save your work before starting.
 6. Browse Home and **Settings > Privacy**. Start Narrator with **Windows + Ctrl
    + Enter**. Tab through both pages. Write one line about labels, focus order
    or controls that are hard to reach. Turn Narrator off with the same
-   shortcut. Allow about 5 minutes.
+   shortcut. Windows 10 uses a solid background and a standard title bar
+   with **Jump to** below it. Windows 11 can show Mica. If you try high
+   contrast, Windows 10 puts it in **Settings > Ease of Access > High
+   contrast**. Windows 11 puts it in **Settings > Accessibility > Contrast
+   themes**. Restore your usual theme afterward.
+   Allow about 5 minutes.
 7. Give permission to remove the kit's test copy and sample data when asked.
    Read the cleanup result. Inspect the files the packer lists before you
-   choose to make the ZIP. Allow 5 minutes for cleanup and review.
+   type **PACK** to make the ZIP. Allow 5 minutes for cleanup and review.
 
 To pick up where you stopped, run the same command with the same kit folder
 and run name. To start a separate run after cleanup, add `-RunId second`.

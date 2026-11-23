@@ -151,7 +151,12 @@ public static class KitLauncherPicture
             $observed = Read-Host "Open $edition from Home, wait for its game menu, then quit the game. Did it open?"
             "$edition opened? $observed" | Add-Content -LiteralPath $notes
         }
-        foreach ($question in 'Could you see the Mica background?', 'Did the Home title look like stencil lettering?', 'Does anything look wrong or unlike Windows?') {
+        $windowStyle = if ((Get-KitWindowsVersion).Family -eq 'Windows 10') {
+            'Did you see a solid background and a Windows title bar above Jump to?'
+        } else {
+            'Could you see the Mica background?'
+        }
+        foreach ($question in $windowStyle, 'Did the Home title look like stencil lettering?', 'Does anything look wrong or unlike Windows?') {
             $observed = Read-Host $question
             "$question $observed" | Add-Content -LiteralPath $notes
         }
