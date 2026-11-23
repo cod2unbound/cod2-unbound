@@ -37,7 +37,7 @@ if ($InternetPlay) {
         Add-KitStep 'public-play' 'Use the installed play build on real game servers' {
             Invoke-KitPublicPlay
         } 'The play build will use your verified key to join real game servers and briefly list test rooms. Type YES to begin, or press Enter to leave this part out' -Consent
-        Add-KitStep 'cleanup' 'Remove this run’s temporary files' { Remove-KitScratch $KitProfile }
+        Add-KitStep 'cleanup' 'Remove temporary files from the play check' { Remove-KitScratch $KitProfile }
     )
 }
 
