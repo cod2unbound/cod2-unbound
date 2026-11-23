@@ -28,8 +28,6 @@ function Save-KitEvents {
         foreach ($dump in $dumps) {
             "$($dump.Name) $($dump.Length) bytes. Raw memory. Review before sharing." |
                 Add-Content -LiteralPath (Join-Path $Results 'crash-dumps.txt')
-            try { Copy-Item -LiteralPath $dump.FullName -Destination $Results }
-            catch { $alerts += "Windows could not copy $($dump.Name)" }
         }
     }
     if ($alerts.Count) { throw ($alerts -join '; ') }

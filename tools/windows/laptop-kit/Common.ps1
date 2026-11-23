@@ -135,6 +135,42 @@ function Protect-KitText([string]$Text) {
     $line
 }
 
+function Find-KitExternalLookup([string]$Text) {
+    $local = '(?:localhost|127(?:\.\d{1,3}){3}|\[::1\]|::1)'
+    foreach ($line in $Text -split '\r?\n') {
+        if ($line -match '(?i)\bresolving\s+(?:(?:master server|authorization server|autoupdate server)\s+)?(\S+)' -and
+            $Matches[1].TrimEnd('.') -notmatch "^$local(?::\d+)?$") {
+            return $line
+        }
+        if ($line -match '(?i)\b(\S+)\s+resolved to\s+(\S+)') {
+            $source = $Matches[1]
+            $address = $Matches[2]
+            if (($source -ine 'AutoUpdate' -and $source -notmatch "^$local(?::\d+)?$") -or
+                $address -notmatch "^$local(?::\d+)?$") { return $line }
+        }
+    }
+}
+
+function Save-KitEngineAudit([string]$Text, [string]$Evidence) {
+    $adapter = @($Text -split '\r?\n' | Where-Object {
+        $_ -match '(?i)^(?:Using D3D9 adapter|Direct3D 9 adapter|Direct3D device:|GL_RENDERER:)'
+    } | Select-Object -Unique)
+    if ($adapter.Count) {
+        $adapter | Add-Content -LiteralPath (Join-Path $Evidence 'engine-adapter.txt') -Encoding UTF8
+        if (($adapter -join ' ') -match 'Intel') {
+            'The game reported Intel. See START-HERE.md for the per-app graphics choice and a second labelled run.' |
+                Add-Content -LiteralPath (Join-Path $Evidence 'engine-adapter.txt') -Encoding UTF8
+        }
+    }
+    if ($env:COD2_KIT_ONLINE -eq '1') {
+        $lookup = Find-KitExternalLookup $Text
+        if ($lookup) {
+            $script:KitExternalLookup = $lookup
+            Protect-KitText $lookup | Add-Content -LiteralPath (Join-Path $Evidence 'external-lookup.txt') -Encoding UTF8
+        }
+    }
+}
+
 function Start-KitProcess {
     param([string]$Exe, [string]$Arguments, [string]$Folder, [hashtable]$Settings = @{}, [switch]$NoWindow, [string]$WorkingDirectory)
     Assert-Offline
@@ -182,7 +218,7 @@ function Start-KitProcess {
         else { $info.EnvironmentVariables[$name] = $values[$name] }
     }
     $process = [Diagnostics.Process]::Start($info)
-    [pscustomobject]@{ Process = $process; Folder = $Folder
+    [pscustomobject]@{ Process = $process; Folder = $Folder; Engine = (Split-Path $Exe -Leaf) -match '^cod2_win32(?:_ded)?\.exe$'
         Output = $process.StandardOutput.ReadToEndAsync(); Errors = $process.StandardError.ReadToEndAsync() }
 }
 
@@ -198,6 +234,7 @@ function Complete-KitProcess($Run, [string]$Evidence, [int]$Seconds = 120) {
         $content = if ($stream.Task.Wait(3000)) { $stream.Task.GetAwaiter().GetResult() }
             else { 'An inherited output stream remained open after the process exited.' }
         [IO.File]::WriteAllText($stream.Path, $content)
+        if ($Run.Engine) { Save-KitEngineAudit $content $Evidence }
     }
     foreach ($file in @($stdout, $stderr)) {
         Save-Text $file (Join-Path $Evidence ([IO.Path]::GetFileName($file)))
@@ -252,7 +289,12 @@ function Save-GameEvidence([string]$HomePath, [string]$Evidence) {
     $main = Join-Path $HomePath 'main'
     if (-not (Test-Path -LiteralPath $main)) { return }
     foreach ($name in 'console_mp.log', 'console_mp_server.log', 'games_mp.log', 'qconsole.log') {
-        Save-Text (Join-Path $main $name) (Join-Path $Evidence $name)
+        $log = Join-Path $main $name
+        if (Test-Path -LiteralPath $log -PathType Leaf) {
+            $content = Read-KitText $log
+            Save-KitEngineAudit $content $Evidence
+            Protect-KitText $content | Set-Content -LiteralPath (Join-Path $Evidence $name) -Encoding UTF8
+        }
     }
     $shots = Join-Path $main 'screenshots'
     if (Test-Path -LiteralPath $shots) {

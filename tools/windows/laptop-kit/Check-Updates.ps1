@@ -15,15 +15,19 @@ function Save-KitUpdateLogs([string]$Label, [DateTime]$Since) {
     }
 }
 
-function Invoke-KitLauncherUpdate([switch]$Interrupt) {
-    Stop-KitIfNoGame
-    $exe = Get-KitStartTarget
+function Get-KitUpdateTrust {
     $current = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -File -Filter '*-setup.exe')
     if ($current.Count -ne 1) { throw 'Expected one current Setup.' }
     $signature = Get-AuthenticodeSignature -LiteralPath $current[0].FullName
-    if ($signature.Status -ne 'Valid') {
-        throw [NotSupportedException]::new("The signed update requires a Windows-trusted fixture. Windows reports $($signature.Status).")
-    }
+    [pscustomobject]@{ Setup=$current[0]; Status=$signature.Status.ToString() }
+}
+
+function Invoke-KitLauncherUpdate([switch]$Interrupt) {
+    Stop-KitIfNoGame
+    $exe = Get-KitStartTarget
+    $trust = Get-KitUpdateTrust
+    if ($trust.Status -ne 'Valid') { throw 'Windows must trust the signed update before it can run.' }
+    $current = $trust.Setup
     $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
     Stop-KitIfMissing $complete 'The launcher setup did not finish.'
     Invoke-KitSetupVersion $true
@@ -34,7 +38,7 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
     $ready = Join-Path $entry.Folder 'port'
     $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $server = Join-Path $Kit 'Local-Update-Feed.ps1'
-    $argsText = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}"' -f $server,$current[0].FullName,$ready
+    $argsText = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}"' -f $server,$current.FullName,$ready
     $feed = Start-KitProcess $ps $argsText $entry.Folder -NoWindow
     $launcher = $null
     $launched = Get-Date
@@ -61,11 +65,11 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
         if ($action -ne 'Install and relaunch') { Invoke-KitControl $window $action -Name }
         Wait-KitCondition { Find-KitControl $window 'Install and relaunch' -Name } 30 'an update offer' | Out-Null
         Invoke-KitControl $window 'Install and relaunch' -Name
-        $expected = $current[0].Name.Split('-')[2]
+        $expected = $current.Name.Split('-')[2]
         if ($Interrupt) {
             $pending = Join-Path $LauncherHome 'launcher\updates\pending.txt'
             $logRoot = Join-Path $LauncherHome 'launcher\logs\updates'
-            $digest = (Get-FileHash -LiteralPath $current[0].FullName).Hash
+            $digest = (Get-FileHash -LiteralPath $current.FullName).Hash
             $boot = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
             $deadline = [DateTime]::UtcNow.AddSeconds(120)
             $log = $null

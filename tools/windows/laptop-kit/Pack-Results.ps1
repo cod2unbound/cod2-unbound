@@ -23,14 +23,14 @@ try {
         New-Folder (Split-Path $destination -Parent) | Out-Null
         if ($file.Extension -in '.cfg','.csv','.json','.jsonl','.log','.tsv','.txt','.xml') {
             Save-Text $file.FullName $destination
-        } elseif ($file.Extension -in '.bin','.dm_1','.dmp','.jpg','.jpeg','.png','.tga','.wav') {
+        } elseif ($file.Extension -in '.bin','.dm_1','.jpg','.jpeg','.png','.tga','.wav') {
             Copy-Item -LiteralPath $file.FullName -Destination $destination
         } else {
             throw "The results contain an unexpected file type. Review $relative before packing."
         }
         Write-Host $relative
     }
-    Write-Host 'Review the listed pictures, demos, sound clips and any raw memory dumps before sharing.'
+    Write-Host 'Review the listed pictures, test demos and sound clips before sharing.'
     if ((Read-Host 'Type PACK to make the ZIP') -cne 'PACK') { return }
     [AppContext]::SetSwitch('Switch.System.IO.Compression.ZipFile.UseBackslash', $false)
     Add-Type -AssemblyName System.IO.Compression.FileSystem

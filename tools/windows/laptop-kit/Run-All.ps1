@@ -14,7 +14,7 @@ if (-not ($Extras -or $LanOnly)) {
 }
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
-foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer') {
+foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer','Check-Desktop') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
@@ -127,8 +127,8 @@ try {
             $RetailPath = Get-RetailPath $RetailPath $GamePath
             if (-not $RetailPath) { return }
         } else { $RetailPath = $null }
-        Invoke-Check 'Record the game files before testing' { Save-InstallHashes $GamePath $RetailPath 'before' }
-        $hasBaseline = Test-Path -LiteralPath (Join-Path $Private 'selected-game-before.txt')
+        Invoke-Check 'Record the game archive names and sizes before testing' { Save-InstallInventory $GamePath $RetailPath 'before' }
+        $hasBaseline = Test-Path -LiteralPath (Join-Path $Results 'selected-game-before.txt')
     }
 
     if ($Extras) {
@@ -166,8 +166,8 @@ try {
 } finally {
     try {
         if ($hasBaseline) {
-            Invoke-Check 'Installed game files and Windows copies stayed the same' {
-                $comparison = @(Save-InstallHashes $GamePath $RetailPath 'after')
+            Invoke-Check 'Installed game archive inventory stayed the same' {
+                $comparison = @(Save-InstallInventory $GamePath $RetailPath 'after')
                 $comparison | Set-Content -LiteralPath (Join-Path $Results 'game-files-unchanged.txt')
                 if ($comparison -match ': False$') { throw 'Files changed during the check. See game-files-unchanged.txt.' }
             }

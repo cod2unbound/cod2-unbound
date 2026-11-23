@@ -36,6 +36,7 @@ function Assert-KitHostedLookups([string]$Id, [DateTime]$Since) {
     $logs = @(Get-ChildItem -LiteralPath $folder -File -Filter 'engine-*.log' |
         Where-Object { $_.CreationTime -ge $Since -and $_.Length -gt 0 })
     if (-not $logs.Count) { throw 'No engine log was captured for the launcher-hosted server.' }
+    foreach ($log in $logs) { Save-KitEngineAudit (Read-KitText $log.FullName) $Results }
 
     $services = 'master|authoriz|authoris|updat'
     $attempt = Select-String -LiteralPath $logs.FullName -Pattern (
@@ -114,7 +115,7 @@ function Invoke-KitOpenDemo([string]$Edition) {
                 (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
         } 65 'game demo playback' | Out-Null
         Focus-KitWindow $window
-        Save-KitDesktop $window (Join-Path $Results 'kit-shell-demo-desktop.png')
+        Save-KitWindow $window (Join-Path $Results 'kit-shell-demo-window.png')
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
@@ -308,11 +309,11 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 } 24 'the Toujane match in the launcher' | Out-Null
             } catch {
                 if ([KitDesktop]::GetForegroundWindow() -eq $app) {
-                    try { Save-KitDesktop $app (Join-Path $Results 'launcher-match-timeout.png') } catch { }
+                    try { Save-KitWindow $app (Join-Path $Results 'launcher-match-timeout.png') } catch { }
                 }
                 throw
             }
-            Save-KitDesktop $app (Join-Path $Results 'launcher-match.png')
+            Save-KitWindow $app (Join-Path $Results 'launcher-match.png')
         }
         if ($Route -eq 'hosting') {
             $closeTrace = Join-Path $Results 'hosting-close.txt'

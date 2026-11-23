@@ -22,6 +22,9 @@ function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch
 }
 
 function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    if ($Value -match '^(?:Use key from disc install|UseDiscKey|ImportInstall|Import.*(?:install|disc|retail))') {
+        throw [ArgumentException]::new('Retail action is forbidden during kit automation.')
+    }
     $action = Wait-KitCondition {
         foreach ($control in Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen) {
             foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
@@ -53,7 +56,7 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
             { $_ -in 'usage','crash' } {
                 Wait-KitCondition { Find-KitControl $Window 'DeclineReport' } 12 'the reporting choice' | Out-Null
                 Focus-KitWindow $Window
-                Save-KitDesktop $Window (Join-Path $Evidence "setup-$step.png")
+                Save-KitWindow $Window (Join-Path $Evidence "setup-$step.png")
                 Invoke-KitControl $Window 'DeclineReport'
             }
             default { Invoke-KitControl $Window 'SetupNext' }

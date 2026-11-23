@@ -18,15 +18,26 @@ $KitProfile = Join-Path $AppDataRoot "Windows Kit\$RunId"
 $RunResults = Join-Path $Kit "results\$RunId"
 $RunStart = Join-Path $RunResults 'started.txt'
 $GamePathFile = Join-Path $KitProfile 'game-path.txt'
+$UpdateTrustFile = Join-Path $RunResults 'preflight\update-trust.txt'
 $script:KitSerials = @()
 . (Join-Path $PSScriptRoot 'Laptop-Steps.ps1')
+
+function Get-KitUpdateSkip([string]$Id) {
+    if ($Id -notmatch '^(update-[1-5]|interrupt|restore)$') { return }
+    if (-not [IO.File]::Exists($UpdateTrustFile)) { return }
+    $status = [IO.File]::ReadAllText($UpdateTrustFile)
+    if ($status -ne 'Valid') {
+        "Windows does not trust this lab-signed Setup ($status). The seven update and restore checks were skipped."
+    }
+}
 
 function Get-KitStatus {
     foreach ($step in $Steps) {
         $receipt = Join-Path $RunResults "$($step.Id)\result.json"
         if (-not (Test-Path -LiteralPath $receipt)) {
+            $skip = Get-KitUpdateSkip $step.Id
             return [ordered]@{ Done = $false; Id = $step.Id; Title = $step.Title
-                Prompt = $step.Prompt; Consent = [bool]$step.Consent }
+                Prompt = if (-not $skip) { $step.Prompt }; Consent = [bool]($step.Consent -and -not $skip) }
         }
     }
     return [ordered]@{ Done = $true }
@@ -47,7 +58,12 @@ function Invoke-LaptopStep($Step, [string]$Reply) {
     $Private = New-Folder (Join-Path $KitProfile $Step.Id)
     $Results = New-Folder (Join-Path $RunResults $Step.Id)
     $script:KitAttentionTimedOut = $false
+    $script:KitExternalLookup = $null
     $watch = [Diagnostics.Stopwatch]::StartNew()
+    if ($skip = Get-KitUpdateSkip $Step.Id) {
+        Save-KitReceipt $Step 'SKIP' $skip 0
+        return
+    }
     if ($Step.Id -eq 'interrupt' -and (Test-Path -LiteralPath (Join-Path $KitProfile 'restart-witness.txt'))) {
         $boot = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
         $prior = Get-Content -LiteralPath (Join-Path $KitProfile 'restart-witness.txt') -TotalCount 1
@@ -81,10 +97,16 @@ function Invoke-LaptopStep($Step, [string]$Reply) {
         }
         [IO.File]::WriteAllText($receipt, [DateTime]::UtcNow.ToString('o'))
         & $Step.Action $Step | Out-Null
+        if ($script:KitExternalLookup) { throw "External engine lookup: $script:KitExternalLookup" }
         Save-KitReceipt $Step 'PASS' '' ([int]$watch.Elapsed.TotalSeconds)
     } catch {
         $status = if ($_.Exception -is [NotSupportedException]) { 'SKIP' } else { 'FAIL' }
-        Save-KitReceipt $Step $status $_.Exception.Message ([int]$watch.Elapsed.TotalSeconds)
+        $detail = $_.Exception.Message
+        if ($script:KitExternalLookup -and -not $detail.Contains($script:KitExternalLookup)) {
+            $status = 'FAIL'
+            $detail += " External engine lookup: $script:KitExternalLookup"
+        }
+        Save-KitReceipt $Step $status $detail ([int]$watch.Elapsed.TotalSeconds)
     }
 }
 

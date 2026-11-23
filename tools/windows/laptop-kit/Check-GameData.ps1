@@ -14,6 +14,15 @@ function Find-RetailPaths {
     }
 }
 
+function Find-KitDefaultRetail {
+    foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles) | Where-Object { $_ } | Select-Object -Unique) {
+        $folder = Join-Path $base 'Activision\Call of Duty 2'
+        if (Test-Path -LiteralPath $folder -PathType Container) {
+            try { return (Get-DataRoot $folder) } catch { }
+        }
+    }
+}
+
 function Invoke-DataCheck([string]$Name, [string]$GamePath, [switch]$Invalid, [string]$TestHome) {
     $entry = New-RunContext $Name
     $homePath = if ($TestHome) { $TestHome } else { New-Folder (Join-Path $entry.Folder 'game') }

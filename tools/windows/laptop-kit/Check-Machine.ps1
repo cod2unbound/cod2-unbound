@@ -92,20 +92,27 @@ function Get-TreeHashes([string]$Root, [string]$Relative = '') {
     }
 }
 
-function Save-InstallHashes([string]$GamePath, [string]$RetailPath, [string]$Phase) {
-    $roots = [ordered]@{ 'selected-game' = $GamePath; 'retail-game' = $RetailPath
-        'virtual-store' = (Join-Path $LocalData 'VirtualStore') }
+function Get-KitArchiveInventory([string]$Root) {
+    $main = Join-Path $Root 'main'
+    foreach ($item in Get-ChildItem -LiteralPath $main -File -Filter '*.iwd' | Sort-Object Name) {
+        '{0}  main/{1}' -f $item.Length, $item.Name
+    }
+}
+
+function Save-InstallInventory([string]$GamePath, [string]$RetailPath, [string]$Phase) {
+    $roots = [ordered]@{ 'selected-game' = $GamePath; 'retail-game' = $RetailPath }
     foreach ($name in $roots.Keys) {
         if ($roots[$name] -and ($name -ne 'retail-game' -or $RetailPath -ine $GamePath)) {
-            @(Get-TreeHashes $roots[$name]) |
-                Set-Content -LiteralPath (Join-Path $Private "$name-$Phase.txt") -Encoding UTF8
+            $inventory = @("Game data: $($roots[$name])") + @(Get-KitArchiveInventory $roots[$name])
+            Protect-KitText ($inventory -join "`r`n") |
+                Set-Content -LiteralPath (Join-Path $Results "$name-$Phase.txt") -Encoding UTF8
         }
     }
     if ($Phase -eq 'after') {
         foreach ($name in $roots.Keys) {
-            $before = Join-Path $Private "$name-before.txt"
+            $before = Join-Path $Results "$name-before.txt"
             if (-not (Test-Path -LiteralPath $before)) { continue }
-            $after = Join-Path $Private "$name-after.txt"
+            $after = Join-Path $Results "$name-after.txt"
             $same = (Get-FileHash -LiteralPath $before).Hash -eq (Get-FileHash -LiteralPath $after).Hash
             "$name unchanged: $same"
         }

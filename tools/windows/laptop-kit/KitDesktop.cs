@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows.Forms;
 public static class KitDesktop {
     [StructLayout(LayoutKind.Sequential)] public struct Rect {
         public int L,T,R,B;
@@ -26,6 +29,95 @@ public static class KitDesktop {
     [DllImport("user32.dll")] static extern bool AttachThreadInput(uint source, uint target, bool attach);
     [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr window, int mode);
     [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr window, int index);
+    [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr window);
+    [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out Rect value, int size);
+    [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
+
+    static Rectangle Frame(IntPtr window)
+    {
+        Rect rect;
+        if (DwmGetWindowAttribute(window, 9, out rect, Marshal.SizeOf(typeof(Rect))) != 0
+            && !GetWindowRect(window, out rect))
+            throw new InvalidOperationException("Windows did not report the visible frame.");
+        return Rectangle.FromLTRB(rect.L, rect.T, rect.R, rect.B);
+    }
+
+    public static string WindowFacts(IntPtr window)
+    {
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            uint style = unchecked((uint)GetWindowLong(window, -16));
+            return string.Format("style=0x{0:X8}, frame={1}, monitor={2}, DPI={3}",
+                style, Frame(window), Screen.FromHandle(window).Bounds, GetDpiForWindow(window));
+        } finally {
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
+    }
+
+    public static bool FillsMonitorWithoutFrame(IntPtr window)
+    {
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            const int captionOrResize = 0x00C40000;
+            return (GetWindowLong(window, -16) & captionOrResize) == 0 &&
+                Frame(window) == Screen.FromHandle(window).Bounds;
+        } finally {
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
+    }
+
+    static void ExcludeOverlappingWindows(Graphics canvas, IntPtr window, Rectangle bounds)
+    {
+        uint owner;
+        GetWindowThreadProcessId(window, out owner);
+        for (IntPtr other = GetWindow(window, 3); other != IntPtr.Zero; other = GetWindow(other, 3)) {
+            int cloaked;
+            if (!IsWindowVisible(other) || IsIconic(other) ||
+                (DwmGetWindowAttribute(other, 14, out cloaked, sizeof(int)) == 0 && cloaked != 0)) continue;
+            uint process;
+            GetWindowThreadProcessId(other, out process);
+            if (process == owner) continue;
+            Rectangle overlap = Rectangle.Intersect(bounds, Frame(other));
+            if (overlap.Width <= 0 || overlap.Height <= 0) continue;
+            overlap.Offset(-bounds.X, -bounds.Y);
+            canvas.FillRectangle(Brushes.Black, overlap);
+        }
+    }
+
+    public static void SaveWindow(IntPtr window, string path)
+    {
+        if (GetForegroundWindow() != window || IsIconic(window))
+            throw new InvalidOperationException("Bring the kit window to the front before taking the picture.");
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            Rectangle monitor = Screen.FromHandle(window).Bounds;
+            Rectangle bounds = Rectangle.Intersect(monitor, Frame(window));
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                throw new InvalidOperationException("Move the kit window onto the screen.");
+            using (var bitmap = new Bitmap(bounds.Width, bounds.Height))
+            using (var canvas = Graphics.FromImage(bitmap)) {
+                canvas.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
+                if (GetForegroundWindow() != window || bounds != Rectangle.Intersect(monitor, Frame(window)))
+                    throw new InvalidOperationException("The foreground or window position changed during capture.");
+                ExcludeOverlappingWindows(canvas, window, bounds);
+                // Windows 11 rounds window corners. Mask those pixels before
+                // saving so the desktop behind the frame cannot appear.
+                if (bounds != monitor) {
+                    int corner = Math.Max(12, (int)GetDpiForWindow(window) / 8);
+                    foreach (int x in new[] { 0, bounds.Width - corner })
+                        foreach (int y in new[] { 0, bounds.Height - corner })
+                            canvas.FillRectangle(Brushes.Black, x, y, corner, corner);
+                }
+                bitmap.Save(path, ImageFormat.Png);
+            }
+        } finally {
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
+    }
 
     public static string SecurityPrompt() {
         IntPtr window = GetForegroundWindow();

@@ -100,13 +100,18 @@ $Steps = @(
         "Default routes: $gateways. Online run allowed by the driver: $($env:COD2_KIT_ONLINE -eq '1')." |
             Set-Content -LiteralPath (Join-Path $Results 'network.txt') -Encoding UTF8
         Test-KitFiles
+        [IO.File]::WriteAllText($UpdateTrustFile, (Get-KitUpdateTrust).Status)
         $captured = @()
         if ($GamePath) {
             [IO.File]::WriteAllText($GamePathFile, (Get-DataRoot $GamePath))
         } else {
             try { $captured = Invoke-DataCheck 'discovery-automatic' '' }
             catch { Protect-KitText $_.Exception.Message | Set-Content (Join-Path $Results 'discovery-error.txt') }
-            if ($captured.Path) { [IO.File]::WriteAllText($GamePathFile, (Get-DataRoot $captured.Path)) }
+            $discovered = if ($captured.Path) { $captured.Path } else { Find-KitDefaultRetail }
+            if ($discovered) { [IO.File]::WriteAllText($GamePathFile, (Get-DataRoot $discovered)) }
+        }
+        if ([IO.File]::Exists($GamePathFile)) {
+            Save-InstallInventory ([IO.File]::ReadAllText($GamePathFile)) '' 'before'
         }
     }
     Add-KitStep 'machine' 'Windows, graphics, DirectX and sound devices' {
@@ -302,13 +307,15 @@ $Steps = @(
     Add-KitStep 'restore' 'Restore the old version and read the sample key after restart' {
         Invoke-KitRestore
     }
+    Add-KitStep 'firewall-after' 'Firewall rules after game and server starts' { Save-KitFirewallStep 'after' }
+    Add-KitStep 'security-answer' 'Security prompts actually shown' {} 'Write each Windows Security, SmartScreen or UAC message and your answer. If the firewall rule list was unavailable, record which program asked and whether you chose Allow or Cancel'
+    Add-KitStep 'faults' 'Freeze recovery and crash with a local report receiver' {
+        Invoke-KitFaults
+    }
+    Add-KitStep 'collect' 'Windows application and Defender event entries' { Save-KitEvents }
     Add-KitStep 'comparison-pictures' 'Open game and reference pictures side by side' { Open-KitComparison }
     Add-KitStep 'looks' 'Picture, mouse and sound on this PC' {} 'Compare the game pictures. Try mouse turning and sound in both editions, then Alt+Tab out and back. Write one line about picture, mouse, sound and full-screen, or type skip'
     Add-KitStep 'narrator' 'Windows appearance and Narrator' {} 'Check Home and Settings > Privacy with Narrator. Write what read out of order, what was hard to reach, or what looked out of place. Type skip to skip'
-    Add-KitStep 'firewall-after' 'Firewall rules after game and server starts' { Save-KitFirewallStep 'after' }
-    Add-KitStep 'security-answer' 'Security prompts actually shown' {} 'Write the Windows Security, SmartScreen or UAC wording and the button you pressed. If there was no prompt, write none'
-    Add-KitStep 'faults' 'Freeze recovery and crash with a local report receiver' { Invoke-KitFaults }
-    Add-KitStep 'collect' 'Windows application and Defender event entries' { Save-KitEvents }
     Add-KitStep 'cleanup' 'Uninstall and clear the test folders and sample key' {
         $failures = @()
         if (Test-Path -LiteralPath $InstallMarker) {
@@ -335,5 +342,9 @@ $Steps = @(
         }
         if ($failures.Count) { throw ($failures -join ' ') }
         Remove-KitScratch $KitProfile
+        $parent = Split-Path $KitProfile -Parent
+        if ((Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
+            [IO.Directory]::Delete($parent)
+        }
     } 'Type YES to uninstall the test copy and clear its sample data, or press Enter to keep it' -Consent
 )

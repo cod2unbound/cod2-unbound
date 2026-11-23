@@ -8,7 +8,8 @@ function Save-LauncherPicture($Process, [string]$Evidence, [string]$Name) {
     try { [void]$shell.AppActivate($Process.Id) }
     finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell) }
     Start-Sleep -Milliseconds 500
-    $screen = [KitLauncherPicture]::Save($window, (Join-Path $Evidence "$Name.png"))
+    Save-KitWindow $window (Join-Path $Evidence "$Name.png")
+    $screen = [KitDesktop]::WindowFacts($window)
     $theme = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue
     $highContrast = [Windows.Forms.SystemInformation]::HighContrast
     "$Name $screen; app light=$($theme.AppsUseLightTheme); system light=$($theme.SystemUsesLightTheme); contrast=$highContrast" |
@@ -18,53 +19,8 @@ function Save-LauncherPicture($Process, [string]$Evidence, [string]$Name) {
 
 function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePath) {
     Assert-Offline
-    Add-Type -AssemblyName System.Windows.Forms,System.Drawing
+    Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-    if (-not ('KitLauncherPicture' -as [type])) {
-        Add-Type -ReferencedAssemblies System.Drawing,System.Windows.Forms -TypeDefinition @'
-using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-
-public static class KitLauncherPicture
-{
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Rect { public int Left, Top, Right, Bottom; }
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out Rect rect);
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
-
-    public static string Save(IntPtr window, string destination)
-    {
-        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
-        try
-        {
-            Rect rect;
-            if (GetForegroundWindow() != window || !GetWindowRect(window, out rect))
-                throw new InvalidOperationException("Bring CoD2 Unbound to the front and leave its window open for the picture.");
-            Rectangle screen = Screen.FromHandle(window).Bounds;
-            Rectangle bounds = Rectangle.Intersect(screen, Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom));
-            if (bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0)
-                throw new InvalidOperationException("Move the launcher onto the screen for the picture.");
-            using (var bitmap = new Bitmap(bounds.Width, bounds.Height))
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
-                bitmap.Save(destination, ImageFormat.Png);
-            }
-            return string.Format("{0}x{1} display, {2}x{3} visible window", screen.Width, screen.Height, bounds.Width, bounds.Height);
-        }
-        finally
-        {
-            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
-        }
-    }
-}
-'@
-    }
-
     $entry = New-RunContext 'launcher'
     $exe = Join-Path $Root 'launcher\CoD2Unbound.Windows.exe'
     $link = Join-Path $StartMenu 'CoD2 Unbound.lnk'
@@ -107,6 +63,7 @@ public static class KitLauncherPicture
         Start-Sleep -Seconds 2
         Save-LauncherPicture $process $entry.Evidence '01-setup'
         Write-Host "In the launcher choose the game folder $GamePath if Setup did not already find it."
+        Write-Host 'Do not use the disc-key or installed-profile import actions during the test.'
         Write-Host 'On the CD key page enter the sample key 000000000000000086D3. Finish Setup and open Home.'
         [void](Read-Host 'When Home is open, maximize it, then switch back to PowerShell and press Enter')
         if (-not (Test-Path -LiteralPath (Join-Path $settings '.launcher-setup-complete') -PathType Leaf) -or

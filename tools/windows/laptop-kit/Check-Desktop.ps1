@@ -5,7 +5,7 @@ function Initialize-KitDesktop {
     }
     Add-Type -AssemblyName System.Drawing,System.Windows.Forms
     if (-not ('KitDesktop' -as [type])) {
-        Add-Type -Path (Join-Path $Kit 'KitDesktop.cs')
+        Add-Type -Path (Join-Path $Kit 'KitDesktop.cs') -ReferencedAssemblies System.Drawing,System.Windows.Forms
     }
 }
 
@@ -112,22 +112,10 @@ function Send-KitCommand([IntPtr]$Window, [string]$Command) {
     Start-Sleep -Milliseconds 650
 }
 
-function Save-KitDesktop([IntPtr]$Window, [string]$Path) {
-    if ([KitDesktop]::GetForegroundWindow() -ne $Window) { throw 'The game is behind another window.' }
-    # Capture the game display only. Negative coordinates and scaled monitors are supported.
-    $previous = [KitDesktop]::SetThreadDpiAwarenessContext([IntPtr](-4))
-    try {
-        $bounds = [Windows.Forms.Screen]::FromHandle($Window).Bounds
-        $bitmap = [Drawing.Bitmap]::new($bounds.Width, $bounds.Height)
-        try {
-            $graphics = [Drawing.Graphics]::FromImage($bitmap)
-            try { $graphics.CopyFromScreen($bounds.Location, [Drawing.Point]::Empty, $bounds.Size) }
-            finally { $graphics.Dispose() }
-            $bitmap.Save($Path, [Drawing.Imaging.ImageFormat]::Png)
-        } finally { $bitmap.Dispose() }
-    } finally {
-        if ($previous -ne [IntPtr]::Zero) { [void][KitDesktop]::SetThreadDpiAwarenessContext($previous) }
-    }
+function Save-KitWindow([IntPtr]$Window, [string]$Path) {
+    [KitDesktop]::SaveWindow($Window, $Path)
+    "$([IO.Path]::GetFileName($Path)) $([KitDesktop]::WindowFacts($Window))" |
+        Add-Content -LiteralPath (Join-Path (Split-Path $Path -Parent) 'window-pictures.txt') -Encoding UTF8
 }
 
 function Get-KitGameWindow($Process) {
@@ -145,7 +133,7 @@ function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [s
     Send-KitCommand $Window "/toggleconsole; screenshotJpeg $Name"
     Wait-KitCondition { Test-Path -LiteralPath $shot -PathType Leaf } 12 "$Name game picture" | Out-Null
     Copy-Item -LiteralPath $shot -Destination $Evidence
-    Save-KitDesktop $Window (Join-Path $Evidence "$Name-desktop.png")
+    Save-KitWindow $Window (Join-Path $Evidence "$Name-window.png")
 }
 
 function Enter-KitPlay([IntPtr]$Window) {
