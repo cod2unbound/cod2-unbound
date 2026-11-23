@@ -60,7 +60,7 @@ public sealed partial class ConfigsPage
 
     private async Task UseNextAsync(ConfigProfile profile)
     {
-        model.Studio.Select(profile.Id);
+        await model.SelectLoadoutAsync(profile.Id);
         model.Studio.Focus(profile.Id);
         await RefreshStudioAsync();
     }

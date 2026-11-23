@@ -207,7 +207,7 @@ public sealed partial class MainWindow : Window
 
     private void OnPaneChanged(NavigationView sender, object args)
     {
-        PlayerPlate.Visibility = IsVisible(Nav.IsPaneOpen && session.SetupComplete);
+        PlayerPlate.Visibility = IsVisible(Nav.IsPaneOpen && !session.SetupActive);
         RefreshFavorites();
     }
 
@@ -298,10 +298,10 @@ public sealed partial class MainWindow : Window
     }
 
     internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null,
-        bool refreshServers = true)
+        bool refreshServers = true, LauncherPlace cancelSetupTo = LauncherPlace.GameDataSettings)
     {
-        Nav.IsPaneVisible = JumpButton.IsEnabled = session.SetupComplete;
-        JumpHost.Visibility = IsVisible(session.SetupComplete);
+        Nav.IsPaneVisible = JumpButton.IsEnabled = !session.SetupActive && place != LauncherPlace.Setup;
+        JumpHost.Visibility = Nav.IsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
         if (Nav.IsPaneVisible)
         {
             if (Nav.SettingsItem is NavigationViewItem settings)
@@ -323,9 +323,9 @@ public sealed partial class MainWindow : Window
             });
         if (place == LauncherPlace.Setup)
         {
-            var page = new SetupPage(this, session);
+            var page = new SetupPage(this, session, cancelSetupTo);
             ContentFrame.Content = page;
-            page.Refresh();
+            await page.RefreshAsync();
         }
         else if (place == LauncherPlace.Home)
         {
@@ -423,10 +423,9 @@ public sealed partial class MainWindow : Window
     internal async Task RefreshPlayerAsync()
     {
         var player = await session.ReadPlayerAsync();
-        PlayerName.Text = PlayerCardName.Text = player.Name;
+        PlayerName.Inlines.Clear();
+        AddGameName(PlayerName, player.Name, Root.ActualTheme, IsHighContrast);
         PaneLoadout.Text = player.Loadout ?? player.Key;
-        PlayerCardLoadout.Text = player.Loadout ?? "Loadout unavailable";
-        PlayerCardKey.Text = player.Key;
     }
 
     internal void RefreshFavorites()
@@ -501,6 +500,9 @@ public sealed partial class MainWindow : Window
                 return;
             bool ended = !state.Running && state.LastExit is not null;
             lastGame = state;
+            if (ContentFrame.Content is SettingsPage settings)
+                settings.RefreshDisplayRunning(state.Running);
+            playerCard?.UpdateRunning(state.Running);
             if (ContentFrame.Content is HomePage home)
             {
                 if (ended)

@@ -3,6 +3,7 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
@@ -30,6 +31,8 @@ public sealed partial class HomePage : Page
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
+        OpenGameData.Content = Guidance("Game data not found");
+        OpenCdKey.Content = Guidance("No CD key");
         ActualThemeChanged += (_, _) => UpdateTheme();
         Loaded += (_, _) => UpdateTheme();
     }
@@ -84,6 +87,7 @@ public sealed partial class HomePage : Page
         LoadoutChoice.Visibility = IsVisible(loadouts.Count > 0);
         settingLoadout = false;
         RenderDisplay();
+        RenderAdjustedResolution(active);
 
         RenderNews();
         await RenderPlayHistoryAsync();
@@ -122,7 +126,9 @@ public sealed partial class HomePage : Page
         string? reason = model.LaunchProblem;
         LaunchButton.IsEnabled = reason is null;
         LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
-        OpenGameData.Visibility = IsVisible(reason == "Choose a complete game data folder before launching.");
+        OpenGameData.Visibility = IsVisible(session.Setup.Data.State != SetupDataState.Found);
+        OpenCdKey.Visibility = IsVisible(!session.Setup.HasStoredKey);
+        OpenGameData.IsEnabled = OpenCdKey.IsEnabled = !game.Running;
         LaunchReason.Text = reason ?? (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe." : "");
         LaunchReason.Visibility = IsVisible(LaunchReason.Text.Length > 0);
         LaunchHint.Text = model.LastServer is null ? "Ctrl+Enter launches the game" : "Ctrl+Enter launches and rejoins this server";
@@ -400,7 +406,8 @@ public sealed partial class HomePage : Page
         if ((address ?? model.LastServer?.Address) is { } target)
             status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
         else
-            await model.LaunchAsync();
+            await shell.RunGameStartAsync(model.Settings.Engine, model.LaunchAsync);
+        session.Setup.ChooseData(session.Setup.DataPath);
         if (model.Game.Running)
             await RenderPlayHistoryAsync();
         else
@@ -415,7 +422,17 @@ public sealed partial class HomePage : Page
     private async void OnFindServer(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);
     private async void OnRecent(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.Recent);
     private async void OnOpenGameData(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.GameDataSettings));
+        await shell.RunAsync(() => shell.OpenSetupAgainAsync(LauncherPlace.Home));
+
+    private async void OnOpenCdKey(object sender, RoutedEventArgs args) =>
+        await shell.RunAsync(async () => { await shell.EditCdKeyAsync(); });
+
+    private static StackPanel Guidance(string caption)
+    {
+        var icon = new FontIcon { Glyph = "\uE7BA", FontSize = 16 };
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        return Buttons(icon, new TextBlock { Text = caption });
+    }
 
     private async void OnLoadoutChanged(object sender, SelectionChangedEventArgs args)
     {

@@ -131,12 +131,13 @@ unsigned Win_D3D9_SelectAdapter(void *d3dInterface, int monitorNumber)
  * input) and has no OpenGL context. Exclusive fullscreen belongs to the device:
  * the window only loses its border, and SDL never switches modes itself. */
 void *Win_D3D9_PrepareWindow(void *d3dInterface, unsigned adapter, int width, int height,
-                            int fullscreen, int refresh)
+                            int fullscreen, int refresh, int borderless)
 {
     SDL_SysWMinfo info;
     MONITORINFO monitor = { .cbSize = sizeof(monitor) };
     int x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
-    int mode = fullscreen ? MAC_FULLSCREEN : MAC_WINDOWED;
+    int mode = fullscreen ? MAC_FULLSCREEN : borderless ? MAC_BORDERLESS : MAC_WINDOWED;
+    int windowWidth = width, windowHeight = height;
     int haveMonitor = GetMonitorInfoA(IDirect3D9_GetAdapterMonitor((IDirect3D9 *)d3dInterface, adapter), &monitor);
 
     if (MacDisplay_Initialize() != 0)
@@ -148,8 +149,13 @@ void *Win_D3D9_PrepareWindow(void *d3dInterface, unsigned adapter, int width, in
         mode = MAC_BORDERLESS;
 #endif
     MacPlatform_ConfigureWindow(width, height, mode, refresh);
+    if (mode == MAC_BORDERLESS && haveMonitor) {
+        // Present stretches the chosen back buffer to the windowed client area.
+        windowWidth = monitor.rcMonitor.right - monitor.rcMonitor.left;
+        windowHeight = monitor.rcMonitor.bottom - monitor.rcMonitor.top;
+    }
     if (!sdl_gl_window) {
-        sdl_gl_window = SDL_CreateWindow("Call of Duty 2", x, y, width, height,
+        sdl_gl_window = SDL_CreateWindow("Call of Duty 2", x, y, windowWidth, windowHeight,
                                          SDL_WINDOW_HIDDEN | (mode != MAC_WINDOWED ? SDL_WINDOW_BORDERLESS : 0));
         if (!sdl_gl_window) {
             fprintf(stderr, "Couldn't create the game window: %s\n", SDL_GetError());
@@ -157,7 +163,7 @@ void *Win_D3D9_PrepareWindow(void *d3dInterface, unsigned adapter, int width, in
         }
     } else {
         SDL_SetWindowBordered(sdl_gl_window, mode == MAC_WINDOWED ? SDL_TRUE : SDL_FALSE);
-        SDL_SetWindowSize(sdl_gl_window, width, height);
+        SDL_SetWindowSize(sdl_gl_window, windowWidth, windowHeight);
     }
     if (mode == MAC_WINDOWED) {
         int top = 0, left = 0;

@@ -7,14 +7,12 @@ internal sealed class WindowsInstalledProfiles : IWindowsProfileFiles
     internal static readonly WindowsInstalledProfiles Files = new();
 
     internal static (WindowsProfileDiscovery Found, string[] Searched) Find(
-        string? gameData, string? chosen, CancellationToken cancellationToken)
+        string? chosen, IReadOnlyList<string> installPaths, CancellationToken cancellationToken)
     {
         string[] drives = chosen is not null ? [] : DriveInfo.GetDrives()
             .Where(drive => drive.DriveType is DriveType.Fixed or DriveType.Removable && drive.IsReady)
             .Select(drive => drive.Name).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-        string[] extra = chosen is not null ? [chosen] :
-            [.. new[] { gameData }.OfType<string>().Where(path => !string.IsNullOrWhiteSpace(path))
-                .Concat(WindowsGameDiscovery.ProfileInstallPaths(cancellationToken)).Distinct(StringComparer.OrdinalIgnoreCase)];
+        IReadOnlyList<string> extra = chosen is not null ? [chosen] : installPaths;
         var result = WindowsProfiles.Find(Files, drives, extra,
             localAppData: chosen is null ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) : null,
             cancellationToken: cancellationToken);

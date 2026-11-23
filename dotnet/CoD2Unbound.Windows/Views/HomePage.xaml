@@ -54,11 +54,10 @@
                     </StackPanel>
                     <TextBlock x:Name="LaunchReason" Foreground="{ThemeResource HeroInkBrush}" TextWrapping="Wrap"
                                Visibility="Collapsed" />
-                    <HyperlinkButton x:Name="OpenGameData" Content="Open game data" AutomationProperties.Name="Open Game Data" Click="OnOpenGameData"
-                                     Visibility="Collapsed" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                <StackPanel Grid.Row="1" Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                     <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
                               AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
                     <DropDownButton x:Name="DisplayChoice" AutomationProperties.Name="Display mode" AccessKey="D" MinWidth="128">
@@ -73,6 +72,14 @@
                             </MenuFlyout>
                         </DropDownButton.Flyout>
                     </DropDownButton>
+                    <Button x:Name="AdjustedResolution" Visibility="Collapsed" Click="OnChooseResolution" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="OpenGameData" Click="OnOpenGameData" Visibility="Collapsed"
+                                AutomationProperties.Name="Game data not found" />
+                        <Button x:Name="OpenCdKey" Click="OnOpenCdKey" Visibility="Collapsed"
+                                AutomationProperties.Name="No CD key" />
+                    </StackPanel>
                 </StackPanel>
 
                 <Grid x:Name="Cards" Grid.Row="2" ColumnSpacing="12" RowSpacing="12">

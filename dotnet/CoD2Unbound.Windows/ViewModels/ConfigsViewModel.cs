@@ -76,7 +76,9 @@ internal sealed partial class ConfigsViewModel : IConfigImportStore
     internal double DpiFor(ConfigProfileRead? loadout) => ConfigMouseDpi.For(loadout);
     internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
     internal ConfigStudioState State => Studio.State;
-    internal string? GameData => session.Setup.DataPath;
+    internal Task<(WindowsProfileDiscovery Found, string[] Searched)> FindInstalledProfilesAsync(
+        string? folder, CancellationToken token) => session.FindInstalledProfilesAsync(folder, token);
+    internal Task SelectLoadoutAsync(string id) => session.SelectLoadoutAsync(id);
     internal string ConfigPath(string id) => WindowsFiles.Under(session.HomePath, $"main/players/{id}/config_mp.cfg");
 
     internal ValueTask WriteExportAsync(string path, ImmutableArray<byte> bytes)
@@ -90,6 +92,7 @@ internal sealed partial class ConfigsViewModel : IConfigImportStore
 
     internal event Action? SettingSaveChanged;
     internal (string Title, string Reason, string Summary)? SettingSaveProblem { get; private set; }
+    internal GameSettings DisplaySettings => session.Settings.Working;
     public ConfigDialect Dialect => Studio.Dialect;
 
     internal string NewId(string name) => LoadoutName.Identifier(name, State.Profiles.Select(profile => profile.Id));

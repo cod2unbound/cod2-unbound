@@ -241,8 +241,6 @@ public sealed partial class LibraryPage : Page
         using var source = WindowsFiles.Open(folder, fileName, FileShare.Read);
         if (await Task.Run(() => DemoRecording.ReadEdition(source)) is not { } edition)
             throw new IOException("This file isn’t a complete Original 1.3 or CoD2x demo.");
-        if (!session.HasClient(edition))
-            throw new IOException($"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(edition)}.");
 
         if (confirm)
         {
@@ -260,10 +258,9 @@ public sealed partial class LibraryPage : Page
         string name = Path.GetFileNameWithoutExtension(fileName);
         if (confirm || !MediaName.Playable(name))
             name = await library.PrepareDemoAsync(new Uri(path), fileName);
-        GameStartState result = await session.LaunchAsync(edition: edition, demo: name);
-        if (result != GameStartState.Started)
-            throw new IOException(result is GameStartState.NeedsSetup or GameStartState.MissingData
-                ? "Set up your game files to play demos." : "Close the game before playing a demo.");
+        var result = await shell.RunGameStartAsync(edition, () => session.LaunchAsync(edition: edition, demo: name));
+        if (result is GameStartState.AlreadyRunning or GameStartState.Attached)
+            throw new IOException("Close the game before playing a demo.");
     }
 
 }

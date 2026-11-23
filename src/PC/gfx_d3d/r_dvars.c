@@ -628,6 +628,10 @@ void R_RegisterDvars(void)
 
     r_monitor = ri.Dvar_RegisterInt("r_monitor", 0, 0, 8, 0x2021);
 
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9
+    ri.Dvar_RegisterBool("r_borderless", 0, 0x20);
+#endif
+
 #if COD2_APPLE_SDK
     {
         /* Copy before refreshing the static names: r_mode retains their

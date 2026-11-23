@@ -135,11 +135,11 @@ public sealed partial class ConfigProfileStore(
 
     // For read-only launcher surfaces. Launch and edit operations still take the profile lease.
     public static async ValueTask<ConfigProfile?> ReadActiveForDisplayAsync(ISettingsFolder home,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, ConfigDialect? dialect = null)
     {
         var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
         return selected.ProfileId is { } id
-            ? await ReadForDisplayAsync(home, id, id, cancellationToken).ConfigureAwait(false)
+            ? await ReadForDisplayAsync(home, id, id, cancellationToken, dialect).ConfigureAwait(false)
             : null;
     }
 
@@ -170,20 +170,23 @@ public sealed partial class ConfigProfileStore(
             return null;
         var metadata = await home.ReadAsync(directory + MetadataName, cancellationToken).ConfigureAwait(false);
         var profile = ToProfile(id, ConfigProfileFormat.Metadata(metadata, id), active);
-        return displayDialect is { } dialect
-            ? profile with { RequestedResolution = new ConfigDocument(config.AsSpan(), dialect).EffectiveSetting("r_mode") }
-            : profile;
+        if (displayDialect is not { } dialect)
+            return profile;
+        var document = new ConfigDocument(config.AsSpan(), dialect);
+        return profile with { RequestedResolution = document.EffectiveSetting("r_mode"), RequestedMonitor = document.EffectiveSetting("r_monitor") };
     }
 
     public static async ValueTask<string?> ReadPlayerNameAsync(ISettingsFolder home, ConfigDialect dialect,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool preserveColors = false)
     {
         var selected = ParseSelection(await home.ReadAsync(Active, cancellationToken).ConfigureAwait(false));
         if (selected.ProfileId is not { } id ||
             await home.ReadAsync(DirectoryName(id) + ConfigName, cancellationToken).ConfigureAwait(false) is not { } config)
             return null;
         string? name = new ConfigDocument(config.AsSpan(), dialect).EffectiveSetting("name");
-        return string.IsNullOrWhiteSpace(name) ? null : QuakeColors.Plain(LauncherText.Prefix(name, 64));
+        if (string.IsNullOrWhiteSpace(name))
+            return null;
+        return preserveColors ? name : QuakeColors.Plain(LauncherText.Prefix(name, 64));
     }
 
     // The native host holds the same profile lease used by an editor until spawn completes.
@@ -204,7 +207,7 @@ public sealed partial class ConfigProfileStore(
     }
 
     internal static ImmutableDictionary<string, string> LauncherValues(ConfigDocument document) =>
-        GameSettings.LoadoutDefaultNames.Select(name => (Name: name, Value: document.EffectiveSetting(name)))
+        GameSettings.LoadoutDefaultNames.Append("r_monitor").Select(name => (Name: name, Value: document.EffectiveSetting(name)))
             .Where(entry => entry.Value is not null)
             .ToImmutableDictionary(entry => entry.Name, entry => entry.Value!, StringComparer.OrdinalIgnoreCase);
 

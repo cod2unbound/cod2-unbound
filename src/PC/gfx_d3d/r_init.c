@@ -925,7 +925,7 @@ extern void *Win_D3D9_Direct3DCreate9(void);
 #if COD2_WINDOWS_NATIVE
 extern int Dvar_GetInt(const char *name);
 extern unsigned Win_D3D9_SelectAdapter(void *d3d, int monitorNumber);
-extern void *Win_D3D9_PrepareWindow(void *d3d, unsigned adapter, int width, int height, int fullscreen, int refresh);
+extern void *Win_D3D9_PrepareWindow(void *d3d, unsigned adapter, int width, int height, int fullscreen, int refresh, int borderless);
 #else
 extern void *Win_D3D9_PrepareWindow(int width, int height, int fullscreen, int refresh);
 #endif
@@ -1264,6 +1264,10 @@ static Bool R_InitNativeHardware(void)
         int height = 480;
         int refresh = 60;
         int fullscreen = r_fullscreen->current.enabled;
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9
+        int borderless = fullscreen && ri.Dvar_GetBool("r_borderless");
+        fullscreen = fullscreen && !borderless;
+#endif
         int samples;
         int parameters[14] = {0};
         HRESULT hr;
@@ -1304,7 +1308,7 @@ static Bool R_InitNativeHardware(void)
         parameters[12] = fullscreen ? refresh : 0;
 #if COD2_WIN32_D3D9
 #if COD2_WINDOWS_NATIVE
-        HWND window = (HWND)Win_D3D9_PrepareWindow(d3d, dx.adapterIndex, width, height, fullscreen, refresh);
+        HWND window = (HWND)Win_D3D9_PrepareWindow(d3d, dx.adapterIndex, width, height, fullscreen, refresh, borderless);
 #else
         HWND window = (HWND)Win_D3D9_PrepareWindow(width, height, fullscreen, refresh);
 #endif

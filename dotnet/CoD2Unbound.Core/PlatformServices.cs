@@ -26,7 +26,10 @@ public interface IGameFiles
 
 public enum EngineRole { Client, Dedicated }
 public sealed record GameBinary(GameEdition Edition, EngineRole Role, string Path);
-public sealed record GameInstallation(string DataPath, ImmutableArray<GameBinary> Binaries);
+public enum GameInstallSource { Chosen, Steam, Disc }
+
+public sealed record GameInstallation(string DataPath, ImmutableArray<GameBinary> Binaries,
+    GameInstallSource Source = GameInstallSource.Chosen);
 
 public interface IGameDiscovery
 {

@@ -1,5 +1,4 @@
 using CoD2Unbound.Core;
-using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -23,7 +22,7 @@ public sealed partial class ConfigsPage
             // profiles uses the same grouped chooser as an install.
             if (dropped)
             {
-                results = await Task.Run(() => WindowsInstalledProfiles.Find(model.GameData, folder, default));
+                results = await model.FindInstalledProfilesAsync(folder, default);
                 if (results.Value.Found.Profiles is [var single])
                 {
                     await ReviewProfileAsync(single);
@@ -74,7 +73,7 @@ public sealed partial class ConfigsPage
             {
                 try
                 {
-                    var found = await Task.Run(() => WindowsInstalledProfiles.Find(model.GameData, folder, cancel.Token), cancel.Token);
+                    var found = await model.FindInstalledProfilesAsync(folder, cancel.Token);
                     if (!cancel.IsCancellationRequested)
                     {
                         results = found;

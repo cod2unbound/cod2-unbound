@@ -114,15 +114,29 @@ public sealed partial class ConfigProfileStore
         return UpdateLocked(id, expected, version, ConfigHistorySource.Restore, "Restored snapshot");
     }
 
-    public void RecordGameSession(string id, ConfigProfileVersion before, string summary = "Game session", string? sessionId = null)
+    public void RecordGameSession(string id, ConfigProfileVersion before, string summary = "Game session", string? sessionId = null,
+        ConfigStudioDisplayOverride? displayOverride = null)
     {
         using var lease = files.Acquire(default);
         CheckWritable();
-        var current = ReadLocked(id).Version;
+        var read = ReadLocked(id);
+        var current = read.Version;
+        string directory = DirectoryName(id);
+        if (displayOverride is not null)
+        {
+            var original = new ConfigDocument(before.Config.AsSpan(), Dialect);
+            var restored = RestoreDisplayValue(read.Document, original, "r_mode", displayOverride.Resolution);
+            restored = RestoreDisplayValue(restored, original, "r_monitor",
+                displayOverride.Monitor?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            if (!ReferenceEquals(restored, read.Document))
+            {
+                current = current with { Config = restored.Serialized };
+                Write(directory + ConfigName, current.Config);
+            }
+        }
         if (current.Matches(before))
             return;
 
-        string directory = DirectoryName(id);
         var history = ReadHistory(directory);
         if (sessionId is not null)
         {
@@ -139,6 +153,13 @@ public sealed partial class ConfigProfileStore
         var snapshot = Entry(ConfigHistorySource.GameSession, summary, before, current, sessionId);
         Write(SnapshotPath(directory, snapshot.Id), ConfigProfileFormat.Encode(snapshot));
         Prune(directory);
+    }
+
+    private static ConfigDocument RestoreDisplayValue(ConfigDocument document, ConfigDocument original, string name, string? temporary)
+    {
+        if (temporary is null || document.EffectiveSetting(name) != temporary)
+            return document;
+        return original.EffectiveSettingBytes(name) is { } saved ? document.SetSetting(name, saved.AsSpan()) : document.RemoveSetting(name);
     }
 
     private ConfigHistoryEntry UpdateLocked(string id, ConfigProfileVersion expected, ConfigProfileVersion after,

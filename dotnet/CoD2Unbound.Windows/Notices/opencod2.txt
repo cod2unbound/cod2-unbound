@@ -1,0 +1,2 @@
+opencod2 has no declared licence. See the source and provenance notice at
+https://github.com/opencod2/opencod2 and the included CoD2 Unbound NOTICE.md.
