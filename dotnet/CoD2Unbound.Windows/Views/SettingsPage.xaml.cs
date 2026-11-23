@@ -217,7 +217,7 @@ public sealed partial class SettingsPage : Page
     {
         Fields.Children.Add(new InfoBar
         {
-            Message = "CoD2 Unbound has no account. Its crash reports and usage data stay off until you turn them on in setup or here. What the game contacts when you play is listed below.",
+            Message = "CoD2 Unbound has no account. Its crash reports and usage data stay off unless you turn them on. The game and the launcher also contact the services listed below.",
             IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational
         });
         var reports = session.Reports;
@@ -230,7 +230,7 @@ public sealed partial class SettingsPage : Page
                 Buttons(PrivacyPresentation.PreviewButton(true, "F", shell, reports), crash));
         }
         Row(PrivacyPresentation.Cod2xSwitch,
-            "Errors, crashes and freezes in CoD2x, sent by CoD2x to the people who make it. A report includes recent console text and CoD2x’s IDs for this computer. A crash or freeze report can add selected game settings including your player name, a list of files and folders in the game’s main folder, and samples of the game’s memory. Changes apply the next time CoD2x starts.",
+            "Errors, crashes and freezes in CoD2x, sent by CoD2x to the people who make it. A report includes recent console text and CoD2x’s IDs for this PC. A crash or freeze report can add selected game settings including your player name, a list of files and folders in the game’s main folder, and samples of the game’s memory. Changes apply the next time CoD2x starts.",
             PrivacySwitch(PrivacyPresentation.Cod2xSwitch, Current.SendCoD2xReports, "X", session.SetCoD2xReportsAsync));
         if (reports.Usage.Available)
         {
@@ -275,13 +275,13 @@ public sealed partial class SettingsPage : Page
         {
             ("Master servers", "Activision’s and the CoD2x project’s, when the internet server list refreshes. The original game also asks Activision for its server list."),
             ("Activision’s key server", "When the game checks your key, as the original game does: your CD key, a hash of it, and whether the key may be checked anonymously."),
-            ("Game servers", "The launcher asks listed servers, favorites and recent servers for their status when the list refreshes. The one you join gets your player name and game settings, and any server password you supplied. When you play with CoD2x, the server also gets a hash of your CD key, CoD2x’s protocol revision and CoD2x’s IDs for this PC."),
+            ("Game servers", "The launcher asks listed servers, favorites and recent servers for their status when the list refreshes. The one you join gets your player name and game settings, and any server password you supplied. When you play with CoD2x, the server also gets a hash of your CD key, the CoD2x protocol version and CoD2x’s IDs for this PC."),
             ("Addresses a server names", "A server can name a web address for the game to download maps and mods from, and with CoD2x, one to upload the match recording to."),
-            ("The CoD2x project", "CoD2x checks for updates when the game’s menu opens. It sends your CoD2x version, a hash of your CD key if available, CoD2x’s own install number and IDs for this PC, and a short description of the system: its version, edition and build, its compatibility-mode settings, the country in its region settings, and whether it runs in a virtual machine or as administrator. It sends a count of hardware changes and, when there is a change to report, the previous hardware ID and old and new hardware details, serial numbers included. This is how CoD2x itself checks for updates. CoD2x can also download missing zPAM files a server needs from the project’s site."),
+            ("The CoD2x project", "CoD2x checks for updates when the game’s menu opens. It sends your CoD2x version, a hash of your CD key if available, CoD2x’s own install number and IDs for this PC, and a short description of the system: its version, edition and build, its compatibility-mode settings, the country in its region settings, and whether it runs in a virtual machine or as administrator. It also sends how many times the hardware has changed and, after a change, the previous hardware ID and the old and new hardware details, serial numbers included. This is how CoD2x’s own update check works. CoD2x can also download missing zPAM files a server needs from the project’s site."),
             ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Nothing about you."),
             ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you."),
             ("The certificate’s issuer", "When an update’s signature is verified, Windows asks whether it is still valid. Nothing about you."),
-            ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers and can share server details and the players’ names, scores and pings in status replies. When it asks Activision’s key server about a joining player, it sends the player’s network address, the mod, a challenge number, whether anonymous checks are allowed, and any key hash it forwards. A CoD2x server, even one for your network only, can ask the CoD2x project about new versions. It sends its CoD2x version and platform, and its HTTPS check includes any installed zPAM versions.")
+            ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers, and its replies to status requests can include server details and the names, scores and pings of its players. When a player joins, it asks Activision’s key server to check their key, sending the player’s network address, the mod it runs, a one-time number for the check, whether anonymous checks are allowed, and the player’s key hash if it has one. A CoD2x server, even one for your network only, can ask the CoD2x project about new versions, with its CoD2x version and platform; one of these checks also lists any zPAM versions installed.")
         })
             PrivacyPresentation.AddContact(contacts, who, when);
         if (reports.CrashAvailable)

@@ -273,8 +273,8 @@ whole GB, rounded to the nearest GB. A difference in architecture indicates
 emulation. For the one graphics card
 Windows prefers for high performance it includes the name, dedicated memory in
 whole GB rounded down, and the driver version when available. It includes the
-display’s size and refresh rate. The launcher requests that PostHog skip person
-profiles and leaves the network address out of event fields. The project’s
+display’s size and refresh rate. Each event asks PostHog not to build a person
+profile from it and leaves the network address out of its fields. The project’s
 PostHog settings discard the connection address after working out the country
 from it, and a second step there blanks every finer location field, so only the
 country is kept. Those are service settings, not code: check them in the

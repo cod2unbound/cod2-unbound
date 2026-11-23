@@ -50,7 +50,7 @@ internal static class PrivacyPresentation
         ("Settings", "Which settings you change, by name. For some settings with a set list of choices, such as a switch, the game version, appearance, display mode or graphics, also the choice you pick. Never what you type into a field."),
         ("Problems", "Errors the launcher shows you, by kind, such as “the game couldn’t start”."),
         ("This PC, your country", "The app’s version, your Windows version, your PC’s model, its processor (name and number of logical processors), whether the PC and launcher are x64 or Arm, its memory in GB, its graphics card (name, memory in GB and driver version), your display’s size and refresh rate, your system language, and the country your connection comes from (worked out from your network address, which is then discarded)."),
-        ("With every event", "The time, to the minute; a random number for the event; and the install number. Each event has a name, identifies the launcher and asks PostHog to skip person profiles. When you say yes, also where: in setup or in Settings."),
+        ("With every event", "The time, to the minute; a random number for the event; and the install number. Each event also has its name, says it comes from the launcher, and asks PostHog not to build a person profile from it. When you say yes, also where: in setup or in Settings."),
         ("Never", "Your name, your PC’s name or serial numbers, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.")
     ];
 
