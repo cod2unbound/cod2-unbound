@@ -29,6 +29,7 @@ public sealed partial class HostingPage
         private readonly TextBox name;
         private readonly ComboBox edition;
         private readonly ComboBox reach;
+        private static readonly int[] PlayerSlots = [2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32];
         private readonly NumberBox slots;
         private readonly NumberBox port;
         private readonly PasswordBox join;
@@ -326,6 +327,8 @@ public sealed partial class HostingPage
             if (!(startServer ? start.IsEnabled : save.IsEnabled))
                 return;
             var current = Current();
+            if (IsNew && current.AdminPassword.Length == 0)
+                current = current with { AdminPassword = HostedServer.RandomPassword() };
             await page.hosting.SaveAsync(current);
             if (startServer)
             {
@@ -339,8 +342,9 @@ public sealed partial class HostingPage
         private void Validate()
         {
             validation.Text = HostingConfig.Safe(name.Text, 64).Length == 0 ? "Enter a server name."
-                : !double.IsInteger(slots.Value) || slots.Value < 2 || slots.Value > 64 ||
-                    !double.IsInteger(port.Value) || port.Value < 1025 || port.Value > 65535 ? "Enter a valid player count and UDP port."
+                : !double.IsInteger(slots.Value) || !PlayerSlots.Contains((int)slots.Value)
+                    ? "Choose 2, 4, 6, 8, 10, 12, 14, 16, 20, 24 or 32 player slots."
+                : !double.IsInteger(port.Value) || port.Value < 1025 || port.Value > 65535 ? "Enter a valid UDP port."
                 : HostingConfig.Password(join.Password) != join.Password || HostingConfig.Password(admin.Password) != admin.Password
                     ? "Passwords can’t contain spaces or quotes." : "";
             validation.Visibility = IsVisible(validation.Text.Length > 0);
