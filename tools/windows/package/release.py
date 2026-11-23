@@ -178,6 +178,7 @@ def build_engine(edition, is_client, tree, work, version, company, jobs):
     checked([
         "cmake", "-S", ROOT, "-B", config, "-G", "Ninja",
         "-DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-mingw64.cmake",
+        f"-DCMAKE_BUILD_TYPE={'RelWithDebInfo' if is_client else ''}",
         "-DCOD2_WIN32_LEGACY=OFF", f"-DCOD2_WIN32_CLIENT={on_off}",
         f"-DCOD2_WIN32_D3D9={on_off}", f"-DCOD2_FEATURE_CFLAGS={features}",
         f"-DCOD2_GIT_HASH={os.environ['COD2_WINDOWS_COMMIT']}",
