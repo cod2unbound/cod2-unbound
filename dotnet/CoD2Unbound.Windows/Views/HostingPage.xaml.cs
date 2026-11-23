@@ -111,7 +111,7 @@ public sealed partial class HostingPage : Page
         actionFeedback = Caption("");
         actionFeedback.Visibility = Visibility.Collapsed;
         AutomationProperties.SetLiveSetting(actionFeedback, AutomationLiveSetting.Polite);
-        var nextMap = Action("Next Map", async () =>
+        var nextMap = Action("Next map", async () =>
         {
             if (!await hosting.NextMapAsync(server.Id))
                 Notify("The server is no longer ready for a map change.");
@@ -125,7 +125,7 @@ public sealed partial class HostingPage : Page
             dashboard = null;
             ShowForm(configured, isNew: false, editingRunning: true);
             return Task.CompletedTask;
-        }, "E"), nextMap, join, Action("Stop Server", () => ToggleAsync(server), "R")));
+        }, "E"), nextMap, join, Action("Stop server", () => ToggleAsync(server), "R")));
         Details.Children.Add(actionFeedback);
 
         dashboard = new Dashboard(this, server, join);

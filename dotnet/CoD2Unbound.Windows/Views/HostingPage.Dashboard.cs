@@ -61,7 +61,7 @@ public sealed partial class HostingPage
 
             var joinPanel = new StackPanel { Spacing = 6, Children =
             {
-                GroupTitle("How to Join"), Card(joinRows), GroupTitle("Players"), full, Card(playerRows)
+                GroupTitle("How to join"), Card(joinRows), GroupTitle("Players"), full, Card(playerRows)
             } };
             full.Visibility = Visibility.Collapsed;
             AutomationProperties.SetLiveSetting(full, AutomationLiveSetting.Polite);
@@ -78,7 +78,7 @@ public sealed partial class HostingPage
             var reveal = page.Action("Show in File Explorer", () => OpenAsync(page.hosting.LogFolder(server.Id)));
             reveal.Style = StyleFor("SubtleLinkAction");
             var logTitle = Columns(8, Fill, GridLength.Auto);
-            var logHeading = GroupTitle("Server Log");
+            var logHeading = GroupTitle("Server log");
             logHeading.VerticalAlignment = VerticalAlignment.Center;
             Put(logTitle, 0, logHeading);
             Put(logTitle, 1, reveal);
@@ -138,7 +138,7 @@ public sealed partial class HostingPage
         private void UpdateAddresses(HostedJoinAddresses addresses, bool wifi)
         {
             joinRows.Children.Clear();
-            joinRows.Children.Add(AddressRow("On This PC", addresses.ThisPc));
+            joinRows.Children.Add(AddressRow("On this PC", addresses.ThisPc));
             foreach (string address in addresses.Network)
                 joinRows.Children.Add(AddressRow("On Your Network", address));
             if (!addresses.Network.IsEmpty && !addresses.InLocalList)
