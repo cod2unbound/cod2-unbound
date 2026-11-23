@@ -1,37 +1,51 @@
 <Page x:Class="CoD2Unbound.Windows.Views.SetupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer Padding="32">
-        <StackPanel MaxWidth="680"
-                    HorizontalAlignment="Center" Spacing="16" Padding="0,36,0,16">
-            <TextBlock x:Name="SetupTitle" Style="{StaticResource PageTitle}" TextWrapping="Wrap" />
-            <TextBlock x:Name="SetupDescription" Style="{StaticResource SecondaryText}" />
-            <Border x:Name="SetupDataCard" Style="{StaticResource FieldCard}" Visibility="Collapsed">
-                <StackPanel Spacing="12">
-                    <TextBlock x:Name="SetupDataStatus" Style="{StaticResource SectionTitle}" />
-                    <TextBlock x:Name="SetupDataDetail" Style="{StaticResource SecondaryText}" />
-                    <TextBlock x:Name="SetupDataPath" TextWrapping="Wrap"
-                               Foreground="{ThemeResource BodyBrush}" />
-                    <Button Content="Choose a folder…" Click="OnChooseSetupFolder" />
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Enter" Invoked="OnDefaultAction" />
+        <KeyboardAccelerator Key="Escape" Invoked="OnCancelAction" />
+    </Page.KeyboardAccelerators>
+    <Grid x:Name="SetupFrame" SizeChanged="OnFrameSizeChanged" Background="{ThemeResource GroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ScrollViewer x:Name="SetupScroll" Padding="24,28,24,24">
+            <StackPanel x:Name="SetupColumn" MaxWidth="680" HorizontalAlignment="Center" Spacing="16">
+                <TextBlock x:Name="SetupCaption" Style="{StaticResource SecondaryText}" />
+                <TextBlock x:Name="SetupTitle" Style="{StaticResource PageTitle}" TextWrapping="Wrap"
+                           AutomationProperties.HeadingLevel="Level1" />
+                <TextBlock x:Name="SetupDescription" Style="{StaticResource SecondaryText}" />
+                <StackPanel x:Name="StepContent" Spacing="12" />
+            </StackPanel>
+        </ScrollViewer>
+        <Border Grid.Row="1" Padding="24,16" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource PanelStrokeBrush}"
+                Background="{ThemeResource PanelBrush}">
+            <Grid x:Name="FooterColumn" MaxWidth="680" HorizontalAlignment="Center" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <ProgressBar x:Name="StepProgress" Maximum="7" Width="84" Height="8">
+                        <ProgressBar.Template>
+                            <ControlTemplate TargetType="ProgressBar">
+                                <Border Background="Transparent" />
+                            </ControlTemplate>
+                        </ProgressBar.Template>
+                    </ProgressBar>
+                    <StackPanel x:Name="Pips" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+                </Grid>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B" />
+                    <Button x:Name="SetupAlternate" Click="OnAlternate" />
+                    <Button x:Name="SetupFind" Content="Find a server" Click="OnFindServer" />
+                    <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t send" AccessKey="N" />
+                    <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
+                            Style="{StaticResource LauncherAccentButton}" />
                 </StackPanel>
-            </Border>
-            <StackPanel x:Name="SetupKeyCard" Visibility="Collapsed" Spacing="12">
-                <TextBlock x:Name="StoredKey" Text="A CD key is stored in Windows Credential Manager."
-                           Style="{StaticResource SecondaryText}" />
-                <Button x:Name="ReplaceKey" Content="Replace key…" Click="OnReplaceKey" />
-                <PasswordBox x:Name="KeyInput" Header="CD key" PasswordChanged="OnKeyChanged"
-                             PasswordRevealMode="Hidden" />
-            </StackPanel>
-            <StackPanel x:Name="PrivacyQuestion" Spacing="12" Visibility="Collapsed" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="SendReport" Click="OnSendReport" AccessKey="S" TabIndex="0" Visibility="Collapsed" />
-                <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t send" AutomationProperties.Name="Don’t send"
-                        AccessKey="N" TabIndex="1" Visibility="Collapsed" />
-                <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
-                        Style="{StaticResource LauncherAccentButton}" />
-                <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B" TabIndex="2" />
-                <Button x:Name="SkipKey" Content="Skip for now" Click="OnSkipKey" Visibility="Collapsed" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
 </Page>

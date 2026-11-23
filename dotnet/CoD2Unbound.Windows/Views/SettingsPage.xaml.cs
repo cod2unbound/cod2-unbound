@@ -174,8 +174,9 @@ public sealed partial class SettingsPage : Page
         {
             data.Path, data.Problem ?? (data.State == SetupDataState.Found ? SetupSession.FoundSummary : "")
         }.Where(line => line.Length != 0)), dataActions);
-        Row("CD key", session.Setup.HasStoredKey ? "Verified · Stored only on this PC" : "No key stored.",
-            Action(session.Setup.HasStoredKey ? "Replace…" : "Add key…", ReplaceKeyAsync));
+        var changeKey = Action(session.Setup.HasStoredKey ? "Replace…" : "Enter key…", ReplaceKeyAsync);
+        changeKey.IsEnabled = !session.ClientIsRunning;
+        Row("CD key", session.Setup.HasStoredKey ? "Verified · Stored only on this PC" : "Not entered.", changeKey);
         Group("Your files");
         Row("Loadouts, demos and screenshots", session.HomePath, Action("Show in File Explorer", () => OpenAsync(session.HomePath)));
         var versions = new StackPanel { Spacing = 4 };
@@ -183,6 +184,10 @@ public sealed partial class SettingsPage : Page
         AddEdition(GameEdition.Original, "Original 1.3");
         if (versions.Children.Count > 0)
             Row("Game versions installed", null, versions);
+        var setupAgain = Action("Set up again…", ConfirmSetupAgainAsync);
+        setupAgain.IsEnabled = !session.ClientIsRunning && !session.SetupUpdating;
+        Row("Set up again", "Walks through game data and CD key once more. Your loadouts, demos and screenshots stay. You can cancel at any step.",
+            setupAgain);
 
         void AddEdition(GameEdition edition, string name)
         {
@@ -197,21 +202,20 @@ public sealed partial class SettingsPage : Page
 
     private async Task ReplaceKeyAsync()
     {
-        string? ending = await session.KeyEndingAsync();
-        var password = new PasswordBox { Header = "CD key", PasswordRevealMode = PasswordRevealMode.Hidden };
-        var content = new StackPanel { Spacing = 12 };
-        if (ending is not null)
-            content.Children.Add(Caption($"Stored key ends in {ending}."));
-        content.Children.Add(password);
-        var dialog = Dialog("CD key", content, ending is null ? "Add key" : "Replace key");
-        dialog.IsPrimaryButtonEnabled = false;
-        password.PasswordChanged += (_, _) => dialog.IsPrimaryButtonEnabled = CdKey.IsValid(password.Password);
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && await session.ReplaceKeyAsync(password.Password))
+        if (await shell.EditCdKeyAsync())
         {
             Render();
             ShowFeedback("CD key saved.", InfoBarSeverity.Success);
         }
-        password.Password = "";
+    }
+
+    private async Task ConfirmSetupAgainAsync()
+    {
+        var dialog = Dialog("Run setup again?",
+            Body("You’ll go through game data and CD key. Your loadouts, demos and screenshots stay, and you can cancel at any step."),
+            "Set up again");
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            await shell.OpenSetupAgainAsync(LauncherPlace.GameDataSettings);
     }
 
     private void Privacy()

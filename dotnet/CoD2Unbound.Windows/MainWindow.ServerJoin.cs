@@ -31,8 +31,7 @@ public sealed partial class MainWindow
         var decision = requested is { } edition
             ? new ServerAdmissionResult(ServerAdmissionAction.Launch, edition)
             : CheckServerEdition(target, known);
-        string? problem = decision.Problem ?? (session.HasClient(decision.Edition) ? null :
-            $"Reinstall CoD2 Unbound to get {ConnectDialog.EditionName(decision.Edition)}.");
+        string? problem = decision.Problem;
         if (problem is not null)
         {
             session.ShowError(UsageProblem.ServerVersion);
@@ -57,10 +56,10 @@ public sealed partial class MainWindow
                 return null;
         }
 
-        return (await session.JoinAsync(target, decision.Edition, source, known)) switch
+        return (await RunGameStartAsync(decision.Edition, () => session.JoinAsync(target, decision.Edition, source, known))) switch
         {
             GameStartState.Started => "Launching Call of Duty 2…",
-            GameStartState.NeedsSetup or GameStartState.MissingData => "Choose a complete game data folder before launching.",
+            null => null,
             _ => "Call of Duty 2 is already running."
         };
     }

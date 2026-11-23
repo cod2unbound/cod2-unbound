@@ -29,13 +29,13 @@ public sealed partial class MainWindow
 
     private void ScheduleActivation()
     {
-        if (initialized && !busy && !closing && session.SetupComplete && activations.Count != 0)
+        if (initialized && !busy && !closing && !session.SetupActive && activations.Count != 0)
             DispatcherQueue.TryEnqueue(OpenNextActivation);
     }
 
     private async void OpenNextActivation()
     {
-        if (!busy && !closing && activations.TryDequeue(out string? input))
+        if (!busy && !closing && !session.SetupActive && activations.TryDequeue(out string? input))
             await RunAsync(() => OpenActivationAsync(input));
     }
 

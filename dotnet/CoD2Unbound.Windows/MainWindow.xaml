@@ -82,12 +82,8 @@
                         </StackPanel>
                     </StackPanel>
                     <Button.Flyout>
-                        <Flyout>
-                            <StackPanel Spacing="8">
-                                <TextBlock x:Name="PlayerCardName" Style="{StaticResource SectionTitle}" />
-                                <TextBlock x:Name="PlayerCardKey" Style="{StaticResource SecondaryText}" />
-                                <TextBlock x:Name="PlayerCardLoadout" Style="{StaticResource SecondaryText}" />
-                            </StackPanel>
+                        <Flyout Opening="OnPlayerCardOpened" Closed="OnPlayerCardClosed" Placement="Right">
+                            <TextBlock Text="Player card" />
                         </Flyout>
                     </Button.Flyout>
                 </Button>
