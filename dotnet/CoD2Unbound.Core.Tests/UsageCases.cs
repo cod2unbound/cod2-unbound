@@ -312,8 +312,10 @@ internal static partial class Program
             using var reader = new StreamReader(source);
             var rowList = Regex.Match(reader.ReadToEnd(), @"(?s)\bUsagePreviewRows\s*=\s*\[(?<rows>.*?)\];");
             var displayedRows = Regex.Matches(rowList.Groups["rows"].Value, """(?m)^\s*\("([^"]+)",""")
-                .Select(row => row.Groups[1].Value);
-            Sequence(previewRows, displayedRows);
+                .Select(row => row.Groups[1].Value).ToArray();
+            if (!previewRows.SequenceEqual(displayedRows, StringComparer.Ordinal))
+                throw new InvalidDataException($"Windows usage preview rows differ. Expected [{string.Join(", ", previewRows)}]. " +
+                    $"Found [{string.Join(", ", displayedRows)}].");
             Equal(Enum.GetValues<UsageKind>().Length, events.Count);
 
             var f = new UsageFixture();
