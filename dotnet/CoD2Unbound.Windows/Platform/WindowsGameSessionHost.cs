@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
@@ -131,23 +132,28 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         return new(Task.Run(() => WindowsRunningGameJoin.Deliver(target, link), cancellationToken));
     }
 
-    public ValueTask RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
+    public ValueTask<bool> RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
             using var client = Process.GetProcessById(target.Id);
-            if (WindowsEngineProcess.CreationTime(client.SafeHandle) == target.CreatedAt)
-            {
-                if (force)
-                    client.Kill();
-                else
-                    client.CloseMainWindow();
-            }
+            if (WindowsEngineProcess.CreationTime(client.SafeHandle) != target.CreatedAt || client.HasExited)
+                return ValueTask.FromResult(false);
+            if (force)
+                return ValueTask.FromResult(WindowsEngineProcess.TerminateProcess(client.SafeHandle, 0));
+            nint window = WindowsRunningGameJoin.ClientWindow(client);
+            return ValueTask.FromResult(window != 0 && PostMessage(window, 0x0010, 0, 0)); // WM_CLOSE
         }
-        catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception) { }
-        return ValueTask.CompletedTask;
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception or IOException)
+        {
+            return ValueTask.FromResult(false);
+        }
     }
+
+    [DllImport("user32.dll", EntryPoint = "PostMessageW", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PostMessage(nint window, uint message, nint wParam, nint lParam);
 
     public (string? Log, string? Crash) FindExitFiles(DateTimeOffset since)
     {

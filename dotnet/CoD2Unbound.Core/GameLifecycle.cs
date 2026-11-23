@@ -7,10 +7,26 @@ public enum GameLinkDelivery { Pending, Delivered, Failed }
 
 /// <summary>Identify a verified client by process ID and creation time, so PID reuse cannot route a command.</summary>
 public readonly record struct GameProcessIdentity(int Id, DateTimeOffset CreatedAt);
+public sealed record RunningGameActivity(GameProcessIdentity Game, string? ServerAddress, string? DemoName);
+
 public sealed record GameSessionState(DateTimeOffset? StartedAt, ImmutableArray<GameProcessIdentity> Games, GameExit? LastExit,
-    bool Quitting = false)
+    bool Quitting = false, RunningGameActivity? Activity = null)
 {
     public bool Running => !Games.IsEmpty;
+    public GameProcessIdentity? ActiveGame => Activity?.Game ?? (Running ? Games[0] : null);
+
+    public string? PlayingFor(DateTimeOffset now)
+    {
+        if (ActiveGame is not { } game)
+            return null;
+        int minutes = (int)Math.Max(0, (now - game.CreatedAt).TotalMinutes);
+        return minutes switch
+        {
+            0 => "Playing for less than a minute",
+            < 60 => $"Playing for {minutes} min",
+            _ => $"Playing for {minutes / 60} h {minutes % 60} min"
+        };
+    }
 }
 
 public interface IGameLaunchReservation : IAsyncDisposable
@@ -30,7 +46,7 @@ public interface IGameSessionHost
     ValueTask<IGameLaunchReservation> ReserveAsync(ClientLaunchRequest request, CancellationToken cancellationToken);
     ValueTask ReconcileProfilesAsync(ImmutableArray<GameProcessIdentity> games, CancellationToken cancellationToken);
     ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken);
-    ValueTask RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken);
+    ValueTask<bool> RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken);
     (string? Log, string? Crash) FindExitFiles(DateTimeOffset since);
 }
 
@@ -77,7 +93,9 @@ public sealed class GameLifecycle(IProcessSupervisor processes, IGameSessionHost
                 owned = process;
                 ownedIdentity = identity;
                 lastExitCode = null;
-                Publish(new(clock.GetUtcNow(), [identity], null));
+                string? address = request.Link is { } target ? LaunchLink.CanonicalAddress(target.Address) : null;
+                Publish(new(clock.GetUtcNow(), [identity], null,
+                    Activity: new(identity, address, Path.GetFileNameWithoutExtension(request.Demo))));
                 return GameStartState.Started;
             }
             catch
@@ -126,7 +144,8 @@ public sealed class GameLifecycle(IProcessSupervisor processes, IGameSessionHost
         var previous = State;
         if (!ordered.IsEmpty)
         {
-            Publish(new(previous.StartedAt ?? clock.GetUtcNow(), ordered, null));
+            var activity = previous.Activity is { } active && ordered.Contains(active.Game) ? active : null;
+            Publish(new(previous.StartedAt ?? clock.GetUtcNow(), ordered, null, Activity: activity));
         }
         else if (previous.StartedAt is { } since)
         {
@@ -145,6 +164,18 @@ public sealed class GameLifecycle(IProcessSupervisor processes, IGameSessionHost
             if (!State.Games.Contains(target))
                 return GameLinkDelivery.Failed;
             var result = await host.DeliverAsync(target, link, cancellationToken).ConfigureAwait(false);
+            if (result == GameLinkDelivery.Delivered)
+            {
+                // The engine accepted the request. Record it even if the caller's time budget
+                // expired while delivery was in progress.
+                await gate.WaitAsync().ConfigureAwait(false);
+                try
+                {
+                    if (State.Games.Contains(target))
+                        Publish(State with { Activity = new(target, LaunchLink.CanonicalAddress(link.Address), null) });
+                }
+                finally { gate.Release(); }
+            }
             if (result != GameLinkDelivery.Pending)
                 return result;
             await Task.Delay(TimeSpan.FromMilliseconds(200), clock, cancellationToken).ConfigureAwait(false);
@@ -158,13 +189,14 @@ public sealed class GameLifecycle(IProcessSupervisor processes, IGameSessionHost
             return false;
         try
         {
+            bool requested = false;
             for (int tick = 0; tick <= 80; tick++)
             {
                 await ReconcileAsync(cancellationToken).ConfigureAwait(false);
                 if (!State.Games.Contains(target))
                     return true;
-                if (tick is 0 or 40)
-                    await host.RequestQuitAsync(target, force: tick == 40, cancellationToken).ConfigureAwait(false);
+                if (tick == 40 || (tick < 40 && !requested))
+                    requested = await host.RequestQuitAsync(target, force: tick == 40, cancellationToken).ConfigureAwait(false);
                 if (tick < 80)
                     await Task.Delay(TimeSpan.FromMilliseconds(250), clock, cancellationToken).ConfigureAwait(false);
             }

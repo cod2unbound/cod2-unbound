@@ -101,7 +101,7 @@ internal sealed partial class WindowsLauncherSession
         return true;
     }
 
-    internal void ReturnToRunningGame(GameProcessIdentity game) => WindowsRunningGameJoin.Activate(game);
+    internal bool ReturnToRunningGame(GameProcessIdentity game) => WindowsRunningGameJoin.Activate(game);
 
     private Task RecordJoinAsync(string address, GameEdition edition, UsageJoin source, GameServer? observation)
     {

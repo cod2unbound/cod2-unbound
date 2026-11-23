@@ -52,25 +52,37 @@ internal static class WindowsRunningGameJoin
         }
     }
 
-    internal static void Activate(GameProcessIdentity target)
+    internal static bool Activate(GameProcessIdentity target)
     {
         try
         {
             using var client = Process.GetProcessById(target.Id);
-            if (WindowsEngineProcess.CreationTime(client.SafeHandle) == target.CreatedAt)
-                Activate(client);
+            return WindowsEngineProcess.CreationTime(client.SafeHandle) == target.CreatedAt && Activate(client);
         }
-        catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception) { }
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception or IOException)
+        {
+            return false;
+        }
     }
 
-    private static void Activate(Process client)
+    private static bool Activate(Process client)
     {
-        nint window = client.MainWindowHandle;
+        nint window = ClientWindow(client);
         if (window == 0)
-            return;
+            return false;
+        _ = AllowSetForegroundWindow((uint)client.Id);
         if (IsIconic(window))
             _ = ShowWindowAsync(window, 9); // SW_RESTORE
-        _ = SetForegroundWindow(window);
+        return SetForegroundWindow(window);
+    }
+
+    internal static nint ClientWindow(Process client)
+    {
+        nint window = 0;
+        while ((window = FindWindowEx(0, window, "SDL_app", null)) != 0)
+            if (GetWindowThreadProcessId(window, out uint owner) != 0 && owner == client.Id && IsWindowVisible(window))
+                return window;
+        return 0;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -82,7 +94,7 @@ internal static class WindowsRunningGameJoin
     }
 
     [DllImport("user32.dll", EntryPoint = "FindWindowExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
-    private static extern nint FindWindowEx(nint parent, nint after, string className, string windowName);
+    private static extern nint FindWindowEx(nint parent, nint after, string className, string? windowName);
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", ExactSpelling = true)]
@@ -91,6 +103,12 @@ internal static class WindowsRunningGameJoin
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsIconic(nint window);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(nint window);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AllowSetForegroundWindow(uint processId);
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ShowWindowAsync(nint window, int command);

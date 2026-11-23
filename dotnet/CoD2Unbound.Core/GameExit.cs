@@ -42,14 +42,23 @@ public sealed class LauncherQuit
     {
         if (hasGame && game is null)
             return QuitPrompt.Game;
+        if (hasHostedServers && !servers)
+            return QuitPrompt.Servers;
         if (hasGame && game == GameQuitAnswer.Both)
             return QuitPrompt.StopGame;
-        if (hasHostedServers)
-            return servers ? QuitPrompt.StopServers : QuitPrompt.Servers;
-        return QuitPrompt.Exit;
+        return hasHostedServers ? QuitPrompt.StopServers : QuitPrompt.Exit;
     }
 
     public void AnswerGame(GameQuitAnswer answer) => game = answer;
     public void AnswerServers() => servers = true;
     public void Cancel() { game = null; servers = false; }
+}
+
+public sealed record HostedClosePrompt(string Title, string Message, string Action)
+{
+    public static HostedClosePrompt For(IReadOnlyList<string> serverNames) => serverNames.Count == 1
+        ? new($"“{serverNames[0]}” is still running",
+            "Closing CoD2 Unbound stops it. Players on it are disconnected.", "Stop server and close")
+        : new($"{serverNames.Count} servers are still running",
+            "Closing CoD2 Unbound stops them. Players on them are disconnected.", "Stop servers and close");
 }

@@ -71,11 +71,13 @@ internal static partial class Program
             Equal(1, processes.Starts.Count);
             Equal(1, host.Reservations);
             Equal<string?>(null, processes.Starts[0].EnvironmentChanges[CrashReporting.ConsentVariable]);
+            Equal(null, lifecycle.State.Activity!.ServerAddress);
             var consenting = request with { Settings = request.Settings with { SendCoD2xReports = true } };
             var consentPlan = WindowsLaunchPlan.Client(consenting, new(GameEdition.Cod2x, EngineRole.Client, "C:/engine.exe"), "C:/home");
             Equal("1", consentPlan.Start.EnvironmentChanges[CrashReporting.ConsentVariable]);
             var target = lifecycle.State.Games.Single();
             Equal(GameLinkDelivery.Delivered, lifecycle.ConnectToRunningAsync(target, LaunchLink.Direct("localhost")).GetAwaiter().GetResult());
+            Equal("localhost:28960", lifecycle.State.Activity!.ServerAddress);
             Equal(3, host.Deliveries);
             Equal(TimeSpan.FromMilliseconds(400), clock.GetElapsedTime(0));
             Equal(true, lifecycle.QuitGameAsync(target).GetAwaiter().GetResult());
@@ -85,7 +87,26 @@ internal static partial class Program
             Equal(false, lifecycle.State.LastExit!.Value.Unexpected);
             host.Observed = [new(target.Id, target.CreatedAt.AddSeconds(1))];
             Equal(GameStartState.Attached, lifecycle.StartAsync(request, true).GetAwaiter().GetResult());
+            Equal(null, lifecycle.State.Activity);
             Equal(GameLinkDelivery.Failed, lifecycle.ConnectToRunningAsync(target, LaunchLink.Direct("localhost")).GetAwaiter().GetResult());
+        });
+
+        Check("Closing a starting game retries the graceful request when the window appears", () =>
+        {
+            var clock = new AdvancingClock();
+            var processes = new TestProcessSupervisor();
+            var files = new MemoryPlatform("C:/data");
+            foreach (string archive in GameArchives.Required)
+                files.PutFile(archive);
+            var host = new TestGameHost(processes, clock) { GracefulOnAttempt = 2 };
+            var lifecycle = new GameLifecycle(processes, host, files, clock);
+            var request = new ClientLaunchRequest(GameEdition.Original, new GameSettings(), "C:/data", "C:/home")
+                { Link = LaunchLink.Direct("example.org:28961") };
+            Equal(GameStartState.Started, lifecycle.StartAsync(request, true).GetAwaiter().GetResult());
+            Equal("example.org:28961", lifecycle.State.Activity!.ServerAddress);
+            Equal(true, lifecycle.QuitGameAsync(lifecycle.State.Games.Single()).GetAwaiter().GetResult());
+            Sequence(new[] { false, false }, host.QuitCalls);
+            Equal(TimeSpan.FromMilliseconds(500), clock.GetElapsedTime(0));
         });
 
         Check("Studio launch records game-written settings once and releases a failed reservation", () =>
@@ -216,6 +237,7 @@ internal static partial class Program
         public int Reservations { get; private set; }
         public int Deliveries { get; private set; }
         public List<bool> QuitCalls { get; } = [];
+        public int? GracefulOnAttempt { get; init; }
         public ImmutableArray<GameProcessIdentity> Observed { get; set; } = [];
         public ValueTask<ImmutableArray<GameProcessIdentity>> FindClientsAsync(CancellationToken cancellationToken) => ValueTask.FromResult(Observed);
         public GameProcessIdentity IdentityOf(IEngineProcess process) => new(process.Id, clock.GetUtcNow());
@@ -235,11 +257,12 @@ internal static partial class Program
         }
         public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken) =>
             ValueTask.FromResult(++Deliveries == 3 ? GameLinkDelivery.Delivered : GameLinkDelivery.Pending);
-        public ValueTask RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
+        public ValueTask<bool> RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
         {
             QuitCalls.Add(force);
-            if (force) processes.Process!.Complete(0);
-            return ValueTask.CompletedTask;
+            if (force || QuitCalls.Count == GracefulOnAttempt)
+                processes.Process!.Complete(0);
+            return ValueTask.FromResult(GracefulOnAttempt is null || force || QuitCalls.Count >= GracefulOnAttempt);
         }
         public (string? Log, string? Crash) FindExitFiles(DateTimeOffset since) => ("/fixture/log", "/fixture/crash");
         private sealed class TestReservation(WindowsLaunchPlan plan, ConfigStudioSession? studio) : IGameLaunchReservation
