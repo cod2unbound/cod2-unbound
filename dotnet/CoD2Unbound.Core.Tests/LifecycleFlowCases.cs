@@ -88,6 +88,52 @@ internal static partial class Program
             Equal(GameLinkDelivery.Failed, lifecycle.ConnectToRunningAsync(target, LaunchLink.Direct("localhost")).GetAwaiter().GetResult());
         });
 
+        Check("Studio launch records game-written settings once and releases a failed reservation", () =>
+        {
+            var files = new FixtureProfileFiles();
+            var clock = new AdvancingClock();
+            var processes = new TestProcessSupervisor();
+            var gameFiles = new MemoryPlatform("C:/data");
+            foreach (string archive in GameArchives.Required)
+                gameFiles.PutFile(archive);
+            var store = new ConfigProfileStore(files, ConfigDialect.Stock);
+            var main = store.Create("Main", "Main", new("seta sensitivity 2\r\nseta r_mode 800x600\r\n"u8, ConfigDialect.Stock));
+            store.Select("Main", null);
+            var studio = new ConfigStudioSession(files, ConfigDialect.Stock, () => false, clock);
+            var host = new TestGameHost(processes, clock, studio);
+            var lifecycle = new GameLifecycle(processes, host, gameFiles, clock);
+            var request = new ClientLaunchRequest(GameEdition.Original, new GameSettings(), "C:/data", "C:/home");
+
+            processes.FailStart = true;
+            try
+            {
+                _ = lifecycle.StartAsync(request, true).GetAwaiter().GetResult();
+                throw new InvalidOperationException("The fixture launch should have failed.");
+            }
+            catch (IOException error) when (error.Message == "Fixture spawn failed.") { }
+            Equal(false, studio.IsReadOnly);
+            Equal(0, store.History("Main").Count(entry => entry.Source == ConfigHistorySource.GameSession));
+
+            processes.FailStart = false;
+            Equal(GameStartState.Started, lifecycle.StartAsync(request, true).GetAwaiter().GetResult());
+            Equal("Main", host.Request!.Studio!.ProfileId);
+            Equal("800x600", host.Request.Loadout!["r_mode"]);
+            Equal(true, studio.IsReadOnly);
+            files.Files[ConfigPath] = [.. "seta sensitivity 5\r\n"u8];
+            processes.Process!.Complete(0);
+            lifecycle.ReconcileAsync().GetAwaiter().GetResult();
+            lifecycle.ReconcileAsync().GetAwaiter().GetResult();
+
+            var match = store.History("Main").Single(entry => entry.Source == ConfigHistorySource.GameSession);
+            Sequence(main.Version.Config, match.Before.Config);
+            Sequence(files.Files[ConfigPath], match.After.Config);
+            Equal(false, studio.IsReadOnly);
+            var restoredBefore = store.Restore("Main", match.Id, store.Read("Main").Version, ConfigSnapshotRevision.Before);
+            Sequence(match.Before.Config, restoredBefore.After.Config);
+            var restoredAfter = store.Restore("Main", match.Id, store.Read("Main").Version, ConfigSnapshotRevision.After);
+            Sequence(match.After.Config, restoredAfter.After.Config);
+        });
+
         Check("Hosting publishes private config, polls status, reaps a server and exports", () =>
         {
             var processes = new TestProcessSupervisor();
@@ -131,8 +177,11 @@ internal static partial class Program
     {
         public List<EngineProcessStart> Starts { get; } = [];
         public TestProcess? Process { get; private set; }
+        public bool FailStart { get; set; }
         public ValueTask<IEngineProcess> StartAsync(EngineProcessStart start, CancellationToken cancellationToken)
         {
+            if (FailStart)
+                throw new IOException("Fixture spawn failed.");
             Starts.Add(start);
             Process = new(Starts.Count);
             return ValueTask.FromResult<IEngineProcess>(Process);
@@ -151,7 +200,7 @@ internal static partial class Program
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    private sealed class TestGameHost(TestProcessSupervisor processes, TimeProvider clock) : IGameSessionHost
+    private sealed class TestGameHost(TestProcessSupervisor processes, TimeProvider clock, ConfigStudioSession? studio = null) : IGameSessionHost
     {
         public int Reservations { get; private set; }
         public int Deliveries { get; private set; }
@@ -162,10 +211,17 @@ internal static partial class Program
         public ValueTask<IGameLaunchReservation> ReserveAsync(ClientLaunchRequest request, CancellationToken cancellationToken)
         {
             Reservations++;
-            return ValueTask.FromResult<IGameLaunchReservation>(new TestReservation(WindowsLaunchPlan.Client(request,
-                new(request.Edition, EngineRole.Client, "C:/engine.exe"), "C:/home")));
+            Request = studio?.PrepareClientLaunch(request) ?? request;
+            return ValueTask.FromResult<IGameLaunchReservation>(new TestReservation(WindowsLaunchPlan.Client(Request,
+                new(request.Edition, EngineRole.Client, "C:/engine.exe"), "C:/home"), studio));
         }
-        public ValueTask ReconcileProfilesAsync(ImmutableArray<GameProcessIdentity> games, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+        public ClientLaunchRequest? Request { get; private set; }
+        public ValueTask ReconcileProfilesAsync(ImmutableArray<GameProcessIdentity> games, CancellationToken cancellationToken)
+        {
+            if (studio is not null && !studio.State.LaunchReserved)
+                studio.ReconcileGames(games);
+            return ValueTask.CompletedTask;
+        }
         public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken) =>
             ValueTask.FromResult(++Deliveries == 3 ? GameLinkDelivery.Delivered : GameLinkDelivery.Pending);
         public ValueTask RequestQuitAsync(GameProcessIdentity target, bool force, CancellationToken cancellationToken)
@@ -175,11 +231,20 @@ internal static partial class Program
             return ValueTask.CompletedTask;
         }
         public (string? Log, string? Crash) FindExitFiles(DateTimeOffset since) => ("/fixture/log", "/fixture/crash");
-        private sealed class TestReservation(WindowsLaunchPlan plan) : IGameLaunchReservation
+        private sealed class TestReservation(WindowsLaunchPlan plan, ConfigStudioSession? studio) : IGameLaunchReservation
         {
             public WindowsLaunchPlan Plan => plan;
-            public ValueTask CommitAsync(GameProcessIdentity game, bool intro, CancellationToken cancellationToken) => ValueTask.CompletedTask;
-            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+            public ValueTask CommitAsync(GameProcessIdentity game, bool intro, CancellationToken cancellationToken)
+            {
+                studio?.CommitLaunch(game);
+                return ValueTask.CompletedTask;
+            }
+            public ValueTask DisposeAsync()
+            {
+                if (studio is not null && studio.State.LaunchReserved)
+                    studio.CancelLaunch();
+                return ValueTask.CompletedTask;
+            }
         }
     }
 

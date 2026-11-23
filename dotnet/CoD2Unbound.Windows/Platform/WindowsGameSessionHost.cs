@@ -6,9 +6,11 @@ using CoD2Unbound.Core;
 namespace CoD2Unbound.Windows.Platform;
 
 internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, IGameFiles files, string home,
-    ISettingsFolder gameFolder, Func<WindowsRenderMode> renderer, Func<ValueTask> saveIntro) : IGameSessionHost
+    Func<GameEdition> defaultEdition, Func<WindowsRenderMode> renderer, Func<ValueTask> saveIntro) : IGameSessionHost
 {
     private string? latestLog;
+    private ImmutableHashSet<GameProcessIdentity>? reconciledGames;
+    private bool reserving;
 
     public ValueTask<ImmutableArray<GameProcessIdentity>> FindClientsAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult(inventory.FindRunning(EngineRole.Client, cancellationToken));
@@ -24,23 +26,31 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
     {
         var lease = await OpenLeaseAsync(home, ".launcher-start.lock", cancellationToken).ConfigureAwait(false);
         FileStream? profileLease = null;
+        ConfigStudioSession? studio = null;
         try
         {
             profileLease = await OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken).ConfigureAwait(false);
             var binary = inventory.Installed.FirstOrDefault(binary =>
                 binary.Role == EngineRole.Client && binary.Edition == request.Edition)
                 ?? throw new IOException("The game executable is missing.");
-            var profile = await ConfigProfileStore.ReadActiveForLaunchAsync(gameFolder,
-                request.Edition == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock, cancellationToken).ConfigureAwait(false);
-            if (profile is { } loadout)
-                request = request with { Studio = loadout.Studio, Loadout = loadout.Values };
+            studio = OpenStudio(request.Edition, profileLease);
+            request = studio.PrepareClientLaunch(request);
             var plan = WindowsLaunchPlan.Client(request, binary, home, renderer(), files);
-            return new Reservation(plan, lease, profileLease, saveIntro);
+            reserving = true;
+            return new Reservation(this, plan, lease, profileLease, studio, saveIntro);
         }
         catch
         {
-            profileLease?.Dispose();
-            lease.Dispose();
+            try
+            {
+                if (studio is not null && studio.State.LaunchReserved)
+                    studio.CancelLaunch();
+            }
+            finally
+            {
+                profileLease?.Dispose();
+                lease.Dispose();
+            }
             throw;
         }
     }
@@ -63,8 +73,21 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         }
     }
 
-    public ValueTask ReconcileProfilesAsync(ImmutableArray<GameProcessIdentity> games, CancellationToken cancellationToken) =>
-        ValueTask.CompletedTask;
+    private ConfigStudioSession OpenStudio(GameEdition edition, FileStream profileLease) =>
+        new(new WindowsConfigProfiles(home, 0, profileLease), edition == GameEdition.Cod2x ? ConfigDialect.Cod2x : ConfigDialect.Stock,
+            () => !inventory.FindRunning(EngineRole.Client, default).IsEmpty, TimeProvider.System);
+
+    public async ValueTask ReconcileProfilesAsync(ImmutableArray<GameProcessIdentity> games, CancellationToken cancellationToken)
+    {
+        // StartAsync checks for clients again while the reservation already holds both leases.
+        if (reserving || reconciledGames?.SetEquals(games) == true)
+            return;
+        await using var launch = await OpenLeaseAsync(home, ".launcher-start.lock", cancellationToken).ConfigureAwait(false);
+        await using var profile = await OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken).ConfigureAwait(false);
+        var verified = games.ToImmutableHashSet().Union(inventory.FindRunning(EngineRole.Client, cancellationToken));
+        OpenStudio(defaultEdition(), profile).ReconcileGames([.. verified]);
+        reconciledGames = verified;
+    }
 
     public ValueTask<GameLinkDelivery> DeliverAsync(GameProcessIdentity target, LaunchLink link, CancellationToken cancellationToken) =>
         ValueTask.FromResult(GameLinkDelivery.Failed);
@@ -96,8 +119,8 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         return (latestLog, CrashFiles.Since(reports, since).LastOrDefault()?.Path);
     }
 
-    private sealed class Reservation(WindowsLaunchPlan plan, FileStream lease, FileStream profileLease, Func<ValueTask> saveIntro)
-        : IGameLaunchReservation
+    private sealed class Reservation(WindowsGameSessionHost host, WindowsLaunchPlan plan, FileStream lease, FileStream profileLease,
+        ConfigStudioSession studio, Func<ValueTask> saveIntro) : IGameLaunchReservation
     {
         public WindowsLaunchPlan Plan => plan;
 
@@ -105,12 +128,26 @@ internal sealed class WindowsGameSessionHost(WindowsEngineInventory inventory, I
         {
             if (playedIntro)
                 await saveIntro().ConfigureAwait(false);
+            studio.CommitLaunch(game);
+            host.reconciledGames = ImmutableHashSet.Create(game);
         }
 
         public ValueTask DisposeAsync()
         {
-            profileLease.Dispose();
-            lease.Dispose();
+            try
+            {
+                if (studio.State.LaunchReserved)
+                {
+                    host.reconciledGames = null;
+                    studio.CancelLaunch();
+                }
+            }
+            finally
+            {
+                host.reserving = false;
+                profileLease.Dispose();
+                lease.Dispose();
+            }
             return ValueTask.CompletedTask;
         }
     }

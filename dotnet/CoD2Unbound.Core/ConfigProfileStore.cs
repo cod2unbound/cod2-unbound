@@ -180,10 +180,13 @@ public sealed partial class ConfigProfileStore(
             throw new ConfigProfileException(ConfigProfileFailure.Conflict);
 
         var document = new ConfigDocument(config.AsSpan(), dialect);
-        var values = GameSettings.LoadoutDefaultNames.Select(name => (Name: name, Value: document.EffectiveSetting(name))).Where(entry => entry.Value is not null)
-            .ToImmutableDictionary(entry => entry.Name, entry => entry.Value!, StringComparer.OrdinalIgnoreCase);
-        return (new(id, ConfigStudioLaunch.ChainBasename(id)), values);
+        return (new(id, ConfigStudioLaunch.ChainBasename(id)), LauncherValues(document));
     }
+
+    internal static ImmutableDictionary<string, string> LauncherValues(ConfigDocument document) =>
+        GameSettings.LoadoutDefaultNames.Select(name => (Name: name, Value: document.EffectiveSetting(name)))
+            .Where(entry => entry.Value is not null)
+            .ToImmutableDictionary(entry => entry.Name, entry => entry.Value!, StringComparer.OrdinalIgnoreCase);
 
     public void Select(string id, ImmutableArray<byte>? expectedActive)
     {

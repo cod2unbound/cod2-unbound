@@ -68,7 +68,7 @@ internal sealed class WindowsLauncherSession
         inventory = new WindowsEngineInventory(installRoot, files);
         discovery = new WindowsGameDiscovery(inventory);
         var processes = new WindowsProcessSupervisor(inventory, Path.Join(folder.Root, "logs"));
-        var gameHost = new WindowsGameSessionHost(inventory, files, HomePath, gameFolder, () => Renderer, SaveIntroAsync);
+        var gameHost = new WindowsGameSessionHost(inventory, files, HomePath, () => Settings.Working.Engine, () => Renderer, SaveIntroAsync);
         Game = new GameLifecycle(processes, gameHost, files, TimeProvider.System);
         ServerQuery = new ServerQueryClient(new WindowsUdpTransport(TestMaster is not null));
         Browser = new ServerBrowser(ServerQuery, TimeProvider.System);

@@ -3,12 +3,25 @@ using CoD2Unbound.Core;
 
 namespace CoD2Unbound.Windows.Platform;
 
-internal sealed class WindowsConfigProfiles(string home, nint owner) : IConfigProfileFiles, IConfigProfileTrash
+internal sealed class WindowsConfigProfiles(string home, nint owner, FileStream? heldLease = null) : IConfigProfileFiles, IConfigProfileTrash
 {
     private readonly WindowsSettingsFolder storage = new(home, allowNestedWrites: true);
 
-    public IDisposable Acquire(CancellationToken cancellationToken) =>
-        WindowsGameSessionHost.OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken).AsTask().GetAwaiter().GetResult();
+    public IDisposable Acquire(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (heldLease is null)
+            return WindowsGameSessionHost.OpenLeaseAsync(home, "main/players/.studio.lock", cancellationToken)
+                .AsTask().GetAwaiter().GetResult();
+        ObjectDisposedException.ThrowIf(heldLease.SafeFileHandle.IsClosed, heldLease);
+        return BorrowedLease.Instance;
+    }
+
+    private sealed class BorrowedLease : IDisposable
+    {
+        internal static BorrowedLease Instance { get; } = new();
+        public void Dispose() { }
+    }
 
     public ImmutableArray<byte>? Read(string path) => ReadBounded(home, path, 16 * 1024 * 1024);
 

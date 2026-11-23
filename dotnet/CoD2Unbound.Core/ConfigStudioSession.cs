@@ -246,6 +246,16 @@ public sealed partial class ConfigStudioSession
             disposable);
     }
 
+    public ClientLaunchRequest PrepareClientLaunch(ClientLaunchRequest request)
+    {
+        var launch = PrepareLaunch(request.Link);
+        return launch is null ? request : request with
+        {
+            Studio = launch,
+            Loadout = ConfigProfileStore.LauncherValues(store.Read(launch.ProfileId).Document)
+        };
+    }
+
     public void CommitLaunch(GameProcessIdentity game)
     {
         if (!reserved)

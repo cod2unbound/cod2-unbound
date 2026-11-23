@@ -154,6 +154,23 @@ public sealed partial class ConfigsPage : Page
         await shell.RefreshPlayerAsync();
     }
 
+    internal void UpdateGameState(bool ended)
+    {
+        if (ended)
+            model.Studio.Refresh();
+        RenderLoadouts();
+        if (DiscoverPlaces.SelectedItem is not null)
+            return;
+        if (ended)
+            ShowStudio();
+        else
+        {
+            UpdateSharingAvailability();
+            if (studioBody.Parent is not null)
+                RenderStudioBody();
+        }
+    }
+
     private void ShowStudio()
     {
         DiscoverPlaces.SelectedItem = null;
@@ -622,10 +639,15 @@ public sealed partial class ConfigsPage : Page
         {
             var restore = Action("Restore…", async () =>
             {
-                if (await Dialog("Restore this loadout?", Caption($"Restore the version before “{entry.Summary}”?"), "Restore")
-                    .ShowAsync() != ContentDialogResult.Primary)
+                var dialog = Dialog("Restore this loadout?", Caption($"Choose a version of the loadout from “{entry.Summary}”."),
+                    "Restore before");
+                dialog.SecondaryButtonText = "Restore after";
+                dialog.DefaultButton = ContentDialogButton.Close;
+                var choice = await dialog.ShowAsync();
+                if (choice == ContentDialogResult.None)
                     return;
-                model.RestoreHistory(profile, entry);
+                model.RestoreHistory(profile, entry,
+                    choice == ContentDialogResult.Primary ? ConfigSnapshotRevision.Before : ConfigSnapshotRevision.After);
                 await RefreshStudioAsync();
             });
             restore.IsEnabled = !state.ReadOnly;

@@ -476,7 +476,7 @@ public sealed partial class MainWindow : Window
             if (ContentFrame.Content is ServersPage servers)
                 await servers.UpdateGameStateAsync();
             if (ContentFrame.Content is ConfigsPage configs)
-                configs.UpdateSharingAvailability();
+                configs.UpdateGameState(ended);
         }, clearProblem: false);
     }
 

@@ -109,8 +109,8 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal void Bind(ConfigBindingEdit edit, bool replace) =>
         Studio.Mutate(edit.ProfileId, store => ConfigBindings.Apply(edit, store, replace));
 
-    internal void RestoreHistory(ConfigProfileRead profile, ConfigHistoryEntry entry) =>
-        Studio.Mutate(profile.Profile.Id, store => store.Restore(profile.Profile.Id, entry.Id, profile.Version, ConfigSnapshotRevision.Before));
+    internal void RestoreHistory(ConfigProfileRead profile, ConfigHistoryEntry entry, ConfigSnapshotRevision revision) =>
+        Studio.Mutate(profile.Profile.Id, store => store.Restore(profile.Profile.Id, entry.Id, profile.Version, revision));
 
     public ValueTask<ConfigImportReceipt> CommitReviewedAsync(ConfigImportWrite write, CancellationToken cancellationToken) =>
         Studio.CommitReviewedImportAsync(write, cancellationToken);
