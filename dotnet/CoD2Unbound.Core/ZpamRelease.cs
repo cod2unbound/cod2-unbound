@@ -13,6 +13,9 @@ public sealed record ZpamRelease(string Version, string Asset, Uri Url, long Byt
     public bool VerifyArchive(Stream archive, CancellationToken cancellationToken = default) =>
         ReleasePackage.VerifyArchive(archive, Bytes, Sha256, cancellationToken);
 
+    internal static bool IsDownloadAddress(Uri uri) => uri.IsAbsoluteUri &&
+        uri.AbsoluteUri.StartsWith(DownloadRoot, StringComparison.Ordinal) && ConfigFetchRequest.IsPermitted(uri);
+
     internal bool HasVersionedAsset() => Version is { Length: 4 } && Version[0] is '3' or '4' && Version[1] == '.' &&
         char.IsAsciiDigit(Version[2]) && char.IsAsciiDigit(Version[3]) && Asset == $"zpam{Version[0]}{Version[2..]}.zip";
 

@@ -50,6 +50,21 @@ public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = nul
         CopyAssetAsync(offer, offer.Archive.Url, offer.Archive.Name, output, WindowsReleaseAssets.SetupLimit,
             offer.Archive.Size, progress, cancellationToken);
 
+    public async Task<ImmutableArray<byte>> ReadZpamListingAsync(CancellationToken cancellationToken)
+    {
+        var (status, bytes) = await ReadFeedAsync(ZpamRelease.ReleasesUrl, 1_000_000, cancellationToken).ConfigureAwait(false);
+        return status == HttpStatusCode.OK ? bytes : throw Unavailable();
+    }
+
+    public async Task CopyZpamAsync(ZpamRelease release, Stream output, Action<long> progress, CancellationToken cancellationToken)
+    {
+        if (!release.HasVersionedAsset() || !ZpamRelease.IsDownloadAddress(release.Url) || release.Bytes is < 1 or > 1_073_741_824)
+            throw Unavailable();
+        if (await CopyResponseAsync(release.Url, output, release.Bytes, release.Bytes, progress, cancellationToken,
+            feed: false).ConfigureAwait(false) != HttpStatusCode.OK)
+            throw Unavailable();
+    }
+
     private async Task CopyAssetAsync(ReleaseOffer offer, Uri url, string name, Stream output, long limit, long size,
         Action<long>? progress, CancellationToken cancellationToken)
     {
@@ -85,6 +100,7 @@ public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = nul
     {
         if (!AllowedStart(uri, feed))
             throw new LauncherUpdateException("The update server tried to send the download to an unexpected address.");
+        bool zpam = ZpamRelease.IsDownloadAddress(uri);
 
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(feed ? TimeSpan.FromSeconds(15) : TimeSpan.FromMinutes(15));
@@ -92,7 +108,7 @@ public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = nul
         for (int redirectsLeft = 4; ; redirectsLeft--)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            if (feed && uri == WindowsReleaseAssets.Feed)
+            if (feed && (uri == WindowsReleaseAssets.Feed || uri == ZpamRelease.ReleasesUrl))
                 request.Headers.Accept.ParseAdd("application/vnd.github+json");
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if (response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther
@@ -100,6 +116,7 @@ public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = nul
             {
                 if (!feed && redirectsLeft > 0 && response.Headers.Location is { } location && Uri.TryCreate(uri, location, out var next)
                     && next is { Scheme: "https", UserInfo.Length: 0, Fragment.Length: 0 } &&
+                    (!zpam || next.Port == 443 && (ZpamRelease.IsDownloadAddress(next) || next.Host == "release-assets.githubusercontent.com")) &&
                     (loopbackOrigin is null || IsOnLoopback(next)))
                 {
                     uri = next;
@@ -121,8 +138,9 @@ public sealed class ReleaseDownload(HttpClient client, Uri? loopbackOrigin = nul
     {
         if (loopbackOrigin is not null)
             return IsOnLoopback(uri);
-        return feed ? uri == WindowsReleaseAssets.Feed || uri == ReleaseNotes.MirrorUrl || uri == NewsFeed.Url || uri == NewsFeed.MirrorUrl
-            : ReleasePackage.IsDownloadAddress(uri);
+        return feed ? uri == WindowsReleaseAssets.Feed || uri == ReleaseNotes.MirrorUrl || uri == NewsFeed.Url ||
+            uri == NewsFeed.MirrorUrl || uri == ZpamRelease.ReleasesUrl
+            : ReleasePackage.IsDownloadAddress(uri) || ZpamRelease.IsDownloadAddress(uri);
     }
 
     private bool IsOnLoopback(Uri uri) => WindowsReleaseAssets.IsLoopbackOrigin(loopbackOrigin) &&

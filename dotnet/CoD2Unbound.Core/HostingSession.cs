@@ -56,7 +56,7 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
             ZpamLine? package = server.Rules == HostedRules.Zpam ? server.ZpamLine : null;
             if (package is { } line && !files.HasPackage(line))
                 return slot.State = new(HostedPhase.Failed,
-                    Problem: "This server needs zPAM, which isn’t on this Mac yet. Get it in the server’s settings, then start again.");
+                    Problem: "This server needs zPAM. Get it in the server’s settings, then start again.");
             if (server.Port is < 1025 or > 65535)
                 return slot.State = new(HostedPhase.Failed, Problem: "hosting.invalidEndpoint");
 
@@ -71,6 +71,10 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
                     server.Port, server.Reach == HostedReach.Listed, listenAddress);
                 string? template = await files.PrepareAsync(server.Id, home, package, cancellationToken).ConfigureAwait(false);
                 string config = HostingConfig.Render(server, template);
+                // The dedicated CoD2x dvar is normally only sent in system info.
+                // Advertise the actual policy in status so browsers can review public matches.
+                if (server.Engine == GameEdition.Cod2x && server.Rules == HostedRules.Public)
+                    config = "sets g_competitive \"0\"\n" + config;
                 var start = plan.Start with
                 {
                     PrivateFiles = [new("main/server.cfg", [.. Encoding.UTF8.GetBytes(config)])],
@@ -132,7 +136,7 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
                     continue;
                 if (observed.Exited.IsCompleted)
                     await ReapAsync(slot, observed).ConfigureAwait(false);
-                else if (status is not null && slot.State.Phase is HostedPhase.Starting or HostedPhase.Running)
+                else if (slot.State.Phase == HostedPhase.Running || status is not null && slot.State.Phase == HostedPhase.Starting)
                     slot.State = new(HostedPhase.Running, status, slot.State.Since ?? clock.GetUtcNow());
             }
             finally { gate.Release(); }
@@ -197,7 +201,8 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
         finally { gate.Release(); }
 
         bool StillOwned() => ReferenceEquals(slot.Process, process) &&
-            !process.Exited.IsCompleted && slot.State.Phase is HostedPhase.Starting or HostedPhase.Running;
+            !process.Exited.IsCompleted && slot.State.Phase is HostedPhase.Starting or HostedPhase.Running &&
+            (player is null || slot.State.Status is { } status && HostedDashboard.CanKick(status.Players, player));
         return player is null
             ? await admin.NextMapAsync(slot.Server, StillOwned, cancellationToken).ConfigureAwait(false)
             : await admin.KickAsync(slot.Server, player, StillOwned, cancellationToken).ConfigureAwait(false);

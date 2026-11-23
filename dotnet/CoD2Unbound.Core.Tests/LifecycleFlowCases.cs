@@ -106,6 +106,7 @@ internal static partial class Program
             var start = processes.Starts.Single();
             Equal("127.0.0.1", start.EngineArguments[start.EngineArguments.IndexOf("net_ip") + 1]);
             Equal("main/server.cfg", start.PrivateFiles.Single().RelativePath);
+            Equal(true, start.PrivateFiles.Single().Data.AsSpan().StartsWith("sets g_competitive \"0\"\n"u8));
             Equal(2, start.LogSecrets.Length);
             session.PollAsync().GetAwaiter().GetResult();
             var states = Sync(session.SnapshotAsync());

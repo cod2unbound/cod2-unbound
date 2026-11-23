@@ -294,7 +294,7 @@ internal sealed class WindowsLauncherSession
 
     internal Task<string?> ReadLatestLogAsync() => ReadLatestLogAsync(LogsPath);
 
-    internal static async Task<string?> ReadLatestLogAsync(string logPath)
+    internal static async Task<string?> ReadLatestLogAsync(string logPath, int maxBytes = 256 * 1024)
     {
         if (!Directory.Exists(logPath))
             return null;
@@ -305,7 +305,7 @@ internal sealed class WindowsLauncherSession
         if (log is null)
             return null;
         using var input = WindowsFiles.Open(logPath, log.Name);
-        input.Seek(Math.Max(0, input.Length - 256 * 1024), SeekOrigin.Begin);
+        input.Seek(Math.Max(0, input.Length - maxBytes), SeekOrigin.Begin);
         using var text = new StreamReader(input);
         return await text.ReadToEndAsync();
     }

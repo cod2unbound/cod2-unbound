@@ -93,6 +93,42 @@ internal static partial class Program
             Equal(TimeSpan.FromMilliseconds(1100), clock.GetElapsedTime(0));
             Sequence(new[] { "rcon safepass map_rotate", "rcon safepass kick \"Testname\"" }, fake.Commands);
         });
+
+        Check("hosting dashboard distinguishes a full server from a starting server", () =>
+        {
+            var server = HostedServer.New() with { Players = 2 };
+            var status = new HostedStatus("mp_toujane_fix", "sd", 2, [new(0, "^2Rifle", 0, 12), new(1, "Scout", 0, 15)], "Round 1");
+            var running = HostedDashboard.From(server, new(HostedPhase.Running, status));
+            Equal("Toujane", running.Map);
+            Equal("Search & Destroy · Round 1", running.GameType);
+            Equal(true, running.IsFull);
+            Equal(false, running.CanJoin);
+            Equal("2 / 2", running.PlayerCount);
+            var starting = HostedDashboard.From(server, new(HostedPhase.Starting));
+            Equal(false, starting.IsFull);
+            Equal(false, starting.CanJoin);
+        });
+
+        Check("hosting addresses expose only reachable interfaces and omit invite passwords", () =>
+        {
+            var server = HostedServer.New(edition: GameEdition.Original) with { Port = 28965, JoinPassword = "private" };
+            var local = HostedJoinAddresses.From(server, ["127.0.0.1", "192.168.1.20", "192.168.1.20", "::1"], loopbackOnly: false);
+            Sequence(new[] { "192.168.1.20:28965" }, local.Network);
+            Equal(false, local.InLocalList);
+            Equal("cod2://connect%20192.168.1.20%3A28965", local.Invite);
+            var isolated = HostedJoinAddresses.From(server, ["192.168.1.20"], loopbackOnly: true);
+            Equal("127.0.0.1:28965", isolated.ThisPc);
+            Equal(0, isolated.Network.Length);
+            Equal(null, isolated.Invite);
+        });
+
+        Check("kick requires a unique player still present in the roster", () =>
+        {
+            var player = new HostedStatusPlayer(0, "^2Rifle", 0, 12);
+            Equal(true, HostedDashboard.CanKick([player with { Ping = 15 }], player));
+            Equal(false, HostedDashboard.CanKick([player with { Name = "New player" }], player));
+            Equal(false, HostedDashboard.CanKick([player, new(1, "^3rifle", 0, 14)], player));
+        });
     }
 
     private static void HostingExportEqual(JsonElement expected, IReadOnlyDictionary<string, string> actual)
