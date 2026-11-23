@@ -280,6 +280,11 @@ def verify_installer(artifacts, work, previous, run):
         if len(list(user_start.glob("*.lnk"))) != old_shortcuts:
             raise ValueError("Missing per-user Start menu entries")
 
+        # Earlier fixtures require Windows 11. Exercise the current Setup and its
+        # maintenance paths at Wine's Windows 10 setting after seeding that install.
+        wine(env, "winecfg.exe", "-v", "win10")
+        print(wine(env, "cmd", "/c", "ver").stdout.strip(), flush=True)
+
         existing_scheme = USER_CLASSES + r"\cod2\shell\open\command"
         wine(env, "reg", "add", existing_scheme, "/ve", "/d", "Third-party link handler",
              "/f", "/reg:64")

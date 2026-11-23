@@ -14,8 +14,9 @@ CoD2 Unbound ports the reconstructed [opencod2](https://github.com/opencod2/open
 engine to native macOS arm64. It runs directly on Apple silicon, with raw mouse
 input, native audio and a Metal renderer. Bring a licensed copy of Call of
 Duty 2: no game content is included. Windows, Linux and the browser are on
-the [roadmap](docs/ROADMAP.md), which is where the name comes from; until
-0.3.6 the app was called CoD2 Silicon.
+the [roadmap](docs/ROADMAP.md), which is where the name comes from.
+The 0.5 Windows release targets x64 PCs running Windows 10 (22H2) or Windows 11.
+Until 0.3.6 the app was called CoD2 Silicon.
 
 **To play:** download the disk image from
 [cod2unbound.com](https://cod2unbound.com/download) or

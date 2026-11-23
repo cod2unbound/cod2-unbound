@@ -144,7 +144,7 @@ was tested and what was not.
 One platform at a time, each brought to a complete state before the next
 starts:
 
-- **0.5: Windows.** The reconstructed engine has been built and run for
+- **0.5: Windows.** Targets x64 PCs running Windows 10 (22H2) or Windows 11. The reconstructed engine has been built and run for
   Windows and Linux in separate work that is not in this repository yet. The
   app, its launcher and its packaging are Mac-only today.
 - **0.6: Linux.**

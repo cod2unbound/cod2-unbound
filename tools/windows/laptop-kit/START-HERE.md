@@ -1,4 +1,4 @@
-# Try CoD2 Unbound on your Windows 11 PC
+# Try CoD2 Unbound on your Windows PC
 
 Use a Windows 11 x64 PC with Call of Duty 2 already installed. The kit uses a
 sample CD key and creates a temporary CoD2 Unbound install for your Windows

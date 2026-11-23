@@ -55,6 +55,15 @@
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
+    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter">
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="IsTabStop" Value="True" />
+    </Style>
+    <Style x:Key="SolidCrashFlyoutPresenter" TargetType="FlyoutPresenter"
+           BasedOn="{StaticResource CrashFlyoutPresenter}">
+        <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
+    </Style>
 
     <Style x:Key="HeroTitle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource StencilExtraBold}" />
