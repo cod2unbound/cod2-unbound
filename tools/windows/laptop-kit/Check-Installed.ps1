@@ -6,29 +6,31 @@ function Get-KitLauncherWindow($Process) {
     } 55 'the launcher window'
 }
 
-function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     $root = [Windows.Automation.AutomationElement]::FromHandle($Window)
     $property = if ($Name) { [Windows.Automation.AutomationElement]::NameProperty }
         else { [Windows.Automation.AutomationElement]::AutomationIdProperty }
     $condition = [Windows.Automation.PropertyCondition]::new($property, $Value)
     $scope = [Windows.Automation.TreeScope]::Descendants
     foreach ($control in $root.FindAll($scope, $condition)) {
-        if ($control.Current.IsEnabled -and ($AllowOffscreen -or -not $control.Current.IsOffscreen)) { return $control }
+        if ($control.Current.IsEnabled -and ($AllowOffscreen -or -not $control.Current.IsOffscreen)) { $control }
     }
 }
 
+function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen | Select-Object -First 1
+}
+
 function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
-    $node = Wait-KitCondition {
-        Find-KitControl $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen
-    } 12 "launcher control $Value"
-    foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
-        $action = $null
-        if ($node.TryGetCurrentPattern($pattern, [ref]$action)) {
-            if ($action -is [Windows.Automation.InvokePattern]) { $action.Invoke() } else { $action.Select() }
-            return
+    $action = Wait-KitCondition {
+        foreach ($control in Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen) {
+            foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
+                $candidate = $null
+                if ($control.TryGetCurrentPattern($pattern, [ref]$candidate)) { return $candidate }
+            }
         }
-    }
-    throw "The launcher control $Value did not expose an action."
+    } 12 "an action for launcher control $Value"
+    if ($action -is [Windows.Automation.InvokePattern]) { $action.Invoke() } else { $action.Select() }
 }
 
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
