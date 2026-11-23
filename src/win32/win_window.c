@@ -3,12 +3,6 @@
 #include <SDL2/SDL_syswm.h>
 #include <windows.h>
 
-#if COD2_WINDOWS_NATIVE
-/* Hybrid graphics drivers look for these exports in the client executable. */
-__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 1;
-__declspec(dllexport) DWORD NvOptimusEnablement = 1;
-#endif
-
 extern SDL_Window *sdl_gl_window;
 
 void *Win_GameWindow(void)
