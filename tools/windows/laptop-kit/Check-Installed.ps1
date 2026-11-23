@@ -32,7 +32,7 @@ function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name) {
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
     $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
     if (Test-Path -LiteralPath $complete) { return }
-    foreach ($step in 'welcome','game-data','key','usage','crash','ready') {
+    foreach ($step in 'welcome','game-data','key','crash','usage','ready') {
         switch ($step) {
             'key' {
                 $stored = Wait-KitCondition {
