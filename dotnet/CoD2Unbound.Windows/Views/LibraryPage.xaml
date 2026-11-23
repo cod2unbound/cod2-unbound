@@ -139,7 +139,7 @@
                 </GridView.ItemContainerStyle>
                 <GridView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="208" ItemHeight="177" />
+                        <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="4" ItemWidth="208" ItemHeight="177" />
                     </ItemsPanelTemplate>
                 </GridView.ItemsPanel>
                 <GridView.ItemTemplate>

@@ -38,7 +38,7 @@ public sealed partial class LibraryPage
         if (Screenshots.ItemsPanelRoot is ItemsWrapGrid grid && args.NewSize.Width > 0)
         {
             double available = Math.Max(1, args.NewSize.Width - 20);
-            int columns = Math.Clamp((int)(available / 200), 1, 3);
+            int columns = Math.Clamp((int)(available / 224), 1, 4);
             grid.ItemWidth = Math.Floor(available / columns);
         }
     }
