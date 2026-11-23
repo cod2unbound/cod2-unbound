@@ -8,10 +8,26 @@ $taskName = "CoD2UnboundKit-$([IO.Path]::GetFileName($Stage))"
 $runName = [IO.Path]::GetFileName($Stage)
 $resultRoot = Join-Path $kit "results\$runName"
 $reply = Join-Path $Stage 'request.json'
+
+function Get-DesktopTask {
+    try { $taskFolder.GetTask($taskName) }
+    catch {
+        if ($_.Exception.GetBaseException().HResult -ne -2147024894) { throw }
+    }
+}
+
+if ($Operation -in 'status','queue','finish') {
+    # The SSH network logon need not have read access to the CIM namespace.
+    # Task Scheduler's local COM interface works with per-user task permissions.
+    $scheduler = New-Object -ComObject 'Schedule.Service'
+    $scheduler.Connect()
+    $taskFolder = $scheduler.GetFolder('\')
+}
+
 if ($Operation -eq 'status') {
     $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
-    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    $state = if ($task) { $task.State.ToString() } else { 'Absent' }
+    $task = Get-DesktopTask
+    $state = if (-not $task) { 'Absent' } elseif ($task.State -in 2,4) { 'Running' } else { 'Ready' }
     $receipts = @(Get-ChildItem -LiteralPath $resultRoot -Directory -ErrorAction SilentlyContinue | Where-Object {
         Test-Path -LiteralPath (Join-Path $_.FullName 'result.json')
     } | Select-Object -ExpandProperty Name)
@@ -21,21 +37,31 @@ if ($Operation -eq 'status') {
 if ($Operation -eq 'queue') {
     $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
     if ($status.Done -or $status.Id -cne $Step) { throw 'The Windows step has already changed.' }
-    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    if ($task -and $task.State -eq 'Running') { throw 'The Windows step is already running.' }
+    $task = Get-DesktopTask
+    if ($task -and $task.State -in 2,4) { throw 'The Windows step is already running.' }
     if (-not $Sid) { $Sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value }
-    $principal = New-ScheduledTaskPrincipal -UserId $Sid -LogonType Interactive -RunLevel Limited
+    $definition = $scheduler.NewTask(0)
+    $interactiveToken = 3
+    $definition.Principal.UserId = $Sid
+    $definition.Principal.LogonType = $interactiveToken
+    $definition.Principal.RunLevel = 0
     $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $worker = Join-Path $kit 'Remote-Kit.ps1'
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -Stage "{1}" -Operation worker' -f $worker,$Stage
-    $action = New-ScheduledTaskAction -Execute $ps -Argument $arguments
-    $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 18) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+    $action = $definition.Actions.Create(0)
+    $action.Path = $ps
+    $action.Arguments = $arguments
+    $definition.Settings.ExecutionTimeLimit = 'PT18M'
+    $definition.Settings.MultipleInstances = 2  # TASK_INSTANCES_IGNORE_NEW
+    $definition.Settings.DisallowStartIfOnBatteries = $false
+    $definition.Settings.StopIfGoingOnBatteries = $false
     @{ Step=$Step; Answer=$Answer; GamePath=$GamePath; ArmRehearsal=$ArmRehearsal.IsPresent } |
         ConvertTo-Json -Compress | Set-Content -LiteralPath $reply -Encoding UTF8
     $workerLog = Join-Path $Stage 'worker-error.txt'
     if (Test-Path -LiteralPath $workerLog) { Remove-Item -LiteralPath $workerLog }
-    $null = Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings -Force
-    Start-ScheduledTask -TaskName $taskName
+    $createOrUpdate = 6
+    $task = $taskFolder.RegisterTaskDefinition($taskName, $definition, $createOrUpdate, $Sid, $null, $interactiveToken, $null)
+    $null = $task.Run($null)
     return
 }
 if ($Operation -eq 'worker') {
@@ -69,9 +95,9 @@ if ($Operation -eq 'archive') {
 if ($Operation -eq 'finish') {
     $status = & $runner -RunId $runName -Mode Status | ConvertFrom-Json
     if (-not $status.Done) { throw 'There are unfinished Windows steps.' }
-    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    if ($task -and $task.State -eq 'Running') { throw 'Wait for the last Windows step to exit.' }
-    if ($task) { Unregister-ScheduledTask -TaskName $taskName -Confirm:$false }
+    $task = Get-DesktopTask
+    if ($task -and $task.State -in 2,4) { throw 'Wait for the last Windows step to exit.' }
+    if ($task) { $taskFolder.DeleteTask($taskName, 0) }
     $cleanup = Get-Content -LiteralPath (Join-Path $resultRoot 'cleanup\result.json') -Raw | ConvertFrom-Json
     if ($cleanup.Status -eq 'PASS') {
         Remove-Item -LiteralPath $Stage -Recurse
