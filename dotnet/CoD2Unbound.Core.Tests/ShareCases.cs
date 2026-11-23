@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace CoD2Unbound.Core.Tests;
 
@@ -30,7 +32,8 @@ internal static partial class Program
                 for (int i = 0; i < prepared.LeftOut.Length; i++)
                 {
                     Equal(omitted[i].String("shown"), prepared.LeftOut[i].Shown);
-                    Equal(omitted[i].String("because"), prepared.LeftOut[i].Because);
+                    string? reason = omitted[i].String("because");
+                    Equal(reason == "A file path on your Mac" ? "A file path on your PC" : reason, prepared.LeftOut[i].Because);
                     Sequence(omitted[i].Strings("reasons"), prepared.LeftOut[i].Reasons);
                 }
                 var payload = ConfigShare.Request(prepared, "Fixture", ConfigDialect.Cod2x, "0.4.1-dev");
@@ -78,6 +81,96 @@ internal static partial class Program
             Equal(false, prepared.LeftOut.Any(line => line.Shown.Contains("-secret", StringComparison.Ordinal)));
         });
 
+        Check("Share session validates the name and moves through send, retry, cancellation and success", () =>
+        {
+            var prepared = Sync(ConfigShare.PrepareAsync(ImportBytes(root.GetProperty("prepared")[0].String("input")!), catalog));
+            var form = new ConfigShareForm("Main", "", prepared);
+            var storage = new ConfigShareRecords(new ShareStorage());
+            var standIn = new ShareReplyStandIn { Reply = new(503, ImportBytes("{}")) };
+            var events = new List<UsageEvent>();
+            var session = new ConfigShareSession(new(new(standIn, new("http://127.0.0.1:9")), storage), storage, events.Add);
+            session.LoadAsync().GetAwaiter().GetResult();
+            ConfigShareSent? Publish(bool readOnly = false, CancellationToken token = default) =>
+                session.PublishAsync("Main", form, ConfigDialect.Stock, "0.5.0", readOnly, token).GetAwaiter().GetResult();
+
+            Equal(false, form.CanSend);
+            form.Name = "bad/name";
+            Equal(false, form.CanSend);
+            Equal(ConfigShareName.Problem(form.Name), form.NameProblem);
+            form.Name = "  Wren   [1] ";
+            standIn.OnPost = () =>
+            {
+                Equal("Sending…", form.Action);
+                Equal(null, Publish());
+            };
+            Equal(null, Publish(readOnly: true));
+            Equal(ConfigSharePhase.Ready, form.Phase);
+            Equal(null, Publish());
+            Equal(ConfigShareNoticeLevel.Error, form.Notice!.Level);
+            Equal("Try again", form.Action);
+            Equal(null, Publish(token: new(true)));
+            Equal(ConfigSharePhase.Ready, form.Phase);
+            standIn.Reply = new(201, ImportBytes(root.GetProperty("shares")[0].String("body")!));
+            var sent = Publish()!;
+            Equal("Wren [1]", sent.Name);
+            Equal(true, sent.Saved);
+            Equal(ConfigSharePhase.Sent, form.Phase);
+            Equal(ConfigShareLoadoutPhase.Waiting, session.Status("MAIN", null).Phase);
+            Equal(true, session.CanStop("Main"));
+            Equal(false, session.CanShare("Main", readOnly: false));
+
+            standIn.OnPost = () =>
+            {
+                Equal(false, session.CanStop("Main"));
+                Equal(ConfigShareLoadoutPhase.Stopping, session.Status("MAIN", null).Phase);
+            };
+            standIn.Reply = new(403, ImportBytes("""{"error":"forbidden"}"""));
+            var profile = new ConfigProfile("Main", "Main", true);
+            Equal(ConfigShareNoticeLevel.Error, session.StopAsync(profile).GetAwaiter().GetResult()!.Level);
+            Equal(ConfigShareNoticeLevel.Error, session.StopProblem("MAIN")!.Level);
+            Equal(ConfigShareLoadoutPhase.Waiting, session.Status("Main", null).Phase);
+            standIn.Reply = new(200, ImportBytes("""{"state":"withdrawn"}"""));
+            Equal(ConfigShareNoticeLevel.Success, session.StopAsync(profile).GetAwaiter().GetResult()!.Level);
+            Equal(null, session.StopProblem("MAIN"));
+            Equal(ConfigShareLoadoutPhase.NotShared, session.Status("Main", null).Phase);
+            Equal(null, Sync(storage.LoadAsync()).Record("Main"));
+            Equal("Wren [1]", Sync(storage.LoadAsync()).Name);
+            Sequence([UsageEvent.Problem(UsageProblem.Share), new(UsageKind.SetupShared),
+                UsageEvent.Problem(UsageProblem.Withdraw), new(UsageKind.SetupWithdrawn)], events);
+        });
+
+        Check("Share form distinguishes refusal messages and hides rows when preparation cannot be sent", () =>
+        {
+            var prepared = Sync(ConfigShare.PrepareAsync(ImportBytes(root.GetProperty("prepared")[0].String("input")!), catalog));
+            foreach (var (status, body, level, words) in new[]
+            {
+                (429, """{"error":"limit","scope":"network"}""", ConfigShareNoticeLevel.Warning, "Three setups"),
+                (429, """{"error":"limit","scope":"day"}""", ConfigShareNoticeLevel.Warning, "as many new setups"),
+                (409, """{"error":"already"}""", ConfigShareNoticeLevel.Info, "This exact setup"),
+                (413, "{}", ConfigShareNoticeLevel.Info, "64 KB or 3,000 lines")
+            })
+            {
+                var form = new ConfigShareForm("Main", "Wren", prepared);
+                var records = new ConfigShareRecords(new ShareStorage());
+                var standIn = new ShareReplyStandIn { Reply = new(status, ImportBytes(body)) };
+                var session = new ConfigShareSession(new(new(standIn, new("http://127.0.0.1:9")), records), records, _ => { });
+                session.LoadAsync().GetAwaiter().GetResult();
+                Equal(null, session.PublishAsync("Main", form, ConfigDialect.Stock, "0.5.0", false, default).GetAwaiter().GetResult());
+                Equal(level, form.Notice!.Level);
+                Equal(true, form.Notice.Message.Contains(words, StringComparison.Ordinal));
+                Equal(false, form.CanSend);
+                Equal(status != 413, form.ShowDetails);
+            }
+            Equal(ConfigSharePhase.NothingToShare, new ConfigShareForm("Main", "Wren", prepared with { Lines = 4 }).Phase);
+            Equal(ConfigSharePhase.TooLarge, new ConfigShareForm("Main", "Wren", prepared with { Lines = 3001 }).Phase);
+            Equal(false, new ConfigShareForm("Main", "Wren", null).ShowDetails);
+            Equal("Main is no longer shared.", ConfigShareNotice.Withdrawal("Main", ConfigWithdrawReplyKind.Withdrawn, true).Title);
+            Equal("Main comes off Player Setups with the next catalogue update.",
+                ConfigShareNotice.Withdrawal("Main", ConfigWithdrawReplyKind.Removal, true).Title);
+            Equal(ConfigShareNoticeLevel.Error, ConfigShareNotice.Withdrawal("Main", ConfigWithdrawReplyKind.Forbidden, false).Level);
+            Equal(true, ConfigShareNotice.Withdrawal("Main", ConfigWithdrawReplyKind.Unreachable, false).Message.Contains("Check your connection"));
+        });
+
         Check("Share record persists token, uses case-insensitive ids, and keeps the last name", () =>
         {
             var storage = new ShareStorage { Bytes = ImmutableArray.Create(root.Bytes("records")) };
@@ -113,6 +206,39 @@ internal static partial class Program
             Equal(publication.Record, Sync(records.LoadAsync()).Record("Main"));
         });
 
+        Check("Share session can withdraw an accepted request after a local receipt write fails", () =>
+        {
+            var prepared = Sync(ConfigShare.PrepareAsync(ImportBytes(root.GetProperty("prepared")[0].String("input")!), catalog));
+            var fixture = new ShareStorage { FailWrite = true };
+            var records = new ConfigShareRecords(fixture);
+            var standIn = new ShareReplyStandIn { Reply = new(201, ImportBytes(root.GetProperty("shares")[0].String("body")!)) };
+            var session = new ConfigShareSession(new(new(standIn, new("http://127.0.0.1:9")), records), records, _ => { });
+            session.LoadAsync().GetAwaiter().GetResult();
+            var profile = new ConfigProfile("Main", "Main", true);
+            var form = new ConfigShareForm("Main", "Wren", prepared);
+            Equal(false, session.PublishAsync(profile.Id, form, ConfigDialect.Stock, "0.5.0", false, default).GetAwaiter().GetResult()!.Saved);
+            Equal(true, session.CanStop(profile.Id));
+            Equal(null, Sync(records.LoadAsync()).Record(profile.Id));
+            standIn.Reply = new(200, ImportBytes("""{"state":"withdrawn"}"""));
+            Equal(ConfigShareNoticeLevel.Success, session.StopAsync(profile).GetAwaiter().GetResult()!.Level);
+            Equal(false, session.CanStop(profile.Id));
+        });
+
+        Check("Share session leaves an unreadable ledger alone and disables publishing", () =>
+        {
+            var invalid = ImportBytes("""{"version":1,"loadouts":null}""");
+            var fixture = new ShareStorage { Bytes = invalid };
+            var records = new ConfigShareRecords(fixture);
+            var standIn = new ShareReplyStandIn { Reply = new(503, ImportBytes("{}")), OnPost = () =>
+                throw new InvalidOperationException("A share must not replace an unreadable ledger.") };
+            var session = new ConfigShareSession(new(new(standIn, new("http://127.0.0.1:9")), records), records, _ => { });
+            session.LoadAsync().GetAwaiter().GetResult();
+            Equal(false, session.RecordsAvailable);
+            Equal(false, session.CanShare("Main", readOnly: false));
+            Equal(ConfigShareNoticeLevel.Error, session.RecordsProblem!.Level);
+            Sequence(invalid, fixture.Bytes!.Value);
+        });
+
         Check("withdrawal keeps a failed or replaced receipt and clears a successful one", () =>
         {
             var storage = new ShareStorage { Bytes = ImmutableArray.Create(root.Bytes("records")) };
@@ -143,9 +269,45 @@ internal static partial class Program
                 null, null, new("https://example.invalid/config.cfg"), new string('b', 64), 12, ConfigDirectoryPlatform.Native);
             Equal("Shared by its player from CoD2 Unbound on 21 November 2026", ConfigShareCredit.Line(sample));
             Equal(null, ConfigShareCredit.Line(sample with { SourceUrl = new("https://example.invalid/pull/128") }));
+
+            var record = Sync(new ConfigShareRecords(new ShareStorage { Bytes = [.. root.Bytes("records")] }).LoadAsync()).Record("Main")!;
+            var listed = SignedShareCatalogue(record.Sha256, record.Url);
+            Equal(ConfigShareLoadoutPhase.NotShared, ConfigShareLoadout.From(null, listed).Phase);
+            Equal(ConfigShareLoadoutPhase.Waiting, ConfigShareLoadout.From(record, null).Phase);
+            Equal(ConfigShareLoadoutPhase.Waiting,
+                ConfigShareLoadout.From(record, SignedShareCatalogue(new string('c', 64), record.Url)).Phase);
+            Equal(ConfigShareLoadoutPhase.Waiting,
+                ConfigShareLoadout.From(record, SignedShareCatalogue(record.Sha256, new(ConfigShareClient.Pulls + "129"))).Phase);
+            Equal(ConfigShareLoadoutPhase.Stopping, ConfigShareLoadout.From(record, listed, stopping: true).Phase);
+            Equal(listed.Index.Entries.Single(), ConfigShareLoadout.From(record, listed).Listed);
+            Equal(false, ConfigShareLoadout.From(record, listed).ToString().Contains(record.Token, StringComparison.Ordinal));
         });
 
         Check("Share and withdrawal loopback HTTP contract", () => ShareLoopback(root).GetAwaiter().GetResult());
+    }
+
+    private static ConfigDirectorySnapshot SignedShareCatalogue(string digest, Uri request)
+    {
+        using var fixture = Fixtures("directory");
+        var root = fixture.RootElement;
+        var indexUrl = new Uri(root.String("indexURL")!);
+        var signatureUrl = new Uri(root.String("signatureURL")!);
+        var original = root.GetProperty("cases").EnumerateArray().Single(item => item.String("id") == "signed").Bytes("index");
+        var json = JsonNode.Parse(original)!;
+        var entry = json["entries"]![0]!;
+        entry["sourceURL"] = request.AbsoluteUri;
+        entry["sha256"] = digest;
+        var index = Encoding.UTF8.GetBytes(json.ToJsonString());
+        var key = new Ed25519PrivateKeyParameters(new byte[32]);
+        var signature = new byte[64];
+        key.Sign(Org.BouncyCastle.Math.EC.Rfc8032.Ed25519.Algorithm.Ed25519, null, index, signature);
+        var trust = new ConfigDirectoryConfiguration(indexUrl, signatureUrl, [.. key.GeneratePublicKey().GetEncoded()]);
+        var source = new DirectoryFetcher();
+        source.Responses[indexUrl] = new([.. index], indexUrl, null);
+        source.Responses[signatureUrl] = new([.. signature], signatureUrl, null);
+        var storage = new DirectoryStorage();
+        _ = Load(new ConfigDirectory(trust, storage, source));
+        return Sync(new ConfigDirectory(trust, storage, new GatedDirectoryFetcher([])).ReadCachedSnapshotAsync())!;
     }
 
     private static async Task ShareLoopback(JsonElement root)
@@ -206,8 +368,13 @@ internal static partial class Program
             await fourth.Reply(201, "{}", deadline.Token, declaredLength: 999_999);
         Equal(ConfigShareReplyKind.Unreachable, (await oversized).Kind);
 
-        using var cancelled = new CancellationTokenSource();
-        cancelled.Cancel();
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(deadline.Token);
+        var sending = client.ShareAsync(payload, cancelled.Token).AsTask();
+        using (var held = await ReadPost(server, deadline.Token))
+        {
+            cancelled.Cancel();
+            Equal(ConfigShareReplyKind.Cancelled, (await sending).Kind);
+        }
         Equal(ConfigWithdrawReplyKind.Cancelled, (await client.WithdrawAsync(128, token, cancelled.Token)).Kind);
     }
 

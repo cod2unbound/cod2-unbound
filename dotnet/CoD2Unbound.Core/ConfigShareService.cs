@@ -42,6 +42,12 @@ public sealed class ConfigShareService(ConfigShareClient client, ConfigShareReco
         if (saved is null)
             return new(new(ConfigWithdrawReplyKind.Forbidden));
 
+        return await WithdrawAsync(loadoutId, saved, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal async ValueTask<ConfigShareWithdrawal> WithdrawAsync(string loadoutId, ConfigShareRecord saved,
+        CancellationToken cancellationToken)
+    {
         var reply = await client.WithdrawAsync(saved.Request, saved.Token, cancellationToken).ConfigureAwait(false);
         if (reply.Kind is not (ConfigWithdrawReplyKind.Withdrawn or ConfigWithdrawReplyKind.Removal))
             return new(reply);

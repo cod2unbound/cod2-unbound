@@ -367,6 +367,8 @@ internal static partial class Program
                 ["player setup imported"] = ("Player setups", ["setup_id"]),
                 ["loadout made"] = ("Player setups", []),
                 ["check run"] = ("Player setups", []),
+                ["setup shared"] = ("Player setups", []),
+                ["setup withdrawn"] = ("Player setups", []),
                 ["hosting started"] = ("Hosting", ["reach", "game"]),
                 ["update offered"] = ("Updates", ["from", "to"]),
                 ["update downloading"] = ("Updates", ["from", "to"]),
@@ -425,6 +427,8 @@ internal static partial class Program
                 };
                 await usage.RecordAsync(item);
             }
+            await usage.RecordAsync(UsageEvent.Problem(UsageProblem.Share));
+            await usage.RecordAsync(UsageEvent.Problem(UsageProblem.Withdraw));
             // Settings without a fixed choice must also pass the disclosure check.
             foreach (var setting in Enum.GetValues<UsageSetting>())
                 await usage.RecordAsync(new(UsageKind.SettingChanged, (int)setting, setting == UsageSetting.TextureFiltering ? 2 : 1));
@@ -437,6 +441,10 @@ internal static partial class Program
                     batch.RootElement.EnumerateObject().Select(field => field.Name));
             }
             var received = Events(f.Captures);
+            var problems = received.Where(item => Name(item) == "error shown")
+                .Select(item => Props(item).GetProperty("kind").GetString()).ToArray();
+            Equal(true, problems.Contains("a setup could not be shared"));
+            Equal(true, problems.Contains("sharing could not be stopped"));
             CheckFields("event names", events.Keys, received.Select(item => Name(item)!).Distinct());
             foreach (var group in received.GroupBy(item => Name(item)!))
             {

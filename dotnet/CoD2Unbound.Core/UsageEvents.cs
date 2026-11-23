@@ -16,7 +16,7 @@ public enum UsageMode { Unknown, Borderless, Exclusive, Windowed }
 public enum UsageProblem
 {
     GameStart, GameExit, GameData, Address, ServerLink, ServerList, Join, ServerVersion, Hosting, Directory,
-    Import, Check, SaveLoadout, UpdateCheck, UpdateInstall, SaveSettings, SaveSetup
+    Import, Check, SaveLoadout, UpdateCheck, UpdateInstall, SaveSettings, SaveSetup, Share, Withdraw
 }
 public enum UsageSetting
 {
@@ -28,7 +28,8 @@ public enum UsageKind
 {
     AppOpened, ScreenOpened, SetupReached, SetupSkipped, GameStarted, GameEnded, ServerListRefreshed, ServerJoined,
     SetupViewed, SetupTried, SetupImported, LoadoutMade, CheckRun, HostingStarted, UpdateOffered, UpdateInstalled,
-    UpdateDownloading, UpdateVerifying, UpdateReady, UpdateInstalling, SettingChanged, ErrorShown, TurnedOn
+    UpdateDownloading, UpdateVerifying, UpdateReady, UpdateInstalling, SettingChanged, ErrorShown, TurnedOn,
+    SetupShared, SetupWithdrawn
 }
 
 public sealed class UsageGameStart
@@ -68,7 +69,8 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
         "app opened", "screen opened", "setup step reached", "setup step skipped", "game started", "game ended",
         "server list refreshed", "server joined", "player setup viewed", "player setup tried", "player setup imported",
         "loadout made", "check run", "hosting started", "update offered", "update installed", "update downloading",
-        "update verifying", "update ready", "update installing", "setting changed", "error shown", "usage data turned on"
+        "update verifying", "update ready", "update installing", "setting changed", "error shown", "usage data turned on",
+        "setup shared", "setup withdrawn"
     ];
     private static readonly string[] Steps = ["Welcome", "Game data", "CD key", "Make it yours", "Crash reports", "Ready", "", "Usage data"];
     private static readonly string[] Pages =
@@ -84,7 +86,8 @@ public sealed record UsageEvent(UsageKind Kind, int Choice = 0, int Other = 0, i
         "server link could not be delivered", "the server list could not be refreshed", "the server could not be joined",
         "the server’s game version is unavailable", "a hosted server could not run", "the player catalogue could not be loaded",
         "a config could not be imported", "a config could not be checked", "a loadout could not be saved", "update check failed",
-        "update installation failed", "settings could not be saved", "setup could not be saved"
+        "update installation failed", "settings could not be saved", "setup could not be saved",
+        "a setup could not be shared", "sharing could not be stopped"
     ];
     private static readonly string[] Settings =
     [
