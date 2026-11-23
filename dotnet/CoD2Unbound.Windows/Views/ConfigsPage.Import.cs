@@ -22,7 +22,7 @@ public sealed partial class ConfigsPage
     private async void OnImportLocalhost(object sender, RoutedEventArgs args) => await shell.RunAsync(() => PickLinkAsync(true));
     private async void OnImportInstall(object sender, RoutedEventArgs args) => await shell.RunAsync(() => PickInstalledProfileAsync());
 
-    private async Task PickConfigAsync()
+    internal async Task PickConfigAsync()
     {
         if (!CanEdit)
             return;
@@ -42,7 +42,7 @@ public sealed partial class ConfigsPage
             ConfigImportLoader.SuggestedName(path), new("File", Path.GetFileName(path), "Document", Scope: "Selected file and its folder"));
     }
 
-    private async Task PasteConfigAsync()
+    internal async Task PasteConfigAsync()
     {
         if (!CanEdit)
             return;

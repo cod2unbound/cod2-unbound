@@ -76,7 +76,7 @@ Source: "{#Payload}\launcher\*"; DestDir: "{app}\launcher"; Flags: ignoreversion
 
 [Icons]
 #ifdef HasLauncher
-Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"
+Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; AppUserModelID: "CoD2Unbound.Launcher"
 #else
 Name: "{group}\CoD2 Unbound (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{sys}"
 Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{sys}"

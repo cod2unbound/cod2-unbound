@@ -7,7 +7,6 @@ internal sealed partial class ConfigsViewModel
 {
     internal bool MatchSummariesEnabled => session.Settings.Working.MatchSummariesEnabled;
     internal ImmutableArray<MatchSummary> ReadCheckupMatches() => session.ReadMatches();
-    internal void SelectPrivacySettings() => session.LastSettingsPane = 3;
 
     internal ConfigCheckupReceipt ApplyCheckup(ConfigCheckup checkup, ConfigCheckupReport report, string suggestionId) =>
         Studio.Mutate(report.ProfileId, store => checkup.Apply(report, new HashSet<string> { suggestionId }, store));

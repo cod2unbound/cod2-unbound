@@ -1,9 +1,6 @@
 <Page x:Class="CoD2Unbound.Windows.Views.HomePage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Page.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Enter" Modifiers="Control" Invoked="OnLaunchShortcut" />
-    </Page.KeyboardAccelerators>
     <ScrollViewer x:Name="Scroll" SizeChanged="OnLayoutChanged">
         <Grid>
             <Grid.RowDefinitions>
@@ -11,9 +8,10 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <InfoBar x:Name="UpdateBanner" IsClosable="False" Margin="20,12,20,0" Visibility="Collapsed">
-                <InfoBar.ActionButton>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="UpdateNotes" Content="What’s new" Click="OnUpdateNotes" />
                     <Button x:Name="UpdateButton" Click="OnUpdateAction" />
-                </InfoBar.ActionButton>
+                </StackPanel>
             </InfoBar>
             <Grid Grid.Row="1" x:Name="ArtLayer" Height="520" VerticalAlignment="Top" IsHitTestVisible="False"
                   AutomationProperties.AccessibilityView="Raw">
@@ -58,22 +56,23 @@
 
                 <StackPanel Grid.Row="1" Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                    <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
-                              AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
-                    <DropDownButton x:Name="DisplayChoice" AutomationProperties.Name="Display mode" AccessKey="D" MinWidth="128">
-                        <DropDownButton.Flyout>
-                            <MenuFlyout>
-                                <RadioMenuFlyoutItem x:Name="BorderlessMode" Text="Borderless" GroupName="DisplayMode"
-                                                     Tag="borderless" Click="OnDisplayChanged" />
-                                <RadioMenuFlyoutItem x:Name="ExclusiveMode" Text="Exclusive fullscreen" GroupName="DisplayMode"
-                                                     Tag="exclusive" Click="OnDisplayChanged" />
-                                <RadioMenuFlyoutItem x:Name="WindowMode" Text="Window" GroupName="DisplayMode"
-                                                     Tag="windowed" Click="OnDisplayChanged" />
-                            </MenuFlyout>
-                        </DropDownButton.Flyout>
-                    </DropDownButton>
-                    <Button x:Name="AdjustedResolution" Visibility="Collapsed" Click="OnChooseResolution" />
+                        <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
+                                  AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
+                        <DropDownButton x:Name="DisplayChoice" AutomationProperties.Name="Display mode" AccessKey="D" MinWidth="128">
+                            <DropDownButton.Flyout>
+                                <MenuFlyout>
+                                    <RadioMenuFlyoutItem x:Name="BorderlessMode" Text="Borderless" GroupName="DisplayMode"
+                                                         Tag="borderless" Click="OnDisplayChanged" />
+                                    <RadioMenuFlyoutItem x:Name="ExclusiveMode" Text="Exclusive fullscreen" GroupName="DisplayMode"
+                                                         Tag="exclusive" Click="OnDisplayChanged" />
+                                    <RadioMenuFlyoutItem x:Name="WindowMode" Text="Window" GroupName="DisplayMode"
+                                                         Tag="windowed" Click="OnDisplayChanged" />
+                                </MenuFlyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                        <Button x:Name="NarrowNews" Content="What’s New" Click="OnShowNews" Visibility="Collapsed" />
                     </StackPanel>
+                    <Button x:Name="AdjustedResolution" HorizontalAlignment="Left" Visibility="Collapsed" Click="OnChooseResolution" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="OpenGameData" Click="OnOpenGameData" Visibility="Collapsed"
                                 AutomationProperties.Name="Game data not found" />
@@ -114,7 +113,7 @@
                     <Border x:Name="NewsCard" Grid.Column="2" Style="{StaticResource FieldCard}">
                         <StackPanel Spacing="8">
                             <Grid>
-                                <TextBlock Text="What’s new" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
+                                <TextBlock Text="What’s New" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
                                 <HyperlinkButton Content="See all" HorizontalAlignment="Right" Click="OnShowNews" />
                             </Grid>
                             <StackPanel x:Name="NewsRows" Spacing="8" />

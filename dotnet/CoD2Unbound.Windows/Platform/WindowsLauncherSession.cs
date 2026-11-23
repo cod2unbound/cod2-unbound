@@ -358,16 +358,18 @@ internal sealed partial class WindowsLauncherSession
         });
     }
 
-    internal async Task CheckUpdatesAsync(bool automatic, CancellationToken cancellationToken = default)
+    internal async Task<string?> CheckUpdatesAsync(bool automatic, CancellationToken cancellationToken = default)
     {
         var before = Library;
-        var next = (await Updates.CheckAsync(before, automatic, cancellationToken)).Library;
+        var check = await Updates.CheckAsync(before, automatic, cancellationToken);
+        var next = check.Library;
         if (!ReferenceEquals(before, next))
             await UpdateLibraryAsync(library => library with
             {
                 Dispatches = next.Dispatches, DispatchesCheckedAt = next.DispatchesCheckedAt,
-                News = next.News, NewsNext = next.NewsNext
+                News = next.News, NewsNext = next.NewsNext, Releases = next.Releases
             });
+        return check.NotifyVersion;
     }
 
     internal void ObserveUpdate(LauncherUpdateState state)

@@ -40,9 +40,9 @@ public sealed partial class SettingsPage
 
         var release = Action("Release notes", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases"));
         var website = Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound"));
-        var report = Action("Report a problem…", shell.ShowProblemReportAsync);
+        var report = Action("Report a problem…", ReportProblemFromShellAsync);
         var acknowledgements = Action("Acknowledgements", ShowAcknowledgementsAsync);
-        var shortcuts = new Button { Content = "Keyboard shortcuts", IsEnabled = false };
+        var shortcuts = Action("Show", () => KeyboardShortcutsDialog.ShowAsync(shell));
         var update = Action("Check for updates…", () =>
         {
             Panes.SelectedItem = Panes.Items[4];
@@ -51,7 +51,8 @@ public sealed partial class SettingsPage
         var actions = new StackPanel { Spacing = 8, Children =
         {
             Buttons(release, website, report),
-            Buttons(acknowledgements, shortcuts, update)
+            Buttons(acknowledgements, update),
+            SettingRow("Keyboard shortcuts", null, shortcuts)
         } };
         panel.Children.Add(actions);
 

@@ -43,11 +43,7 @@ public sealed partial class LibraryPage
         };
     }
 
-    private Task OpenMatchPrivacyAsync()
-    {
-        session.LastSettingsPane = 3;
-        return shell.NavigateAsync(LauncherPlace.Settings);
-    }
+    private Task OpenMatchPrivacyAsync() => shell.OpenSettingsPaneAsync("Privacy");
 
     private async void OnMatchPrivacy(object sender, RoutedEventArgs args) =>
         await shell.RunAsync(OpenMatchPrivacyAsync);

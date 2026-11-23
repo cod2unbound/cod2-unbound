@@ -16,6 +16,8 @@ public sealed record LauncherLibrary
     public DateTimeOffset? DispatchesCheckedAt { get; init; }
     public ImmutableArray<NewsDispatch> News { get; init; } = [];
     public NewsDispatch? NewsNext { get; init; }
+    public ImmutableArray<ReleaseDetails> Releases { get; init; } = [];
+    public ImmutableArray<string> NotifiedUpdates { get; init; } = [];
     public ImmutableDictionary<string, DateTimeOffset> Played { get; init; } = ImmutableDictionary<string, DateTimeOffset>.Empty;
 
     public LauncherLibrary Joined(string address, DateTimeOffset now)
@@ -53,6 +55,13 @@ public sealed record LauncherLibrary
                 ImmutableArray<LibraryDispatch>.Empty)), ImmutableArray<NewsDispatch>.Empty),
             NewsNext = TryRead(() => ReadValue(root, "newsNext", LibraryJson.Default.LibraryDispatch, (LibraryDispatch?)null)?.ToNews(),
                 null),
+            Releases = TryRead(() => ReadValue(root, "releases", LibraryJson.Default.ImmutableArrayReleaseDetails,
+                ImmutableArray<ReleaseDetails>.Empty).Where(item => item is { Version: not null, Notes.IsDefault: false } &&
+                    item.Notes.All(note => note is { Title: not null, Tag: not null, Detail: not null })).Take(2).ToImmutableArray(),
+                ImmutableArray<ReleaseDetails>.Empty),
+            NotifiedUpdates = TryRead(() => ReadValue(root, "notifiedUpdates", LibraryJson.Default.ImmutableArrayString,
+                ImmutableArray<string>.Empty).Where(UpdateNotification.IsVersion).Distinct(StringComparer.Ordinal).ToImmutableArray(),
+                ImmutableArray<string>.Empty),
             Played = played
         };
     }
@@ -60,8 +69,8 @@ public sealed record LauncherLibrary
     public ImmutableArray<byte> Write() => [.. JsonSerializer.SerializeToUtf8Bytes(new LibraryState(
         [.. Favorites.Order(StringComparer.Ordinal)], Recent, [.. Cache.Select(LibraryServer.From)], Number(CachedAt),
         [.. Dispatches.Take(5).Select(LibraryDispatch.From)], Number(DispatchesCheckedAt),
-        [.. News.Take(5).Select(LibraryDispatch.From)], NewsNext is { } next ? LibraryDispatch.From(next) : null,
-        Played.ToDictionary(pair => pair.Key, pair => Number(pair.Value)!.Value, StringComparer.Ordinal)),
+        [.. News.Take(12).Select(LibraryDispatch.From)], NewsNext is { } next ? LibraryDispatch.From(next) : null,
+        Played.ToDictionary(pair => pair.Key, pair => Number(pair.Value)!.Value, StringComparer.Ordinal), Releases, NotifiedUpdates),
         LibraryJson.Default.LibraryState)];
 
     public static async ValueTask<LauncherLibrary> LoadAsync(ISettingsFolder files, CancellationToken cancellationToken = default)
@@ -84,7 +93,7 @@ public sealed record LauncherLibrary
         root.TryGetProperty(key, out var item) && item.ValueKind != JsonValueKind.Null ? ToDate(item.GetDouble()) : null;
 
     private static ImmutableArray<NewsDispatch> ToNews(ImmutableArray<LibraryDispatch> rows) =>
-        [.. rows.Take(5).Select(item => item?.ToNews() ?? throw new JsonException("Invalid news record."))];
+        [.. rows.Take(12).Select(item => item?.ToNews() ?? throw new JsonException("Invalid news record."))];
 
     private static T TryRead<T>(Func<T> read, T fallback)
     {
@@ -147,7 +156,7 @@ internal sealed record LibraryDispatch(string Stamp, string Title, string Summar
 internal sealed record LibraryState(ImmutableArray<string> Favorites, ImmutableArray<string> Recent,
     ImmutableArray<LibraryServer> Cache, double? CachedAt, ImmutableArray<LibraryDispatch> Dispatches,
     double? DispatchesCheckedAt, ImmutableArray<LibraryDispatch> News, LibraryDispatch? NewsNext,
-    Dictionary<string, double> Played);
+    Dictionary<string, double> Played, ImmutableArray<ReleaseDetails> Releases, ImmutableArray<string> NotifiedUpdates);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]

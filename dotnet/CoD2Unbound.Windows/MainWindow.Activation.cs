@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using CoD2Unbound.Core;
+using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -10,6 +11,7 @@ public sealed partial class MainWindow
 {
     private readonly Queue<string> activations = new();
     private bool initialized;
+    private string? activeNotification;
 
     internal void ReceiveActivation(string[] arguments, bool bringForward)
     {
@@ -23,7 +25,9 @@ public sealed partial class MainWindow
             _ = SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
         }
         foreach (string argument in arguments)
-            activations.Enqueue(argument);
+            if (!argument.StartsWith(WindowsUpdateNotifications.ActivationPrefix, StringComparison.Ordinal) ||
+                (activeNotification != argument && !activations.Contains(argument)))
+                activations.Enqueue(argument);
         ScheduleActivation();
     }
 
@@ -41,6 +45,15 @@ public sealed partial class MainWindow
 
     private async Task OpenActivationAsync(string input)
     {
+        if (input.StartsWith(WindowsUpdateNotifications.ActivationPrefix, StringComparison.Ordinal) &&
+            input[WindowsUpdateNotifications.ActivationPrefix.Length..] is { } version && UpdateNotification.IsVersion(version))
+        {
+            activeNotification = input;
+            try { await OpenNotificationReleaseAsync(version); }
+            finally { activeNotification = null; }
+            return;
+        }
+
         if (SetupLink.IsSetupScheme(input))
         {
             if (SetupLink.Parse(input) is not { } id)

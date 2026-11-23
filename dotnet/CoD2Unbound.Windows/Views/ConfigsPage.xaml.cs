@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Windows.Storage.Pickers;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -310,6 +309,7 @@ public sealed partial class ConfigsPage : Page
 
     private void RenderStudioBody()
     {
+        studioFind = null;
         studioBody.Children.Clear();
         UpdateHistorySnapshotButton();
         var state = model.State;
@@ -344,7 +344,13 @@ public sealed partial class ConfigsPage : Page
         if (expert)
         {
             var search = new TextBox { Header = "Find a setting", Text = query };
-            search.TextChanged += (_, _) => { query = search.Text; RenderRows(); };
+            studioFind = search;
+            search.TextChanged += (_, _) =>
+            {
+                jumpSetting = null;
+                query = search.Text;
+                RenderRows();
+            };
             studioBody.Children.Add(search);
             var filters = new ComboBox { Header = "Show", ItemsSource = new[] { "Selected group", "Changed", "Locked" }, SelectedIndex = 0 };
             filters.SelectionChanged += (_, _) =>
@@ -395,7 +401,8 @@ public sealed partial class ConfigsPage : Page
             if (expert)
             {
                 foreach (var section in model.Model.Expert(group, filter, query, model.State.Current?.Document, model.State.Current?.Metadata))
-                    AddGroup(section.Group, section.Rows);
+                    AddGroup(section.Group, jumpSetting == query
+                        ? section.Rows.Where(spec => spec.Name == jumpSetting) : section.Rows);
             }
             else
                 AddGroup(group, model.Model.Guided(group));
@@ -405,8 +412,7 @@ public sealed partial class ConfigsPage : Page
 
         void AddGroup(string group, IEnumerable<ConfigSettingSpec> settings)
         {
-            var specs = settings.Where(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)
-                || IsCheckupTimingSetting(spec)).ToArray();
+            var specs = settings.Where(spec => !IsHiddenFromExpert(spec) || IsCheckupTimingSetting(spec)).ToArray();
             if (specs.Length == 0)
                 return;
             var groupTitle = groups.First(item => item.Id == group).Title;
@@ -417,7 +423,7 @@ public sealed partial class ConfigsPage : Page
             if (!expert)
             {
                 int total = model.Model.Expert(group, ConfigExpertFilter.Group, "", profile.Document, profile.Metadata)
-                    .Sum(section => section.Rows.Count(spec => !spec.Name.EndsWith("fps", StringComparison.OrdinalIgnoreCase)));
+                    .Sum(section => section.Rows.Count(spec => !IsHiddenFromExpert(spec)));
                 var link = new HyperlinkButton { Content = $"Show all {total} in Expert ›", VerticalAlignment = VerticalAlignment.Top };
                 link.Click += (_, _) =>
                 {

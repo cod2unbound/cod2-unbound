@@ -19,8 +19,12 @@ public sealed partial class ConfigsPage
 
     private bool CanEdit => !model.Studio.IsReadOnly && model.State.Draft is null;
 
-    private async void OnNewLoadout(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
+    private async void OnNewLoadout(object sender, RoutedEventArgs args) => await shell.RunAsync(CreateFromShellAsync);
+
+    internal async Task CreateFromShellAsync()
     {
+        if (!CanEdit)
+            return;
         var source = model.State.Current;
         var name = new TextBox { Header = "Loadout name", MaxLength = 80, PlaceholderText = "Name, for example Scrim" };
         var start = new ComboBox { Header = "Start from", SelectedIndex = -1, HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -46,7 +50,7 @@ public sealed partial class ConfigsPage
             problem.Text = model.NameProblem(name.Text) ?? "";
             dialog.IsPrimaryButtonEnabled = CanEdit && problem.Text.Length == 0;
         }
-    });
+    }
 
     private async Task RenameAsync(ConfigProfile profile)
     {

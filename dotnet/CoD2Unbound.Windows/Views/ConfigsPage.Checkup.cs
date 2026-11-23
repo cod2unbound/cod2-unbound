@@ -197,11 +197,7 @@ public sealed partial class ConfigsPage
                         else
                         {
                             words.Children.Add(Caption("Turn on local match summaries to see measurements from your next game."));
-                            words.Children.Add(CheckupLink("Settings › Privacy", async () =>
-                            {
-                                model.SelectPrivacySettings();
-                                await shell.NavigateAsync(LauncherPlace.Settings);
-                            }));
+                            words.Children.Add(CheckupLink("Settings › Privacy", () => shell.OpenSettingsPaneAsync("Privacy")));
                         }
                     }
                     else
@@ -536,6 +532,7 @@ public sealed partial class ConfigsPage
         studioTab = 0;
         expert = true;
         loadoutText = null;
+        jumpSetting = null;
         checkupExpertSetting = setting;
         query = setting ?? "";
         if (setting is not null && model.Catalog.Setting(setting) is { } spec)

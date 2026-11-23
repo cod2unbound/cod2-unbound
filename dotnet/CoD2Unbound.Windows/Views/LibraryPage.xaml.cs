@@ -43,6 +43,8 @@ public sealed partial class LibraryPage : Page
         TryRender();
     }
 
+    internal bool FocusShellSearch() => !ShowingMatches && Search.Focus(FocusState.Keyboard);
+
     private void OnSearch(object sender, TextChangedEventArgs args) => TryRender();
 
     private async void TryRender()

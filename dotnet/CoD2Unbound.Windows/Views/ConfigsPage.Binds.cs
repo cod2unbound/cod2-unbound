@@ -67,15 +67,13 @@ public sealed partial class ConfigsPage
 
         var list = new StackPanel { Spacing = 8 };
         var find = new TextBox { PlaceholderText = "Find an action or key", Text = bindQuery };
+        studioFind = find;
         AutomationProperties.SetName(find, "Find an action or key");
         var shortcut = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
         shortcut.Invoked += (_, args) =>
         {
             if (list.IsLoaded && listening is null)
-            {
-                find.Focus(FocusState.Keyboard);
-                args.Handled = true;
-            }
+                args.Handled = find.Focus(FocusState.Keyboard);
         };
         list.KeyboardAccelerators.Add(shortcut);
         list.Children.Add(find);
@@ -90,7 +88,7 @@ public sealed partial class ConfigsPage
         find.TextChanged += (_, _) => { bindQuery = find.Text; BuildRows(); };
         BuildRows();
 
-        var editor = chainDraft is null ? null : ChainEditor(state, profile);
+        var editor = chainDraft is null || jumpBinding is not null ? null : ChainEditor(state, profile);
         workspace.Children.Add(list);
         if (editor is not null)
         {
@@ -108,7 +106,7 @@ public sealed partial class ConfigsPage
                 workspace.ColumnSpacing = side ? 16 : 0;
                 workspace.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
                 workspace.ColumnDefinitions[1].Width = side ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-                list.Visibility = side ? Visibility.Visible : Visibility.Collapsed;
+                list.Visibility = IsVisible(side);
                 Grid.SetColumn(right, side ? 1 : 0);
             }
         }
@@ -157,7 +155,10 @@ public sealed partial class ConfigsPage
                     var keys = new StackPanel { Spacing = 6, Children = { Buttons(primary, second) } };
                     foreach (var extra in row.Additional)
                         keys.Children.Add(Slot(row, null, extra));
-                    rows.Children.Add(SettingRow(row.Action.Title, row.Action.Summary, keys));
+                    var binding = SettingRow(row.Action.Title, row.Action.Summary, keys);
+                    rows.Children.Add(binding);
+                    if (row.Action.Name == jumpBinding)
+                        jumpBindingRow = binding;
                 }
             }
             if (rows.Children.Count == 0)

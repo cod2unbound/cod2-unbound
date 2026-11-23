@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Color = global::Windows.UI.Color;
@@ -54,16 +53,14 @@ public sealed partial class HomePage : Page
                 $"The update didn’t finish. {session.Version} is still installed and works.") :
             $"CoD2 Unbound {state.AvailableVersion} is available.";
         UpdateBanner.Severity = updated ? InfoBarSeverity.Success : failed ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
-        UpdateButton.Content = updated ? "What’s new" : failed ? "Try again" : "Install update";
+        UpdateNotes.Visibility = IsVisible(updated || offered);
+        UpdateButton.Visibility = IsVisible(!updated);
+        UpdateButton.Content = failed ? "Try again" : "Install update";
+        UpdateButton.Style = failed ? null : StyleFor("LauncherAccentButton");
     }
 
-    private async void OnUpdateAction(object sender, RoutedEventArgs args)
-    {
-        if (session.Updates.State.Phase == UpdatePhase.Installed)
-            await shell.ShowProblemAsync(() => OpenAsync(WindowsReleaseAssets.NotesPage(session.Version).AbsoluteUri));
-        else
-            await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
-    }
+    private async void OnUpdateAction(object sender, RoutedEventArgs args) =>
+        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
 
     internal async Task RefreshAsync()
     {
@@ -268,38 +265,6 @@ public sealed partial class HomePage : Page
         await dialog.ShowAsync();
     });
 
-    internal void RenderNews()
-    {
-        NewsRows.Children.Clear();
-        NewsChecked.Text = model.NewsChecked is { } checkedAt ? $"Checked {checkedAt}." : "";
-        NewsChecked.Visibility = IsVisible(NewsChecked.Text.Length > 0);
-        foreach (var dispatch in model.News)
-        {
-            var item = new StackPanel { Spacing = 4 };
-            item.Children.Add(new TextBlock { Text = dispatch.Stamp, Style = StyleFor("MonoCaption") });
-            AddFact(item, dispatch.Title, dispatch.Summary);
-            NewsRows.Children.Add(item);
-        }
-    }
-
-    private async void OnShowNews(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
-    {
-        var rows = new StackPanel { Spacing = 12 };
-        foreach (var dispatch in model.AllNews)
-        {
-            var item = new StackPanel { Spacing = 4 };
-            item.Children.Add(new TextBlock { Text = dispatch.Stamp, Style = StyleFor("MonoCaption") });
-            AddFact(item, dispatch.Title, dispatch.Summary);
-            rows.Children.Add(item);
-        }
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "What’s new", CloseButtonText = "Close",
-            Content = new ScrollViewer { MaxHeight = 360, Content = rows }
-        };
-        await dialog.ShowAsync();
-    });
-
     private static void AddFact(StackPanel panel, string title, string detail)
     {
         panel.Children.Add(new TextBlock { Text = title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
@@ -378,25 +343,16 @@ public sealed partial class HomePage : Page
         HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
         ArtLayer.Height = wide ? 560 : 420;
         NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        NewsCard.Visibility = IsVisible(!compactCards);
+        NarrowNews.Visibility = IsVisible(compactCards);
         Cards.ColumnSpacing = compactCards ? 0 : 12;
         Cards.RowSpacing = compactCards ? 20 : 0;
         RecentCard.Margin = compactCards ? new Thickness(0, 0, 12, 0) : new Thickness();
-        Grid.SetColumn(NewsCard, compactCards ? 0 : 2);
-        Grid.SetColumnSpan(NewsCard, compactCards ? 2 : 1);
-        Grid.SetRow(NewsCard, compactCards ? 1 : 0);
         RecentCard.MinHeight = MatchCard.MinHeight = compactCards ? 226 : 0;
         ContentLayout.MinHeight = args.NewSize.Height;
     }
 
     private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync();
-
-    private async void OnLaunchShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!LaunchButton.IsEnabled)
-            return;
-        args.Handled = true;
-        await LaunchAsync();
-    }
 
     private Task LaunchAsync(string? address = null) => shell.RunAsync(async () =>
     {

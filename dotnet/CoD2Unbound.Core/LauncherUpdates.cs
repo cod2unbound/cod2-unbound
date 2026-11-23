@@ -106,6 +106,9 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
             cancellationToken.ThrowIfCancellationRequested();
             library = library with { Dispatches = release.Dispatches.IsEmpty ? library.Dispatches : release.Dispatches,
                 News = news?.Items ?? library.News, NewsNext = news is null ? library.NewsNext : news.Next,
+                Releases = [.. release.Details.Concat(library.Releases)
+                    .Where(item => item.Version == currentVersion || item.Version == release.LatestVersion)
+                    .DistinctBy(item => item.Version).OrderByDescending(item => item.Version == currentVersion).Take(2)],
                 DispatchesCheckedAt = clock.GetUtcNow() };
             if (release.LatestVersion is { } version && (isNewer ?? ReleaseNotes.IsNewer)(version, currentVersion))
             {
@@ -121,7 +124,7 @@ public sealed class LauncherUpdates(ILauncherReleaseSource source, TimeProvider 
                 Publish(new(Phase: UpdatePhase.Offered, WasChecked: true, AvailableVersion: version,
                     ReleaseUrl: release.LatestUrl, Offer: offer with { ListedByGitHub = release.ListedByGitHub },
                     Notes: release.LatestNotes, CheckedAt: library.DispatchesCheckedAt));
-                return new(State, library, automatic && before.AvailableVersion != version ? version : null);
+                return new(State, library, automatic ? version : null);
             }
             Publish(new(WasChecked: true, Notes: [], CheckedAt: library.DispatchesCheckedAt));
             return new(State, library, null);

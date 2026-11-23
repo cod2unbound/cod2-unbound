@@ -3,23 +3,22 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows;
 
 public sealed partial class MainWindow
 {
-    private void OnHelpShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    private void ShowHelpMenu()
     {
-        if (!JumpButton.IsEnabled || busy || closing)
-            return;
         var help = new MenuFlyout();
+        var openHelp = new MenuFlyoutItem { Text = "Open help" };
+        openHelp.Click += async (_, _) => await ShowProblemAsync(() => OpenAsync(HelpUrl));
         var report = new MenuFlyoutItem { Text = "Report a problem…" };
         report.Click += OnReportProblem;
+        help.Items.Add(openHelp);
         help.Items.Add(report);
-        help.ShowAt(JumpButton);
-        args.Handled = true;
+        help.ShowAt(JumpHost.Visibility == Visibility.Visible ? JumpBox : Root);
     }
 
     private async void OnReportProblem(object sender, RoutedEventArgs args) => await RunAsync(ShowProblemReportAsync);
