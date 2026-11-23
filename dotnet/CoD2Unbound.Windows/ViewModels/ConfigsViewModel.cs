@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
@@ -59,17 +60,37 @@ internal sealed class ConfigsViewModel : IConfigImportStore
     internal Task<MapPixels?> ReadMapArtAsync(string map) => Task.Run(() => session.ReadMapArtwork(map));
     internal MatchSummary? LastMatch => session.Settings.Working.MatchSummariesEnabled ? session.ReadMatches().LastOrDefault() : null;
     internal ConfigStudioState State => Studio.State;
+    internal string? GameData => session.Setup.DataPath;
+    internal string ConfigPath(string id) => WindowsFiles.Under(session.HomePath, $"main/players/{id}/config_mp.cfg");
+
+    internal ValueTask WriteExportAsync(string path, ImmutableArray<byte> bytes)
+    {
+        string relative = Path.GetRelativePath(session.HomePath, path);
+        if (!Path.IsPathRooted(relative) && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            throw new IOException("Choose an export location outside the game's writable home.");
+        var target = new WindowsSettingsFolder(Path.GetDirectoryName(path)!);
+        return target.WriteAsync(Path.GetFileName(path), bytes, default);
+    }
+
+    internal event Action? SettingSaveChanged;
+    internal (string Title, string Reason, string Summary)? SettingSaveProblem { get; private set; }
     public ConfigDialect Dialect => Studio.Dialect;
 
     internal string NewId(string name) => LoadoutName.Identifier(name, State.Profiles.Select(profile => profile.Id));
     internal string? NameProblem(string name, string? except = null) => LoadoutName.Problem(name,
         State.Profiles.Where(profile => profile.Id != except).Select(profile => profile.DisplayName), Studio.IsReadOnly);
 
-    internal void Create(string name)
+    internal void Duplicate(string id)
+    {
+        var source = Studio.ReadProfile(id);
+        Create(LoadoutName.CopyOf(source.Profile.DisplayName, State.Profiles.Select(profile => profile.DisplayName)), source);
+    }
+
+    internal void Create(string name, ConfigProfileRead? copyFrom = null)
     {
         try
         {
-            var created = Studio.Create(NewId(name), name);
+            var created = copyFrom is null ? Studio.Create(NewId(name), name) : Studio.Duplicate(copyFrom, NewId(name), name);
             Studio.Focus(created.Profile.Id);
             Record(new(UsageKind.LoadoutMade));
         }
@@ -97,14 +118,56 @@ internal sealed class ConfigsViewModel : IConfigImportStore
 
     internal void Set(ConfigProfileRead loadout, ConfigSettingSpec spec, string value)
     {
+        if (SettingSaveProblem is not null)
+            return;
         if (Model.TakeTheirsBlock(spec, State, null, [], "") is { } problem)
             throw new IOException(problem);
         var doc = loadout.Document.SetSetting(spec.Name, value);
         if (doc.Serialized.AsSpan().SequenceEqual(loadout.Version.Config.AsSpan()))
             return;
-        Studio.Mutate(loadout.Profile.Id,
-            store => store.Update(loadout.Profile.Id, doc, loadout.Version, null, $"Changed {spec.Title}"));
+        Studio.SetDraft(doc);
+        SaveSetting(spec.Name == "sensitivity" ? "Mouse speed" : spec.Title, $"Changed {spec.Title}");
     }
+
+    internal void RetrySetting()
+    {
+        if (SettingSaveProblem is { } failure)
+            SaveSetting(failure.Title, failure.Summary);
+    }
+
+    internal void DiscardSetting()
+    {
+        try
+        {
+            Studio.DiscardSettingDraft();
+            SettingSaveProblem = null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            if (SettingSaveProblem is { } problem)
+                SettingSaveProblem = (problem.Title, error.Message, problem.Summary);
+        }
+        SettingSaveChanged?.Invoke();
+    }
+
+    private void SaveSetting(string title, string summary)
+    {
+        bool recovering = SettingSaveProblem is not null;
+        try
+        {
+            Studio.SaveSettingDraft(summary);
+            SettingSaveProblem = null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            Error(UsageProblem.SaveLoadout);
+            SettingSaveProblem = (title, error.Message, summary);
+        }
+        if (recovering || SettingSaveProblem is not null)
+            SettingSaveChanged?.Invoke();
+    }
+
+    internal void UndoImport(ConfigImportReceipt receipt, bool created) => Studio.UndoImport(receipt, created, files);
 
     internal void Bind(ConfigBindingEdit edit, bool replace) =>
         Studio.Mutate(edit.ProfileId, store => ConfigBindings.Apply(edit, store, replace));

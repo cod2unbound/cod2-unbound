@@ -23,6 +23,7 @@ public sealed partial class ConfigsPage : Page
     private SelectorBar? studioModes;
     private bool wideGroupRail;
     private string? category;
+    private string? displayedStudioProfile;
     private string query = "";
     private (string Id, ConfigProfileTrashHandle Handle)? removed;
 
@@ -32,6 +33,9 @@ public sealed partial class ConfigsPage : Page
         this.model = model;
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
+        AttachConfigShortcuts();
+        AttachImportDrop();
+        model.SettingSaveChanged += OnSettingSaveChanged;
         SizeChanged += (_, args) =>
         {
             bool wide = args.NewSize.Width >= 1100;
@@ -58,6 +62,7 @@ public sealed partial class ConfigsPage : Page
     {
         var row = (Grid)sender;
         ApplyLoadoutRowTheme(row);
+        AttachLoadoutMenu(row);
         TrackListSelection(row, _ => ApplyLoadoutRowTheme(row));
     }
 
@@ -110,11 +115,12 @@ public sealed partial class ConfigsPage : Page
     private void RenderLoadouts()
     {
         var state = model.State;
+        Loadouts.IsEnabled = state.Draft is null;
         syncing = true;
         var rows = state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray();
         Loadouts.ItemsSource = rows;
         Loadouts.SelectedItem = DiscoverPlaces.SelectedItem is null
-            ? rows.FirstOrDefault(row => row.Profile.Id == state.Current?.Profile.Id) : null;
+            ? rows.FirstOrDefault(row => row.Profile.Id == (state.Current?.Profile.Id ?? state.ReadProblem?.ProfileId)) : null;
         syncing = false;
         NewLoadout.IsEnabled = AddConfig.IsEnabled = !state.ReadOnly && state.Draft is null;
     }
@@ -131,15 +137,6 @@ public sealed partial class ConfigsPage : Page
         });
     }
 
-    private async void OnNewLoadout(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
-    {
-        if (await AskNameAsync("New loadout", "Create loadout", "") is { } name)
-        {
-            model.Create(name);
-            await RefreshStudioAsync();
-        }
-    });
-
     private async Task<string?> AskNameAsync(string title, string action, string initial, string? except = null)
     {
         var name = new TextBox { Header = "Name", Text = initial, MaxLength = 80 };
@@ -154,6 +151,7 @@ public sealed partial class ConfigsPage : Page
             dialog.IsPrimaryButtonEnabled = problem.Text.Length == 0;
         }
         Validate();
+        TrackGameState(dialog, Validate);
         name.TextChanged += (_, _) => Validate();
         dialog.Opened += (_, _) => { name.Focus(FocusState.Programmatic); name.SelectAll(); };
         return await dialog.ShowAsync() == ContentDialogResult.Primary ? name.Text.Trim() : null;
@@ -161,8 +159,8 @@ public sealed partial class ConfigsPage : Page
 
     private async Task RefreshStudioAsync()
     {
-        RenderLoadouts();
         ShowStudio();
+        RenderLoadouts();
         await shell.RefreshPlayerAsync();
     }
 
@@ -171,6 +169,8 @@ public sealed partial class ConfigsPage : Page
         if (ended)
             model.Studio.Refresh();
         RenderLoadouts();
+        updateDialogGameState?.Invoke();
+        RenderRecovery();
         if (DiscoverPlaces.SelectedItem is not null)
             return;
         if (ended)
@@ -187,17 +187,31 @@ public sealed partial class ConfigsPage : Page
     {
         DiscoverPlaces.SelectedItem = null;
         Status.IsOpen = false;
-        Detail.Children.Clear();
-        studioBody.Children.Clear();
         var state = model.State;
-        refreshSharing = null;
-        if (state.Current is not { } profile)
+        RenderRecovery();
+        if (state.ReadProblem is { ProfileId: { } failed } && failed == displayedStudioProfile &&
+            studioBody.Parent == Detail)
         {
-            Detail.Children.Add(Heading("My loadouts"));
-            Detail.Children.Add(Caption(state.Profiles.IsEmpty ? "Create a loadout or add a config to get started." : "Choose a loadout to edit."));
+            studioBody.Visibility = Visibility.Collapsed;
+            UpdateSharingAvailability();
             return;
         }
 
+        ExportStatus.Visibility = Visibility.Visible;
+        Detail.Children.Clear();
+        studioBody.Children.Clear();
+        studioBody.Visibility = Visibility.Visible;
+        refreshSharing = null;
+        if (state.Current is not { } profile)
+        {
+            displayedStudioProfile = null;
+            Detail.Children.Add(Heading(state.Profiles.FirstOrDefault(item => item.Id == state.ReadProblem?.ProfileId)?.DisplayName ?? "My loadouts"));
+            if (state.ReadProblem is null)
+                Detail.Children.Add(Caption(state.Profiles.IsEmpty ? "Create a loadout or add a config to get started." : "Choose a loadout to edit."));
+            return;
+        }
+
+        displayedStudioProfile = profile.Profile.Id;
         var shareNotice = new InfoBar { IsClosable = true };
         shareNotice.Closed += (_, args) =>
         {
@@ -252,23 +266,9 @@ public sealed partial class ConfigsPage : Page
         Put(header, 0, title);
         Put(header, 1, right);
         Detail.Children.Add(header);
-        var next = Action("Use for next game", async () =>
-        {
-            model.Studio.Select(profile.Profile.Id);
-            await RefreshStudioAsync();
-        });
-        var rename = Action("Rename…", async () =>
-        {
-            if (await AskNameAsync("Rename loadout", "Rename", profile.Profile.DisplayName, profile.Profile.Id) is { } name)
-            {
-                model.Rename(profile, name);
-                await RefreshStudioAsync();
-            }
-        });
-        var delete = Action("Delete loadout…", () => DeleteAsync(profile.Profile));
         var readOnlyNotice = Caption("Configs are read-only while Call of Duty 2 is running.");
         Detail.Children.Add(readOnlyNotice);
-        Detail.Children.Add(LoadoutShareActions(profile.Profile, next, rename, delete, readOnlyNotice, shareNotice));
+        Detail.Children.Add(LoadoutShareActions(profile.Profile, readOnlyNotice, shareNotice));
         if (studioBody.Parent is Panel old)
             old.Children.Remove(studioBody);
         Detail.Children.Add(studioBody);
@@ -687,6 +687,8 @@ public sealed partial class ConfigsPage : Page
         int place = DiscoverPlaces.SelectedIndex;
         if (syncing || place < 0)
             return;
+        RecoveryStatus.IsOpen = false;
+        ExportStatus.Visibility = Visibility.Collapsed;
         await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
     }
 
@@ -734,139 +736,6 @@ public sealed partial class ConfigsPage : Page
 
     private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0
         ? count.ToString(CultureInfo.CurrentCulture) : "";
-
-    private async void OnAddConfig(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
-    {
-        var input = new TextBox { Header = "Paste config text", AcceptsReturn = true, Width = 360, Height = 180, TextWrapping = TextWrapping.Wrap };
-        var dialog = Dialog("Add a config", input, "Review");
-        dialog.SecondaryButtonText = "Open file…";
-        dialog.IsPrimaryButtonEnabled = false;
-        input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(input.Text);
-        var choice = await dialog.ShowAsync();
-        if (choice == ContentDialogResult.Secondary)
-        {
-            var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Open a config file" };
-            picker.FileTypeFilter.Add(".cfg");
-            if (await picker.PickSingleFileAsync() is { } file)
-                await ReviewFileAsync(file.Path);
-        }
-        else if (choice == ContentDialogResult.Primary)
-        {
-            await ReviewInputAsync(new ConfigImportInput.Paste([.. ConfigDocument.Encode(input.Text.ReplaceLineEndings("\n"))]),
-                "Imported config");
-        }
-    });
-
-    internal Task ReviewFileAsync(string path)
-    {
-        if (!Path.GetExtension(path).Equals(".cfg", StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Choose a .cfg config file.");
-        return ReviewInputAsync(new ConfigImportInput.File(new Uri(path)), Path.GetFileNameWithoutExtension(path));
-    }
-
-    private async Task ReviewInputAsync(ConfigImportInput input, string name)
-    {
-        var catalog = new ConfigImportCatalogAdapter(model.Catalog);
-        var bundle = await new ConfigImportLoader(catalog, new WindowsConfigImportFiles()).LoadAsync(input, model.Dialect);
-        var review = new ConfigImportSession(bundle, model.Dialect, catalog, name, ConfigImportPlatform.Windows, ConfigImportPlatform.Windows);
-        if (input is ConfigImportInput.File && !review.Rows.Any(row => IsConfigCommand(row.Candidate.Command, catalog)))
-            throw new IOException("This file contains no Call of Duty 2 config commands.");
-        await ReviewAsync(review, name, newOnly: false);
-    }
-
-    private bool IsConfigCommand(ConfigCommand command, IConfigImportCatalog catalog) =>
-        command.Kind switch
-        {
-            ConfigCommandKind.Empty or ConfigCommandKind.Comment => false,
-            ConfigCommandKind.Unknown => catalog.Command(command.Tokens[0].Text, model.Dialect) is not null,
-            _ => true
-        };
-
-    private async Task ReviewAsync(ConfigImportSession review, string initialName, bool newOnly, Func<double?>? setupDistance = null, string? catalogueId = null)
-    {
-        var name = new TextBox { Header = "Loadout name", Text = initialName, MaxLength = 80 };
-        var profiles = model.State.Profiles;
-        var target = new ComboBox { Header = "Import into", ItemsSource = new[] { "New loadout" }
-            .Concat(profiles.Select(profile => profile.DisplayName)).ToArray(), SelectedIndex = 0, Visibility = IsVisible(!newOnly) };
-        var rows = new StackPanel { Spacing = 4, Padding = new Thickness(0, 0, 0, 8) };
-        var problem = Caption("");
-        var content = new StackPanel { Spacing = 8, MinWidth = 360 };
-        content.Children.Add(target);
-        content.Children.Add(name);
-        content.Children.Add(new ScrollViewer { MaxHeight = 236, Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        content.Children.Add(problem);
-        var modal = Dialog("Review import", content, "Import");
-        ConfigImportReceipt? receipt = null;
-        target.SelectionChanged += (_, _) => { SetTarget(); Fill(); };
-        name.TextChanged += (_, _) => Validate();
-        modal.PrimaryButtonClick += async (_, args) =>
-        {
-            var deferral = args.GetDeferral();
-            try
-            {
-                if (target.SelectedIndex == 0)
-                {
-                    var chosen = review.SelectedIds;
-                    SetTarget();
-                    review.ReplaceSelection(chosen);
-                }
-                receipt = await review.ApplyAsync(model);
-            }
-            catch (Exception error) when (error is IOException or ConfigImportSessionException or UnauthorizedAccessException)
-            {
-                args.Cancel = true;
-                model.Error(UsageProblem.Import);
-                problem.Text = error.Message;
-            }
-            finally { deferral.Complete(); }
-        };
-        Fill();
-        if (await modal.ShowAsync() == ContentDialogResult.Primary && receipt is not null)
-        {
-            if (catalogueId is not null)
-                model.CatalogueEvent(UsageKind.SetupImported, catalogueId);
-            if (target.SelectedIndex == 0)
-                model.Record(new(UsageKind.LoadoutMade));
-            model.Studio.Focus(receipt.ProfileId);
-            await RefreshStudioAsync();
-            Feedback("Config imported.");
-        }
-
-        void SetTarget()
-        {
-            name.Visibility = IsVisible(target.SelectedIndex == 0);
-            review.SetTarget(target.SelectedIndex > 0
-                ? new ConfigImportTarget.Existing(model.Studio.ReadImportTarget(profiles[target.SelectedIndex - 1].Id))
-                : new ConfigImportTarget.NewLoadout(model.NewId(name.Text.Trim()), name.Text.Trim()));
-        }
-
-        void Validate()
-        {
-            string? reason = target.SelectedIndex == 0 ? model.NameProblem(name.Text) : null;
-            modal.IsPrimaryButtonEnabled = reason is null && !review.SelectedIds.IsEmpty;
-            problem.Text = reason ?? (review.SelectedIds.IsEmpty ? "Choose the settings and binds to import." : "");
-        }
-
-        void Fill()
-        {
-            rows.Children.Clear();
-            foreach (var row in review.Rows)
-            {
-                if (row.Candidate.Command.Kind is ConfigCommandKind.Empty or ConfigCommandKind.Comment)
-                    continue;
-                var (title, detail) = ReviewCopy(row, setupDistance);
-                var select = new CheckBox { Content = title, IsEnabled = row.CanSelect, IsChecked = review.SelectedIds.Contains(row.Id) };
-                select.Checked += (_, _) => { review.Select(row.Id, true); Validate(); };
-                select.Unchecked += (_, _) => { review.Select(row.Id, false); Validate(); };
-                var line = new StackPanel { Spacing = 2 };
-                line.Children.Add(select);
-                if (detail.Length > 0)
-                    line.Children.Add(Caption(detail));
-                rows.Children.Add(new Border { Style = StyleFor("ReviewRow"), Child = line });
-            }
-            Validate();
-        }
-    }
 
     private (string Title, string Detail) ReviewCopy(ConfigImportRow row, Func<double?>? setupDistance)
     {
@@ -927,10 +796,7 @@ public sealed partial class ConfigsPage : Page
 
     private void Feedback(string message, Button? action = null)
     {
-        Status.Message = message;
-        Status.ActionButton = action;
-        Status.Severity = InfoBarSeverity.Success;
-        Status.IsOpen = true;
+        ShowStatus(InfoBarSeverity.Success, "", message, action);
     }
 }
 

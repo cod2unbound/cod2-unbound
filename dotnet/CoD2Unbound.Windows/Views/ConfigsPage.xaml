@@ -3,6 +3,17 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:core="using:CoD2Unbound.Core">
     <Page.Resources>
+        <DataTemplate x:Key="InstalledProfileHeader">
+            <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="10,8,0,4" />
+        </DataTemplate>
+        <DataTemplate x:Key="InstalledProfileRow">
+            <StackPanel Spacing="3" Padding="8,6" AutomationProperties.Name="{Binding AccessibleName}">
+                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="In use by the game" Style="{StaticResource PositiveCaption}" Visibility="{Binding ActiveVisibility}" />
+                <TextBlock Text="Backup copy" Style="{StaticResource SecondaryText}" Visibility="{Binding BackupVisibility}" />
+                <TextBlock Text="{Binding FileName}" Style="{StaticResource MonoCaption}" />
+            </StackPanel>
+        </DataTemplate>
         <DataTemplate x:Key="ShareLeftOutLine" x:DataType="core:ConfigShareLeftOut">
             <Grid ColumnSpacing="12" Padding="0,4">
                 <Grid.ColumnDefinitions>
@@ -16,7 +27,7 @@
             </Grid>
         </DataTemplate>
     </Page.Resources>
-    <Grid>
+    <Grid x:Name="ConfigSurface" AllowDrop="True" Background="Transparent">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="280" />
             <ColumnDefinition Width="*" />
@@ -103,7 +114,12 @@
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Text="Paste config text…" Click="OnAddConfig" />
+                                    <MenuFlyoutItem Text="From a file…" KeyboardAcceleratorTextOverride="Ctrl+O" Click="OnPickConfig" />
+                                    <MenuFlyoutItem Text="From a link or GitHub…" Click="OnImportLink" />
+                                    <MenuFlyoutItem Text="From this PC's server (localhost)…" Click="OnImportLocalhost" />
+                                    <MenuFlyoutItem Text="From your Call of Duty 2 install…" Click="OnImportInstall" />
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem Text="Paste config" KeyboardAcceleratorTextOverride="Ctrl+Shift+V" Click="OnPasteConfig" />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
@@ -116,8 +132,18 @@
         <ScrollViewer x:Name="DetailScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Padding="28,16,28,28" Spacing="12">
                 <InfoBar x:Name="Status" IsClosable="True" />
+                <InfoBar x:Name="ExportStatus" />
+                <InfoBar x:Name="RecoveryStatus" IsClosable="False" Severity="Error" />
                 <StackPanel x:Name="Detail" Spacing="8" />
             </StackPanel>
         </ScrollViewer>
+        <Grid x:Name="ImportDropCue" Grid.ColumnSpan="2" Margin="12" IsHitTestVisible="False" Visibility="Collapsed">
+            <Rectangle Stroke="{ThemeResource HeroAccentBrush}" StrokeThickness="2" StrokeDashArray="4,3"
+                       RadiusX="8" RadiusY="8" />
+            <Border Style="{StaticResource FieldCard}" Background="{ThemeResource PanelBrush}" Padding="16,10"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="Drop to review this config" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            </Border>
+        </Grid>
     </Grid>
 </Page>

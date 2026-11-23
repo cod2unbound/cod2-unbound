@@ -527,17 +527,13 @@ public sealed partial class ConfigsPage
         {
             if (newOnly)
                 model.CatalogueEvent(UsageKind.SetupTried, entry.Id);
-            try
+            await ShowImportReviewAsync(entry.Player, new("Player Setups", "", "PeopleCommunity", entry.Credit,
+                "Verified catalogue file"), async token =>
             {
-                var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null);
-                setupDistance ??= ConfigDiscover.SetupTurnDistance(review, model.DpiFor(model.Studio.ReadActive()));
-                await ReviewAsync(review, entry.Player, newOnly, () => setupDistance, entry.Id);
-            }
-            catch (Exception error) when (error is IOException or ConfigDirectoryException or ConfigImportSessionException)
-            {
-                model.Error(UsageProblem.Import);
-                throw;
-            }
+                var review = await model.Discover.ReviewAsync(entry.Id, model.Dialect, active: null, cancellationToken: token);
+                setupDistance ??= ConfigDiscover.SetupTurnDistance(review, catalogueDpi);
+                return review;
+            }, newOnly, () => setupDistance, entry.Id);
         }
 
         void RenderNotable(double? dpi)

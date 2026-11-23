@@ -12,50 +12,55 @@ public sealed partial class ConfigsPage
 
     internal void UpdateSharingAvailability() => refreshSharing?.Invoke();
 
-    private FrameworkElement LoadoutShareActions(ConfigProfile profile, Button next, Button rename, Button delete,
-        TextBlock readOnlyNotice, InfoBar shareNotice)
+    private FrameworkElement LoadoutShareActions(ConfigProfile profile, TextBlock readOnlyNotice, InfoBar shareNotice)
     {
-        var share = new Button { AccessKey = "S" };
-        var shareInMore = new AppBarButton();
-        var deleteInMore = new AppBarButton { Label = "Delete loadout…" };
-        AutomationProperties.SetName(deleteInMore, deleteInMore.Label);
-        var more = new CommandBar { IsDynamicOverflowEnabled = false, Background = null };
-        AutomationProperties.SetName(more, "Loadout actions");
-        more.SecondaryCommands.Add(shareInMore);
-        more.SecondaryCommands.Add(deleteInMore);
-        deleteInMore.Click += async (_, _) => await shell.RunAsync(() => DeleteAsync(profile));
-        var row = Buttons(next, rename, share, delete, more);
-        foreach (var control in row.Children.OfType<FrameworkElement>())
-            control.VerticalAlignment = VerticalAlignment.Center;
+        var next = Command("Use for next game", () => UseNextAsync(profile));
+        var rename = Command("Rename…", () => RenameAsync(profile));
+        var duplicate = Command("Duplicate", () => DuplicateAsync(profile), "Copy");
+        var share = new AppBarButton { AccessKey = "S" };
+        var delete = Command("Delete loadout…", () => DeleteAsync(profile));
+        var export = Command("Export…", () => ExportAsync(profile), "ArrowDownload");
+        var reveal = Command("Show in File Explorer", () => RevealLoadoutAsync(profile), "Folder");
+        var row = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
+            HorizontalAlignment = HorizontalAlignment.Left, Background = null };
+        AutomationProperties.SetName(row, "Loadout actions");
         var details = new StackPanel { Spacing = 4 };
         var panel = new StackPanel { Spacing = 8, Children = { row, details } };
-        Adapt(ActualWidth > 0 && ActualWidth < 1100);
-        panel.SizeChanged += (_, args) => Adapt(args.NewSize.Width < 670);
-        share.Click += async (_, _) => await shell.RunAsync(ChangeSharingAsync);
-        shareInMore.Click += async (_, _) => await shell.RunAsync(ChangeSharingAsync);
+        bool? compact = null;
+        Adapt(XamlRoot?.Size.Width is > 0 and < 1120);
+        panel.SizeChanged += (_, args) => Adapt(args.NewSize.Width < 685);
+        share.Click += async (_, _) => await shell.RunAsync(ChangeAndRenderAsync);
         refreshSharing = UpdateEnabled;
         RenderState();
         return panel;
 
-        void Adapt(bool compact)
+        void Adapt(bool narrow)
         {
-            share.Visibility = delete.Visibility = IsVisible(!compact);
-            more.Visibility = IsVisible(compact);
+            if (narrow == compact)
+                return;
+            compact = narrow;
+            row.PrimaryCommands.Clear();
+            row.SecondaryCommands.Clear();
+            foreach (var command in narrow ? new[] { next, rename } : new[] { next, rename, duplicate, share, delete })
+                row.PrimaryCommands.Add(command);
+            foreach (var command in narrow ? new[] { duplicate, share, export, reveal, delete } : new[] { export, reveal })
+                row.SecondaryCommands.Add(command);
+            NameShareCommand();
         }
+
+        void NameShareCommand() => AutomationProperties.SetAutomationId(share,
+            (model.Share.CanStop(profile.Id) ? "StopSharing" : "ShareSetup") + (compact == true ? "InMore" : ""));
 
         void RenderState()
         {
             var state = model.Share.Status(profile.Id, model.ShareCatalogue);
             bool shared = state.Phase != ConfigShareLoadoutPhase.NotShared;
             string action = shared ? "Stop sharing…" : "Share setup…";
-            share.Content = IconLabel("Share", action, 16);
-            shareInMore.Label = action;
-            shareInMore.Icon = Fluent("Share", 16);
+            share.Label = action;
+            share.Icon = Fluent("Share", 16);
             UpdateEnabled();
             AutomationProperties.SetName(share, action);
-            AutomationProperties.SetName(shareInMore, action);
-            AutomationProperties.SetAutomationId(share, shared ? "StopSharing" : "ShareSetup");
-            AutomationProperties.SetAutomationId(shareInMore, shared ? "StopSharingInMore" : "ShareSetupInMore");
+            NameShareCommand();
 
             details.Children.Clear();
             if (!shared)
@@ -109,31 +114,50 @@ public sealed partial class ConfigsPage
         {
             var studio = model.State;
             readOnlyNotice.Visibility = IsVisible(studio.ReadOnly);
-            next.IsEnabled = !studio.ReadOnly && !profile.IsActive;
-            rename.IsEnabled = !studio.ReadOnly;
-            delete.IsEnabled = deleteInMore.IsEnabled = ConfigStudioModel.DeleteBlock(studio, profile.Id) is null;
-            share.IsEnabled = shareInMore.IsEnabled =
-                model.Share.CanStop(profile.Id) || model.Share.CanShare(profile.Id, studio.ReadOnly);
+            bool writable = CanEdit && studio.ReadProblem is null;
+            next.IsEnabled = writable && !profile.IsActive;
+            rename.IsEnabled = duplicate.IsEnabled = writable;
+            delete.IsEnabled = writable && ConfigStudioModel.DeleteBlock(studio, profile.Id) is null;
+            share.IsEnabled = model.Share.CanStop(profile.Id) || model.Share.CanShare(profile.Id, !writable);
         }
 
-        async Task ChangeSharingAsync()
+        async Task ChangeAndRenderAsync()
         {
-            if (model.Share.CanStop(profile.Id))
-            {
-                var confirmation = Dialog($"Stop sharing “{profile.DisplayName}”?",
-                    Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
-                    "Stop sharing");
-                if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
-                    return;
-
-                shareNotice.IsOpen = false;
-                var pending = model.Share.StopAsync(profile);
-                RenderState();
-                ShowShareNotice(shareNotice, await pending);
-            }
-            else
-                await ShowShareAsync(profile);
+            await ChangeSharingAsync(profile, shareNotice, RenderState);
             RenderState();
+        }
+    }
+
+    private async Task ChangeSharingAsync(ConfigProfile profile, InfoBar? noticeBar = null, Action? onPending = null)
+    {
+        if (!model.Share.CanStop(profile.Id))
+        {
+            if (CanEdit)
+                await ShowShareAsync(profile);
+            if (noticeBar is null && model.State.Current?.Profile.Id == profile.Id)
+                ShowStudio();
+            return;
+        }
+
+        var confirmation = Dialog($"Stop sharing “{profile.DisplayName}”?",
+            Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
+            "Stop sharing");
+        if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+            return;
+        if (noticeBar is not null)
+            noticeBar.IsOpen = false;
+        var pending = model.Share.StopAsync(profile);
+        onPending?.Invoke();
+        var notice = await pending;
+        if (noticeBar is not null)
+            ShowShareNotice(noticeBar, notice);
+        else
+        {
+            if (model.State.Current?.Profile.Id == profile.Id)
+                ShowStudio();
+            Status.ActionButton = null;
+            Status.IsClosable = true;
+            ShowShareNotice(Status, notice);
         }
     }
 

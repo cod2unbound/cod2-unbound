@@ -20,10 +20,6 @@ public sealed partial class ConfigsPage
 
         await ShowCatalogueAsync(saved: false);
         if (model.Discover.State.Snapshot is not null)
-        {
-            Status.Severity = InfoBarSeverity.Informational;
-            Status.Message = "That setup isn’t in Player Setups. It may have been renamed or taken down.";
-            Status.IsOpen = true;
-        }
+            ShowStatus(InfoBarSeverity.Informational, "", "That setup isn’t in Player Setups. It may have been renamed or taken down.");
     }
 }
