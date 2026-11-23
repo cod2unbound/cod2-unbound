@@ -1,64 +1,111 @@
-# CoD2 Unbound Windows 11 laptop check
+# Try CoD2 Unbound on your Windows 11 PC
 
-This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays version 0.4.0. The 0.3.9 test installer gives Setup an older version to upgrade.
+Use a Windows 11 x64 PC with Call of Duty 2 already installed. The kit uses a
+sample CD key and creates a temporary CoD2 Unbound install for your Windows
+account. Use a clean Windows account if you already have Unbound or have saved
+a key in Windows Credential Manager. Save your work before starting.
+
+## Part A. The laptop sitting
+
+1. Unzip the kit into your own Windows folder. Close CoD2, Steam and apps that
+   make sound. Disconnect from the internet. For the Mac route, keep only the
+   isolated connection to the Mac. Leave the laptop signed in and unlocked.
+2. Open Windows PowerShell in the unzipped folder as your usual user. Start
+   the kit with the command below. Omit the game path if the kit can find
+   Steam or your disc install. If the file check fails to find the game, run
+   again with a new run name and the folder that contains `main`.
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Run-All.ps1 -GamePath "C:\Games\Call of Duty 2"
+   ```
+
+3. The kit checks the copied files, your PC, shader compiler and both servers.
+   It asks before running Setup or changing the version. It records the first
+   launcher starts, map runs, saved views, sound and input, full-screen
+   switching, loopback matches, Hosting, updates and reports where supported.
+   It prints a line and saves evidence for each check. If a check fails, carry
+   on. Automatic work can take an hour or longer. A complete laptop run has
+   yet to be timed.
+4. If **Windows Security** asks about a game or server, choose **Cancel** for
+   this offline sitting. Write the message and what you pressed when asked.
+   If SmartScreen, Smart App Control or UAC blocks a test, record the wording
+   and continue. Leave Windows Security settings as they are.
+5. When the paired pictures open, compare the sky, fog, water, lettering and
+   world geometry. Write one line about differences that look wrong. In both
+   editions, turn slowly and quickly, then listen to gunfire and movement.
+   Try **Alt+Tab** away and back in full-screen. Write one line about mouse
+   feel, missing or uneven sound, and whether the picture and controls return.
+   Allow about 10 minutes.
+6. Browse Home and **Settings > Privacy**. Start Narrator with **Windows + Ctrl
+   + Enter**. Tab through both pages. Write one line about labels, focus order
+   or controls that are hard to reach. Turn Narrator off with the same
+   shortcut. Allow about 5 minutes.
+7. Give permission to remove the kit's test copy and sample data when asked.
+   Read the cleanup result. Inspect the files the packer lists before you
+   choose to make the ZIP. Allow 5 minutes for cleanup and review.
+
+To pick up where you stopped, run the same command with the same kit folder
+and run name. To start a separate run after cleanup, add `-RunId second`.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Pack-Results.ps1 -RunId laptop
+```
+
+The packer removes common private identifiers from text. Check the pictures,
+demos and sound clips yourself. If Windows wrote a memory dump, the results
+list its name and size. Review the original separately before sharing it.
+
+## Let the Mac drive
+
+Use a standard Windows account and have an administrator set up the optional
+Windows OpenSSH Server. Keep a trusted local connection between the two
+machines and disconnect that network from the internet. Stay signed in at
+the laptop screen during the run.
+
+1. In an administrator PowerShell, run
+   `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0` before
+   disconnecting the internet. This adds Microsoft's SSH server. Windows may
+   also create an inbound SSH firewall rule.
+2. In the test user's normal PowerShell, save just the Mac's **public** key as
+   a new line in `$env:USERPROFILE\.ssh\authorized_keys`. Create the folder
+   if you need it. Keep the Mac's private key on the Mac.
+3. In administrator PowerShell run `Start-Service sshd`. The Mac must verify
+   the SSH host key before the run. Compare the Mac's key fingerprint with
+   `ssh-keygen -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"` at the PC.
+   If the run includes a restart, arrange for SSH to start again and sign back
+   in when Windows comes up.
+4. On the Mac run the driver from the project checkout. It pauses for consent
+   and notes. Handle Windows prompts at the laptop screen.
+
+   ```sh
+   tools/windows/laptop-kit/drive.sh LAPTOP_IP WINDOWS_USER \
+     --kit /path/to/CoD2-Unbound-Windows-Kit.zip --output /path/to/results
+   ```
+
+5. When done, remove the Mac public-key line you added and restore any SSH
+   start mode you changed. If you added the service for this test, run
+   `Stop-Service sshd` and
+   `Remove-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0` in an
+   administrator PowerShell. Check whether the installer-created
+   `OpenSSH-Server-In-TCP` rule remains and remove it if it was new.
+
+If the Mac loses the connection, keep the Windows run folder. Reuse the same
+driver command and Mac results folder. The kit still works from Windows
+PowerShell if the laptop cannot be reached.
+
+[Microsoft OpenSSH setup and removal](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse) ·
+[Windows public-key sign-in](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement)
 
 ## What ran in the Windows VM
 
-Windows PowerShell 5.1 ran the file and key checks, both loopback servers and the saved matches on a Windows 11 ARM64 VM with x64 emulation and a 640 × 480 software display. The saved matches passed for both editions, including the four-player checks in Part B. Original 1.3 loaded Toujane and saved pictures in both graphics modes. CoD2x stopped before opening a game window because the VM supplied no baseboard information. The laptop still needs both CoD2x runs and the checks for display changes, mouse, keyboard and sound.
-
-Run the kit's Setup on the Windows 11 x64 laptop and record any security warning. On Arm PCs, Setup shows a Windows on Arm page before installation. CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC. The VM reported an untrusted root for the test signature.
-
-The installed launcher opened from Start, finished Setup and started both installed game programs. A Windows Firewall prompt covered the Original 1.3 window. CoD2x showed no game window in this VM, which has no baseboard information. The VM saved launcher pictures at 640 × 480. Use the laptop to check both game menus, the larger layout, Mica and the Windows appearance settings.
-
-## Part A — The essential sitting
-
-Allow **45–60 minutes**, including **about 15–20 minutes** for automatic checks and **8–10 minutes** for the launcher. This assumes the game is already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
-
-The kit reads the installed game files and saves test settings and screenshots in a temporary folder under LocalAppData. CoD2x keeps this run apart from your saved Windows registry settings. The kit creates a temporary test key in **Credential Manager** and removes it and the temporary folder when it finishes. If you already have a key saved for **CoD2 Unbound**, the kit stops before replacing it. Use an account without a saved Unbound key in that case. The Setup check temporarily adds CoD2 Unbound to **Start** and **Installed apps** for your account, then removes it. If CoD2 Unbound is already installed, the Setup check stops before changing it. The dated results folder stays for you to review.
-
-Copy this whole folder to a writable folder on the PC. In File Explorer, open it, type `powershell` in the address bar and press Enter. Open PowerShell normally.
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Run-All.ps1
-```
-
-The programs have a test signature. If **Windows protected your PC** appears, select **More info**, check the file name, then select **Run anyway** if offered. Record a block such as **Smart App Control has blocked an app that may be unsafe** and leave Windows security settings as they are. [Microsoft SmartScreen guidance](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation)
-
-Allow about 10–15 minutes for the two portable runs and about 10 minutes for Setup and packing. Mark each box when it passes. At a script prompt, press Enter to go ahead or type S if it offers a skip. For a failure or skip, write what happened beside the step.
-
-1. [ ] **Start the checks.** Close CoD2 and Steam, disconnect Wi-Fi, Ethernet and VPN, run the command above and type `TEST`.\
-   **Expect (automatic)** The kit confirms the copy is complete and records your Windows version, graphics card, driver and Windows signature results.
-2. [ ] **Confirm the game folder.** Press Enter to use the folder shown, or paste the Call of Duty 2 folder that contains `main`.\
-   **Expect (automatic)** The game accepts a complete folder and saves settings in the test folder. It accepts the valid key from Windows and refuses the damaged key.
-3. [ ] **Let both servers run.** Wait while the script opens the servers and repeats the saved Toujane match in each.\
-   **Expect (automatic)** Both servers open Toujane, answer on this PC and close. Both saved matches play back as expected.
-4. [ ] **Original 1.3 · Direct3D 9.** Follow the play instructions below, including the quick controls and display check.\
-   **Expect** You can play Toujane, take both pictures and return to PowerShell.
-5. [ ] **CoD2x · Direct3D 9.** Follow the play instructions, including the quick controls and display check.\
-   **Expect** You can play Toujane, take both pictures and return to PowerShell.
-6. [ ] **Install, upgrade and repair.** In Setup choose **Install for me only** and keep the default folder. Leave the test server open while the kit checks the blocked upgrade.\
-   **Expect** Setup installs without asking for administrator approval. The first upgrade attempt leaves the running server alone. The kit then stops that server, upgrades Setup and restores the test file it removes.
-7. [ ] **Check the launcher · 8–10 minutes.** Look for **CoD2 Unbound** in Start. At the launcher prompt, press Enter to open the shortcut's app with a test profile. Finish Setup with the game folder you used earlier and the sample key shown in PowerShell. Follow the prompts to picture Home at your usual resolution and at **1440 × 900** if Windows offers it. In **Settings → Personalization → Colors** switch between Light and Dark. Then try one **Settings → Accessibility → Contrast themes** theme. Look at the title bar, the Mica background and the stencil lettering on Home. Restore your usual Windows settings. Use the launcher's **Settings** to choose **Original 1.3** and **CoD2x** in turn. Use **Launch** on Home and quit each game at its menu.\
-   At the sample config prompt, double-click **Sample config.cfg** in the kit folder and choose **Open with → CoD2 Unbound** if needed. Leave the import review open for the picture, then cancel it.\
-   **Expect** Setup opens Home, both game menus open and PowerShell saves pictures to the results folder. Answer **Does anything look wrong or unlike Windows?** in one line.
-8. [ ] **Uninstall.** Confirm the uninstall prompt, then look for CoD2 Unbound in **Start** and **Installed apps**.\
-    **Expect** Its entries are gone. The script confirms uninstall kept the test saves and key, then removes its temporary files and test key.
-9. [ ] **Pack the results.** Put your notes in the dated results folder. Review the logs and pictures, then run the packing command below and type `PACK`.\
-    **Expect** A `CoD2-Unbound-results-…zip` file appears next to the scripts. Bring back that ZIP.
-
-### Play each portable edition
-
-At the menu, open the game console with the key above Tab and enter `/toggleconsole; screenshotJpeg kit-menu`. Open it again, enter `/devmap mp_toujane`, select **Click to Continue** on the briefing, then pick a team and weapon, and play briefly. Press **F12** while playing to save the second picture. The briefing should be upright and the sky, buildings, weapon and HUD should look right. Check that the graphics options show the mode from the prompt. Use `/quit` to return to PowerShell.
-
-On each Direct3D 9 run, look around quickly, move and release the movement keys, and listen to footsteps and a shot. Aim and movement should feel steady and the sounds should be clear. Alt+Tab to the desktop and back. Use `/disconnect` to return to the menu before applying a different resolution in the graphics options. Reopen Toujane. The desktop should get its pointer back, and the picture and controls should return when you switch back or apply the resolution.
-
-### Pack the results
-
-Include the Windows warnings you saw and a note for any skipped step. Check for names, keys, device IDs and personal paths in the logs and screenshots. Keep licensed game files, private profiles, demos you have yet to review and memory dumps on the laptop.
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Pack-Results.ps1
-```
+Earlier Windows 11 Arm runs used Microsoft's software graphics with emulated
+x64 game programs. The copy with a mainboard ran both editions in both
+graphics modes, loaded the four stock maps and took pictures. It also
+exercised the shader compiler, full-screen switching, loopback routes,
+updating and interrupted-install recovery. The earlier machine without a
+mainboard could start only Original 1.3. The Windows software and Wine
+pictures in this kit come from those earlier runs. Check the hardware presentation,
+mouse feel, sound and Windows Security prompts on the actual laptop.
 
 ## Part B — Extras, when you have them
 
@@ -109,7 +156,8 @@ Use your own Call of Duty 2 version 1.3 disc installation with its original prog
 
 ## If something goes wrong
 
-- **Windows blocks a file.** Note its name, the exact message, Smart App Control’s setting and whether **Run anyway** was offered. A picture of the warning is enough.
-- **The game folder or key is rejected.** Check that `main` contains `iw_00.iwd` through `iw_15.iwd`. Note whether you used Steam, disc or a chosen folder. Leave any key prompt blank and keep keys out of notes and screenshots.
-- **The game goes black, loses sound or hangs.** Note the edition, graphics mode and last action. Save a picture if you can. Use **Task Manager** to close only the kit game or server that is stuck.
-- **Setup or PowerShell stops early.** Keep the results and exact warning. Use **Installed apps** to remove an install you started with this kit. If you know the kit added the entry, remove **CoD2 Unbound/CD Key** in **Credential Manager** under **Windows Credentials**. Delete only that run’s dated folder under `%LOCALAPPDATA%\CoD2 Unbound\Windows Kit` once its programs have closed.
+- Continue after a failed check. Keep the results and note the last thing on screen.
+- If a game is stuck behind a Windows prompt, read it and handle it at the laptop.
+- If PowerShell or the Mac disconnects, reuse the same run name and folders.
+- If cleanup reports a leftover, keep its result and close the test programs
+  before a second attempt. Keep existing CoD2 and Steam files where they are.

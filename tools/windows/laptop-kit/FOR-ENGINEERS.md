@@ -42,3 +42,32 @@ The `launcher` results include PNGs, display sizes and theme settings, filtered
 engine logs and what the tester saw when launching both editions. The script
 checks that uninstall preserves the test settings before removing the scratch.
 Part B covers layouts at larger scaling, snapping and keyboard and Narrator use.
+
+## Resumable laptop runner
+
+`Run-All.ps1` starts the updated essential run. Each directory under
+`results/<run>` has an atomic `result.json` with the label, disposition,
+elapsed seconds and explanation. A transport process can disconnect without
+ending the scheduled Windows worker. Changes require the exact response
+`YES`. An interrupted ordinary probe can be retried. An interrupted installer
+step retains evidence for cleanup before a new run. `-Extras` and `-LanOnly`
+use the existing independent controls.
+
+`drive.sh` uses OpenSSH public-key authentication with a pinned host key and
+bounded commands and transfers. Set `COD2_KIT_SSH_IDENTITY`,
+`COD2_KIT_SSH_PORT` or `COD2_KIT_SSH_KNOWN_HOSTS` to supply alternate values.
+The UTM backend is scoped to the existing scratch UUID and takes the SID of
+its already signed-in standard account through `--utm-sid`. Both run the same
+`Remote-Kit.ps1` scheduled task under an interactive Windows token. The Mac
+pulls a checksum-checked ZIP whose embedded receipt matches each finished
+step. Keep the same Mac output path to recover a pending download. Task
+registration is temporary. Windows security dialogs require the person in
+front of the laptop.
+
+The frame comparisons use the saved Toujane and Harbor demos from the
+earlier test runs. Metrics are RGB deltas at the sampled view, with the
+current image on the left and the named baseline on the right. Matching
+camera positions matter more than exact color. Wine's Harbor skies, distant
+water and fog already differed from the Windows software adapter. New driver
+differences can be legitimate. Review the paired PNG and console before
+calling a graphics fault.
