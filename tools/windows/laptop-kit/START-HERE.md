@@ -7,7 +7,8 @@ a key in Windows Credential Manager. Save your work before starting.
 
 ## Part A. The laptop sitting
 
-1. Unzip the kit into your own Windows folder. Close CoD2, Steam and apps that
+1. Unzip the kit into your own Windows folder, such as `%LOCALAPPDATA%\CoD2-Laptop-Kit`.
+   Close CoD2, Steam and apps that
    make sound. Disconnect from the internet. For the Mac route, keep only the
    isolated connection to the Mac. Leave the laptop signed in and unlocked.
 2. Open Windows PowerShell in the unzipped folder as your usual user. Start
@@ -68,9 +69,14 @@ the laptop screen during the run.
    `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0` before
    disconnecting the internet. This adds Microsoft's SSH server. Windows may
    also create an inbound SSH firewall rule.
-2. In the test user's normal PowerShell, save just the Mac's **public** key as
-   a new line in `$env:USERPROFILE\.ssh\authorized_keys`. Create the folder
-   if you need it. Keep the Mac's private key on the Mac.
+2. In the test user's normal PowerShell, create the key folder and add just
+   the Mac's **public** key. Replace the quoted example with the complete
+   line from your public key file. Keep the private key on the Mac.
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.ssh" | Out-Null
+   Add-Content -Encoding Ascii "$env:USERPROFILE\.ssh\authorized_keys" 'ssh-ed25519 YOUR_PUBLIC_KEY'
+   ```
 3. In administrator PowerShell run `Start-Service sshd`. The Mac must verify
    the SSH host key before the run. Compare the Mac's key fingerprint with
    `ssh-keygen -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"` at the PC.
