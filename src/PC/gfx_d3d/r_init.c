@@ -1472,12 +1472,6 @@ static void R_BeginRegistration_impl(vidConfig_t *vidConfigOut)
             d3dpp[2] = 0x15;
             d3dpp[3] = 1;
             d3dpp[6] = 1;
-#if defined(COD2_X64) && COD2_APPLE_SDK
-            {
-                extern const dvar_t *r_fullscreen;
-                d3dpp[7] = !(r_fullscreen && r_fullscreen->current.enabled);
-            }
-#endif
             d3dpp[8] = 0x4b;
             d3dpp[11] = 1;
 
@@ -1505,11 +1499,6 @@ static void R_BeginRegistration_impl(vidConfig_t *vidConfigOut)
 
 #if defined(COD2_X64)
     if (createResources) {
-#if COD2_APPLE_SDK
-        extern void *MacDisplay_GetMainWindow(void);
-        R_InitNativeDeviceCaps();
-        dx.windows[0].hwnd = (HWND)MacDisplay_GetMainWindow();
-#endif
         dx.windows[0].width = vidConfig.width;
         dx.windows[0].height = vidConfig.height;
         dx.windowCount = 1;
