@@ -114,6 +114,11 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     Stop-KitIfMissing $complete 'The launcher setup did not finish.'
     Stop-KitIfMissing $KeyMarker 'The sample key check was skipped.'
     Invoke-TestKey 'verify'
+    # A previous demo or match can rewrite the active profile's engine config.
+    # Start each connection route with the same setup completion and a new profile.
+    $LauncherHome = Join-Path $Private 'launcher-profile'
+    $settingsFolder = New-Folder (Join-Path $LauncherHome 'launcher')
+    Copy-Item -LiteralPath $complete -Destination $settingsFolder
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile $Edition 'dx9'
