@@ -31,6 +31,19 @@ function Find-KitHostedServer([string]$Name) {
     }
 }
 
+function Assert-KitHostedLookups([string]$Id, [DateTime]$Since) {
+    $folder = Join-Path $LauncherHome "hosting\servers\$Id\logs"
+    $logs = @(Get-ChildItem -LiteralPath $folder -File -Filter 'engine-*.log' |
+        Where-Object { $_.CreationTime -ge $Since -and $_.Length -gt 0 })
+    if (-not $logs.Count) { throw 'No engine log was captured for the launcher-hosted server.' }
+
+    $services = 'master|authoriz|authoris|updat'
+    $attempt = Select-String -LiteralPath $logs.FullName -Pattern (
+        "resolv.*(?:$services)|(?:$services).*resolv|(?:auto-updater:\s*)?checking for updates"
+    ) | Select-Object -First 1
+    if ($attempt) { throw ('The launcher-hosted server attempted an external lookup or update: ' + $attempt.Line) }
+}
+
 function Get-KitOwnedGame([string]$Edition, [DateTime]$Since, [int]$Session, [int]$Seconds = 45) {
     $exe = Get-Binary $Edition -Root $InstallRoot
     Wait-KitCondition {
@@ -324,6 +337,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 $launcher.Process.HasExited -and -not (Request-KitServer $port 'getstatus Kit')
             } 20 'the launcher and its hosted server to stop' | Out-Null
             'The launcher exited and the hosted server stopped answering.' | Add-Content -LiteralPath $closeTrace
+            Assert-KitHostedLookups $hosted.Id $since
         }
     } catch {
         Protect-KitText $_.Exception.Message | Set-Content -LiteralPath (Join-Path $Results 'operation-error.txt') -Encoding UTF8
