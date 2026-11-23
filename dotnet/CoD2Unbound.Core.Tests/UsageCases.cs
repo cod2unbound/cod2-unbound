@@ -16,7 +16,7 @@ internal static partial class Program
 
     private static void UsageCases()
     {
-        Usage("nothing before an answer, only setup steps on disk", async () =>
+        Usage("nothing recorded or written before an answer", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
@@ -28,37 +28,61 @@ internal static partial class Program
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.JournalFile, default));
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
-            string setup = Encoding.UTF8.GetString((await f.Disk.ReadAsync(UsageData.SetupFile, default))!.Value.AsSpan());
-            Equal(false, setup.Contains("Install", StringComparison.Ordinal));
-            Equal(false, setup.Contains("First", StringComparison.Ordinal));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
+            Equal(0, usage.QueuedCount);
             Equal(0, f.Captures.Count);
         });
-        Usage("restarted setup journal, consent ordering and held delivery", async () =>
+        Usage("yes in setup sends only consent and later steps, after setup finishes", async () =>
         {
             var f = new UsageFixture();
-            var before = await f.Start();
-            await before.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
-            f.Clock.Now += TimeSpan.FromMinutes(3);
             var usage = await f.Start();
             await usage.OpenedAsync();
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            await usage.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Home));
+            f.Clock.Now += TimeSpan.FromMinutes(3);
             Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist));
             await usage.RecordAsync(UsageEvent.Setup(SetupStep.Ready));
             await Task.Delay(40);
             Equal(0, f.Captures.Count);
-            Equal(4, usage.QueuedCount);
+            Equal(2, usage.QueuedCount);
             var install = usage.InstallNumber;
             await usage.HoldAsync(false);
             await Until(() => usage.QueuedCount == 0);
             var received = Events(f.Captures);
-            Sequence(new[] { "usage data turned on", "setup step reached", "app opened", "setup step reached" },
-                received.Select(Name));
-            Equal("2027-01-15T08:00:00Z", received[1].GetProperty("timestamp").GetString());
-            Equal("own files", Props(received[1]).GetProperty("source").GetString());
+            Sequence(new[] { "usage data turned on", "setup step reached" }, received.Select(Name));
+            Equal("setup", Props(received[0]).GetProperty("where").GetString());
+            Equal("Ready", Props(received[1]).GetProperty("step").GetString());
+            Equal("2027-01-15T08:03:00Z", received[1].GetProperty("timestamp").GetString());
             Equal(true, received.All(item => item.GetProperty("distinct_id").GetGuid() == install));
+            await usage.HoldAsync(true);
+        });
+        Usage("yes later in Settings never sends earlier setup or a legacy pre-consent file", async () =>
+        {
+            var f = new UsageFixture();
+            long minute = f.Clock.Now.ToUnixTimeSeconds() / 60;
+            string legacy = $$"""
+                {"SchemaVersion":1,"Items":[{"Minute":{{minute}},"Name":{{(int)SetupStep.Data}},"Skipped":false,"OwnFiles":true}]}
+                """;
+            await f.Disk.WriteAsync(UsageData.SetupFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+            var setup = await f.Start();
+            await setup.RecordAsync(UsageEvent.Setup(SetupStep.Key, skipped: true));
+            var usage = await f.Start(setup: false);
+            await usage.OpenedAsync();
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Privacy));
+            f.Clock.Now += TimeSpan.FromMinutes(3);
+            Equal(true, await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist));
+            await usage.RecordAsync(UsageEvent.Page(UsagePage.Display));
+            await Until(() => usage.QueuedCount == 0);
+            var received = Events(f.Captures);
+            Sequence(new[] { "usage data turned on", "screen opened" }, received.Select(Name));
+            Equal("settings", Props(received[0]).GetProperty("where").GetString());
+            Equal("Settings › Display", Props(received[1]).GetProperty("screen").GetString());
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             await usage.HoldAsync(true);
         });
-        Usage("no clears the pre-question journal and stays off", async () =>
+        Usage("no stays off across setup and restart", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
@@ -71,6 +95,24 @@ internal static partial class Program
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             Equal(0, f.Captures.Count);
+        });
+        Usage("legacy delivery journals drop setup events whose consent cannot be determined", async () =>
+        {
+            var f = new UsageFixture();
+            var first = await f.Start();
+            Equal(true, await first.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist));
+            await first.RecordAsync(UsageEvent.Setup(SetupStep.Data, ownFiles: true));
+            await first.RecordAsync(UsageEvent.Page(UsagePage.Home));
+            var stored = (await f.Disk.ReadAsync(UsageData.JournalFile, default))!.Value;
+            string legacy = Encoding.UTF8.GetString(stored.AsSpan())
+                .Replace("\"SchemaVersion\":2", "\"SchemaVersion\":1", StringComparison.Ordinal);
+            await f.Disk.WriteAsync(UsageData.JournalFile, [.. Encoding.UTF8.GetBytes(legacy)], default);
+
+            var usage = await f.Start();
+            await usage.HoldAsync(false);
+            await Until(() => usage.QueuedCount == 0);
+            Sequence(new[] { "usage data turned on", "screen opened" }, Events(f.Captures).Select(Name));
+            await usage.HoldAsync(true);
         });
         Usage("failed settings write and missing install stay inactive", async () =>
         {
@@ -85,7 +127,7 @@ internal static partial class Program
             Equal(true, usage.ShouldAsk);
             Equal<Guid?>(null, usage.InstallNumber);
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.JournalFile, default));
-            Equal(true, (await f.Disk.ReadAsync(UsageData.SetupFile, default)).HasValue);
+            Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             f.Saved = UsageConsent.Yes;
             Equal(UsageConsent.No, (await f.Start()).Consent);
             Equal(0, f.Captures.Count);
@@ -104,17 +146,17 @@ internal static partial class Program
             Equal<ImmutableArray<byte>?>(null, await f.Disk.ReadAsync(UsageData.SetupFile, default));
             Equal(0, f.Captures.Count);
         });
-        Usage("app opened once per UTC day across restarts and resets", async () =>
+        Usage("consented app opens count once per UTC day across restarts and resets", async () =>
         {
             var f = new UsageFixture();
             var first = await f.Start(setup: false);
-            await first.OpenedAsync();
             await first.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
             await Until(() => first.QueuedCount == 0);
             await first.HoldAsync(true);
             var same = await f.Start(setup: false);
             await same.OpenedAsync();
             await same.OpenedAsync();
+            await Until(() => same.QueuedCount == 0);
             Equal(0, same.QueuedCount);
             Equal(true, await same.ResetAsync());
             await same.OpenedAsync();
@@ -185,15 +227,10 @@ internal static partial class Program
             await Until(() => off.QueuedCount == 0);
             await off.HoldAsync(true);
         });
-        Usage("setup and send caps, expiry, FIFO batching", async () =>
+        Usage("send caps, expiry, FIFO batching", async () =>
         {
             var f = new UsageFixture();
             var usage = await f.Start();
-            for (int i = 0; i < UsageData.SetupLimit + 3; i++)
-                await usage.RecordAsync(UsageEvent.Setup(SetupStep.Welcome));
-            var bytes = (await f.Disk.ReadAsync(UsageData.SetupFile, default))!.Value;
-            using var setup = JsonDocument.Parse(bytes.AsMemory());
-            Equal(UsageData.SetupLimit, setup.RootElement.GetProperty("Items").GetArrayLength());
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Setup, f.Persist);
             f.Clock.Now += TimeSpan.FromDays(8);
             for (int i = 0; i < UsageData.QueueLimit + 8; i++)
@@ -215,8 +252,8 @@ internal static partial class Program
                 "AA-BB-CC-DD-EE-FF", "95fcdc44-36ef-49f8-9726-bce60a27bc47", "PHYSIC-SERIAL123"];
             var f = new UsageFixture();
             var usage = await f.Start();
-            await usage.OpenedAsync();
             await usage.SetConsentAsync(UsageConsent.Yes, UsageSource.Settings, f.Persist);
+            await usage.OpenedAsync();
             var signed = SignedUsageCatalogue();
             string setupId = signed.Index.Entries.Single().Id;
             foreach (string value in hostile)
