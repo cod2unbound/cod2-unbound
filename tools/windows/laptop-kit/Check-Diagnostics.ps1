@@ -43,7 +43,7 @@ function Invoke-KitShaderTable {
     # shader sources are extracted into scratch and stay on the Windows PC.
     $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     $requests = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-    $pattern = '(?i)(vertexShader|pixelShader)\s+(\d+)\.(\d+)\s+"([A-Za-z0-9_]+)"'
+    $pattern = '(?i)(vertexShader|pixelShader)\s+(\d+)\.(\d+)\s+"([A-Za-z0-9_][A-Za-z0-9_.-]*)"'
     $prefix = 'materials/shaders/'
     foreach ($iwd in Get-ChildItem -LiteralPath (Join-Path $GamePath 'main') -Filter '*.iwd' -File | Sort-Object Name -Descending) {
         $archive = [IO.Compression.ZipFile]::OpenRead($iwd.FullName)

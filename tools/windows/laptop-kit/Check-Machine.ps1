@@ -18,7 +18,9 @@ function Save-Signatures([string[]]$Paths, [string]$Destination) {
     $signed = foreach ($path in $Paths) {
         $signature = Get-AuthenticodeSignature -LiteralPath $path
         [pscustomobject]@{
-            File = Split-Path $path -Leaf
+            File = if ($path.StartsWith($Kit, [StringComparison]::OrdinalIgnoreCase)) {
+                $path.Substring($Kit.Length + 1)
+            } else { Split-Path $path -Leaf }
             Status = $signature.Status.ToString()
             Signed = $null -ne $signature.SignerCertificate
             Timestamped = $null -ne $signature.TimeStamperCertificate
@@ -63,7 +65,9 @@ function Save-Machine {
     $setup = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -Recurse -File -Filter 'CoD2-Unbound-*' |
         Where-Object Extension -in '.exe','.cat')
     $portable = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'portable') -Recurse -File -Filter 'cod2_win32*.exe')
-    Save-Signatures ($setup.FullName + $portable.FullName) (Join-Path $log.Evidence 'signatures.json')
+    $probes = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'probes') -Recurse -File |
+        Where-Object Extension -in '.exe','.dll')
+    Save-Signatures ($setup.FullName + $portable.FullName + $probes.FullName) (Join-Path $log.Evidence 'signatures.json')
     $zip = Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -File -Filter 'CoD2-Unbound-*-server.zip'
     $cat = [IO.Path]::ChangeExtension($zip.FullName, '.cat')
     $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash
