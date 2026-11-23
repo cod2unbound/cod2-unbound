@@ -236,7 +236,7 @@ public sealed partial class SettingsPage : Page
             var usage = PrivacySwitch(PrivacyPresentation.UsageSwitch, reports.Usage.InstallNumber is not null, "U",
                 value => session.SetUsageAsync(value, UsageSource.Settings));
             Row(PrivacyPresentation.UsageSwitch,
-                "Which screens and features you use, how long games ran and the choices you pick, with your PC’s model and hardware, the app version and your Windows version, to PostHog in the EU. PostHog can work out your location from your network address. Never your name, CD key, servers or configs.",
+                "Which screens and features you use, how long games ran and the choices you pick, with your PC’s model and hardware, versions and country, to PostHog in the EU. Never your name, CD key, servers or configs.",
                 Buttons(PrivacyPresentation.PreviewButton(false, "W", shell, reports), usage));
             if (reports.Usage.InstallNumber is { } id)
             {

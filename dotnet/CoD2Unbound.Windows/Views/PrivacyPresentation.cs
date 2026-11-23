@@ -28,14 +28,14 @@ internal static class PrivacyPresentation
     [
         ("What a report holds", "What failed and when, which game version crashed, the app’s version, your Windows version, your PC’s model and the report the game wrote when it stopped."),
         ("What it never holds", "No name, no account and no CD key. The crash report leaves out your Windows user name and command lines. The launcher asks Sentry to leave your network address out of the report."),
-        ("Where it goes", "To this project’s report service, Sentry. Sending requires crash reporting to be on when the game starts and when it crashes.")
+        ("Where it goes", "To this project’s report service, Sentry, hosted in the EU. A report is sent only if crash reports are on when the game starts and when it crashes.")
     ];
 
     private static readonly (string, string)[] UsageRows =
     [
-        ("What is sent", "That you opened the launcher, which screens you open and what you use there, such as setup steps, the games you start (game version and graphics settings) and how long they ran, starting the game to join a server, the player setups you view or import, and the settings you change. For some settings, it also sends the choice you pick from a set list. With the time to the minute, the app’s version, your Windows version, your PC’s model and hardware (processor, memory and graphics card), your display and your system language. PostHog can work out your location from your network address."),
-        ("What never is", Never + " The launcher leaves your network address out of the events."),
-        ("Where it goes", "To this project’s PostHog service, hosted in the EU. A random install number made on this PC links your sessions; turning this off forgets it.")
+        ("What is sent", "That you opened the launcher, which screens you open and what you use there, such as setup steps, the games you start (game version and graphics settings) and how long they ran, starting the game to join a server, the player setups you view or import, and the settings you change. For some settings, it also sends the choice you pick from a set list. With the time to the minute, the app’s version, your Windows version, your PC’s model and hardware (processor, memory and graphics card), your display, your system language and the country you connect from."),
+        ("What never is", Never + " Your network address is used once to work out your country, then discarded; nothing finer than the country is kept."),
+        ("Where it goes", "To PostHog, a service hosted in the EU, where only this project can see it. A random install number made on this PC links your sessions; turning this off forgets it.")
     ];
 
     private static readonly (string, string)[] UsagePreviewRows =
@@ -49,7 +49,7 @@ internal static class PrivacyPresentation
         ("Updates", "Each update offered, and each step as it downloads, is checked, becomes ready and installs, with the version you had and the new one."),
         ("Settings", "Which settings you change, by name. For some settings with a set list of choices, such as a switch, the game version, appearance, display mode or graphics, also the choice you pick. Never what you type into a field."),
         ("Problems", "Errors the launcher shows you, by kind, such as “the game couldn’t start”."),
-        ("This PC, your country", "The app’s version, your Windows version, your PC’s model, its processor (name and number of logical processors), whether the PC and launcher are x64 or Arm, its memory in GB, its graphics card (name, memory in GB and driver version), your display’s size and refresh rate, and your system language. PostHog can work out your country and more specific location from your network address."),
+        ("This PC, your country", "The app’s version, your Windows version, your PC’s model, its processor (name and number of logical processors), whether the PC and launcher are x64 or Arm, its memory in GB, its graphics card (name, memory in GB and driver version), your display’s size and refresh rate, your system language, and the country your connection comes from (worked out from your network address, which is then discarded)."),
         ("With every event", "The time, to the minute; a random number for the event; and the install number. Each event has a name, identifies the launcher and asks PostHog to skip person profiles. When you say yes, also where: in setup or in Settings."),
         ("Never", "Your name, your PC’s name or serial numbers, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.")
     ];

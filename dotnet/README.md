@@ -274,9 +274,11 @@ emulation. For the one graphics card
 Windows prefers for high performance it includes the name, dedicated memory in
 whole GB rounded down, and the driver version when available. It includes the
 display’s size and refresh rate. The launcher requests that PostHog skip person
-profiles and leaves the network address out of event fields. PostHog can work
-out the country and finer location from the connection address. Its project
-settings determine which location data and addresses it retains. Switching
+profiles and leaves the network address out of event fields. The project’s
+PostHog settings discard the connection address after working out the country
+from it, and a second step there blanks every finer location field, so only the
+country is kept. Those are service settings, not code: check them in the
+project before relying on this text. Switching
 usage data off clears the install number and unsent events on this PC.
 
 Usage data excludes your name, the PC’s name or serial numbers, the board’s UUID,
