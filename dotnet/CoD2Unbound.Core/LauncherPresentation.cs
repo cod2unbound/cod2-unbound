@@ -120,8 +120,24 @@ public static class LauncherText
     public static string MaskedKey(string lastFour) => "•••• •••• •••• •••• " + lastFour.ToUpperInvariant();
 }
 
+public enum NewsDestination { None, Configs, Servers, Library, Updates, Browser }
+
 public sealed record NewsDispatch(string Stamp, string Title, string Summary, string? Link = null,
-    DateTimeOffset? Date = null, string? Version = null, string? Open = null);
+    DateTimeOffset? Date = null, string? Version = null, string? Open = null)
+{
+    public NewsDestination Destination => Open switch
+    {
+        "configs" => NewsDestination.Configs,
+        "servers" => NewsDestination.Servers,
+        "library" => NewsDestination.Library,
+        "updates" => NewsDestination.Updates,
+        _ when Version is not null => NewsDestination.Updates,
+        _ when BrowserLink is not null => NewsDestination.Browser,
+        _ => NewsDestination.None
+    };
+
+    public Uri? BrowserLink => NewsFeed.SafeLink(Link);
+}
 
 public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? Next)
 {
@@ -173,7 +189,7 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
                     items.Add(dispatch with { Date = date, Stamp = LauncherText.StencilDay(date) });
             }
         }
-        return new([.. items.OrderByDescending(item => item.Date).Take(5)], Dispatch(Value(json.RootElement, "next")));
+        return new([.. items.OrderByDescending(item => item.Date).Take(12)], Dispatch(Value(json.RootElement, "next")));
     }
 
     public static ImmutableArray<NewsDispatch> Home(string version, IEnumerable<ReleaseDispatch> releases,
@@ -183,12 +199,12 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
         var own = available.FirstOrDefault(item => item.Version == version || item.Title == version ||
             item.Title.EndsWith(" " + version, StringComparison.Ordinal)) ?? new("NOW", "CoD2 Unbound " + version,
                 "What changed in this version is in the release notes.", "https://github.com/cod2unbound/cod2-unbound/releases", Version: version);
-        int limit = rows <= 1 ? 1 : rows - (next is null ? 0 : 1);
-        var visible = available.Concat(news).Where(item => item.Date is not null && item != own).Append(own)
-            .OrderByDescending(item => item.Date).Take(limit).ToList();
-        if (!visible.Contains(own))
-            visible[^1] = own;
-        if (next is not null)
+        int limit = Math.Max(0, rows - (next is null ? 0 : 1));
+        var visible = available.Concat(news).Where(item => item.Date is not null).OrderByDescending(item => item.Date)
+            .Take(limit).ToList();
+        if (visible.Count < limit && !visible.Contains(own))
+            visible.Add(own);
+        if (rows > 0 && next is not null)
             visible.Add(next);
         return [.. visible];
     }
@@ -203,13 +219,15 @@ public sealed record NewsFeed(ImmutableArray<NewsDispatch> Items, NewsDispatch? 
         if (title.Length == 0)
             return null;
         string? link = Text(item, "link"), open = Text(item, "open");
-        if (link is not { Length: <= 256 } || !link.StartsWith("https://github.com/", StringComparison.Ordinal) ||
-            link.Any(char.IsWhiteSpace) || !Uri.TryCreate(link, UriKind.Absolute, out var parsed) ||
-            !parsed.IsDefaultPort || parsed.Host != "github.com" || parsed.UserInfo.Length != 0 || link.Contains('\\'))
-            link = null;
+        link = SafeLink(link)?.OriginalString;
         return new("NEXT", title, Flatten(Text(item, "summary"), 160), link, Open:
             open is "configs" or "servers" or "library" or "updates" ? open : null);
     }
+
+    internal static Uri? SafeLink(string? link) =>
+        link is { Length: <= 256 } && link.StartsWith("https://github.com/", StringComparison.Ordinal) &&
+        !link.Any(char.IsWhiteSpace) && !link.Contains('\\') && Uri.TryCreate(link, UriKind.Absolute, out var parsed) &&
+        parsed.IsDefaultPort && parsed.Host == "github.com" && parsed.UserInfo.Length == 0 ? parsed : null;
 
     private static string Flatten(string? raw, int limit)
     {

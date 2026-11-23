@@ -10,9 +10,13 @@ namespace CoD2Unbound.Core;
 public sealed record ReleaseDispatch(string Stamp, string Title, string Summary, string? Link, DateTimeOffset? Date, string? Version);
 public sealed record ReleaseAsset(string Name, long Size, Uri Url);
 public sealed record ReleaseNoteItem(string Tag, string Title, string Detail);
+public sealed record ReleaseDetails(string Version, string? Link, ImmutableArray<ReleaseNoteItem> Notes);
 public sealed record ReleaseFeed(ImmutableArray<ReleaseDispatch> Dispatches, string? LatestVersion,
     ImmutableArray<ReleaseAsset> LatestAssets, ImmutableArray<ReleaseNoteItem> LatestNotes, Uri? LatestUrl = null,
-    bool ListedByGitHub = true);
+    bool ListedByGitHub = true)
+{
+    public ImmutableArray<ReleaseDetails> Details { get; init; } = [];
+}
 
 public static partial class ReleaseNotes
 {
@@ -74,7 +78,7 @@ public static partial class ReleaseNotes
                 var day = TimeZoneInfo.ConvertTime(value, timeZone ?? TimeZoneInfo.Utc);
                 stamp = FormattableString.Invariant($"{day.Day:00} {Months[day.Month - 1]}");
             }
-            string? link = ReleaseLink(release.HtmlUrl)?.OriginalString;
+            string? link = BrowserLink(release.HtmlUrl)?.OriginalString;
             dispatches.Add(new(stamp, title.Length == 0 ? $"CoD2 Unbound {Version(tag)}" : title, Summary(release.Body ?? ""), link,
                 date, tag.Length == 0 ? null : Version(tag)));
         }
@@ -86,10 +90,14 @@ public static partial class ReleaseNotes
                 assets.Add(new(name, GameSettingsJson.Integer(size), url));
 
         return new(dispatches.ToImmutable(), latest?.Tag is { } latestTag ? Version(latestTag) : null,
-            assets.ToImmutable(), Items(latest?.Body ?? ""), ReleaseLink(latest?.HtmlUrl));
+            assets.ToImmutable(), Items(latest?.Body ?? ""), BrowserLink(latest?.HtmlUrl))
+        {
+            Details = [.. releases.Where(release => !string.IsNullOrWhiteSpace(release.Tag)).Select(release =>
+                new ReleaseDetails(Version(release.Tag!), BrowserLink(release.HtmlUrl)?.AbsoluteUri, Items(release.Body ?? "")))]
+        };
     }
 
-    private static Uri? ReleaseLink(string? link) => link is { Length: <= 256 } && Uri.TryCreate(link, UriKind.Absolute, out var url)
+    public static Uri? BrowserLink(string? link) => link is { Length: <= 256 } && Uri.TryCreate(link, UriKind.Absolute, out var url)
         && ReleasePackage.IsProjectLink(url) ? url : null;
 
     public static string Version(string tag) => Prefix(TrimHorizontal(tag).TrimStart('v', 'V'), 32);
