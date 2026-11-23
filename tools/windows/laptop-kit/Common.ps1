@@ -12,14 +12,23 @@ function Assert-Offline {
 function Assert-StandardUser {
     $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
     if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64' -or -not [Environment]::Is64BitProcess -or
-        [int]$version.CurrentBuildNumber -lt 22000) {
-        throw 'Use 64-bit Windows PowerShell on Windows 11 x64.'
+        [int]$version.CurrentBuildNumber -lt 19041) {
+        throw 'Use 64-bit Windows PowerShell on Windows 10 (22H2) or Windows 11, on an x64 PC. The minimum Windows build is 19041.'
     }
     $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         throw 'Open PowerShell normally from File Explorer, without choosing Run as administrator.'
     }
     Assert-Offline
+}
+
+function Get-KitWindowsVersion {
+    $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+    # Windows 11 can still report "Windows 10" in the registry's ProductName.
+    $family = if ([int]$version.CurrentBuildNumber -ge 22000) { 'Windows 11' } else { 'Windows 10' }
+    $release = if ($version.DisplayVersion) { $version.DisplayVersion } else { $version.ReleaseId }
+    [pscustomobject]@{ Family = $family; Release = $release; Edition = $version.EditionID
+        Build = "$($version.CurrentBuildNumber).$($version.UBR)" }
 }
 
 function New-KitLock {

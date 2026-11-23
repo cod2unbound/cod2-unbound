@@ -1,4 +1,4 @@
-CoD2 Unbound dedicated server for Windows 11 x64
+CoD2 Unbound dedicated server for x64 PCs running Windows 10 (22H2) or Windows 11
 ================================================
 
 On Arm PCs: CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC.

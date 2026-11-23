@@ -29,10 +29,10 @@ function Save-Signatures([string[]]$Paths, [string]$Destination) {
 
 function Save-Machine {
     $log = New-RunContext 'computer'
-    $version = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+    $version = Get-KitWindowsVersion
     $gpu = @(Get-CimInstance -ClassName Win32_VideoController |
         Select-Object Name, DriverVersion, CurrentHorizontalResolution, CurrentVerticalResolution)
-    [ordered]@{ Windows = $version.DisplayVersion; Build = "$($version.CurrentBuildNumber).$($version.UBR)"
+    [ordered]@{ Windows = $version.Release; Family = $version.Family; Edition = $version.Edition; Build = $version.Build
         Graphics = $gpu; PowerShell = $PSVersionTable.PSVersion.ToString() } |
         ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $log.Evidence 'windows-and-graphics.json') -Encoding UTF8
     $raw = Join-Path $log.Folder 'dxdiag.txt'

@@ -97,7 +97,8 @@ along with snapshot times received by only one side.
 
 `-DCOD2_WIN32_D3D9=ON` makes the client create a real Direct3D 9 device on its SDL window, as
 Windows 1.3 does, with no OpenGL context. It compiles the game's own HLSL from `main/` at material
-load with `D3DCompile` from `d3dcompiler_47.dll` (then `_46`, `_43`), which Windows 10 and 11 ship.
+load with `D3DCompile` from `d3dcompiler_47.dll`, which Windows 10 (22H2) and Windows 11 ship. The loader
+also tries `d3dcompiler_46.dll` and `d3dcompiler_43.dll` when present.
 
 Previous x86_64 runtime checks covered these configurations.
 
@@ -185,7 +186,10 @@ Retail 1.3 has the same disconnect and packet limit.
 `-DCOD2_WIN32_LEGACY=ON` builds the non-`COD2_X64` branches with the 32-bit data blobs. It links and
 boots, but compiles stale logic: collision, menus, HUD and more differ from Windows 1.3.
 
-## Windows 11 x64 releases
+## Windows releases
+
+The release targets x64 PCs running Windows 10 (22H2) or Windows 11.
+Setup and the launcher use build 19041 as their minimum.
 
 From a clean checkout, run `COD2_WINDOWS_COMPANY='Publisher name' tools/windows/release.sh layout`.
 This stages both dedicated servers and both system Direct3D 9 clients under the

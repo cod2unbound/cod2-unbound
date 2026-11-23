@@ -1,4 +1,4 @@
-# CoD2 Unbound Windows 11 laptop check
+# CoD2 Unbound Windows laptop check
 
 This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays version 0.4.0. The 0.3.9 test installer gives Setup an older version to upgrade.
 
@@ -6,13 +6,13 @@ This kit checks Original 1.3 and CoD2x for the Windows release. Setup displays v
 
 Windows PowerShell 5.1 ran the file and key checks, both loopback servers and the saved matches on a Windows 11 ARM64 VM with x64 emulation and a 640 × 480 software display. The saved matches passed for both editions, including the four-player checks in Part B. Original 1.3 loaded Toujane and saved pictures in both graphics modes. CoD2x stopped before opening a game window because the VM supplied no baseboard information. The laptop still needs both CoD2x runs and the checks for display changes, mouse, keyboard and sound.
 
-Run the kit's Setup on the Windows 11 x64 laptop and record any security warning. On Arm PCs, Setup shows a Windows on Arm page before installation. CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC. The VM reported an untrusted root for the test signature.
+Run the kit's Setup on an x64 laptop running Windows 10 (22H2) or Windows 11 and record any security warning. On Arm PCs, Setup shows a Windows on Arm page before installation. CoD2 Unbound has not been tested on Arm PCs. It runs here through Windows' x64 emulation and may not work as well as on an x64 PC. The VM reported an untrusted root for the test signature.
 
 The installed launcher opened from Start, finished Setup and started both installed game programs. A Windows Firewall prompt covered the Original 1.3 window. CoD2x showed no game window in this VM, which has no baseboard information. The VM saved launcher pictures at 640 × 480. Use the laptop to check both game menus, the larger layout, Mica and the Windows appearance settings.
 
 ## Part A — The essential sitting
 
-Allow **45–60 minutes**, including **about 15–20 minutes** for automatic checks and **8–10 minutes** for the launcher. This assumes the game is already installed. Use one **Windows 11 x64** PC, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
+Allow **45–60 minutes**, including **about 15–20 minutes** for automatic checks and **8–10 minutes** for the launcher. This assumes the game is already installed. Use one **x64 PC running Windows 10 (22H2) or Windows 11**, your **ordinary Windows account**, a licensed Steam or disc installation of Call of Duty 2, and at least 5 GB free. Your usual keyboard, pointer and speakers are enough.
 
 The kit reads the installed game files and saves test settings and screenshots in a temporary folder under LocalAppData. CoD2x keeps this run apart from your saved Windows registry settings. The kit creates a temporary test key in **Credential Manager** and removes it and the temporary folder when it finishes. If you already have a key saved for **CoD2 Unbound**, the kit stops before replacing it. Use an account without a saved Unbound key in that case. The Setup check temporarily adds CoD2 Unbound to **Start** and **Installed apps** for your account, then removes it. If CoD2 Unbound is already installed, the Setup check stops before changing it. The dated results folder stays for you to review.
 
