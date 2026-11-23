@@ -6,6 +6,9 @@
 #endif
 #include "imports.h"
 #include "r_cod2x_film.h"
+#if COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9
+#include "win32/win_frame_trace.h"
+#endif
 #if defined(COD2_X64) && (defined(__APPLE__) || COD2_WINDOWS_NATIVE)
 #include "platform/macos_system.h"
 extern float MacFeatures_GetCPUSpeedInGHz(void);
@@ -1033,7 +1036,14 @@ static void RB_EndFrame_real(void)
             MacFrameTrace_PresentBegin();
         }
 #endif
+#if COD2_WINDOWS_NATIVE
+        uint64_t presentStart = Win_FrameTraceActive ? Win_FrameTraceBegin() : 0;
+#endif
         hr = ((HRESULT(D3DVTCC *)(void *, void *, void *, void *, void *))(vtable[0x44 / 4]))(device, NULL, NULL, NULL, NULL);
+#if COD2_WINDOWS_NATIVE
+        if (presentStart && hr == 0)
+            Win_FrameTraceEnd(presentStart);
+#endif
     }
 #else
         hr = ((HRESULT(D3DVTCC *)(void *, void *, void *, void *, void *))(vtable[0x44 / 4]))(device, NULL, NULL, NULL, NULL);
