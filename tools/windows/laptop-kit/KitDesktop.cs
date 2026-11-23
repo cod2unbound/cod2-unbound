@@ -59,6 +59,9 @@ public static class KitDesktop {
 
     [DllImport("user32.dll")] public static extern bool GetClipCursor(out Rect r);
     [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point p);
+    [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr window, ref Point point);
+    [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern bool PostMessage(IntPtr w,uint msg,IntPtr a,IntPtr b);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder b,int n);
     [StructLayout(LayoutKind.Explicit,Size=220)] struct Mode {
@@ -116,6 +119,16 @@ public static class KitDesktop {
     }
     public static void ClickButton(bool up) {
         Send(new Input { value=new Payload { mouse=new Mouse { flags=up?4u:2u } } });
+    }
+    public static void ClickGameContinue(IntPtr window) {
+        if (GetForegroundWindow() != window) throw new InvalidOperationException("The game needs focus.");
+        Rect client;
+        if (!GetClientRect(window, out client)) throw new InvalidOperationException("No game client area.");
+        var point = new Point { X=(int)(client.R * 0.75), Y=(int)(client.B * 0.892) };
+        if (!ClientToScreen(window, ref point) || !SetCursorPos(point.X, point.Y))
+            throw new InvalidOperationException("Could not position the cursor in the game.");
+        ClickButton(false);
+        try { Thread.Sleep(85); } finally { ClickButton(true); }
     }
     [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
     private struct ShellRequest {

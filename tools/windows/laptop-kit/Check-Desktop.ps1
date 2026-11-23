@@ -76,12 +76,49 @@ function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [s
     Save-KitDesktop $Window (Join-Path $Evidence "$Name-desktop.png")
 }
 
-function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer) {
-    $log = Join-Path $GameHome 'main\console_mp.log'
+function Enter-KitPlay([IntPtr]$Window) {
+    Focus-KitWindow $Window
+    [KitDesktop]::ClickGameContinue($Window)
+    Start-Sleep -Milliseconds 900
+    foreach ($key in 13,50,49,49,49) {
+        Focus-KitWindow $Window
+        [KitDesktop]::Tap($key)
+        Start-Sleep -Milliseconds 650
+    }
+}
+
+function Enable-KitGameConsole([IntPtr]$Window, [string]$GameHome, [string]$Evidence) {
+    $console = Join-Path $GameHome 'main\console_mp.log'
+    if (Test-Path -LiteralPath $console) {
+        if (Select-String -LiteralPath $console -SimpleMatch 'Working directory:' -Quiet) { return $console }
+    }
+    # The player entry point need not start with disk logging on. Save the
+    # existing engine console before enabling logging for the rest of this run.
+    $boot = Join-Path $GameHome 'main\kit-boot.txt'
+    if (Test-Path -LiteralPath $boot) { Remove-Item -LiteralPath $boot }
+    Focus-KitWindow $Window
+    [KitDesktop]::Tap(27)
+    Start-Sleep -Seconds 2
+    Send-KitCommand $Window '/toggleconsole; condump kit-boot.txt; set logfile 2; logfile'
     Wait-KitCondition {
-        (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
-    } 40 'the startup log' | Out-Null
-    if (-not (Select-String -LiteralPath $log -SimpleMatch "Using Direct3D $($Renderer.Substring(2)) code path" -Quiet)) {
+        (Test-Path -LiteralPath $boot) -and (Test-Path -LiteralPath $console)
+    } 18 'the engine console dump and disk log' | Out-Null
+    $output = Join-Path $Evidence 'boot-console.txt'
+    Save-Text $boot $output
+    $output
+}
+
+function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer, [switch]$FromLauncher) {
+    $log = Join-Path $GameHome 'main\console_mp.log'
+    $boot = $log
+    if ($FromLauncher) {
+        $boot = Enable-KitGameConsole $Window $GameHome $Evidence
+    } else {
+        Wait-KitCondition {
+            (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
+        } 40 'the startup log' | Out-Null
+    }
+    if (-not (Select-String -LiteralPath $boot -SimpleMatch "Using Direct3D $($Renderer.Substring(2)) code path" -Quiet)) {
         throw "The engine did not report $(Get-GraphicsMode $Renderer)."
     }
     Focus-KitWindow $Window
@@ -99,11 +136,7 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
         } 55 "$map to load" | Out-Null
         if ($map -ne 'restart') {
             Start-Sleep -Seconds 2
-            foreach ($key in 13,50,49,49,49) {
-                Focus-KitWindow $Window
-                [KitDesktop]::Tap($key)
-                Start-Sleep -Milliseconds 650
-            }
+            Enter-KitPlay $Window
         }
         Save-KitFrame $Window $GameHome $Evidence "kit-$map"
         if ($map -eq 'mp_toujane') {
@@ -116,6 +149,12 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
             [KitDesktop]::ClickButton($false)
             try { Start-Sleep -Milliseconds 450 } finally { [KitDesktop]::ClickButton($true) }
             Send-KitCommand $Window '/toggleconsole; viewpos'
+            $views = @(Select-String -LiteralPath $log -Pattern '^\(-?\d+ -?\d+ -?\d+\) : -?\d+\s*$' |
+                Select-Object -Last 2 -ExpandProperty Line)
+            $views | Add-Content -LiteralPath $notes
+            if ($views.Count -lt 2 -or $views[0] -eq $views[1]) {
+                'The recorded position and heading did not change after input.' | Add-Content -LiteralPath $notes
+            }
             Save-KitFrame $Window $GameHome $Evidence 'kit-after-input'
             if ($script:RecordKitAudio) {
                 try { Invoke-KitAudio $Window $Evidence }

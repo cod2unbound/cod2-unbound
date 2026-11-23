@@ -84,9 +84,10 @@ function Invoke-KitOpenDemo([string]$Edition) {
         Invoke-KitControl $app 'Play demo' -Name
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
+        $boot = Enable-KitGameConsole $window $LauncherHome $Results
         $console = Join-Path $LauncherHome 'main\console_mp.log'
         Wait-KitCondition {
-            (Test-Path -LiteralPath $console) -and (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
+            Select-String -LiteralPath @($boot,$console) -SimpleMatch 'CL_InitCGame:' -Quiet
         } 40 'game demo playback' | Out-Null
         Save-KitFrame $window $LauncherHome $Results 'kit-shell-demo'
     } finally {
@@ -157,14 +158,15 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             'list' {
                 Invoke-KitControl $app 'All' -Name
                 Invoke-KitControl $app 'RefreshButton'
-                Invoke-KitControl $app 'Kit-Loopback' -Name
+                # The only fixture result is selected by the browser. Its TextBlock has no action.
+                Wait-KitCondition { Find-KitControl $app 'Kit-Loopback' -Name } 25 'the loopback server in the list' | Out-Null
                 Invoke-KitControl $app 'JoinButton'
             }
             'hosting' {
                 Invoke-KitControl $app 'Hosting' -Name
-                Invoke-KitControl $app 'New server' -Name
+                Invoke-KitControl $app 'New Server' -Name
                 Set-KitEdit $app 'Server name' 'Kit host' -Name
-                Invoke-KitControl $app 'Start server' -Name
+                Invoke-KitControl $app 'Start Server' -Name
                 $port = 28960
                 Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match '\\sv_hostname\\Kit host' } 45 'the launcher-hosted server' | Out-Null
                 Invoke-KitControl $app 'Join' -Name
@@ -174,11 +176,16 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         $window = Get-KitGameWindow $game
         $reply = Wait-KitCondition {
             $status = Request-KitServer $port 'getstatus Kit'
-            if ($status -match '(?m)^-?\d+ +\d+ +".*"') { $status }
+            if ($status -match '(?m)^-?\d+ +(\d+) +".*"' -and [int]$Matches[1] -lt 999) { $status }
         } 50 'a player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
         if ($Route -eq 'connect') {
+            Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
+            Enter-KitPlay $window
             Send-KitCommand $window '/toggleconsole; record kit-match'
+            Wait-KitCondition {
+                Select-String -LiteralPath $console -SimpleMatch 'recording to demos' -Quiet
+            } 14 'the game to begin recording the demo' | Out-Null
             Start-Sleep -Seconds 5
             Send-KitCommand $window '/toggleconsole; stoprecord'
             $demo = Join-Path $LauncherHome 'main\demos\kit-match.dm_1'
@@ -194,6 +201,10 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         if ($Route -eq 'hosting') {
             Invoke-KitControl $app 'Stop server' -Name
             Wait-KitCondition { -not (Request-KitServer $port 'getstatus Kit') } 15 'Hosting to stop' | Out-Null
+            $logs = Join-Path $LauncherHome 'hosting\servers'
+            foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
+                if ($file.LastWriteTime -ge $since) { Save-Text $file.FullName (Join-Path $Results $file.Name) }
+            }
         }
     } finally {
         Stop-KitOwnedGame $game $window

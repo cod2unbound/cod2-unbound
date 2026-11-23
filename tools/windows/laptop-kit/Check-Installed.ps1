@@ -69,6 +69,8 @@ function Set-KitLauncherProfile([string]$Edition, [string]$Renderer) {
         hideWhilePlaying=$false; rawMouse=$true
         advanced="net_ip 127.0.0.1`nnet_noipx 1`nnet_lanauthorize 0`ncl_allowDownload 0`nsv_allowDownload 0"
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $settings 'launcher-settings.json') -Encoding Ascii
+    $activeProfile = Join-Path $LauncherHome 'main\players\active.txt'
+    if (-not (Test-Path -LiteralPath $activeProfile)) { New-TestProfile $LauncherHome }
     $main = New-Folder (Join-Path $LauncherHome 'main')
     @('set developer 0','set logfile 2','set com_introPlayed 1',
         'set g_gametype dm','set r_aaSamples 1','set cl_punkbuster 0','set sv_punkbuster 0') |
@@ -112,7 +114,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
                 Select-Object -First 1
         } 40 'the installed game process'
         $window = Get-KitGameWindow $game
-        Invoke-MapPictures $LauncherHome $Results $window $Renderer
+        Invoke-MapPictures $LauncherHome $Results $window $Renderer -FromLauncher
     } finally {
         if ($game -and -not $game.HasExited) {
             if ($window -ne [IntPtr]::Zero) {
@@ -166,6 +168,7 @@ function Invoke-KitFaults {
         $game = Get-KitOwnedGame 'original' $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
         Start-Sleep -Seconds 4
+        Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
         Send-KitCommand $window '/toggleconsole; devmap mp_toujane'
         $log = Join-Path $LauncherHome 'main\console_mp.log'
         Wait-KitCondition {
