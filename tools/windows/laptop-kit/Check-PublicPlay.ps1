@@ -78,8 +78,24 @@ function Select-KitComboChoice([IntPtr]$Window, [string]$Name, [string]$Choice) 
     $node.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse()
 }
 
-function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local) {
-    $LauncherHome = $AppDataRoot
+function Set-KitPublicSearch([IntPtr]$App, [string]$Text) {
+    $edit = [Windows.Automation.PropertyCondition]::new(
+        [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit)
+    $value = Wait-KitCondition {
+        $box = Find-KitControl $App 'SearchBox'
+        if ($box) {
+            $elements = @($box) + @($box.FindAll([Windows.Automation.TreeScope]::Descendants, $edit))
+            foreach ($element in $elements) {
+                $pattern = $null
+                if ($element.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern, [ref]$pattern)) { return $pattern }
+            }
+        }
+    } 12 'the server search field'
+    $value.SetValue($Text)
+}
+
+function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local, [string]$HomePath = $AppDataRoot) {
+    $LauncherHome = $HomePath
     $name = 'Unbound test ' + [guid]::NewGuid().ToString('N').Substring(0, 10)
     $version = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x 1.4.6.8' }
     $reach = if ($Local) { 'Local network' } else { 'Public server list' }
@@ -101,7 +117,7 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
         if (-not $Local) {
             $watch = [Diagnostics.Stopwatch]::StartNew()
             Invoke-KitControl $App 'All' -Name
-            Set-KitEdit $App 'Search servers, maps or mods' $name -Name
+            Set-KitPublicSearch $App $name
             Start-KitPublicRefresh $App
             $address = $null
             $refreshedAgain = $false
@@ -125,11 +141,9 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
         }
     } catch { $failure = $_ }
     finally {
+        if (-not $room) { $room = Find-KitHostedServer $name }
         if ($room) {
             Focus-KitWindow $App
-            if (-not $Local -and (Find-KitControl $App 'Search servers, maps or mods' -Name)) {
-                Set-KitEdit $App 'Search servers, maps or mods' '' -Name
-            }
             Invoke-KitControl $App 'Hosting' -Name
             if (Request-KitServer $room.Port 'getstatus Kit') {
                 Invoke-KitControl $App 'Stop server' -Name
@@ -145,6 +159,10 @@ function Invoke-KitPublicHosting([IntPtr]$App, [string]$Edition, [switch]$Local)
             Invoke-KitControl $App ('Delete server' + [char]0x2026) -Name
             Invoke-KitControl $App 'Delete' -Name
             Wait-KitCondition { -not (Find-KitHostedServer $name) } 15 'the disposable room to be removed' | Out-Null
+            if (-not $Local) {
+                Invoke-KitControl $App 'All' -Name
+                Set-KitPublicSearch $App ''
+            }
         }
     }
     if ($failure) { throw $failure }
