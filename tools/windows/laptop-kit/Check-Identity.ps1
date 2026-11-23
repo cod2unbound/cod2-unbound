@@ -45,9 +45,9 @@ function Invoke-KitHwidCheck([string]$Binary, [string]$DataPath) {
         if (-not $run.Process.WaitForExit(90000)) { throw 'The offline CoD2x identity probe did not exit.' }
         $output = $run.Output.GetAwaiter().GetResult()
         if (Test-Path -LiteralPath $log) { $output += "`n" + (Read-KitText $log) }
-        $match = [regex]::Match($output, '(?im)^\s*"?cl_hwid2"?\s*(?:is\s+)?"?([a-f0-9]{32})\b')
+        $match = [regex]::Match($output, '(?im)^\s*"cl_hwid2"\s+is:\s*"([a-f0-9]{32})\^7"')
         if ($run.Process.ExitCode -ne 0 -or -not $match.Success) {
-            throw 'The offline CoD2x identity probe returned no usable identifier.'
+            throw "The offline CoD2x identity probe returned no usable identifier (exit $($run.Process.ExitCode))."
         }
         if ($match.Groups[1].Value -cne $reference) {
             throw 'CoD2x hardware identifier differs from the 1.4.6.8 reference. CoD2x online play is blocked.'
