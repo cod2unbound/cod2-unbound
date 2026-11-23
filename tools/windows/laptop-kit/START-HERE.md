@@ -24,8 +24,9 @@ a key in Windows Credential Manager. Save your work before starting.
    launcher starts, map runs, saved views, sound and input, full-screen
    switching, loopback matches, Hosting, updates and reports where supported.
    It prints a line and saves evidence for each check. If a check fails, carry
-   on. Automatic work can take an hour or longer. A complete laptop run has
-   yet to be timed.
+   on. Allow an hour for the automatic checks, including update and restart
+   time. The Windows VM's unattended run took about 21 minutes with the
+   restart and human observations skipped. The laptop may take longer.
 4. If **Windows Security** asks about a game or server, choose **Cancel** for
    this offline sitting. Write the message and what you pressed when asked.
    If SmartScreen, Smart App Control or UAC blocks a test, record the wording
@@ -73,8 +74,8 @@ the laptop screen during the run.
    the SSH host key before the run. Compare the Mac's key fingerprint with
    `ssh-keygen -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"` at the PC.
    Add the matching public host key to the Mac's known hosts. If the run
-   includes a restart, arrange for SSH to start again and sign back
-   in when Windows comes up.
+   includes a restart, run `Set-Service sshd -StartupType Automatic` and sign
+   back in when Windows comes up. Keep the laptop on power and awake.
 4. On the Mac run the driver from the project checkout. It pauses for consent
    and notes. Handle Windows prompts at the laptop screen.
 
@@ -105,9 +106,13 @@ x64 game programs. The copy with a mainboard ran both editions in both
 graphics modes, loaded the four stock maps and took pictures. It also
 exercised the shader compiler, full-screen switching, loopback routes,
 updating and interrupted-install recovery. The earlier machine without a
-mainboard could start only Original 1.3. The Windows software and Wine
-pictures in this kit come from those earlier runs. Check the hardware presentation,
-mouse feel, sound and Windows Security prompts on the actual laptop.
+mainboard could start only Original 1.3. The current kit ran under key-only
+SSH on the copy and pulled a result after every step. Both editions passed
+both direct graphics modes, saved-demo comparisons and URI-link joins.
+It also ran Windows' own shader compiler, sampled loopback sound and
+removed the test install. The Windows software and Wine pictures in this
+kit come from earlier runs. Check the picture, mouse feel, sound and
+Windows Security prompts on the actual laptop.
 
 ## Part B — Extras, when you have them
 
