@@ -1,6 +1,6 @@
 using CoD2Unbound.Core;
+using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Controls;
 
 namespace CoD2Unbound.Windows;
@@ -8,25 +8,27 @@ namespace CoD2Unbound.Windows;
 public sealed partial class MainWindow
 {
     private const string ClosingGameNotice = "Closing Call of Duty 2…";
+    private const string ReturnGameNotice = "The game window couldn’t be brought forward. Switch to it from the taskbar.";
 
     internal void ReturnToGame()
     {
         if (session.Game.State.ActiveGame is not { } target)
             return;
         if (session.ReturnToRunningGame(target))
+        {
+            if (Problem.Message == ReturnGameNotice)
+                Problem.IsOpen = false;
             MinimizeForGame();
-        else
-            ShowShellNotice("The game window couldn’t be brought forward. Switch to it from the taskbar.", InfoBarSeverity.Warning);
+        }
+        else if (!session.Game.State.Quitting)
+            ShowShellNotice(ReturnGameNotice, InfoBarSeverity.Warning);
     }
 
     private void MinimizeForGame()
     {
-        if (session.Settings.Working.HideWhilePlaying && AppWindow.Presenter is OverlappedPresenter presenter &&
-            presenter.State != OverlappedPresenterState.Minimized)
-        {
+        if (session.Settings.Working.HideWhilePlaying &&
+            WindowsRunningGameJoin.MinimizeLauncher(WinRT.Interop.WindowNative.GetWindowHandle(this)))
             minimizedForGame = true;
-            presenter.Minimize();
-        }
     }
 
     internal async Task CloseActiveGameAsync()
@@ -62,8 +64,7 @@ public sealed partial class MainWindow
         if (!state.Running && minimizedForGame)
         {
             minimizedForGame = false;
-            if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
-                presenter.Restore();
+            WindowsRunningGameJoin.RestoreLauncher(WinRT.Interop.WindowNative.GetWindowHandle(this));
         }
         if (lastGame is { } previous && previous.Running == state.Running && previous.LastExit == state.LastExit &&
             previous.Activity == state.Activity && previous.ActiveGame == state.ActiveGame)

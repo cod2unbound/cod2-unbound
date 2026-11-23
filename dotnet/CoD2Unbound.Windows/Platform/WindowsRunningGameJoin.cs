@@ -71,9 +71,19 @@ internal static class WindowsRunningGameJoin
         if (window == 0)
             return false;
         _ = AllowSetForegroundWindow((uint)client.Id);
+        RestoreWindow(window);
+        return SetForegroundWindow(window);
+    }
+
+    internal static bool MinimizeLauncher(nint window) =>
+        !IsIconic(window) && ShowWindowAsync(window, 7); // SW_SHOWMINNOACTIVE
+
+    internal static void RestoreLauncher(nint window) => RestoreWindow(window);
+
+    private static void RestoreWindow(nint window)
+    {
         if (IsIconic(window))
             _ = ShowWindowAsync(window, 9); // SW_RESTORE
-        return SetForegroundWindow(window);
     }
 
     internal static nint ClientWindow(Process client)

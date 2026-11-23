@@ -30,7 +30,12 @@ public sealed partial class MainWindow
     private async Task CompleteCloseAsync()
     {
         closing = true;
-        try { await ShowProblemAsync(ConfirmCloseAsync); }
+        try
+        {
+            // Let the canceled app-window close finish before a clean close re-enters it.
+            await Task.Yield();
+            await ShowProblemAsync(ConfirmCloseAsync);
+        }
         finally { closing = false; }
     }
 
@@ -47,8 +52,8 @@ public sealed partial class MainWindow
             switch (plan.Next(!games.IsEmpty, !servers.IsEmpty))
             {
                 case QuitPrompt.Game:
-                    var answer = await CloseDialog("Call of Duty 2 is still running",
-                        "Closing CoD2 Unbound leaves the game open.", "Close launcher only", "Close both").ShowAsync();
+                    var answer = await AskCloseAsync("Call of Duty 2 is still running",
+                        "Closing CoD2 Unbound leaves the game open.", "Close launcher only", "Close both");
                     if (answer == ContentDialogResult.None)
                         return;
                     confirmedGames = games;
@@ -56,7 +61,7 @@ public sealed partial class MainWindow
                     break;
                 case QuitPrompt.Servers:
                     var prompt = HostedClosePrompt.For(servers);
-                    if (await CloseDialog(prompt.Title, prompt.Message, prompt.Action).ShowAsync() != ContentDialogResult.Primary)
+                    if (await AskCloseAsync(prompt.Title, prompt.Message, prompt.Action) != ContentDialogResult.Primary)
                         return;
                     plan.AnswerServers();
                     break;
@@ -82,12 +87,18 @@ public sealed partial class MainWindow
         }
     }
 
-    private ContentDialog CloseDialog(string title, string message, string primary, string secondary = "") => new()
+    private async Task<ContentDialogResult> AskCloseAsync(string title, string message, string primary, string secondary = "")
     {
-        XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = title, Content = Body(message),
-        PrimaryButtonText = primary, SecondaryButtonText = secondary, CloseButtonText = "Cancel",
-        DefaultButton = ContentDialogButton.Primary
-    };
+        WindowsRunningGameJoin.RestoreLauncher(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        Activate();
+        var dialog = new ContentDialog
+        {
+            XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = title, Content = Body(message),
+            PrimaryButtonText = primary, SecondaryButtonText = secondary, CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary
+        };
+        return await dialog.ShowAsync();
+    }
 
     private void EndWindowsSession()
     {

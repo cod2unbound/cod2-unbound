@@ -64,7 +64,7 @@ public sealed partial class MainWindow
             return initialized && JumpBox.IsEnabled && !busy && !closing;
         if (!initialized || !JumpBox.IsEnabled || closing)
             return false;
-        if (busy && command != ShellCommand.Jump &&
+        if (busy && command is not (ShellCommand.Jump or ShellCommand.ReturnToGame) &&
             (command != ShellCommand.RefreshServers || ContentFrame.Content is not ServersPage { IsRefreshing: true }))
             return false;
         var configs = ContentFrame.Content as ConfigsPage;
@@ -134,6 +134,11 @@ public sealed partial class MainWindow
     {
         if (!CanRunShellCommand(command))
             return;
+        if (command == ShellCommand.ReturnToGame)
+        {
+            ReturnToGame();
+            return;
+        }
         if (command == ShellCommand.Jump)
         {
             JumpBox.Focus(FocusState.Keyboard);
@@ -183,7 +188,6 @@ public sealed partial class MainWindow
                 case ShellCommand.OpenGameMenu:
                     await LaunchFromShellAsync(useServer: command == ShellCommand.Launch);
                     break;
-                case ShellCommand.ReturnToGame: ReturnToGame(); break;
                 case ShellCommand.CloseGame: await CloseActiveGameAsync(); break;
                 case ShellCommand.Connect: await ConnectFromShellAsync(); break;
                 case ShellCommand.Import:

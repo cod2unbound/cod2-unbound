@@ -124,9 +124,10 @@ public sealed partial class HomePage
         LaunchHint.Visibility = IsVisible(wide && (running || model.CanLaunch));
         string? compactHint = wide ? null : LaunchHint.Text;
         ToolTipService.SetToolTip(ReturnGameButton, running ? compactHint : null);
-        ToolTipService.SetToolTip(CloseGameButton, running && !wide ? CloseGameHint + "\n" + PlayingHint : CloseGameHint);
+        string closeHint = running && !wide ? CloseGameHint + "\n" + PlayingHint : CloseGameHint;
+        ToolTipService.SetToolTip(CloseGameButton, closeHint);
         AutomationProperties.SetHelpText(ReturnGameButton, running ? PlayingHint : "");
-        AutomationProperties.SetHelpText(CloseGameButton, CloseGameHint);
+        AutomationProperties.SetHelpText(CloseGameButton, closeHint);
         ToolTipService.SetToolTip(LaunchButton, running ? null : compactHint);
         ToolTipService.SetToolTip(OpenGameMenuButton, LauncherShortcuts.Keys(ShellCommand.OpenGameMenu));
     }
