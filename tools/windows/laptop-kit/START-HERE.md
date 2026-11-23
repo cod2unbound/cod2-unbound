@@ -1,6 +1,6 @@
 # Try CoD2 Unbound on your Windows PC
 
-Use a Windows 11 x64 PC with Call of Duty 2 already installed. The kit uses a
+Use Windows 10 22H2 or Windows 11 on an x64 PC with Call of Duty 2 already installed. The kit uses a
 sample CD key and creates a temporary CoD2 Unbound install for your Windows
 account. Use a clean Windows account if you already have Unbound or have saved
 a key in Windows Credential Manager. Save your work before starting.
@@ -11,7 +11,8 @@ a key in Windows Credential Manager. Save your work before starting.
    Close CoD2, Steam and apps that
    make sound. Disconnect from the internet. For the Mac route, keep only the
    isolated connection to the Mac. Leave the laptop signed in and unlocked.
-2. Open Windows PowerShell in the unzipped folder as your usual user. Start
+2. Open **Windows PowerShell** in the unzipped folder as your usual user. The
+   same Windows PowerShell 5.1 command works on Windows 10 and 11. Start
    the kit with the command below. Omit the game path if the kit can find
    Steam or your disc install. If the file check fails to find the game, run
    again with a new run name and the folder that contains `main`.
@@ -21,18 +22,25 @@ a key in Windows Credential Manager. Save your work before starting.
    ```
 
 3. The kit checks the copied files, your PC, shader compiler and both servers.
-   It asks before running Setup or changing the version. It records the first
+   Type **YES** for each operation you want to run. The prompts cover the
+   first per-user install, the update to the current test version, each of
+   five in-app updates, the interrupted-update restart and uninstall. Press
+   Enter to skip an operation. After an approved restart, sign back in as
+   the same user. The kit records the first
    launcher starts, map runs, saved views, sound and input, full-screen
    switching, loopback matches, Hosting, updates and reports where supported.
    It prints a line and saves evidence for each check. If a check fails, carry
-   on. Allow an hour for the automatic checks, including update and restart
-   time. The Windows VM's unattended run took about 21 minutes with the
-   restart and human observations skipped. The laptop may take longer.
-4. If **Windows Security** asks about a game or server, choose **Cancel** for
-   this offline sitting. Write the message and what you pressed when asked.
-   If the kit detects the prompt, it waits for up to two and a half minutes.
-   If SmartScreen, Smart App Control or UAC blocks a test, record the wording
-   and continue. Leave Windows Security settings as they are.
+   on. Allow about an hour for the automatic checks, plus about 20 minutes
+   for your observations and the results review. The laptop may take longer.
+4. The kit starts an installed server early so **Windows Security** can ask
+   about firewall access before the game checks. Answer Windows dialogs
+   yourself, including when the Mac is driving. Choose **Cancel** on a
+   firewall prompt for this offline test. If the kit sees a security prompt,
+   it waits for up to two and a half minutes. Cancel unexpected administrator
+   approval for the per-user install. If SmartScreen or Smart App Control
+   blocks a check, record the wording and leave the Windows settings alone.
+   When the kit asks what you saw, write the wording and the button you
+   pressed, or write **none** if Windows showed no prompt.
 5. When the paired pictures open, compare the sky, fog, water, lettering and
    world geometry. Write one line about differences that look wrong. In both
    editions, turn slowly and quickly, then listen to gunfire and movement.
@@ -42,10 +50,17 @@ a key in Windows Credential Manager. Save your work before starting.
 6. Browse Home and **Settings > Privacy**. Start Narrator with **Windows + Ctrl
    + Enter**. Tab through both pages. Write one line about labels, focus order
    or controls that are hard to reach. Turn Narrator off with the same
-   shortcut. Allow about 5 minutes.
+   shortcut. Windows 10 uses a solid background and, where supported, the
+   taller title bar with **Jump to** and the Windows caption buttons. If
+   Windows uses its standard title bar, **Jump to** moves below it. Windows 11
+   can show Mica. If you try high
+   contrast, Windows 10 puts it in **Settings > Ease of Access > High
+   contrast**. Windows 11 puts it in **Settings > Accessibility > Contrast
+   themes**. Restore your usual theme afterward.
+   Allow about 5 minutes.
 7. Give permission to remove the kit's test copy and sample data when asked.
    Read the cleanup result. Inspect the files the packer lists before you
-   choose to make the ZIP. Allow 5 minutes for cleanup and review.
+   type **PACK** to make the ZIP. Allow 5 minutes for cleanup and review.
 
 To pick up where you stopped, run the same command with the same kit folder
 and run name. To start a separate run after cleanup, add `-RunId second`.
@@ -65,10 +80,25 @@ Windows OpenSSH Server. Keep a trusted local connection between the two
 machines and disconnect that network from the internet. Stay signed in at
 the laptop screen during the run.
 
-1. In an administrator PowerShell, run
-   `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0` before
-   disconnecting the internet. This adds Microsoft's SSH server. Windows may
-   also create an inbound SSH firewall rule.
+1. In **Windows PowerShell** opened as administrator, run the following on
+   either **Windows 10 22H2** or **Windows 11** before disconnecting the
+   internet. Windows may create an inbound SSH rule when it adds the optional
+   server. Record the original service startup type if it was already installed.
+
+   ```powershell
+   $feature = 'OpenSSH.Server~~~~0.0.1.0'
+   Get-WindowsCapability -Online -Name $feature
+   Add-WindowsCapability -Online -Name $feature
+   Start-Service sshd
+   Get-CimInstance Win32_Service -Filter "Name='sshd'" | Select-Object StartMode
+   ```
+
+   On the Mac, make a key just for this run and read its public line.
+
+   ```sh
+   ssh-keygen -t ed25519 -f "$PWD/cod2-kit-key" -N '' -C cod2-laptop-kit
+   cat "$PWD/cod2-kit-key.pub"
+   ```
 2. In the test user's normal PowerShell, create the key folder and add just
    the Mac's **public** key. Replace the quoted example with the complete
    line from your public key file. Keep the private key on the Mac.
@@ -77,16 +107,29 @@ the laptop screen during the run.
    New-Item -ItemType Directory -Force "$env:USERPROFILE\.ssh" | Out-Null
    Add-Content -Encoding Ascii "$env:USERPROFILE\.ssh\authorized_keys" 'ssh-ed25519 YOUR_PUBLIC_KEY'
    ```
-3. In administrator PowerShell run `Start-Service sshd`. The Mac must verify
-   the SSH host key before the run. Compare the Mac's key fingerprint with
-   `ssh-keygen -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"` at the PC.
-   Add the matching public host key to the Mac's known hosts. If the run
-   includes a restart, run `Set-Service sshd -StartupType Automatic` and sign
-   back in when Windows comes up. Keep the laptop on power and awake.
+3. On the laptop, read the host key fingerprint in administrator PowerShell.
+   If the run includes a restart, set the service to start automatically and
+   sign back in when Windows comes up.
+
+   ```powershell
+   & "$env:WINDIR\System32\OpenSSH\ssh-keygen.exe" -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"
+   Set-Service sshd -StartupType Automatic
+   ```
+
+   Disconnect internet access and keep the local connection to the Mac. On
+   the Mac, replace `LAPTOP_IP` with the laptop's local address and compare
+   the displayed fingerprint with the laptop's before proceeding.
+
+   ```sh
+   ssh-keyscan -t ed25519 LAPTOP_IP > "$PWD/cod2-kit-known-hosts"
+   ssh-keygen -lf "$PWD/cod2-kit-known-hosts"
+   ```
 4. On the Mac run the driver from the project checkout. It pauses for consent
    and notes. Handle Windows prompts at the laptop screen.
 
    ```sh
+   export COD2_KIT_SSH_IDENTITY="$PWD/cod2-kit-key"
+   export COD2_KIT_SSH_KNOWN_HOSTS="$PWD/cod2-kit-known-hosts"
    tools/windows/laptop-kit/drive.sh LAPTOP_IP WINDOWS_USER \
      --kit /path/to/CoD2-Unbound-Windows-Kit.zip --output /path/to/results
    ```
@@ -106,14 +149,14 @@ checks when the laptop cannot be reached.
 [Microsoft OpenSSH setup and removal](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse) ·
 [Windows public-key sign-in](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement)
 
-## What ran in the Windows VM
+## What earlier kits ran in the Windows VM
 
 Earlier Windows 11 Arm runs used Microsoft's software graphics with emulated
 x64 game programs. The copy with a mainboard ran both editions in both
 graphics modes, loaded the four stock maps and took pictures. It also
 exercised the shader compiler, full-screen switching, loopback routes,
 updating and interrupted-install recovery. The earlier machine without a
-mainboard could start only Original 1.3. The current kit ran under key-only
+mainboard could start only Original 1.3. An earlier kit ran under key-only
 SSH on the copy and pulled a result after every step. Both editions passed
 both direct graphics modes, saved-demo comparisons and URI-link joins.
 It also ran Windows' own shader compiler, sampled loopback sound and

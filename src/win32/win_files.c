@@ -210,4 +210,80 @@ int Win_MakeWritable(const char *path)
     free(filename);
     return ok;
 }
+
+static HANDLE OpenHistoryFile(const char *path, DWORD access, DWORD share, DWORD disposition)
+{
+    wchar_t *name = Win_OSPath(path, !!(access & GENERIC_WRITE));
+    if (!name) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return INVALID_HANDLE_VALUE;
+    }
+    HANDLE file = CreateFileW(name, access, share, NULL, disposition, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+    DWORD error = GetLastError();
+    free(name);
+    if (file == INVALID_HANDLE_VALUE) {
+        SetLastError(error);
+        return file;
+    }
+    BY_HANDLE_FILE_INFORMATION info;
+    if (GetFileType(file) != FILE_TYPE_DISK || !GetFileInformationByHandle(file, &info) ||
+        info.nNumberOfLinks != 1 || (info.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) {
+        CloseHandle(file);
+        SetLastError(ERROR_ACCESS_DENIED);
+        return INVALID_HANDLE_VALUE;
+    }
+    return file;
+}
+
+/* Takes ownership of file, even if creating the stream fails. */
+static FILE *HistoryStream(HANDLE file, int flags, const char *mode)
+{
+    int fd = _open_osfhandle((intptr_t)file, flags | _O_BINARY);
+    if (fd < 0) {
+        CloseHandle(file);
+        return NULL;
+    }
+    FILE *stream = _fdopen(fd, mode);
+    if (!stream) _close(fd);
+    return stream;
+}
+
+void Win_RewriteMatchHistory(int (*writeHistory)(FILE *, FILE *, const char *), const char *reason)
+{
+    const char *history = "main/stats/matches.jsonl";
+    char temporary[96];
+    if ((Win_Mkdir("main") && errno != EEXIST) || (Win_Mkdir("main/stats") && errno != EEXIST))
+        return;
+    HANDLE lock = OpenHistoryFile("main/stats/.matches.lock", GENERIC_READ | GENERIC_WRITE,
+                                  FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_ALWAYS);
+    if (lock == INVALID_HANDLE_VALUE) return;
+    OVERLAPPED range = {0};
+    FILE *input = NULL;
+    if (!LockFileEx(lock, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &range)) goto done;
+
+    HANDLE file = OpenHistoryFile(history, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING);
+    if (file != INVALID_HANDLE_VALUE) {
+        input = HistoryStream(file, _O_RDONLY, "rb");
+        if (!input) goto done;
+    } else if (GetLastError() != ERROR_FILE_NOT_FOUND) {
+        goto done;
+    }
+    snprintf(temporary, sizeof(temporary), "main/stats/.matches-%lu-%llu.tmp",
+             (unsigned long)GetCurrentProcessId(), (unsigned long long)GetTickCount64());
+    file = OpenHistoryFile(temporary, GENERIC_WRITE, 0, CREATE_NEW);
+    if (file == INVALID_HANDLE_VALUE) goto done;
+    FILE *output = HistoryStream(file, _O_WRONLY, "wb");
+    int complete = output && writeHistory(input, output, reason);
+    if (output && fclose(output)) complete = 0;
+    if (input) {
+        fclose(input);
+        input = NULL;
+    }
+    if (complete)
+        Win_Move(temporary, history, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    Win_Remove(temporary);
+done:
+    if (input) fclose(input);
+    CloseHandle(lock);
+}
 #endif

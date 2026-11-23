@@ -30,6 +30,7 @@ public sealed partial class MainWindow : Window
     private bool minimizedForGame;
     private bool flushedForClose;
     private bool closing;
+    private bool closeRequested;
     private DateTimeOffset hostPolled;
     private DateTimeOffset? attemptedUpdate;
     private CancellationTokenSource? updateRequest;
@@ -378,20 +379,46 @@ public sealed partial class MainWindow : Window
 
     private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (flushedForClose || !loaded || session.Settings is null)
+        if (flushedForClose || !loaded)
             return;
-        if (!closing && !busy && !session.Hosting.HasActiveServers && session.Settings.Saved == session.Settings.Working)
+        if (!closing && !busy && !session.Hosting.HasActiveServers && (session.Settings is null || session.Settings.Saved == session.Settings.Working))
             return;
         args.Cancel = true;
-        if (closing || busy)
+        if (closing)
             return;
+        if (busy)
+        {
+            closeRequested = true;
+            return;
+        }
+        await CompleteCloseAsync();
+    }
+
+    private async Task CompleteCloseAsync()
+    {
         closing = true;
         try
         {
             await ShowProblemAsync(async () =>
             {
-                await session.Settings.FlushAsync();
-                await session.Hosting.StopAllAsync();
+                if (session.Hosting.HasActiveServers)
+                {
+                    var confirmation = new ContentDialog
+                    {
+                        XamlRoot = DialogRoot,
+                        RequestedTheme = DialogTheme,
+                        Title = "Stop hosted servers and quit?",
+                        Content = "Quitting stops your hosted servers and disconnects their players.",
+                        PrimaryButtonText = "Stop and quit",
+                        CloseButtonText = "Cancel",
+                        DefaultButton = ContentDialogButton.Close
+                    };
+                    if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+                        return;
+                }
+                if (session.Settings is { } settings)
+                    await settings.FlushAsync();
+                await session.Hosting.ShutdownAsync();
                 flushedForClose = true;
                 Close();
             });
@@ -602,7 +629,13 @@ public sealed partial class MainWindow : Window
         finally
         {
             busy = false;
-            ScheduleActivation();
+            if (closeRequested)
+            {
+                closeRequested = false;
+                await CompleteCloseAsync();
+            }
+            if (!flushedForClose)
+                ScheduleActivation();
         }
     }
 

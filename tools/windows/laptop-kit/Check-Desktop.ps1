@@ -22,7 +22,7 @@ function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Desc
     throw "Timed out waiting for $Description."
 }
 
-function Wait-KitSecurity {
+function Wait-KitSecurity([scriptblock]$OnManagedFirewall) {
     if (-not ('KitDesktop' -as [type])) { return }
     $prompt = [KitDesktop]::SecurityPrompt()
     if (-not $prompt) { return }
@@ -35,16 +35,64 @@ function Wait-KitSecurity {
     $attention = Join-Path $Results 'attention.txt'
     $instruction | Set-Content -LiteralPath $attention -Encoding UTF8
     Write-Host $instruction
+    $managed = $prompt -eq 'windows-security' -and $OnManagedFirewall -and $env:COD2_KIT_ARM_REHEARSAL -eq '1'
+    if ($managed) {
+        'Windows Security appeared. The scratch policy will dismiss it when the rehearsal process exits.' |
+            Set-Content -LiteralPath $attention -Encoding UTF8
+        & $OnManagedFirewall
+    }
     $deadline = [DateTime]::UtcNow.AddSeconds(150)
     do {
         Start-Sleep -Milliseconds 500
         if (-not [KitDesktop]::SecurityPrompt()) {
             Remove-Item -LiteralPath $attention
+            if ($managed) {
+                'Scratch Windows Security cleared after the rehearsal process exited.' |
+                    Set-Content -LiteralPath (Join-Path $Results 'managed-firewall.txt') -Encoding UTF8
+                return $true
+            }
             return
         }
     } while ([DateTime]::UtcNow -lt $deadline)
     $script:KitAttentionTimedOut = $true
     throw 'Windows is still waiting for a person at the laptop. See attention.txt.'
+}
+
+function Invoke-KitFirewallWarmup {
+    Stop-KitIfNoGame
+    Stop-KitIfMissing $InstallMarker 'The kit has no installation to run.'
+    Initialize-KitDesktop
+    Wait-KitSecurity
+    $entry = New-RunContext 'firewall-first-server'
+    $port = 29789
+    $exe = Get-Binary 'original' -Server -Root $InstallRoot
+    $password = [guid]::NewGuid().ToString('N')
+    $arguments = (Get-EngineArgs $entry.Folder $GamePath -Address '0.0.0.0' -Port $port) +
+        " +set dedicated 1 +set rcon_password $password +map mp_toujane"
+    $run = Start-KitProcess $exe $arguments $entry.Folder -NoWindow
+    try {
+        $deadline = [DateTime]::UtcNow.AddSeconds(45)
+        $managed = {
+            if (-not $run.Process.HasExited) { $run.Process.Kill(); [void]$run.Process.WaitForExit(8000) }
+        }
+        $ready = $false
+        do {
+            $managedPrompt = Wait-KitSecurity $managed
+            if ($managedPrompt) { return }
+            if ($run.Process.HasExited) { throw 'The first dedicated server exited before opening its socket.' }
+            $ready = (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
+        } until ($ready -or [DateTime]::UtcNow -ge $deadline)
+        if (-not $ready) { throw 'The first installed dedicated server did not answer.' }
+        # Windows may put up its prompt shortly after the socket opens.
+        for ($i = 0; $i -lt 12; $i++) {
+            if (Wait-KitSecurity $managed) { return }
+            Start-Sleep -Milliseconds 500
+        }
+    } finally {
+        try {
+            if (-not $run.Process.HasExited) { Stop-SetupServer $password $port }
+        } finally { Complete-KitProcess $run $entry.Evidence 8 | Out-Null }
+    }
 }
 
 function Focus-KitWindow([IntPtr]$Window) {
@@ -93,6 +141,7 @@ function Get-KitGameWindow($Process) {
 
 function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [string]$Name) {
     $shot = Join-Path $GameHome "main\screenshots\$Name.jpg"
+    if (Test-Path -LiteralPath $shot) { Remove-Item -LiteralPath $shot }
     Send-KitCommand $Window "/toggleconsole; screenshotJpeg $Name"
     Wait-KitCondition { Test-Path -LiteralPath $shot -PathType Leaf } 12 "$Name game picture" | Out-Null
     Copy-Item -LiteralPath $shot -Destination $Evidence
@@ -202,16 +251,35 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
         $window = Get-KitGameWindow $run.Process
         if ($DisplayMode) {
             $log = Join-Path $homePath 'main\console_mp.log'
-            Wait-KitCondition { Test-Path -LiteralPath $log } 40 'the startup log' | Out-Null
+            Wait-KitCondition {
+                (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
+            } 40 'the completed game startup' | Out-Null
             Send-KitCommand $window '/toggleconsole; r_fullscreen; r_mode'
             $mode = [KitDesktop]::CurrentMode()
             if ($mode -ne $DisplayMode) { throw "The display reported $mode after requesting $DisplayMode." }
             Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen'
+            $switches = Join-Path $entry.Evidence 'fullscreen-switch.txt'
             [KitDesktop]::Chord(18, 9)
-            Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -ne $window } 8 'Alt+Tab to switch away' | Out-Null
+            Wait-KitCondition {
+                $current = [KitDesktop]::GetForegroundWindow()
+                $current -ne $window -and $current -ne [IntPtr]::Zero -and
+                    [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
+            } 8 'Alt+Tab to switch away' | Out-Null
+            $foreground = [KitDesktop]::GetForegroundWindow()
+            "Away: shell foreground class $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window))" |
+                Set-Content -LiteralPath $switches -Encoding UTF8
             [KitDesktop]::Chord(18, 9)
-            Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $window } 8 'Alt+Tab to return' | Out-Null
+            try {
+                Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $window } 8 'Alt+Tab to return' | Out-Null
+                'Alt+Tab returned foreground to the game.' | Add-Content -LiteralPath $switches
+            } catch {
+                $foreground = [KitDesktop]::GetForegroundWindow()
+                "Alt+Tab selected $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window)). Trying a direct window restore." |
+                    Add-Content -LiteralPath $switches
+                Focus-KitWindow $window
+            }
             Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen-return'
+            "The restored game rendered at $([KitDesktop]::CurrentMode())." | Add-Content -LiteralPath $switches
         } else {
             Invoke-MapPictures $homePath $entry.Evidence $window $Renderer
         }

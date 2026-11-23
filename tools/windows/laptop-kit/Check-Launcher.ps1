@@ -152,7 +152,7 @@ public static class KitLauncherPicture
             "$edition opened? $observed" | Add-Content -LiteralPath $notes
         }
         $windowStyle = if ((Get-KitWindowsVersion).Family -eq 'Windows 10') {
-            'Did you see a solid background and a Windows title bar above Jump to?'
+            'Did you see a solid background and Jump to in the tall title bar or just below the standard title bar?'
         } else {
             'Could you see the Mica background?'
         }

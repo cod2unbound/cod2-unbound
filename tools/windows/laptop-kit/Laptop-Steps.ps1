@@ -78,6 +78,9 @@ function Add-KitStep([string]$Id, [string]$Title, [scriptblock]$Action, [string]
 
 $Steps = @(
     Add-KitStep 'preflight' 'Kit files and offline checks' {
+        $windows = Get-KitWindowsVersion
+        "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build), Windows PowerShell $($PSVersionTable.PSVersion)" |
+            Set-Content -LiteralPath (Join-Path $Results 'windows-version.txt') -Encoding UTF8
         Test-KitFiles
         $captured = @()
         if ($GamePath) {
@@ -117,7 +120,6 @@ $Steps = @(
     }
     Add-KitStep 'shaders' 'Stock shaders on the Windows compiler' { Invoke-KitShaderTable }
     Add-KitStep 'firewall-before' 'Firewall rules before first start' { Save-KitFirewall 'before' }
-    Add-KitStep 'security-note' 'Windows Security, SmartScreen or UAC' {} 'For this offline test, choose Cancel on a firewall prompt. Read any SmartScreen or UAC screen. Leave security settings alone. Write what you saw and chose, or type skip'
     Add-KitStep 'key' 'Windows reads the sample key' {
         Assert-NoSavedKitKey
         [IO.File]::WriteAllText($KeyMarker, 'sample')
@@ -157,6 +159,8 @@ $Steps = @(
         Invoke-KitSetupVersion $false
         Assert-InstalledFiles $InstallRoot (Join-Path $Kit 'portable')
     } 'Type YES to update this Windows account to the current test version, or press Enter to skip' -Consent
+    Add-KitStep 'firewall-first-start' 'Start the first installed server and let Windows finish asking' { Invoke-KitFirewallWarmup }
+    Add-KitStep 'security-note' 'Windows Security, SmartScreen or UAC' {} 'For this offline test, choose Cancel on a firewall prompt. Read any SmartScreen or UAC screen. Leave security settings alone. Write what you saw and chose, or type skip'
     Add-KitStep 'installed-signatures' 'Windows signature state for installed files' {
         Stop-KitIfMissing $InstallMarker 'There is no kit install to check.'
         $programs = @(Get-ChildItem -LiteralPath $InstallRoot -File -Recurse |

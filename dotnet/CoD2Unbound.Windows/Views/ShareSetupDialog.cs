@@ -198,7 +198,11 @@ internal sealed class ShareSetupDialog : ContentDialog
                 if (sent is not null)
                     ShowSent(sent);
                 else
+                {
                     RefreshForm();
+                    if (form.Phase == ConfigSharePhase.Offline && IsPrimaryButtonEnabled)
+                        FocusPrimaryButton();
+                }
             }
         }
         finally { cancellation = null; }
@@ -283,9 +287,14 @@ internal sealed class ShareSetupDialog : ContentDialog
             body.Children.Add(warning);
         }
         Content = body;
-        if (GetTemplateChild("PrimaryButton") is Button done)
-            done.Focus(FocusState.Programmatic);
+        FocusPrimaryButton();
         Announce("Your setup was sent");
+    }
+
+    private void FocusPrimaryButton()
+    {
+        if (GetTemplateChild("PrimaryButton") is Button button)
+            button.Focus(FocusState.Programmatic);
     }
 
     internal static HyperlinkButton RequestLink(Uri url)

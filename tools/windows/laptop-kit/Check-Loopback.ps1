@@ -31,13 +31,13 @@ function Find-KitHostedServer([string]$Name) {
     }
 }
 
-function Get-KitOwnedGame([string]$Edition, [DateTime]$Since, [int]$Session) {
+function Get-KitOwnedGame([string]$Edition, [DateTime]$Since, [int]$Session, [int]$Seconds = 45) {
     $exe = Get-Binary $Edition -Root $InstallRoot
     Wait-KitCondition {
         Get-Process -Name 'cod2_win32' -ErrorAction SilentlyContinue |
             Where-Object { $_.Path -ieq $exe -and $_.StartTime -ge $Since -and $_.SessionId -eq $Session } |
             Select-Object -First 1
-    } 45 'the installed game process'
+    } $Seconds 'the installed game process'
 }
 
 function Stop-KitOwnedGame($Game, [IntPtr]$Window) {
@@ -76,8 +76,9 @@ function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe) {
 function Invoke-KitOpenDemo([string]$Edition) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    $demo = Join-Path $RunResults "match-$Edition-connect\kit-match.dm_1"
+    $demo = Join-Path $RunResults "match-$Edition-connect\kit-match-$Edition.dm_1"
     Stop-KitIfMissing $demo 'The loopback match did not save a demo.'
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile $Edition 'dx9'
@@ -94,12 +95,13 @@ function Invoke-KitOpenDemo([string]$Edition) {
         Invoke-KitControl $app 'Play demo' -Name
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
-        $boot = Enable-KitGameConsole $window $LauncherHome $Results
-        $console = Join-Path $LauncherHome 'main\console_mp.log'
         Wait-KitCondition {
-            Select-String -LiteralPath @($boot,$console) -SimpleMatch 'CL_InitCGame:' -Quiet
-        } 40 'game demo playback' | Out-Null
-        Save-KitFrame $window $LauncherHome $Results 'kit-shell-demo'
+            (Test-Path -LiteralPath $console) -and
+                (Select-String -LiteralPath $console -SimpleMatch "demos/kit-match-$Edition.dm_1" -Quiet) -and
+                (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
+        } 65 'game demo playback' | Out-Null
+        Focus-KitWindow $window
+        Save-KitDesktop $window (Join-Path $Results 'kit-shell-demo-desktop.png')
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
@@ -110,20 +112,22 @@ function Invoke-KitOpenDemo([string]$Edition) {
 function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
-    Stop-KitIfMissing $complete 'The launcher setup did not finish.'
     Stop-KitIfMissing $KeyMarker 'The sample key check was skipped.'
     Invoke-TestKey 'verify'
+    # A previous demo or match can rewrite the active profile's engine config.
+    # Start each connection route with the same setup completion and a new profile.
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile $Edition 'dx9'
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
-    $recording = Join-Path $LauncherHome 'main\demos\kit-match.dm_1'
+    $demoName = "kit-match-$Edition"
+    $recording = Join-Path $LauncherHome "main\demos\$demoName.dm_1"
     if ($Route -eq 'connect' -and (Test-Path -LiteralPath $recording)) { Remove-Item -LiteralPath $recording }
-    $port = 29791
+    $port = if ($Edition -eq 'original') { 29792 } else { 29791 }
     $settings = Get-KitLauncherSettings
-    $launcher = $server = $master = $game = $null
+    $launcher = $server = $master = $game = $hostedProcess = $null
     $hostName = "Kit $Edition"
     $window = [IntPtr]::Zero
     $password = 'kit' + [guid]::NewGuid().ToString('N')
@@ -132,8 +136,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             $entry = New-RunContext 'local-server'
             $serverHome = $entry.Folder
             $argsText = (Get-EngineArgs $serverHome $GamePath -Port $port) +
-                " +set dedicated 1 +set g_gametype dm +set scr_dm_timelimit 1 +set rcon_password $password" +
-                ' +set sv_hostname Kit-Loopback +set sv_mapRotation "gametype dm map mp_toujane gametype dm map mp_harbor" +map mp_toujane'
+                " +set dedicated 1 +set g_gametype dm +set scr_dm_timelimit 2 +set g_logSync 1 +set rcon_password $password" +
+                ' +set sv_hostname Kit-Loopback +set sv_mapRotation "gametype dm map mp_toujane gametype dm map mp_harbor" +map_rotate'
             $server = Start-KitProcess (Get-Binary $Edition -Server -Root $InstallRoot) $argsText $serverHome -NoWindow
             Wait-KitCondition {
                 if ($server.Process.HasExited) { throw 'The server exited before it answered.' }
@@ -153,6 +157,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         }
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings
         $app = Get-KitLauncherWindow $launcher.Process
+        Wait-KitCondition { Find-KitControl $app 'LaunchButton' } 45 'the launcher to be ready' | Out-Null
         Invoke-KitControl $app 'ServersItem'
         $since = Get-Date
         switch ($Route) {
@@ -175,63 +180,164 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             'hosting' {
                 Invoke-KitControl $app 'Hosting' -Name
-                Invoke-KitControl $app 'New Server' -Name
+                Invoke-KitControl $app 'NewHost'
                 Set-KitEdit $app 'Server name' $hostName -Name
                 Invoke-KitControl $app 'Start Server' -Name
                 $hosted = Wait-KitCondition { Find-KitHostedServer $hostName } 15 'the saved Hosting entry'
                 $port = $hosted.Port
                 $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
                 Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match $hostnameField } 45 'the launcher-hosted server' | Out-Null
+                $dedicated = Get-Binary $Edition -Server -Root $InstallRoot
+                $owned = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($launcher.Process.Id)" |
+                    Where-Object { $_.ExecutablePath -ieq $dedicated } | Select-Object -First 1
+                if ($owned) {
+                    try {
+                        $hostedProcess = [Diagnostics.Process]::GetProcessById($owned.ProcessId)
+                        $null = $hostedProcess.Handle
+                        if ($hostedProcess.Path -ine $dedicated -or
+                            [Math]::Abs(($hostedProcess.StartTime - $owned.CreationDate).TotalMilliseconds) -ge 1) {
+                            $hostedProcess.Dispose()
+                            $hostedProcess = $null
+                        }
+                    } catch [ArgumentException], [InvalidOperationException] {
+                        if ($hostedProcess) { $hostedProcess.Dispose() }
+                        $hostedProcess = $null
+                    }
+                }
                 Invoke-KitControl $app 'Join' -Name
+                try { $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId -Seconds 8 }
+                catch {
+                    if ($launcher.Process.HasExited) { throw }
+                    Focus-KitWindow $app
+                    Invoke-KitControl $app 'Join' -Name
+                }
             }
         }
-        $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
+        if (-not $game) { $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId }
+        $process = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $game.Id)
+        if ($process.ParentProcessId -ne $launcher.Process.Id) { throw 'The test launcher did not start the game.' }
+        Protect-KitText $process.CommandLine | Set-Content -LiteralPath (Join-Path $Results 'client-command.txt') -Encoding UTF8
         $window = Get-KitGameWindow $game
+        # The launcher can open the game window before the map, renderer and menu are ready.
+        # Keep the wire reply from a loading slot as well as the active score row.
+        $script:KitLoopbackStatus = ''
         $reply = Wait-KitCondition {
             $status = Request-KitServer $port 'getstatus Kit'
-            if ($status -match '(?m)^-?\d+ +(\d+) +".*"' -and [int]$Matches[1] -lt 999) { $status }
-        } 50 'a player in the loopback match'
+            if ($status -and $status -cne $script:KitLoopbackStatus) {
+                $script:KitLoopbackStatus = $status
+                Protect-KitText $status | Add-Content -LiteralPath (Join-Path $Results 'server-status-trace.txt') -Encoding UTF8
+            }
+            if ($status -match '(?m)^-?\d+ +(\d+) +"[^"\r\n]+"\r?$' -and [int]$Matches[1] -lt 999) { $status }
+        } 75 'a named, active player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
-        if ($Route -eq 'connect') {
+        if ($Route -in 'connect','hosting') {
             Enable-KitGameConsole $window $LauncherHome $Results | Out-Null
             Enter-KitPlay $window
-            Send-KitCommand $window '/toggleconsole; record kit-match'
+            Save-KitFrame $window $LauncherHome $Results 'kit-loopback-playing'
+        }
+        if ($Route -eq 'connect') {
+            $summaryPath = Join-Path $LauncherHome 'main\stats\matches.jsonl'
+            $previousSummaries = if (Test-Path -LiteralPath $summaryPath) { @(Get-Content -LiteralPath $summaryPath).Count } else { 0 }
+            Send-KitCommand $window "/toggleconsole; record $demoName"
             Wait-KitCondition {
-                Select-String -LiteralPath $console -SimpleMatch 'recording to demos' -Quiet
+                Test-Path -LiteralPath $recording
             } 14 'the game to begin recording the demo' | Out-Null
             Start-Sleep -Seconds 5
             Send-KitCommand $window '/toggleconsole; stoprecord'
-            $demo = Join-Path $LauncherHome 'main\demos\kit-match.dm_1'
-            Wait-KitCondition { (Test-Path -LiteralPath $demo) -and (Get-Item -LiteralPath $demo).Length -gt 0 } 12 'a recorded demo' | Out-Null
-            Copy-Item -LiteralPath $demo -Destination $Results
+            Wait-KitCondition { Select-String -LiteralPath $console -SimpleMatch 'Stopped demo.' -Quiet } 12 'the demo writer to close' | Out-Null
+            Copy-Item -LiteralPath $recording -Destination $Results
             $games = Join-Path $serverHome 'main\games_mp.log'
-            Wait-KitCondition { (Test-Path -LiteralPath $games) -and (Select-String -LiteralPath $games -SimpleMatch 'ExitLevel' -Quiet) } 80 'the round to end' | Out-Null
-            Request-KitServer $port "rcon $password map mp_harbor" | Out-Null
-            Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match 'mp_harbor' } 45 'Harbor to load' | Out-Null
+            Wait-KitCondition { (Test-Path -LiteralPath $games) -and (Select-String -LiteralPath $games -SimpleMatch 'ExitLevel' -Quiet) } 150 'the timed round to end' | Out-Null
+            Wait-KitCondition { (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_harbor\\' } 45 'automatic rotation to Harbor' | Out-Null
+            Wait-KitCondition {
+                $status = Request-KitServer $port 'getstatus Kit'
+                $status -match '\\mapname\\mp_harbor\\' -and
+                    $status -match '(?m)^-?\d+ +(\d+) +"[^"\r\n]+"\r?$' -and [int]$Matches[1] -lt 999
+            } 75 'the player to rejoin on Harbor' | Out-Null
             Save-KitFrame $window $LauncherHome $Results 'kit-loopback-harbor'
+            $summary = Wait-KitCondition {
+                if (Test-Path -LiteralPath $summaryPath) {
+                    Get-Content -LiteralPath $summaryPath | Select-Object -Skip $previousSummaries | ForEach-Object {
+                        $_ | ConvertFrom-Json
+                    } | Where-Object { $_.map -eq 'mp_toujane' -and $_.endReason -eq 'intermission' } | Select-Object -Last 1
+                }
+            } 15 'the completed Toujane match summary'
+            $summary | Select-Object map,mode,endReason | ConvertTo-Json |
+                Set-Content -LiteralPath (Join-Path $Results 'match-summary.json') -Encoding UTF8
         }
         Stop-KitOwnedGame $game $window
-        if ($Route -eq 'hosting') {
-            Invoke-KitControl $app 'Stop server' -Name
-            Wait-KitCondition { -not (Request-KitServer $port 'getstatus Kit') } 15 'Hosting to stop' | Out-Null
+        if ($Route -eq 'connect') {
+            Focus-KitWindow $app
+            [void][KitDesktop]::ShowWindow($app, 3)
+            Wait-KitCondition {
+                if ($history = Find-KitControl $app 'All matches' -Name -AllowOffscreen) { return $history }
+                if (-not (Find-KitControl $app 'LaunchButton' -AllowOffscreen)) {
+                    Invoke-KitControl $app 'HomeItem'
+                }
+            } 30 'Home to show its match history after game exit' | Out-Null
+            # Quitting on Harbor can add a newer summary. Home shows the last
+            # match, so open the history to find the completed Toujane match.
+            $title = 'Toujane ' + [char]0x00B7 + ' Deathmatch'
+            $navigation = @{ Attempts = 0; RetryAt = [DateTime]::MinValue }
+            try {
+                Wait-KitCondition {
+                    if ($row = Find-KitControl $app $title -Name) { return $row }
+                    if ($navigation.Attempts -lt 3 -and [DateTime]::UtcNow -ge $navigation.RetryAt -and
+                        (Find-KitControl $app 'All matches' -Name -AllowOffscreen)) {
+                        Invoke-KitControl $app 'All matches' -Name -AllowOffscreen
+                        $navigation.Attempts++
+                        $navigation.RetryAt = [DateTime]::UtcNow.AddSeconds(4)
+                    }
+                } 24 'the Toujane match in the launcher' | Out-Null
+            } catch {
+                if ([KitDesktop]::GetForegroundWindow() -eq $app) {
+                    try { Save-KitDesktop $app (Join-Path $Results 'launcher-match-timeout.png') } catch { }
+                }
+                throw
+            }
+            Save-KitDesktop $app (Join-Path $Results 'launcher-match.png')
         }
+        if ($Route -eq 'hosting') {
+            $closeTrace = Join-Path $Results 'hosting-close.txt'
+            Focus-KitWindow $app
+            [KitDesktop]::Chord(18, 115)
+            Wait-KitCondition { Find-KitControl $app 'Stop and quit' -Name } 12 'the hosted server close confirmation' | Out-Null
+            Focus-KitWindow $app
+            [KitDesktop]::Tap(27)
+            Wait-KitCondition {
+                -not (Find-KitControl $app 'Stop and quit' -Name) -and
+                    (Request-KitServer $port 'getstatus Kit') -match $hostnameField
+            } 12 'the confirmation to close and the server to stay up after Cancel' | Out-Null
+            'Cancel dismissed the confirmation and the server still answered.' | Set-Content -LiteralPath $closeTrace
+            Start-Sleep -Milliseconds 700
+            Focus-KitWindow $app
+            [KitDesktop]::Chord(18, 115)
+            $confirm = Wait-KitCondition { Find-KitControl $app 'Stop and quit' -Name } 12 'the reopened quit confirmation'
+            $confirm.SetFocus()
+            [KitDesktop]::Tap(13)
+            'Confirmed Stop and quit.' | Add-Content -LiteralPath $closeTrace
+            Wait-KitCondition {
+                $launcher.Process.HasExited -and -not (Request-KitServer $port 'getstatus Kit')
+            } 20 'the launcher and its hosted server to stop' | Out-Null
+            'The launcher exited and the hosted server stopped answering.' | Add-Content -LiteralPath $closeTrace
+        }
+    } catch {
+        Protect-KitText $_.Exception.Message | Set-Content -LiteralPath (Join-Path $Results 'operation-error.txt') -Encoding UTF8
+        throw
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
         if ($launcher) { Stop-KitLauncher $launcher $Results }
         if ($Route -eq 'hosting') {
-            # If a failed join left the fixture server alive after the launcher
-            # closed, quit that host using its own generated loopback password.
-            $hosted = Find-KitHostedServer $hostName
-            $hostnameField = [regex]::Escape("\sv_hostname\$hostName\")
-            if ($hosted -and $hosted.AdminPassword -match '^[a-z0-9]{16}$' -and
-                (Request-KitServer $hosted.Port 'getstatus Kit') -match $hostnameField) {
-                Stop-SetupServer $hosted.AdminPassword $hosted.Port
-                Wait-KitCondition {
-                    (Request-KitServer $hosted.Port 'getstatus Kit') -notmatch $hostnameField
-                } 10 'the test Hosting server to stop' | Out-Null
-                'The kit closed its remaining Hosting server over loopback.' |
-                    Set-Content -LiteralPath (Join-Path $Results 'hosting-cleanup.txt')
+            if ($hostedProcess) {
+                try {
+                    if (-not $hostedProcess.HasExited) {
+                        $hostedProcess.Kill()
+                        if (-not $hostedProcess.WaitForExit(8000)) { throw 'The owned test server did not exit.' }
+                        'The kit stopped the remaining dedicated process it had verified as a child of the test launcher.' |
+                            Set-Content -LiteralPath (Join-Path $Results 'hosting-cleanup.txt')
+                    }
+                } finally { $hostedProcess.Dispose() }
             }
             $logs = Join-Path $LauncherHome 'hosting\servers'
             foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {

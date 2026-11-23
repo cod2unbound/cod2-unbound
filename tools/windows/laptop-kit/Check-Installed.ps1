@@ -6,27 +6,31 @@ function Get-KitLauncherWindow($Process) {
     } 55 'the launcher window'
 }
 
-function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name) {
+function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     $root = [Windows.Automation.AutomationElement]::FromHandle($Window)
     $property = if ($Name) { [Windows.Automation.AutomationElement]::NameProperty }
         else { [Windows.Automation.AutomationElement]::AutomationIdProperty }
     $condition = [Windows.Automation.PropertyCondition]::new($property, $Value)
     $scope = [Windows.Automation.TreeScope]::Descendants
     foreach ($control in $root.FindAll($scope, $condition)) {
-        if ($control.Current.IsEnabled -and -not $control.Current.IsOffscreen) { return $control }
+        if ($control.Current.IsEnabled -and ($AllowOffscreen -or -not $control.Current.IsOffscreen)) { $control }
     }
 }
 
-function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name) {
-    $node = Wait-KitCondition { Find-KitControl $Window $Value -Name:$Name } 12 "launcher control $Value"
-    foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
-        $action = $null
-        if ($node.TryGetCurrentPattern($pattern, [ref]$action)) {
-            if ($action -is [Windows.Automation.InvokePattern]) { $action.Invoke() } else { $action.Select() }
-            return
+function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen | Select-Object -First 1
+}
+
+function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    $action = Wait-KitCondition {
+        foreach ($control in Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen) {
+            foreach ($pattern in [Windows.Automation.InvokePattern]::Pattern, [Windows.Automation.SelectionItemPattern]::Pattern) {
+                $candidate = $null
+                if ($control.TryGetCurrentPattern($pattern, [ref]$candidate)) { return $candidate }
+            }
         }
-    }
-    throw "The launcher control $Value did not expose an action."
+    } 12 "an action for launcher control $Value"
+    if ($action -is [Windows.Automation.InvokePattern]) { $action.Invoke() } else { $action.Select() }
 }
 
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
@@ -75,6 +79,15 @@ function Set-KitLauncherProfile([string]$Edition, [string]$Renderer) {
     @('set developer 0','set logfile 2','set com_introPlayed 1',
         'set g_gametype dm','set r_aaSamples 1','set cl_punkbuster 0','set sv_punkbuster 0') |
         Set-Content -LiteralPath (Join-Path $main 'autoexec.cfg') -Encoding Ascii
+}
+
+function New-KitLauncherTestHome([string]$Source, [string]$PrivateRun) {
+    $complete = Join-Path $Source 'launcher\.launcher-setup-complete'
+    Stop-KitIfMissing $complete 'The launcher setup did not finish.'
+    $testHome = Join-Path $PrivateRun 'launcher-profile'
+    $settings = New-Folder (Join-Path $testHome 'launcher')
+    Copy-Item -LiteralPath $complete -Destination $settings
+    $testHome
 }
 
 function Stop-KitLauncher($Run, [string]$Evidence) {
@@ -134,7 +147,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
 function Invoke-KitFaults {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    Stop-KitIfMissing (Join-Path $LauncherHome 'launcher\.launcher-setup-complete') 'Launcher setup did not finish.'
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     Set-KitLauncherProfile 'original' 'dx9'

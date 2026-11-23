@@ -31,6 +31,9 @@ struct timeval { long tv_sec; long tv_usec; };
 #define SOL_SOCKET 0xffff
 #define SO_BROADCAST 0x20
 #define SO_REUSEADDR 4
+#if COD2_WINDOWS_NATIVE
+#define SO_EXCLUSIVEADDRUSE (~SO_REUSEADDR)
+#endif
 #define SO_RCVBUF 0x1002
 #define SO_SNDBUF 0x1001
 #define FIONBIO 0x8004667eUL
