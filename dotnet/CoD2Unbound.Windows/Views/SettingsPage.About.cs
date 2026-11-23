@@ -92,7 +92,6 @@ public sealed partial class SettingsPage
         var content = new StackPanel { Spacing = 10 };
         var list = new StackPanel { Spacing = 2 };
         var body = new ContentControl { Content = list, HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        Button? selected = null;
         foreach (var notice in WindowsAcknowledgements.Notices)
         {
             var entry = new Button
@@ -102,11 +101,7 @@ public sealed partial class SettingsPage
                     Fluent("ChevronRight", 16), grouped: true)
             };
             AutomationProperties.SetName(entry, $"{notice.Name}, {notice.Author}, {notice.Licence}. {notice.Role}");
-            entry.Click += (_, _) =>
-            {
-                selected = entry;
-                ShowLicence(notice);
-            };
+            entry.Click += (_, _) => ShowLicence(notice, entry);
             list.Children.Add(entry);
         }
         content.Children.Add(Body("CoD2 Unbound stands on other people’s work. Select one to read its licence."));
@@ -126,13 +121,14 @@ public sealed partial class SettingsPage
         dialog.Content = content;
         await dialog.ShowAsync();
 
-        void ShowLicence(WindowsNotice notice)
+        void ShowLicence(WindowsNotice notice, Button entry)
         {
             var back = new Button { Content = IconLabel("ChevronLeft", "All acknowledgements", 16) };
+            AutomationProperties.SetName(back, "All acknowledgements");
             back.Click += (_, _) =>
             {
+                FocusOnLoad(entry);
                 body.Content = list;
-                selected?.Focus(FocusState.Programmatic);
             };
             var text = new TextBlock
             {
@@ -140,11 +136,22 @@ public sealed partial class SettingsPage
             };
             var label = new TextBlock { Text = notice.Name, Style = StyleFor("SectionTitle") };
             AutomationProperties.SetHeadingLevel(label, AutomationHeadingLevel.Level2);
+            FocusOnLoad(back);
             body.Content = new StackPanel { Spacing = 8, Children =
             {
                 back, label, Caption($"{notice.Author} · {notice.Licence}"), text
             } };
-            back.Focus(FocusState.Programmatic);
+        }
+
+        static void FocusOnLoad(Control control)
+        {
+            control.Loaded += OnLoaded;
+
+            void OnLoaded(object sender, RoutedEventArgs args)
+            {
+                control.Loaded -= OnLoaded;
+                control.Focus(FocusState.Programmatic);
+            }
         }
     }
 }
