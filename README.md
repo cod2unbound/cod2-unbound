@@ -273,6 +273,8 @@ all of it before you post.
   starts when you agree. See What’s Sent in **Settings → Privacy** lists
   the events and fields and shows a real example. The events use an install
   number, a random event number and a time rounded down to the minute.
+  A game’s end and duration are sent only if the launcher recorded its
+  start under the same install number.
   Switching usage data off clears the local number and unsent events.
   [Read the full privacy notice](https://cod2unbound.com/privacy).
 

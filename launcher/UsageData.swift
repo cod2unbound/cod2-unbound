@@ -67,7 +67,7 @@ struct UsageEndpoint: Sendable {
     private static let maxAgeMinutes = 7 * 24 * 60
 
     private struct SendJournal: Codable, Sendable {
-        static let currentSchemaVersion = 2
+        static let currentSchemaVersion = 3
         var schemaVersion = Self.currentSchemaVersion
         var install: UUID?
         /// Local guard against counting this UTC day twice, including across number resets.
@@ -103,16 +103,17 @@ struct UsageEndpoint: Sendable {
         try? Self.remove(home.appendingPathComponent("usage-setup.json"))
         guard available else { return }
         if let stored: SendJournal = Self.read(stateURL, limit: 512 * 1024),
-           stored.schemaVersion == 1 || stored.schemaVersion == SendJournal.currentSchemaVersion {
+           (1...SendJournal.currentSchemaVersion).contains(stored.schemaVersion) {
             state.lastOpenedDay = stored.lastOpenedDay
             if consent == .yes {
                 state = stored
-                if stored.schemaVersion == 1 {
-                    // The old queue mixed replayed steps and a synthetic app open with real
-                    // post-consent events. They may even share a minute, so drop ambiguous entries.
+                if stored.schemaVersion < SendJournal.currentSchemaVersion {
                     state.events.removeAll {
                         switch $0.event {
-                        case .setupStepReached, .setupStepSkipped, .appOpened: true
+                        // Older game ends could include minutes from before consent.
+                        case .gameEnded: true
+                        // Version 1 also mixed pre-consent setup and app opens with later events.
+                        case .setupStepReached, .setupStepSkipped, .appOpened: stored.schemaVersion == 1
                         default: false
                         }
                     }

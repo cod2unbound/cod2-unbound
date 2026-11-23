@@ -12,6 +12,7 @@ import Foundation
         let fixture = Fixture(root: root, endpoint: endpoint)
         try await consent(fixture)
         try await legacySendJournal(fixture)
+        try await gameSessionConsent(fixture)
         try await retryAndRotation(fixture)
         try await bounds(fixture)
         try await privacy(fixture)
@@ -144,6 +145,7 @@ import Foundation
         let accepted = f.usage("consent-settings", .yes)
         accepted.applicationOpened(); accepted.applicationOpened()
         try await f.wait("first post-consent launch missing") { accepted.queuedCount == 0 }
+        await accepted.savePendingEvents()
         let sameDay = f.usage("consent-settings", .yes)
         sameDay.applicationOpened(); sameDay.applicationOpened()
         try check(sameDay.queuedCount == 0, "app-open suppressed across restarts and repeat calls")
@@ -174,26 +176,137 @@ import Foundation
         print("PASS: setup, one-time sheet and Settings send only events from consent onward, no sends nothing, daily app open")
     }
 
+    static func gameSessionConsent(_ f: Fixture) async throws {
+        enum Change: String, CaseIterable { case unchanged, offAndOn, reset }
+        let model = LauncherModel()
+        try check(model.home.path.hasPrefix(f.root.path + "/"), "game sessions use the private test home")
+        model.booted = true
+
+        func startGame() {
+            model.gameRunning = true
+            model.gameStartedAt = f.clock.now
+            model.recordUsageGameStart(engine: .cod2x, renderer: .metal)
+        }
+
+        func endGame() {
+            model.gameRunning = false
+            model.recordUsageGameEnd(code: 0, at: model.gameStartedAt.addingTimeInterval(185))
+        }
+
+        func gameEvents(since start: Int) -> [[String: Any]] {
+            f.events(since: start).filter { ["game started", "game ended"].contains($0["event"] as? String ?? "") }
+        }
+
+        for source in [UsageConsentSource.setup, .sheet, .settings] {
+            let first = f.bodyLines().count
+            let usage = f.usage("game-opt-in-" + source.rawValue)
+            model.usageData = usage
+            model.onboard = source == .setup
+            startGame()
+            switch source {
+            case .setup:
+                model.setupStep = .usage
+                model.nextSetup()
+                model.onboard = false
+            case .sheet:
+                model.setUsageConsent(send: true, source: .sheet)
+            case .settings:
+                model.usageSwitch = true
+            }
+            try check(usage.installNumber != nil, "yes granted during play in \(source.rawValue)")
+            endGame()
+            try await f.wait("mid-game opt-in batch did not drain") { usage.queuedCount == 0 }
+            try check(gameEvents(since: first).isEmpty, "yes in \(source.rawValue) sent duration for a game started before consent")
+        }
+
+        for change in Change.allCases {
+            let first = f.bodyLines().count
+            let folder = "game-consent-" + change.rawValue
+            let usage = f.usage(folder)
+            model.usageData = usage
+            model.usageSwitch = true
+            let startNumber = try require(usage.installNumber)
+            startGame()
+            try await f.wait("game start did not drain") { usage.queuedCount == 0 }
+            let started = gameEvents(since: first)
+            try check(started.count == 1 && started.first?["event"] as? String == "game started" &&
+                      started.first?["distinct_id"] as? String == startNumber.uuidString.lowercased(),
+                      "one game start recorded with the original install number")
+
+            switch change {
+            case .offAndOn:
+                model.usageSwitch = false
+                model.usageSwitch = true
+            case .reset:
+                try check(model.resetUsageNumber(), "reset during play succeeded")
+            case .unchanged:
+                usage.holdSending = true // Exercise the recorded end after reopening the send journal.
+            }
+            let endNumber = try require(usage.installNumber)
+            try check((endNumber == startNumber) == (change == .unchanged), "install number after \(change)")
+            endGame()
+            let sender: UsageData
+            if change == .unchanged {
+                await usage.savePendingEvents()
+                sender = f.usage(folder, .yes)
+                sender.applicationOpened()
+            } else {
+                sender = usage
+            }
+            try await f.wait("game end batch did not drain") { sender.queuedCount == 0 }
+            let events = gameEvents(since: first)
+            if change == .unchanged {
+                let end = events.last
+                let properties = end?["properties"] as? [String: Any]
+                try check(events.count == 2 && end?["event"] as? String == "game ended" &&
+                          end?["distinct_id"] as? String == startNumber.uuidString.lowercased() &&
+                          properties?["minutes"] as? Int == 3 && properties?["how"] as? String == "closed normally",
+                          "yes before launch sends start and end with the same install number and elapsed minutes")
+            } else {
+                try check(events.count == 1, "\(change) sent the old game's duration under a new install number")
+            }
+        }
+        let first = f.bodyLines().count
+        let attached = f.usage("game-already-running")
+        model.usageData = attached
+        model.gameRunning = true // No start event when attaching.
+        model.gameStartedAt = f.clock.now
+        model.usageSwitch = true
+        endGame()
+        try await f.wait("reattached game batch did not drain") { attached.queuedCount == 0 }
+        try check(gameEvents(since: first).isEmpty, "reattaching never supplies a recorded game start")
+        print("PASS: game duration requires a start under the same install number")
+    }
+
     static func legacySendJournal(_ f: Fixture) async throws {
-        let folder = "legacy-send"
-        let home = f.root.appendingPathComponent(folder)
-        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         let minute = Int(f.clock.now.timeIntervalSince1970 / 60)
-        let events = [UsageEvent.usageDataTurnedOn(.setup), .setupStepReached(.welcome), .appOpened, .setupStepReached(.ready), .loadoutMade]
-            .map { UsageOccurrence(id: UUID(), minute: minute, event: $0, facts: .preview) }
-        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(events))
-        let install = UUID()
-        let journal = try JSONSerialization.data(withJSONObject: [
-            "schemaVersion": 1, "install": install.uuidString, "lastOpenedDay": minute / 1440, "events": encoded,
-        ])
-        try journal.write(to: home.appendingPathComponent("usage-data.json"))
-        let start = f.bodyLines().count
-        let usage = f.usage(folder, .yes)
-        usage.applicationOpened()
-        try await f.wait("legacy batch did not drain") { usage.queuedCount == 0 }
-        try check(usage.installNumber == install &&
-                  f.events(since: start).compactMap { $0["event"] as? String } == ["usage data turned on", "loadout made"],
-                  "migration drops pending setup steps and app opens of uncertain consent")
+        let events: [UsageEvent] = [
+            .usageDataTurnedOn(.setup), .setupStepReached(.welcome), .appOpened, .setupStepReached(.ready),
+            .gameStarted(engine: .cod2x, renderer: .metal, mode: .windowed, scale: 100),
+            .gameEnded(.normal, minutes: 3), .loadoutMade,
+        ]
+        let occurrences = events.map { UsageOccurrence(id: UUID(), minute: minute, event: $0, facts: .preview) }
+        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(occurrences))
+        for schema in [1, 2] {
+            let folder = "legacy-send-\(schema)"
+            let home = f.root.appendingPathComponent(folder)
+            try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+            let install = UUID()
+            let journal = try JSONSerialization.data(withJSONObject: [
+                "schemaVersion": schema, "install": install.uuidString, "lastOpenedDay": minute / 1440, "events": encoded,
+            ])
+            try journal.write(to: home.appendingPathComponent("usage-data.json"))
+            let start = f.bodyLines().count
+            let usage = f.usage(folder, .yes)
+            usage.applicationOpened()
+            try await f.wait("legacy batch did not drain") { usage.queuedCount == 0 }
+            let setupEvents = schema == 1 ? [] : ["setup step reached", "app opened", "setup step reached"]
+            let sent = f.events(since: start).compactMap { $0["event"] as? String }
+            try check(!sent.contains("game ended"), "schema \(schema) sent a pending game end of uncertain consent")
+            try check(usage.installNumber == install &&
+                      sent == ["usage data turned on"] + setupEvents + ["game started", "loadout made"],
+                      "schema \(schema) keeps the install number and unambiguous events")
+        }
         print("PASS: legacy send journal preserves the install number and unambiguous pending events")
     }
 

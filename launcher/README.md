@@ -377,12 +377,15 @@ The sender uses `https://eu.i.posthog.com/batch/`. `COD2_USAGE_URL` can name a s
 port and checks the captured JSON. `COD2_LAUNCHER_SKIP_WINDOWS=1` runs the full launcher
 suite through its headless checks.
 
-The sender drops events recorded before consent. On upgrade it removes the old
-`usage-setup.json` without reading it. `usage-data.json` is a private, versioned send
-journal with the install UUID, a daily app-open marker and up to 300 typed events
-from the past week. When loading an old send journal, it discards pending setup
-steps and app-open events because the old format mixed activity from before and
-after consent. It keeps the install number and other pending events. The sender
+Game ends and durations are recorded only for games the launcher recorded starting
+under the same install number. The sender drops events recorded before consent.
+On upgrade it removes the old `usage-setup.json` without reading it.
+`usage-data.json` is a private, versioned send journal with the install UUID,
+a daily app-open marker and up to 300 typed events from the past week. The sender
+discards pending game ends from older journals, which could include time before
+consent. For a version 1 journal it also discards pending setup steps and app-open
+events because that version mixed activity from before and after consent.
+It keeps the install number and other pending events. The sender
 sends up to 32 events per POST and retries with exponential backoff. Off clears the
 UUID and queue. Reset Number replaces the UUID and clears the old queue. The daily
 marker can remain on the Mac so a reset or re-enable cannot count the same UTC day

@@ -89,6 +89,23 @@ import Foundation
 
     func recordUsage(_ event: UsageEvent) { if booted && !snapshot { usageData.record(event) } }
 
+    func recordUsageGameStart(engine: GameEngine, renderer: GameRenderer) {
+        usageGameStart = nil
+        guard booted, !snapshot, let install = usageData.installNumber else { return }
+        let mode = UsageDisplayMode(rawValue: settings.fullscreen) ?? .unknown
+        usageData.record(.gameStarted(engine: engine, renderer: renderer, mode: mode, scale: settings.renderScale))
+        usageGameStart = (gameStartedAt, install)
+    }
+
+    func recordUsageGameEnd(code: Int32, at end: Date) {
+        defer { usageGameStart = nil }
+        guard let start = usageGameStart, start.install == usageData.installNumber else { return }
+        let reports = code == 0 || code == 1 ? [] : CrashReports.all(in: home, since: start.time)
+        if let how = UsageGameEnd.observed(code: code, requestedQuit: quittingGame, reports: reports) {
+            recordUsage(.gameEnded(how, minutes: max(0, Int(end.timeIntervalSince(start.time) / 60))))
+        }
+    }
+
     func recordUsageSetupStep(_ step: SetupStep) {
         let usageStep: UsageSetupStep = switch step {
         case .welcome: .welcome
