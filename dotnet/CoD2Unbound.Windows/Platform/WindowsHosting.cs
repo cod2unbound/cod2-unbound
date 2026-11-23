@@ -108,9 +108,9 @@ internal sealed class WindowsHosting
         await RefreshAsync();
     }
 
-    internal async Task StopAllAsync()
+    internal async Task ShutdownAsync()
     {
-        await session.StopAllAsync();
+        await session.ShutdownAsync();
         await RefreshAsync();
     }
 

@@ -24,6 +24,7 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
     private readonly SemaphoreSlim gate = new(1);
     private readonly Dictionary<string, Slot> slots = new(StringComparer.OrdinalIgnoreCase);
     private readonly HostedAdminQueue admin = new(udp, clock);
+    private bool shuttingDown;
 
     private sealed class Slot(HostedServer server)
     {
@@ -41,6 +42,8 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (shuttingDown)
+                return new(HostedPhase.Failed, Problem: "CoD2 Unbound is closing.");
             if (slots.TryGetValue(server.Id, out var existing) && existing.Process is not null)
                 return existing.State;
 
@@ -164,13 +167,20 @@ public sealed class HostingSession(IProcessSupervisor processes, IHostingFiles f
         finally { gate.Release(); }
     }
 
-    public async Task StopAllAsync(CancellationToken cancellationToken = default)
+    public Task StopAllAsync(CancellationToken cancellationToken = default) =>
+        StopAllAsync(shutdown: false, cancellationToken);
+
+    public Task ShutdownAsync(CancellationToken cancellationToken = default) =>
+        StopAllAsync(shutdown: true, cancellationToken);
+
+    private async Task StopAllAsync(bool shutdown, CancellationToken cancellationToken)
     {
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             await Task.WhenAll(slots.Values.Where(slot => slot.Process is not null)
                 .Select(slot => StopLockedAsync(slot, slot.Process!, cancellationToken))).ConfigureAwait(false);
+            shuttingDown |= shutdown;
         }
         finally { gate.Release(); }
     }

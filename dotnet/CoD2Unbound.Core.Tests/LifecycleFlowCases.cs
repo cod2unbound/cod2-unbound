@@ -124,6 +124,17 @@ internal static partial class Program
             _ = session.StartAsync(server, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult();
             session.StopAllAsync().GetAwaiter().GetResult();
             Equal(HostedPhase.Stopped, Sync(session.SnapshotAsync())[server.Id].Phase);
+            Equal(HostedPhase.Starting, session.StartAsync(server, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult().Phase);
+            var first = processes.Process!;
+            var other = server with { Id = "test2", Port = 28962 };
+            Equal(HostedPhase.Starting, session.StartAsync(other, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult().Phase);
+            var second = processes.Process!;
+            session.ShutdownAsync().GetAwaiter().GetResult();
+            Equal(true, first.Exited.IsCompleted);
+            Equal(true, second.Exited.IsCompleted);
+            Equal(true, Sync(session.SnapshotAsync()).Values.All(state => state.Phase == HostedPhase.Stopped));
+            Equal(HostedPhase.Failed, session.StartAsync(server, binary, "C:/data", "C:/hosting").GetAwaiter().GetResult().Phase);
+            Equal(4, processes.Starts.Count);
         });
     }
 
