@@ -66,6 +66,8 @@ public sealed partial class HostingPage
             full.Visibility = Visibility.Collapsed;
             AutomationProperties.SetLiveSetting(full, AutomationLiveSetting.Polite);
             log.TextWrapping = TextWrapping.Wrap;
+            log.LineHeight = 18;
+            log.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
             log.IsTextSelectionEnabled = true;
             AutomationProperties.SetName(log, "Server log");
             tail = new ScrollViewer

@@ -109,6 +109,7 @@ public sealed partial class HostingPage : Page
         Details.Children.Add(Heading(server.Name));
         Details.Children.Add(phaseText);
         actionFeedback = Caption("");
+        actionFeedback.Visibility = Visibility.Collapsed;
         AutomationProperties.SetLiveSetting(actionFeedback, AutomationLiveSetting.Polite);
         var nextMap = Action("Next Map", async () =>
         {
