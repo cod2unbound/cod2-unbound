@@ -79,6 +79,9 @@ public sealed partial class MainWindow
             ShellCommand.GameDataFolder => Directory.Exists(session.Setup.DataPath),
             ShellCommand.CheckUpdates => session.CanCheckUpdates && updateRequest is null,
             ShellCommand.ClearRecent => !session.Library.Recent.IsEmpty,
+            ShellCommand.ExportHostedServer or ShellCommand.RevealHostedServer or ShellCommand.DeleteHostedServer or
+                ShellCommand.RevealHostedExport or ShellCommand.RetryHostedExport =>
+                servers?.ActiveHosting?.CanRunCommand(command) == true,
             _ => true
         };
     }
@@ -119,6 +122,9 @@ public sealed partial class MainWindow
         yield return Action(ShellCommand.ReleaseNotes, "Release notes");
         yield return Action(ShellCommand.ReportProblem, "Report a problem…");
         yield return Action(ShellCommand.ClearRecent, "Clear recent servers");
+        if (ContentFrame.Content is ServersPage { ActiveHosting: not null })
+            foreach (var target in JumpIndex.HostingActions(CanRunShellCommand))
+                yield return target;
 
         JumpTarget Action(ShellCommand command, string title) =>
             new(JumpGroup.Actions, command.ToString(), title, Keys: LauncherShortcuts.Keys(command), Enabled: CanRunShellCommand(command));
@@ -215,6 +221,14 @@ public sealed partial class MainWindow
                     break;
                 case ShellCommand.ClearRecent:
                     await ClearRecentFromShellAsync();
+                    break;
+                case ShellCommand.ExportHostedServer:
+                case ShellCommand.RevealHostedServer:
+                case ShellCommand.DeleteHostedServer:
+                case ShellCommand.RevealHostedExport:
+                case ShellCommand.RetryHostedExport:
+                    if (ContentFrame.Content is ServersPage { ActiveHosting: { } hosting })
+                        await hosting.RunCommandAsync(command);
                     break;
             }
         });

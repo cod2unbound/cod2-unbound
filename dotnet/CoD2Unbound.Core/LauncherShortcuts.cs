@@ -8,7 +8,8 @@ public enum ShellCommand
     RefreshServers, Connect, Favorite, Import, Paste, Undo, Open, CopyAddress, FilterServers,
     NewLoadout, DuplicateLoadout, ExportLoadout, Rename, Delete, CopyFile, ContextMenu, FullScreen, Help, Close,
     Checkup, History, GameDataFolder, MyFilesFolder, LogsFolder, CheckUpdates, ShortcutHelp, ReleaseNotes,
-    ReportProblem, ClearRecent, SaveLoadoutText
+    ReportProblem, ClearRecent, SaveLoadoutText,
+    ExportHostedServer, RevealHostedServer, DeleteHostedServer, RevealHostedExport, RetryHostedExport
 }
 
 public sealed record LauncherShortcut(ShellCommand Command, string Title, ImmutableArray<string> Chords)
@@ -46,6 +47,11 @@ public static class LauncherShortcuts
         new(ShellCommand.CopyFile, "Copy demo or screenshot", ["Ctrl+C"]),
         new(ShellCommand.SaveLoadoutText, "Apply loadout text", ["Ctrl+S"]),
         new(ShellCommand.ContextMenu, "Row context menu", ["Shift+F10", "Menu key"]),
+        new(ShellCommand.ExportHostedServer, "Export hosted server", ["Alt+X"]),
+        new(ShellCommand.RevealHostedServer, "Show hosted server folder", ["Shift+F10, then Alt+F"]),
+        new(ShellCommand.DeleteHostedServer, "Delete hosted server", ["Shift+F10, then Alt+D"]),
+        new(ShellCommand.RevealHostedExport, "Show exported server folder", ["Alt+B"]),
+        new(ShellCommand.RetryHostedExport, "Retry hosted server export", ["Alt+Y"]),
         new(ShellCommand.FullScreen, "Full screen", ["F11"]),
         new(ShellCommand.Help, "Help", ["F1"]),
         new(ShellCommand.Close, "Close", ["Alt+F4"])

@@ -8,16 +8,23 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid ColumnSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Spacing="4">
+            <Grid x:Name="HostingExportFeedback" Grid.ColumnSpan="2" Visibility="Collapsed">
+                <InfoBar x:Name="HostingExportStatus" Margin="0,0,0,12" Visibility="Collapsed" />
+            </Grid>
+            <StackPanel Grid.Row="1" Spacing="4">
                 <TextBlock Text="Servers" Style="{StaticResource PageTitle}" />
                 <TextBlock x:Name="BrowserSubtitle" FontSize="12" Style="{StaticResource SecondaryText}"
                            Text="Original 1.3 and CoD2x servers from the public master lists. Nothing is contacted until you refresh." />
             </StackPanel>
-            <StackPanel x:Name="BrowserActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Margin="0,6,0,0">
+            <StackPanel x:Name="BrowserActions" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Margin="0,6,0,0">
                 <TextBlock x:Name="RefreshStatus" FontSize="12" Style="{StaticResource SecondaryText}"
                            VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                 <Button x:Name="RefreshButton" Style="{StaticResource IconAction}" AccessKey="R" Click="OnRefresh"
@@ -33,13 +40,21 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
-            <Button x:Name="NewHost" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-                    AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" Visibility="Collapsed">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
-                    <TextBlock Text="New server" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
+            <StackPanel x:Name="HostingActions" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Visibility="Collapsed">
+                <Button x:Name="ExportHost" AccessKey="X" AutomationProperties.Name="Export for another machine…" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDocument}" FontSize="20" />
+                        <TextBlock Text="Export for another machine…" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="20" />
+                        <TextBlock Text="New server" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1" ColumnSpacing="8">
             <Grid.ColumnDefinitions>

@@ -11,6 +11,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Text="Your servers" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="8,4" />
                 <ListView x:Name="Servers" Grid.Row="1" SelectionChanged="OnServerChanged" ContainerContentChanging="OnServerRowChanged"
@@ -33,6 +34,8 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+                <TextBlock Grid.Row="2" Text="Closing CoD2 Unbound asks before stopping running servers."
+                           Style="{StaticResource SecondaryText}" FontSize="12" TextWrapping="Wrap" Margin="8,4" />
             </Grid>
         </Border>
         <ScrollViewer Grid.Column="1" x:Name="DetailScroll" VerticalScrollBarVisibility="Auto">
