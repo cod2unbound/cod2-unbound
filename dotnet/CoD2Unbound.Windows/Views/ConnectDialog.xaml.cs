@@ -7,18 +7,19 @@ namespace CoD2Unbound.Windows.Views;
 public sealed partial class ConnectDialog : ContentDialog
 {
     private readonly string? linkedAddress;
+    private readonly ServerLink? openedLink;
     private readonly bool passwordRequired;
 
     internal ConnectDialog(string? address = null, ServerLink? link = null, bool passwordRequired = false)
     {
         this.passwordRequired = passwordRequired;
+        openedLink = link;
         linkedAddress = link?.Target.Address ?? (passwordRequired ? address : null);
         InitializeComponent();
         AddressBox.Text = address ?? "";
         if (link is not null)
         {
             AddressBox.IsReadOnly = true;
-            Description.Text = $"This link requests {EditionName(link.Edition)}.";
             PasswordInput.Password = link.Target.Password ?? "";
             DefaultButton = ContentDialogButton.Close;
         }
@@ -37,6 +38,7 @@ public sealed partial class ConnectDialog : ContentDialog
     }
 
     internal ServerAddress? Target { get; private set; }
+    internal GameEdition? RequestedEdition { get; private set; }
 
     internal static string EditionName(GameEdition edition) => edition == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3";
 
@@ -44,9 +46,14 @@ public sealed partial class ConnectDialog : ContentDialog
 
     private void UpdateTarget()
     {
-        if (AddressBox is null || PasswordInput is null)
+        if (AddressBox is null || PasswordInput is null || Description is null)
             return;
-        var address = linkedAddress is null ? ServerAddress.Parse(AddressBox.Text) : new ServerAddress(linkedAddress, null);
+        var link = openedLink ?? (linkedAddress is null ? ServerLink.Parse(AddressBox.Text.Trim()) : null);
+        var address = linkedAddress is null ? link?.Target ?? ServerAddress.Parse(AddressBox.Text) : new ServerAddress(linkedAddress, null);
+        RequestedEdition = link?.Edition;
+        if (!passwordRequired)
+            Description.Text = RequestedEdition is { } edition ? $"This link requests {EditionName(edition)}." :
+                "For a server that isn’t in the list, or one a friend sent you.";
         string password = PasswordInput.Password;
         Target = address is null || (passwordRequired && password.Length == 0) || ServerAddress.PasswordProblem(password) is not null ? null :
             password.Length == 0 ? address : address with { Password = password };

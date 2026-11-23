@@ -31,7 +31,7 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal Task FavoriteAsync(GameServer server) => session.ToggleFavoriteAsync(server.Address);
 }
 
-internal sealed record ServerRow(GameServer Server)
+internal sealed record ServerRow(GameServer Server, bool Favorite)
 {
     public string Name => QuakeColors.Plain(Server.Name);
     public string Map => MapCatalog.DisplayName(Server.Map);
@@ -41,5 +41,13 @@ internal sealed record ServerRow(GameServer Server)
     public Microsoft.UI.Xaml.Visibility ModVisibility => Views.PagePresentation.IsVisible(Server.Mod.Length != 0);
     public string Players => Server.MaxPlayers > 0 ? $"{Server.PlayerCount}/{Server.MaxPlayers}" : "—";
     public string Ping => Server.Ping < 0 ? "—" : $"{Server.Ping} ms";
-    public string Label => $"{Name}, {Map}, {Players}, {Ping}";
+    public string Label => string.Join(", ", new[]
+    {
+        Name, Map, GameModes.Long(Server.GameType), Edition,
+        Server.Mod.Length == 0 ? null : Server.Mod,
+        Server.MaxPlayers > 0 ? $"{Server.PlayerCount} of {Server.MaxPlayers} players" : null,
+        Server.Ping >= 0 ? $"{Server.Ping} milliseconds" : null,
+        Server.PasswordRequired ? "needs a password" : null,
+        Favorite ? "favorite" : null
+    }.OfType<string>());
 }

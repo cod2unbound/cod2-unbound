@@ -45,7 +45,7 @@ public sealed partial class ServersPage : Page
     private void Render(string? address = null, ImmutableArray<GameServer>? live = null)
     {
         address ??= (ServerList.SelectedItem as ServerRow)?.Server.Address;
-        var rows = model.Visible(live).Select(server => new ServerRow(server)).ToArray();
+        var rows = model.Visible(live).Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
         ServerList.ItemsSource = rows;
         ServerList.SelectedItem = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
         int count = model.Filters.Count;
@@ -53,21 +53,20 @@ public sealed partial class ServersPage : Page
         FilterButton.Content = IconLabel("Filter", filters);
         AutomationProperties.SetName(FilterButton, filters);
         if (refreshing is null)
-            RefreshStatus.Text = rows.Length == 0 ? EmptyState() : CountWithAge(rows.Length);
+            RefreshStatus.Text = WithCacheAge(rows.Length == 0 ? EmptyState() : $"{rows.Length} {(rows.Length == 1 ? "server" : "servers")}");
         RenderDetails();
     }
 
-    private string CountWithAge(int count)
+    private string WithCacheAge(string result)
     {
-        string result = $"{count} {(count == 1 ? "server" : "servers")}";
         if (model.CachedAt is not { } date)
             return result;
         var age = DateTimeOffset.UtcNow - date;
         if (age < TimeSpan.FromMinutes(1))
-            return result + " · just now";
+            return result + " · List updated just now";
         if (age < TimeSpan.FromHours(1))
-            return result + $" · {(int)age.TotalMinutes} min ago";
-        return result + " · " + LauncherText.StencilTime(date.ToLocalTime());
+            return result + $" · List updated {(int)age.TotalMinutes} min ago";
+        return result + " · List updated " + LauncherText.StencilTime(date.ToLocalTime());
     }
 
     private string EmptyState()
@@ -131,6 +130,8 @@ public sealed partial class ServersPage : Page
         if (row.DataContext is not ServerRow entry || row.FindName("RowName") is not TextBlock name)
             return;
         var server = entry.Server;
+        if (ContainingListItem(row) is { } item)
+            AutomationProperties.SetName(item, entry.Label);
         var facts = ServerFacts.From(server);
         bool contrast = shell.IsHighContrast;
         name.Inlines.Clear();
@@ -401,7 +402,11 @@ public sealed partial class ServersPage : Page
                     if (refreshing != cancellation)
                         return;
                     Render(live: state.Servers);
-                    RefreshStatus.Text = message = state.Message ?? "Refreshing the server list";
+                    if (state.Refreshing)
+                        RefreshStatus.Text = WithCacheAge(state.Asked == 0 ? "Asking the master servers for the list…" :
+                            $"Checking {state.Asked} servers. {state.Finished} checked, {state.Answered} answered.");
+                    else
+                        message = state.Message;
                 });
                 await model.RefreshAsync(progress, cancellation.Token);
             }
@@ -413,7 +418,7 @@ public sealed partial class ServersPage : Page
                 ToolTipService.SetToolTip(RefreshButton, "Refresh server list (Ctrl+R)");
                 Render();
                 if (message is not null)
-                    RefreshStatus.Text = message;
+                    RefreshStatus.Text = WithCacheAge(message);
             }
         });
     }
@@ -426,9 +431,8 @@ public sealed partial class ServersPage : Page
 
     private async Task ShowConnectAsync(ServerLink? link = null)
     {
-        var target = await shell.PromptServerAsync(link?.Target.Address, link);
-        if (target is not null)
-            await JoinAsync(target, link is null ? UsageJoin.TypedAddress : UsageJoin.Link, link?.Edition);
+        if (await shell.PromptServerAsync(link?.Target.Address, link) is { } entry)
+            await JoinAsync(entry.Target, entry.Edition is null ? UsageJoin.TypedAddress : UsageJoin.Link, entry.Edition);
     }
 
     private async void OnJoin(object sender, RoutedEventArgs args)

@@ -303,7 +303,7 @@ public sealed partial class MainWindow : Window
         {
             Nav.SelectedItem = ServersItem;
             var page = new ServersPage(this, session, scope, address);
-            if (refreshServers && session.Settings.Working.RefreshServersOnOpen)
+            if (refreshServers && session.Browser.ShouldRefreshOnOpen(session.Settings.Working.RefreshServersOnOpen, session.Library))
                 page.Loaded += OnServersLoaded;
             ContentFrame.Content = page;
         }

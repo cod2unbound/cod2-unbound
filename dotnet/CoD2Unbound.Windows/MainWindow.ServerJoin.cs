@@ -8,11 +8,12 @@ public sealed partial class MainWindow
 {
     private readonly ServerAdmission serverAdmission = new();
 
-    internal async Task<ServerAddress?> PromptServerAsync(string? address = null, ServerLink? link = null,
+    internal async Task<(ServerAddress Target, GameEdition? Edition)?> PromptServerAsync(string? address = null, ServerLink? link = null,
         bool passwordRequired = false)
     {
         var dialog = new ConnectDialog(address, link, passwordRequired) { XamlRoot = DialogRoot, RequestedTheme = DialogTheme };
-        return await dialog.ShowAsync() == ContentDialogResult.Primary ? dialog.Target : null;
+        return await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Target is { } target
+            ? (target, dialog.RequestedEdition) : null;
     }
 
     internal async Task<string?> JoinServerAsync(ServerAddress target, UsageJoin source, GameEdition? requested = null,
@@ -22,7 +23,7 @@ public sealed partial class MainWindow
             return "Call of Duty 2 is already running.";
 
         known ??= session.Library.Cache.FirstOrDefault(server => server.Address == target.Address);
-        if (source == UsageJoin.TypedAddress || (lookupUnknown && known is null))
+        if (source == UsageJoin.TypedAddress || ((lookupUnknown || requested is not null) && known is null))
         {
             known = await session.ServerQuery.ServerAsync(target.Address) ?? known;
             serverAdmission.LookUpFinished(target.Address, cancelled: false);
@@ -40,7 +41,7 @@ public sealed partial class MainWindow
         {
             if (await PromptServerAsync(target.Address, passwordRequired: true) is not { } unlocked)
                 return null;
-            target = unlocked;
+            target = unlocked.Target;
         }
         if (decision.Action == ServerAdmissionAction.ConfirmVersion)
         {
