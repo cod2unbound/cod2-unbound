@@ -15,6 +15,7 @@ public sealed partial class HomePage
     /// Home's own row styles (HomePage.xaml), built from the shared tokens.
     private Style LocalStyle(string key) => (Style)Resources[key];
     private readonly List<Button> recentButtons = [];
+    private readonly List<(ListViewItem Item, bool Listed)> recentItems = [];
 
     /// A card's list: a stock ListView whose items click, with the Mac's row hover and press fills set
     /// through the item's own lightweight resources.
@@ -55,6 +56,7 @@ public sealed partial class HomePage
     {
         RecentRows.Children.Clear();
         recentButtons.Clear();
+        recentItems.Clear();
         RecentRows.Margin = model.Recent.IsEmpty ? new Thickness() : new Thickness(-8, 0, -8, 0);
         if (model.Recent.IsEmpty)
         {
@@ -66,7 +68,7 @@ public sealed partial class HomePage
         AutomationProperties.SetName(list, "Recent servers");
         list.ItemClick += async (_, args) =>
         {
-            if (args.ClickedItem is FrameworkElement { Tag: GameServer server } && !server.Fields.IsEmpty)
+            if (args.ClickedItem is FrameworkElement { Tag: GameServer server } && RowOpens(!server.Fields.IsEmpty))
                 await shell.OpenServersAsync(ServerScope.All, server.Address);
         };
         foreach (var server in model.Recent)
@@ -123,7 +125,7 @@ public sealed partial class HomePage
 
         var item = new ListViewItem { Content = row, Tag = server, Style = LocalStyle("RecentItem"), ContextFlyout = RecentMenu(server) };
         AutomationProperties.SetName(item, spoken);
-        AutomationProperties.SetHelpText(item, listed ? "Shows this server in Servers" : "");
+        recentItems.Add((item, listed));
         return item;
     }
 
@@ -150,8 +152,28 @@ public sealed partial class HomePage
         }
     }
 
+    /// As on the Mac, a row shows its server in Servers only when a list has shown that server and pages
+    /// can change (not while the game runs); otherwise it is plain text beside its Launch button.
+    private bool RowOpens(bool listed) => listed && !model.Game.Running;
+
     private void RenderRecentState(string? reason)
     {
+        foreach (var (item, listed) in recentItems)
+        {
+            bool opens = RowOpens(listed);
+            // The item's own lightweight resources: no hover or press fill on a row that does not open.
+            if (opens)
+            {
+                item.Resources.Remove("ListViewItemBackgroundPointerOver");
+                item.Resources.Remove("ListViewItemBackgroundPressed");
+            }
+            else
+            {
+                item.Resources["ListViewItemBackgroundPointerOver"] = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                item.Resources["ListViewItemBackgroundPressed"] = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            }
+            AutomationProperties.SetHelpText(item, opens ? "Shows this server in Servers" : "");
+        }
         foreach (var button in recentButtons)
         {
             button.IsEnabled = reason is null;
