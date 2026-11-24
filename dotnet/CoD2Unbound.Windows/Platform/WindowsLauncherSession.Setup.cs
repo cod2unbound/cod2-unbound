@@ -22,6 +22,11 @@ internal sealed partial class WindowsLauncherSession
         Setup = review;
     }
 
+#if UPDATE_FIXTURES
+    /// <summary>Fixture builds only: stands in for discovery so Setup's picture states can be drawn.</summary>
+    internal void PreviewSetupCopies(ImmutableArray<GameInstallation> copies) => SetupCopies = copies;
+
+#endif
     internal bool CancelSetup()
     {
         if (!Setup.Cancel() || priorSetup is not { } previous)
