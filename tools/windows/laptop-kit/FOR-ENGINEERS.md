@@ -175,7 +175,7 @@ Window evidence includes style, physical frame, monitor bounds and DPI.
 
 The kit keeps `frame-times.bin` with the client evidence and puts a line from
 `frame-times.py` in the step receipt. The sample starts after the first map
-loads, apart from timedemos, which measure playback without a cap target.
+loads, apart from timedemos, which include loading and use the configured cap.
 The full-screen match sample includes the switch away and back. Public play
 records the first spectator observation in each edition and uses the cap from
 that match's engine summary. The raw trace covers the whole client process and

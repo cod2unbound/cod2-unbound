@@ -84,8 +84,7 @@ function Invoke-KitDemoFrames([string]$Edition, [string]$Renderer) {
                 (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
             } 40 'the demo startup log' | Out-Null
             Start-Sleep -Seconds 3
-            # Timedemo deliberately has no cap target.
-            $trace.Start = [Diagnostics.Stopwatch]::GetTimestamp()
+            Start-KitFrameSample $trace $window $log
             Send-KitCommand $window '/exec kit-frames.cfg'
             foreach ($sample in $samples) {
                 $basename = "$label-$sample"
