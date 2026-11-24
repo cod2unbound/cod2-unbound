@@ -169,7 +169,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <StackPanel Margin="16,12,0,18" Spacing="6">
-                    <TextBlock Text="Servers" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="Servers" Style="{StaticResource PageTitle}" LineStackingStrategy="BlockLineHeight" />
                     <TextBlock Style="{StaticResource SecondaryText}"
                                Text="Original 1.3 and CoD2x servers from the public master lists. Nothing is contacted until you refresh." />
                 </StackPanel>
@@ -350,13 +350,16 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button x:Name="JoinButton" AutomationProperties.Name="Launch" HorizontalAlignment="Stretch"
-                                    Style="{StaticResource LauncherAccentButton}" AccessKey="L" Click="OnJoin">
+                                    Style="{StaticResource LauncherAccentButton}" Height="{StaticResource ButtonMediumHeight}"
+                                    CornerRadius="{StaticResource ButtonMediumRadius}" AccessKey="L" Click="OnJoin">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
                                     <TextBlock x:Name="JoinButtonLabel" Text="Launch" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" Style="{StaticResource FavoriteAction}" />
+                            <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite"
+                                    Style="{StaticResource MediumButton}" Width="{StaticResource CircleHeight}"
+                                    MinWidth="{StaticResource CircleHeight}" Padding="0" />
                         </Grid>
                     </Grid>
                 </Grid>

@@ -176,7 +176,7 @@ public sealed partial class ServersPage
     private void AddNeedsChanges(StackPanel panel, ConfigReadyReport report, ConfigProfile? alternative, string chosen)
     {
         var problems = report.Details.Where(IsProblem).ToArray();
-        string changes = problems.Length == 1 ? "1 change" : $"{problems.Length} changes";
+        string changes = problems.Length == 1 ? "one change" : $"{problems.Length} changes";
         panel.Children.Add(ReadyHeading($"Your “{chosen}” loadout needs {changes} here", "AddressBrush"));
         foreach (var problem in problems)
             panel.Children.Add(Caption(RuleProblem(report, problem)));
