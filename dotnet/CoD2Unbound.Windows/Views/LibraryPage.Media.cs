@@ -23,24 +23,24 @@ public sealed partial class LibraryPage
     private nint LibraryOwner => WinRT.Interop.WindowNative.GetWindowHandle(shell);
     private ListViewBase MediaList => CurrentKind == MediaKind.Screenshot ? Screenshots : Files;
 
-    private void OnFileRowLoaded(object sender, RoutedEventArgs args) => SetFileRowColumns((Grid)sender);
-
-    private void OnFileRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => SetFileRowColumns((Grid)sender);
-
-    private static void SetFileRowColumns(Grid grid)
-    {
-        if (grid.DataContext is MediaRow row)
-            grid.ColumnDefinitions[0].Width = row.FirstColumnWidth;
-    }
+    private void OnScreenshotPanelLoaded(object sender, RoutedEventArgs args) =>
+        SizeScreenshotTiles((ItemsWrapGrid)sender, Screenshots.ActualWidth);
 
     private void OnScreenshotGridSizeChanged(object sender, SizeChangedEventArgs args)
     {
-        if (Screenshots.ItemsPanelRoot is ItemsWrapGrid grid && args.NewSize.Width > 0)
-        {
-            double available = Math.Max(1, args.NewSize.Width - 20);
-            int columns = Math.Clamp((int)(available / 224), 1, 4);
-            grid.ItemWidth = Math.Floor(available / columns);
-        }
+        if (Screenshots.ItemsPanelRoot is ItemsWrapGrid grid)
+            SizeScreenshotTiles(grid, args.NewSize.Width);
+    }
+
+    private static void SizeScreenshotTiles(ItemsWrapGrid grid, double width)
+    {
+        if (width <= 18)
+            return;
+        const double gap = 18, minimumTile = 240, caption = 36;
+        int columns = Math.Max(1, (int)(width / (minimumTile + gap)));
+        double itemWidth = Math.Floor(width / columns);
+        grid.ItemWidth = itemWidth;
+        grid.ItemHeight = Math.Round((itemWidth - gap) * 0.75) + caption + gap;
     }
 
     private async void OnPlayDemo(object sender, RoutedEventArgs args)
@@ -57,7 +57,7 @@ public sealed partial class LibraryPage
 
     private void OnMediaContextRequested(UIElement sender, ContextRequestedEventArgs args)
     {
-        if (CurrentKind == MediaKind.Config || FindMedia(args.OriginalSource as DependencyObject) is not { } item)
+        if (FindMedia(args.OriginalSource as DependencyObject) is not { } item)
             return;
         args.Handled = true;
         ShowFileMenu(item.Row, item.Container,
@@ -66,8 +66,7 @@ public sealed partial class LibraryPage
 
     private async void OnMediaDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
-        if (CurrentKind == MediaKind.Config ||
-            FindMedia(args.OriginalSource as DependencyObject) is not { FromButton: false } item)
+        if (FindMedia(args.OriginalSource as DependencyObject) is not { FromButton: false } item)
             return;
         args.Handled = true;
         if (item.Row.CanPlay)
@@ -76,8 +75,17 @@ public sealed partial class LibraryPage
 
     private async void OnLibraryKeyDown(object sender, KeyRoutedEventArgs args)
     {
-        if (ShowingMatches || CurrentKind == MediaKind.Config || XamlRoot is not { } root ||
-            FindMedia(FocusManager.GetFocusedElement(root) as DependencyObject) is not { } item)
+        if (ShowingMatches || XamlRoot is not { } root)
+            return;
+        var focus = FocusManager.GetFocusedElement(root) as DependencyObject;
+        if (args.Key == VirtualKey.Escape && Search.Text.Length != 0)
+        {
+            args.Handled = true;
+            ClearSearch();
+            MediaList.Focus(FocusState.Keyboard);
+            return;
+        }
+        if (FindMedia(focus) is not { } item)
             return;
 
         var row = item.Row;
@@ -129,19 +137,18 @@ public sealed partial class LibraryPage
     private void ShowFileMenu(MediaRow row, FrameworkElement anchor, FlyoutShowOptions? options = null)
     {
         MediaList.SelectedItem = row;
-        bool config = row.Kind == MediaKind.Config;
         bool demo = row.Kind == MediaKind.Demo;
         var menu = new MenuFlyout();
-        Add(demo ? "Play" : "Open", () => OpenFileAsync(row), config ? null : "Enter", row.CanPlay);
+        Add(demo ? "Play" : "Open", () => OpenFileAsync(row), "Enter", row.CanPlay);
         Add("Show in File Explorer", () => RevealMediaAsync(row));
-        if (!config)
-        {
-            Add(demo ? "Copy" : "Copy image", () => CopyMediaAsync(row), "Ctrl+C");
-            Add("Share…", () => files.ShareAsync(row.Kind, row.Name, shell.LibraryShare));
-        }
-        if (demo || config)
-            Add("Rename…", () => RenameAsync(row), demo ? "F2" : null);
-        Add("Move to Recycle Bin…", () => RecycleAsync(row), config ? null : "Delete");
+        menu.Items.Add(new MenuFlyoutSeparator());
+        if (demo)
+            Add("Rename…", () => RenameAsync(row), "F2");
+        Add(demo ? "Copy File" : "Copy Image", () => CopyMediaAsync(row), "Ctrl+C");
+        if (!demo)
+            Add("Share", () => files.ShareAsync(row.Kind, row.Name, shell.LibraryShare));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        Add("Move to Recycle Bin", () => RecycleAsync(row), "Delete");
         if (options is null)
             menu.ShowAt(anchor);
         else
@@ -183,21 +190,34 @@ public sealed partial class LibraryPage
 
     private async Task RenameAsync(MediaRow row)
     {
-        bool config = row.Kind == MediaKind.Config;
         var name = new TextBox
         {
-            Header = config ? "Name" : "Recording name",
             Text = Path.GetFileNameWithoutExtension(row.Name),
-            MaxLength = 251
+            MaxLength = 251,
+            Style = StyleFor("CapsuleTextBox"),
+            FontFamily = (FontFamily)Application.Current.Resources["CourierPrime"]
         };
-        var problem = Wrapped("");
-        var content = new StackPanel { Spacing = 8 };
-        if (!config)
-            content.Children.Add(Wrapped("Choose a name you’ll recognize in your library."));
-        content.Children.Add(name);
-        content.Children.Add(problem);
-        AutomationProperties.SetLiveSetting(problem, AutomationLiveSetting.Polite);
-        var dialog = LibraryDialog(config ? "Rename file" : "Rename recording", content, "Rename", ContentDialogButton.Primary);
+        AutomationProperties.SetName(name, "Recording name");
+        var problemLabel = Caption("");
+        var problem = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, Spacing = 8,
+            Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed,
+            Children = { new FontIcon
+            {
+                FontFamily = (FontFamily)Application.Current.Resources["SystemIcons"],
+                Glyph = (string)Application.Current.Resources["SystemWarning"], FontSize = 14
+            }, problemLabel }
+        };
+        AutomationProperties.SetLiveSetting(problemLabel, AutomationLiveSetting.Polite);
+        var content = new StackPanel { Spacing = 8, Children = { name, problem } };
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Rename recording", Content = content,
+            PrimaryButtonText = "Rename", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
+        }.WithSymbol("SystemEdit", "Choose a name you’ll recognize in your library.");
+        dialog.Resources["ContentDialogMaxWidth"] = 460d;
+        dialog.Resources["ContentDialogMinWidth"] = 460d;
         string? renamed = null;
         name.TextChanged += (_, _) => Validate();
         dialog.Opened += (_, _) => { name.Focus(FocusState.Programmatic); name.SelectAll(); };
@@ -216,9 +236,9 @@ public sealed partial class LibraryPage
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
-                problem.Text = config ? error.Message : error is MediaNameInUseException
-                    ? "A recording already has that name. Choose another."
-                    : "This recording couldn’t be renamed. Check that it’s still in the folder and try again.";
+                ShowProblem(error is MediaNameInUseException
+                    ? "You already have a recording with this name. Choose another."
+                    : "This recording couldn’t be renamed. Check that it’s still in the folder and try again.");
                 args.Cancel = true;
             }
         };
@@ -226,7 +246,7 @@ public sealed partial class LibraryPage
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {
             Render();
-            if (!config && renamed is not null)
+            if (renamed is not null)
             {
                 SelectMedia(renamed);
                 if (renamed != row.Name)
@@ -237,40 +257,47 @@ public sealed partial class LibraryPage
         void Validate()
         {
             var (_, message) = MediaLibrary.Rename(row.File, name.Text);
-            problem.Text = message ?? "";
+            ShowProblem(message);
             dialog.IsPrimaryButtonEnabled = message is null;
+        }
+
+        void ShowProblem(string? message)
+        {
+            problem.Visibility = IsVisible(message is not null);
+            problemLabel.Text = message ?? "";
+            bool contrast = new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
+            var ink = ThemeBrush("negative", name.ActualTheme, contrast);
+            ((FontIcon)problem.Children[0]).Foreground = ink;
+            problemLabel.Foreground = ink;
+            if (message is null)
+                name.ClearValue(Control.BorderBrushProperty);
+            else
+                name.BorderBrush = ink;
         }
     }
 
     private async Task RecycleAsync(MediaRow row)
     {
-        bool config = row.Kind == MediaKind.Config;
-        ContentDialog dialog = config
-            ? new SafeRemovalDialog("Move this file to the Recycle Bin?", row.Name, "Move to Recycle Bin")
-                { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme }
-            : LibraryRemovalDialog($"Move “{row.Name}” to the Recycle Bin?",
-                "You can put it back with Undo, or from the Recycle Bin until you empty it.", "Move to Recycle Bin");
+        var dialog = LibraryRemovalDialog($"Move “{row.Name}” to the Recycle Bin?",
+            "You can put it back with Undo, or from the Recycle Bin until you empty it.", "Move to Recycle Bin");
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;
 
         string token;
         try { token = files.Recycle(row.Kind, row.Name, LibraryOwner); }
-        catch (Exception error) when (!config && error is (IOException or UnauthorizedAccessException or COMException))
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or COMException)
         {
             ShowNotice("This file couldn’t be moved to the Recycle Bin. Show it in File Explorer and try again.",
                 InfoBarSeverity.Error, LibraryAction("Show in File Explorer", () => RevealMediaAsync(row)));
             return;
         }
 
-        if (!config)
-        {
-            recycled = new(row.Kind, row.Name, token);
-            RecycleNotice.Message = $"Moved “{row.Name}” to the Recycle Bin.";
-            AutomationProperties.SetName(RecycleNotice.ActionButton, $"Undo moving {row.Name} to the Recycle Bin");
-            RecycleNotice.Visibility = Visibility.Visible;
-            RecycleNotice.IsOpen = true;
-            Notice.IsOpen = false;
-        }
+        recycled = new(row.Kind, row.Name, token);
+        RecycleNotice.Message = $"Moved “{row.Name}” to the Recycle Bin.";
+        AutomationProperties.SetName(RecycleNotice.ActionButton, $"Undo moving {row.Name} to the Recycle Bin");
+        RecycleNotice.Visibility = Visibility.Visible;
+        RecycleNotice.IsOpen = true;
+        Notice.IsOpen = false;
         Render();
     }
 
@@ -304,11 +331,11 @@ public sealed partial class LibraryPage
     private void SelectMedia(string name)
     {
         var list = MediaList;
-        var row = (list.ItemsSource as MediaRow[])?.FirstOrDefault(item => item.Name == name);
+        var row = list.Items.OfType<MediaRow>().FirstOrDefault(item => item.Name == name);
         if (row is null && !string.IsNullOrWhiteSpace(Search.Text))
         {
             Search.Text = "";
-            row = (list.ItemsSource as MediaRow[])?.FirstOrDefault(item => item.Name == name);
+            row = list.Items.OfType<MediaRow>().FirstOrDefault(item => item.Name == name);
         }
         if (row is null)
             return;
@@ -322,61 +349,49 @@ public sealed partial class LibraryPage
         });
     }
 
-    private ContentDialog LibraryDialog(string title, FrameworkElement content, string primary, ContentDialogButton defaultButton) =>
-        new()
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = title, Content = content,
-            PrimaryButtonText = primary, CloseButtonText = "Cancel", DefaultButton = defaultButton
-        };
-
     private ContentDialog LibraryRemovalDialog(string title, string detail, string primary) =>
-        new SafeRemovalDialog(title, detail, primary)
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Content = Wrapped(detail),
-            PrimaryButtonStyle = StyleFor("LauncherAccentButton")
-        };
+        new SafeRemovalDialog(title, detail, primary) { XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme };
 
-    private Button LibraryAction(string title, Func<Task> action, bool accent = false)
+    private Button LibraryAction(string title, Func<Task> action)
     {
-        var button = new Button { Content = title };
-        if (accent)
-            button.Style = StyleFor("LauncherAccentButton");
+        var button = new Button { Content = title, HorizontalAlignment = HorizontalAlignment.Center };
         button.Click += async (_, _) => await shell.RunAsync(action);
         return button;
     }
 
-    private static TextBlock Wrapped(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap };
-
-    private static StackPanel LibraryEmpty(string glyph, string title, string detail, Button? action = null)
+    private static StackPanel LibraryEmpty(string title, string detail, Button? action = null)
     {
         var card = new StackPanel
         {
             HorizontalAlignment = HorizontalAlignment.Center, MaxWidth = 520,
-            Margin = new Thickness(0, 40, 0, 12), Spacing = 12
+            Margin = new Thickness(0, 130, 0, 12), Spacing = 10
         };
-        card.Children.Add(Fluent(glyph, 32));
-        var heading = new TextBlock { Text = title, Style = StyleFor("SectionTitle"), TextAlignment = TextAlignment.Center };
-        AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
+        var heading = new TextBlock
+        {
+            Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading"), TextAlignment = TextAlignment.Center,
+            FontSize = 26, CharacterSpacing = 119
+        };
+        AutomationProperties.SetName(heading, title);
         card.Children.Add(heading);
-        var message = Wrapped(detail);
+        var message = Body(detail);
+        message.MaxWidth = 420;
         message.TextAlignment = TextAlignment.Center;
         card.Children.Add(message);
         if (action is not null)
         {
-            action.HorizontalAlignment = HorizontalAlignment.Center;
+            action.Margin = new Thickness(0, 4, 0, 0);
             card.Children.Add(action);
         }
         return card;
     }
 
-    private static StackPanel RecordingEmpty()
+    private StackPanel RecordingEmpty()
     {
-        var card = LibraryEmpty("VideoClip", "No recordings", "Record a match and watch it back here, from any point.");
-        var steps = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
-        steps.Children.Add(Wrapped("1. In a match, open the console (the ~ key)."));
-        steps.Children.Add(Wrapped("2. Type /record."));
-        steps.Children.Add(Wrapped("3. Type /stoprecord."));
-        card.Children.Add(steps);
+        var card = LibraryEmpty("No recordings", "Record a match and watch it back here, from any point.");
+        card.Children.Add(new LibraryRecordingSteps());
+        var folder = LibraryAction("Show Demos Folder", OpenCurrentFolderAsync);
+        folder.Margin = new Thickness(0, 8, 0, 0);
+        card.Children.Add(folder);
         return card;
     }
 

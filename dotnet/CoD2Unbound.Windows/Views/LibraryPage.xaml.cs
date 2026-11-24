@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
@@ -31,26 +31,58 @@ public sealed partial class LibraryPage : Page
         library = new(files);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        LibraryLayout.Children.Remove(LibraryToolbar);
+        Loaded += (_, _) =>
+        {
+            PositionToolbar();
+            shell.SetTitleBarContent(LibraryToolbar);
+        };
         Screenshots.ItemsSource = screenshots;
         Files.ItemsSource = filesInView;
         Matches.ItemsSource = matchesInView;
         Sections.SelectedItem = MatchesSection;
-        Retention.Text = $"Kept on this PC · the last {MatchSummaries.RecordLimit} matches";
+        RetentionText.Text = $"Kept on this PC · the last {MatchSummaries.RecordLimit} matches";
+        AutomationProperties.SetName(Retention, $"Kept on this PC. The last {MatchSummaries.RecordLimit} matches");
         ready = true;
         Render();
     }
 
-    private MediaKind CurrentKind => ReferenceEquals(Sections.SelectedItem, DemosSection) ? MediaKind.Demo
-        : ReferenceEquals(Sections.SelectedItem, ConfigFilesSection) ? MediaKind.Config : MediaKind.Screenshot;
+    private MediaKind CurrentKind => ReferenceEquals(Sections.SelectedItem, DemosSection)
+        ? MediaKind.Demo : MediaKind.Screenshot;
+
+    public void OpenMatches() => Sections.SelectedItem = MatchesSection;
+
+    private void OnLibrarySizeChanged(object sender, SizeChangedEventArgs args) => PositionToolbar();
+
+    private void PositionToolbar()
+    {
+        if (XamlRoot is null)
+            return;
+        var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point());
+        LibraryToolbar.Margin = new Thickness(origin.X + 18, 16, 18, 0);
+    }
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (ready)
-            Notice.IsOpen = false;
-        TryRender();
+        if (!ready)
+            return;
+        Notice.IsOpen = false;
+        RecycleNotice.IsOpen = false;
+        recycled = null;
+        Files.SelectedItem = Screenshots.SelectedItem = null;
+        if (!ClearSearch())
+            TryRender();
     }
 
     internal bool FocusShellSearch() => !ShowingMatches && Search.Focus(FocusState.Keyboard);
+
+    private bool ClearSearch()
+    {
+        if (Search.Text.Length == 0)
+            return false;
+        Search.Text = "";
+        return true;
+    }
 
     private void OnSearch(object sender, TextChangedEventArgs args) => TryRender();
 
@@ -72,61 +104,45 @@ public sealed partial class LibraryPage : Page
     {
         bool matches = ShowingMatches;
         var kind = CurrentKind;
-        bool canPlay = kind != MediaKind.Demo || !session.Game.State.Running;
-        ShowFolder.Visibility = IsVisible(!matches);
-        Search.Visibility = IsVisible(!matches);
+        bool demos = kind == MediaKind.Demo;
+        bool canPlay = !demos || !session.Game.State.Running;
+        Search.Visibility = ShowFolder.Visibility = IsVisible(!matches);
+        DeleteSummaries.Visibility = IsVisible(matches);
         RecycleNotice.Visibility = IsVisible(!matches && recycled?.Kind == kind);
-        SectionTitle.Text = matches ? "Matches" : kind switch
-        {
-            MediaKind.Demo => "Demos",
-            MediaKind.Screenshot => "Screenshots",
-            _ => "Library"
-        };
-        SectionDetail.Text = matches ? "How your recent matches ran: ping and connection." : kind switch
-        {
-            MediaKind.Demo => canPlay ? "Recorded matches play back in the game, from any point." : MediaRow.PlayBlocked,
-            MediaKind.Screenshot => "Screenshots you take in a match, kept in your CoD2 Unbound folder.",
-            _ => ""
-        };
-        SectionDetail.Visibility = IsVisible(SectionDetail.Text.Length != 0);
-        ShowFolder.Content = kind == MediaKind.Config ? "Show folder" : "Show in File Explorer";
+        SectionTitle.Text = matches ? "Matches" : demos ? "Demos" : "Screenshots";
+        SectionDetail.Text = matches ? "How your recent matches ran: ping and connection."
+            : demos ? "Recorded matches play back in the game, from any point."
+            : "Screenshots you take in a match, kept in your CoD2 Unbound folder.";
         if (matches)
         {
-            Screenshots.Visibility = FileTable.Visibility = ScreenshotHelp.Visibility = Visibility.Collapsed;
+            ScreenshotGallery.Visibility = FileTable.Visibility = Visibility.Collapsed;
             RenderMatches();
             return;
         }
 
-        MatchTable.Visibility = Retention.Visibility = DeleteSummaries.Visibility = Visibility.Collapsed;
+        MatchTable.Visibility = Retention.Visibility = Visibility.Collapsed;
         SummariesOff.IsOpen = false;
-        ListViewBase list = kind == MediaKind.Screenshot ? Screenshots : Files;
-        var view = kind == MediaKind.Screenshot ? screenshots : filesInView;
-        string? selected = (list.SelectedItem as MediaRow) is { } row && row.Kind == kind ? row.Name : null;
+        var list = MediaList;
+        var view = demos ? filesInView : screenshots;
+        string? selected = (list.SelectedItem as MediaRow)?.Name;
         MediaRow[] rows;
         try
         {
             rows = library.List(kind, Search.Text)
                 .Select(file => new MediaRow(kind, file, MediaFacts.From(file, TimeZoneInfo.Local), canPlay)).ToArray();
         }
-        catch (Exception error) when (kind != MediaKind.Config && error is (IOException or UnauthorizedAccessException))
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            Screenshots.Visibility = FileTable.Visibility = ScreenshotHelp.Visibility = Visibility.Collapsed;
+            ScreenshotGallery.Visibility = FileTable.Visibility = Visibility.Collapsed;
             Empty.Visibility = Visibility.Visible;
-            EmptyBody.Content = LibraryEmpty("Folder", "Library unavailable",
+            EmptyBody.Content = LibraryEmpty("Library unavailable",
                 "These files couldn’t be read. Check that your CoD2 Unbound folder is readable, then try again.",
-                LibraryAction("Try again", () => { Render(); return Task.CompletedTask; }));
+                LibraryAction("Try Again", () => { Render(); return Task.CompletedTask; }));
             return;
         }
-        view.Reconcile(rows, item => (item.Kind, item.Name), (row, incoming) => row.Reconcile(incoming));
-        Files.IsItemClickEnabled = kind == MediaKind.Config;
-        Screenshots.Visibility = ScreenshotHelp.Visibility = IsVisible(rows.Length > 0 && kind == MediaKind.Screenshot);
-        FileTable.Visibility = IsVisible(rows.Length > 0 && kind != MediaKind.Screenshot);
-        NameHeader.Text = kind == MediaKind.Demo ? "Map" : "Name";
-        MapHeader.Text = "Recording";
-        FirstFileColumn.Width = kind == MediaKind.Demo ? new GridLength(84) : new GridLength(2, GridUnitType.Star);
-        DateHeader.Text = kind == MediaKind.Demo ? "Recorded" : "Date";
-        FileActionsColumn.Width = new GridLength(kind == MediaKind.Demo ? 96 : 32);
-        MapHeader.Visibility = IsVisible(kind == MediaKind.Demo);
+        view.Reconcile(rows, item => item.Name, (row, incoming) => row.Reconcile(incoming));
+        ScreenshotGallery.Visibility = IsVisible(rows.Length > 0 && !demos);
+        FileTable.Visibility = IsVisible(rows.Length > 0 && demos);
         Empty.Visibility = IsVisible(rows.Length == 0);
         if (selected is not null)
         {
@@ -134,30 +150,22 @@ public sealed partial class LibraryPage : Page
             if (!ReferenceEquals(list.SelectedItem, target))
                 list.SelectedItem = target;
         }
-        if (rows.Length > 0)
-            return;
-
-        if (!string.IsNullOrWhiteSpace(Search.Text))
-            EmptyBody.Content = kind == MediaKind.Config ? EmptyState("Document", "No matching files", "Try another search.")
-                : LibraryEmpty("Search", "No matching files", "Try another search.");
-        else if (kind == MediaKind.Demo)
-            EmptyBody.Content = RecordingEmpty();
-        else if (kind == MediaKind.Screenshot)
-            EmptyBody.Content = LibraryEmpty("Image", "No screenshots",
-                "Take one in a match with F12. It appears here when you come back.");
-        else
-            EmptyBody.Content = EmptyState("Document", "No config files yet", "Config files saved in the game folder appear here.");
+        EmptyBody.Content = rows.Length > 0 ? null
+            : !string.IsNullOrWhiteSpace(Search.Text) ? LibraryEmpty("No matching files", "Try another search.")
+            : demos ? RecordingEmpty() : LibraryEmpty("No screenshots",
+                "Take one in a match with F12. It appears here when you come back.",
+                LibraryAction("Show Screenshots Folder", OpenCurrentFolderAsync));
     }
 
-    private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Border)sender);
-    private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Border)sender);
+    private void OnScreenshotLoaded(object sender, RoutedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
+    private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
     private void OnDemoArtLoaded(object sender, RoutedEventArgs args) => ShowDemoArt((Image)sender);
     private void OnDemoArtChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ShowDemoArt((Image)sender);
 
     private void ShowDemoArt(Image image)
     {
-        if (image.DataContext is MediaRow { Kind: MediaKind.Demo, Facts.Map: { } map })
-            _ = previews.FillAsync(image, map);
+        if (image.DataContext is MediaRow row)
+            _ = previews.FillAsync(image, row.Facts.Map ?? row.Name);
         else
         {
             image.Tag = null;
@@ -165,14 +173,20 @@ public sealed partial class LibraryPage : Page
         }
     }
 
-    private async Task ShowScreenshotAsync(Border tile)
+    private async Task ShowScreenshotAsync(Image tile)
     {
-        if (tile.DataContext is not MediaRow row || ReferenceEquals(tile.Tag, row))
+        if (tile.DataContext is not MediaRow row)
+        {
+            tile.Tag = null;
+            tile.Source = null;
             return;
+        }
+        if (ReferenceEquals(tile.Tag, row))
+            return;
+
         tile.Tag = row;
-        tile.ClearValue(Border.BackgroundProperty);
-        var placeholder = (FontIcon)tile.Child;
-        placeholder.Visibility = Visibility.Visible;
+        tile.Source = MapPreviews.Fallback(row.Facts.Map ?? row.Name);
+        tile.Stretch = Stretch.UniformToFill;
         try
         {
             ImageSource thumbnail;
@@ -181,7 +195,7 @@ public sealed partial class LibraryPage : Page
                 var decoded = await Task.Run(() =>
                 {
                     using var input = files.OpenScreenshot(row.Name);
-                    return TgaThumbnail.Read(input, 400);
+                    return TgaThumbnail.Read(input, 900);
                 });
                 if (!ReferenceEquals(tile.Tag, row))
                     return;
@@ -191,14 +205,14 @@ public sealed partial class LibraryPage : Page
             {
                 using var input = files.OpenScreenshot(row.Name);
                 using var source = input.AsRandomAccessStream();
-                var bitmap = new BitmapImage { DecodePixelWidth = 400 };
+                var bitmap = new BitmapImage { DecodePixelWidth = 900 };
                 await bitmap.SetSourceAsync(source);
                 thumbnail = bitmap;
             }
             if (ReferenceEquals(tile.Tag, row))
             {
-                tile.Background = new ImageBrush { ImageSource = thumbnail, Stretch = Stretch.UniformToFill };
-                placeholder.Visibility = Visibility.Collapsed;
+                tile.Source = thumbnail;
+                tile.Stretch = Stretch.Uniform;
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
@@ -207,33 +221,14 @@ public sealed partial class LibraryPage : Page
         }
     }
 
-    private async void OnShowFolder(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => OpenAsync(files.Folder(CurrentKind)));
+    private Task OpenCurrentFolderAsync() => OpenAsync(files.Folder(CurrentKind));
 
-    private async void OnOpenFile(object sender, ItemClickEventArgs args)
-    {
-        if (args.ClickedItem is MediaRow row)
-            await shell.RunAsync(() => OpenFileAsync(row));
-    }
+    private async void OnShowFolder(object sender, RoutedEventArgs args) => await shell.RunAsync(OpenCurrentFolderAsync);
 
-    private async Task OpenFileAsync(MediaRow row)
+    private Task OpenFileAsync(MediaRow row)
     {
         string path = files.Existing(row.Kind, row.File.Name);
-        if (row.Kind == MediaKind.Screenshot)
-        {
-            await OpenAsync(path);
-            return;
-        }
-        if (row.Kind == MediaKind.Config)
-        {
-            var editor = new ProcessStartInfo("notepad.exe") { UseShellExecute = true };
-            editor.ArgumentList.Add(path);
-            try { using var app = Process.Start(editor); }
-            catch (System.ComponentModel.Win32Exception error) { throw new IOException(error.Message, error); }
-            return;
-        }
-
-        await PlayDemoAsync(path, confirm: false);
+        return row.Kind == MediaKind.Screenshot ? OpenAsync(path) : PlayDemoAsync(path, confirm: false);
     }
 
     internal Task OfferDemoAsync(string path)
@@ -263,7 +258,7 @@ public sealed partial class LibraryPage : Page
             var dialog = new ContentDialog
             {
                 XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Play this demo?", Content = details,
-                PrimaryButtonText = "Play demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
+                PrimaryButtonText = "Play Demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
             };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
                 return;
@@ -287,16 +282,15 @@ internal sealed class MediaRow(MediaKind kind, MediaFile file, MediaFacts facts,
     internal MediaFacts Facts { get; } = facts;
     public bool CanPlay { get; private set; } = canPlay;
     public string Name => File.Name;
-    public string ScreenshotTitle => Facts.Map is { } map ? MapCatalog.DisplayName(map) : Name;
+    public string ScreenshotTitle => Facts.Map is { } map ? MapCatalog.DisplayName(map) : Path.GetFileNameWithoutExtension(Name);
+    public string ScreenshotName => $"Screenshot, {ScreenshotTitle}, {Stamp}";
+    public string DemoName => $"Demo {Name}, {DemoDetail}, {Stamp}, {Size}";
     public string PlayName => $"Play {Name}";
     public string PlaybackHint => CanPlay ? "" : PlayBlocked;
     public string MenuName => $"More actions for {Name}";
     public string DemoDetail => Facts.Map is { } map ? $"{MapCatalog.DisplayName(map)} · Recorded match" : "Recorded match";
-    public GridLength FirstColumnWidth => Kind == MediaKind.Demo ? new GridLength(84) : new GridLength(2, GridUnitType.Star);
     public string Stamp => Facts.Stamp;
     public string Size => Facts.Size;
-    public Visibility Demo => IsVisible(Kind == MediaKind.Demo);
-    public Visibility Config => IsVisible(Kind == MediaKind.Config);
     public override string ToString() => Name;
 
     public event PropertyChangedEventHandler? PropertyChanged;
