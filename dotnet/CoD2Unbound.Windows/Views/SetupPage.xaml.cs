@@ -49,7 +49,6 @@ public sealed partial class SetupPage : Page
         Unloaded += (_, _) => StopSteamWatch();
         Loaded += async (_, _) =>
         {
-            ReachUnderCaption();
             RenderBackdrop();
 #if UPDATE_FIXTURES
             await PreviewAsync();
@@ -62,22 +61,6 @@ public sealed partial class SetupPage : Page
             RenderBackdrop();
             await RefreshAsync();
         };
-        LayoutUpdated += (_, _) => ReachUnderCaption();
-    }
-
-    /// <summary>The shell puts pages below its caption row; Setup's scene fills the whole window, as on the
-    /// Mac, so the page reaches back up under the caption buttons (which stay the system's).</summary>
-    private void ReachUnderCaption()
-    {
-        if (XamlRoot is null || Parent is not FrameworkElement)
-            return;
-        var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point(0, 0));
-        // A shell notice above the page (a problem the shell reports) stays visible: then the scene
-        // starts under it instead of under the caption buttons.
-        var wanted = new Thickness(-origin.X, origin.Y <= CaptionSpace + 1.5 ? -origin.Y : 0, 0, 0);
-        var margin = SetupFrame.Margin;
-        if (Math.Abs(margin.Left - wanted.Left) > 0.5 || Math.Abs(margin.Top - wanted.Top) > 0.5)
-            SetupFrame.Margin = wanted;
     }
 
     internal async Task RefreshAsync()
@@ -186,14 +169,17 @@ public sealed partial class SetupPage : Page
             panelWidth = Math.Min(panelWidth, Math.Max(320, width - 48));
         SetupColumn.Width = panelWidth;
         bool welcome = Setup.Step == SetupStep.Welcome;
-        SetupStage.Padding = new Thickness(24, welcome ? 16 + CaptionSpace : 128, 24, 84 + 16);
+        // Headings sit 128 from the window's top on the Mac; the page starts under the shell's caption row.
+        SetupStage.Padding = new Thickness(24, welcome ? 16 : 128 - CaptionSpace, 24, 84 + 16);
         SetupStage.MinHeight = Math.Max(0, height);
         SetupColumn.VerticalAlignment = welcome ? VerticalAlignment.Center : VerticalAlignment.Top;
         if (height > 0)
             PlaceScene(height);
     }
 
+    /// <summary>The shell's caption row, above the page.</summary>
     private const double CaptionSpace = 32;
+    private const double CrateGap = 10;
 
     private async void OnFrameSizeChanged(object sender, SizeChangedEventArgs args)
     {
@@ -342,9 +328,11 @@ public sealed partial class SetupPage : Page
             Style = StyleFor("SetupDetail"), Margin = new Thickness(6, 0, 0, 0)
         };
         AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
-        var crates = Columns(10, new(1, GridUnitType.Star), new(1, GridUnitType.Star), new(1, GridUnitType.Star));
+        // The stock RadioButtons control keeps the system's arrow keys, roving focus and selection; its items are
+        // radio buttons templated as the Mac's crates, sized to share the panel's width in three columns.
+        var crates = new RadioButtons { MaxColumns = ModeValues.Length, HorizontalAlignment = HorizontalAlignment.Stretch };
+        crates.Resources["RadioButtonsColumnSpacing"] = CrateGap;
         AutomationProperties.SetName(crates, modeLabel);
-        var buttons = new RadioButton[ModeValues.Length];
         for (int index = 0; index < ModeValues.Length; index++)
         {
             string value = ModeValues[index];
@@ -358,39 +346,23 @@ public sealed partial class SetupPage : Page
                     Child = new TextBlock { Text = "Recommended", Style = StyleFor("TypeLabel"), Foreground = Token("accent"), VerticalAlignment = VerticalAlignment.Center }
                 });
             content.Children.Add(new TextBlock { Text = ModeDetails[index], Style = StyleFor("SetupCrateDetail") });
-            var crate = new RadioButton
-            {
-                Style = StyleFor("SetupCrate"), Content = content, GroupName = "SetupDisplayMode", IsChecked = value == displayMode
-            };
+            var crate = new RadioButton { Style = StyleFor("SetupCrate"), Content = content };
             AutomationProperties.SetName(crate, title + (index == 0 ? ", recommended" : ""));
             AutomationProperties.SetHelpText(crate, ModeDetails[index]);
-            crate.Checked += (_, _) =>
-            {
-                displayMode = value;
-                foreach (var other in buttons)
-                    other.IsTabStop = ReferenceEquals(other, crate);
-            };
-            int position = index;
-            crate.KeyDown += (_, args) =>
-            {
-                int move = args.Key switch
-                {
-                    global::Windows.System.VirtualKey.Left or global::Windows.System.VirtualKey.Up => -1,
-                    global::Windows.System.VirtualKey.Right or global::Windows.System.VirtualKey.Down => 1,
-                    _ => 0
-                };
-                if (move == 0)
-                    return;
-                args.Handled = true;
-                var next = buttons[(position + move + buttons.Length) % buttons.Length];
-                next.IsChecked = true;
-                next.Focus(FocusState.Keyboard);
-            };
-            buttons[index] = crate;
-            Put(crates, index, crate);
+            crates.Items.Add(crate);
         }
-        foreach (var crate in buttons)
-            crate.IsTabStop = crate.IsChecked == true;
+        crates.SelectedIndex = Array.IndexOf(ModeValues, displayMode);
+        crates.SelectionChanged += (_, _) =>
+        {
+            if (crates.SelectedIndex >= 0)
+                displayMode = ModeValues[crates.SelectedIndex];
+        };
+        crates.SizeChanged += (_, args) =>
+        {
+            double width = Math.Floor((args.NewSize.Width - CrateGap * (ModeValues.Length - 1)) / ModeValues.Length);
+            foreach (var item in crates.Items.OfType<RadioButton>())
+                item.Width = Math.Max(0, width);
+        };
         var both = Note("Both can be changed any time: the name on your player card, the display in Settings.");
         both.Margin = new Thickness(6, 0, 0, 0);
         StepContent.Children.Add(GlassPanel(16, 16, editor, new StackPanel { Spacing = 8, Children = { heading, crates } }, both));

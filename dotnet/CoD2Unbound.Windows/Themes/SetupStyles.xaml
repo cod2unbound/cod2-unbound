@@ -114,23 +114,15 @@
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="FontSize" Value="22" />
         <Setter Property="CharacterSpacing" Value="118" />
-        <Setter Property="Foreground" Value="{ThemeResource heading}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="{ThemeResource well}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
         <Setter Property="MinHeight" Value="{StaticResource SetupBarHeight}" />
         <Setter Property="Padding" Value="23,13,23,0" />
         <Setter Property="CornerRadius" Value="{StaticResource SetupBarRadius}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="UseSystemFocusVisuals" Value="False" />
         <Setter Property="IsSpellCheckEnabled" Value="False" />
         <Setter Property="IsTextPredictionEnabled" Value="False" />
-    </Style>
-    <Style x:Key="SetupKeyFrame" TargetType="Border">
-        <Setter Property="CornerRadius" Value="{StaticResource SetupBarRadius}" />
-        <Setter Property="Background" Value="{ThemeResource well}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
-        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
-        <Setter Property="Height" Value="{StaticResource SetupBarHeight}" />
     </Style>
 
     <!-- The display crates on Make it yours: radio buttons drawn as the Mac's crate. -->

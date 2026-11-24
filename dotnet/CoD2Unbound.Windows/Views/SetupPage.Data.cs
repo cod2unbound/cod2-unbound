@@ -139,8 +139,9 @@ public sealed partial class SetupPage
     {
         string count = copies.Length switch { 2 => "Two", 3 => "Three", 4 => "Four", _ => copies.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) };
         var intro = new TextBlock { Text = $"{count} copies found. Choose the one to use.", Style = StyleFor("SetupDetail"), Margin = new Thickness(10, 6, 0, 0) };
-        var rows = new List<UIElement>();
-        var radios = new List<RadioButton>();
+        // The stock RadioButtons control: arrow keys, roving focus and selection stay the system's.
+        var list = new RadioButtons { Margin = new Thickness(16, 8, 16, 8) };
+        AutomationProperties.SetName(list, "Game data folder");
         foreach (var copy in copies)
         {
             bool selected = WindowsLauncherSession.SamePath(copy.DataPath, chosen);
@@ -159,24 +160,26 @@ public sealed partial class SetupPage
                 Put(layout, 1, Status(SetupStatus.Ready, "Found"));
             var radio = new RadioButton
             {
-                GroupName = "SetupGameCopy", IsChecked = selected, Content = layout, HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0
+                Content = layout, HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0, MinHeight = 48
             };
             AutomationProperties.SetName(radio, copy.DataPath);
             AutomationProperties.SetHelpText(radio, FoundDetail(copy.Source));
-            string path = copy.DataPath;
-            radio.Checked += async (_, _) =>
-            {
-                if (shell.IsBusy || WindowsLauncherSession.SamePath(Setup.Data.Path, path))
-                    return;
-                Setup.ChooseData(path);
-                await shell.RunAsync(RefreshAsync);
-            };
-            radios.Add(radio);
-            rows.Add(new Border { Padding = new Thickness(16, 8, 16, 8), MinHeight = 56, Child = radio });
+            list.Items.Add(radio);
+            if (selected)
+                list.SelectedIndex = list.Items.Count - 1;
         }
-        var group = Group(16, [.. rows]);
-        AutomationProperties.SetName(group, "Game data folder");
+        list.SelectionChanged += async (_, _) =>
+        {
+            if (list.SelectedIndex < 0 || shell.IsBusy)
+                return;
+            string path = copies[list.SelectedIndex].DataPath;
+            if (WindowsLauncherSession.SamePath(Setup.Data.Path, path))
+                return;
+            Setup.ChooseData(path);
+            await shell.RunAsync(RefreshAsync);
+        };
+        var group = new Border { Style = StyleFor("SetupGroup"), Child = list };
         return new StackPanel { Spacing = 10, Children = { intro, group } };
     }
 

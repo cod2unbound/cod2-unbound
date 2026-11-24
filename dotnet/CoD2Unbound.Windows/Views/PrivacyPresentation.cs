@@ -123,8 +123,8 @@ internal static class PrivacyPresentation
         };
     }
 
-    /// <summary>The usage preview as the Mac's sheet: a symbol tile and title, a list that scrolls, and Done,
-    /// which stays at the bottom right while the list scrolls.</summary>
+    /// <summary>The usage preview as the Mac's sheet: a symbol tile and title, a list that scrolls, and Done in
+    /// the dialog's own command row.</summary>
     private static async Task ShowUsageAsync(MainWindow shell, WindowsReports reports)
     {
         if (await reports.Usage.PreviewAsync() is not { } payload)
@@ -177,8 +177,7 @@ internal static class PrivacyPresentation
             MaxHeight = Math.Max(220, (shell.DialogRoot?.Size.Height ?? 900) - 300)
         };
         AutomationProperties.SetName(scroll, "What is sent");
-        var done = new Button { Content = "Done", Style = StyleFor("SetupPrimary"), HorizontalAlignment = HorizontalAlignment.Right };
-        var content = new StackPanel { Spacing = 16, Width = 560, Children = { scroll, done } };
+        var content = new StackPanel { Width = 560, Children = { scroll } };
 
         var tileIcon = Fluent("Eye", 17);
         tileIcon.Foreground = ThemeBrush("accent", shell.DialogTheme, shell.IsHighContrast);
@@ -193,14 +192,13 @@ internal static class PrivacyPresentation
             Children = { heading, Detail("What the launcher records, with an example event in the format the launcher sends.", 12, 17) }
         });
 
-        // No stock command row: Done sits under the list as on the Mac, and Escape still closes the sheet.
+        // The stock command row carries Done, so Enter, Escape and the dialog's own focus order stay the system's.
         var dialog = new ContentDialog
         {
-            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = header, Content = content
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = header, Content = content,
+            PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
         };
         AutomationProperties.SetName(dialog, "What is sent");
-        done.Click += (_, _) => dialog.Hide();
-        dialog.Opened += (_, _) => done.Focus(FocusState.Programmatic);
         await dialog.ShowAsync();
     }
 

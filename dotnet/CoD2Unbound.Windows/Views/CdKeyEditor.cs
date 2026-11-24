@@ -17,7 +17,6 @@ internal sealed class CdKeyEditor : StackPanel
     private readonly MainWindow shell;
     private readonly bool large;
     private readonly TextBox input = new() { PlaceholderText = "XXXX XXXX XXXX XXXX XXXX" };
-    private readonly Border? frame;
     private readonly InfoBar? feedback;
     private bool formatting;
 
@@ -53,20 +52,11 @@ internal sealed class CdKeyEditor : StackPanel
         var row = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
         if (large)
         {
+            // The text box draws the capsule itself, so its pointer, focus and contrast states stay the
+            // system's; a mismatch or a verified key tints its resting stroke, and the line under it says so.
             input.Style = StyleFor("SetupKeyBox");
-            // The frame draws the field; the text box itself stays clear in every state.
-            foreach (string key in new[]
-            {
-                "TextControlBackground", "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",
-                "TextControlBorderBrush", "TextControlBorderBrushPointerOver", "TextControlBorderBrushFocused"
-            })
-                input.Resources[key] = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-            input.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(0);
-            frame = new Border { Style = StyleFor("SetupKeyFrame"), Child = input };
-            input.GotFocus += (_, _) => Stroke();
-            input.LostFocus += (_, _) => Stroke();
             input.ActualThemeChanged += (_, _) => Stroke();
-            Put(row, 0, frame);
+            Put(row, 0, input);
         }
         else
         {
@@ -124,14 +114,13 @@ internal sealed class CdKeyEditor : StackPanel
 
     private void Stroke()
     {
-        if (frame is null)
+        if (!large)
             return;
-        bool contrast = shell.IsHighContrast;
         var state = State;
-        bool focused = input.FocusState != FocusState.Unfocused;
-        string key = state == CdKeyState.Mismatch ? "negative" : state == CdKeyState.Verified ? "positive" : focused ? "accent" : "wellStroke";
-        frame.BorderBrush = ThemeBrush(key, ActualTheme, contrast);
-        frame.BorderThickness = new Thickness(focused || state is CdKeyState.Mismatch or CdKeyState.Verified ? 2 : 1);
+        if (shell.IsHighContrast || state is not (CdKeyState.Mismatch or CdKeyState.Verified))
+            input.ClearValue(Control.BorderBrushProperty);
+        else
+            input.BorderBrush = ThemeBrush(state == CdKeyState.Mismatch ? "negative" : "positive", ActualTheme, false);
         AutomationProperties.SetItemStatus(input, state switch
         {
             CdKeyState.Mismatch => "The checksum doesn’t match",
