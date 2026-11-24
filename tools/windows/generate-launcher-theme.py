@@ -146,6 +146,8 @@ def generate(source):
         brush("HeroBackplateBrush", TRANSPARENT if palette else system_color("Window"))
         # Native presenters can still request these legacy screen resources.
         token("LauncherSelectionPillBrush", "control", "HighlightText")
+        token("AccentFillColorDefaultBrush", "prominentBottom", "Highlight")
+        token("TextOnAccentFillColorPrimaryBrush", "prominentText", "HighlightText")
         token("SettingsNoteBackground", "well")
         token("TextControlSelectionHighlightColor", "selectionStroke", "Highlight")
 

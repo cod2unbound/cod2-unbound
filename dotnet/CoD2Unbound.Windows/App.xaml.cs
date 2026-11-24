@@ -19,6 +19,9 @@ public partial class App : Application
     internal App(Action<MainWindow> windowCreated)
     {
         this.windowCreated = windowCreated;
+#if UPDATE_FIXTURES
+        UnhandledException += (_, failure) => StartupTrace.Mark($"XAML error: {failure.Message} {failure.Exception}");
+#endif
         InitializeComponent();
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {

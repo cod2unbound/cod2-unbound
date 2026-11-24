@@ -134,7 +134,7 @@
         <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
         <Setter Property="Padding" Value="16,5" />
     </Style>
-    <Style x:Key="InlinePasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource DefaultPasswordBoxStyle}">
+    <Style x:Key="InlinePasswordBox" TargetType="PasswordBox">
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -183,7 +183,9 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
-    <Style TargetType="SelectorBarItem" BasedOn="{StaticResource DefaultSelectorBarItemStyle}">
+    <!-- WinUI's internal DefaultSelectorBarItemStyle cannot be resolved from app XAML. -->
+    <Style TargetType="SelectorBarItem">
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="Foreground" Value="{ThemeResource secondary}" />
         <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
@@ -257,7 +259,9 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="Segmented" TargetType="SelectorBar" BasedOn="{StaticResource DefaultSelectorBarStyle}">
+    <Style x:Key="Segmented" TargetType="SelectorBar">
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="TabNavigation" Value="Once" />
         <Setter Property="Padding" Value="2" />
         <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
         <Setter Property="Background" Value="{ThemeResource well}" />
@@ -281,7 +285,10 @@
         </Setter>
     </Style>
     <Style TargetType="SelectorBar" BasedOn="{StaticResource Segmented}" />
-    <Style TargetType="ToggleSwitch" BasedOn="{StaticResource DefaultToggleSwitchStyle}">
+    <Style TargetType="ToggleSwitch">
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="ManipulationMode" Value="System,TranslateX" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="OnContent" Value="" />
         <Setter Property="OffContent" Value="" />
         <Setter Property="MinWidth" Value="{StaticResource SwitchWidth}" />
@@ -370,7 +377,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
+    <Style TargetType="CheckBox">
         <Setter Property="CornerRadius" Value="5" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -378,7 +385,7 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
-    <Style TargetType="RadioButton" BasedOn="{StaticResource DefaultRadioButtonStyle}">
+    <Style TargetType="RadioButton">
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
@@ -414,7 +421,7 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
-    <Style TargetType="Expander" BasedOn="{StaticResource DefaultExpanderStyle}">
+    <Style TargetType="Expander">
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
     </Style>
@@ -423,28 +430,28 @@
         <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
     </Style>
     <Style TargetType="InfoBar" BasedOn="{StaticResource LauncherBanner}" />
-    <Style x:Key="LauncherSheet" TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}">
+    <Style x:Key="LauncherSheet" TargetType="ContentDialog">
         <Setter Property="CornerRadius" Value="{StaticResource SheetRadius}" />
         <Setter Property="PrimaryButtonStyle" Value="{StaticResource LauncherAccentButton}" />
         <Setter Property="SecondaryButtonStyle" Value="{StaticResource LauncherButton}" />
         <Setter Property="CloseButtonStyle" Value="{StaticResource LauncherButton}" />
     </Style>
     <Style TargetType="ContentDialog" BasedOn="{StaticResource LauncherSheet}" />
-    <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+    <Style TargetType="FlyoutPresenter">
         <Setter Property="CornerRadius" Value="{StaticResource PopoverRadius}" />
         <Setter Property="Padding" Value="{StaticResource GroupPadding}" />
         <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
         <Setter Property="Background" Value="{ThemeResource FlyoutPresenterBackground}" />
     </Style>
-    <Style TargetType="MenuFlyoutPresenter" BasedOn="{StaticResource DefaultMenuFlyoutPresenterStyle}">
+    <Style TargetType="MenuFlyoutPresenter">
         <Setter Property="CornerRadius" Value="{StaticResource MenuRadius}" />
         <Setter Property="Padding" Value="5" />
     </Style>
-    <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
+    <Style TargetType="MenuFlyoutItem">
         <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
     </Style>
-    <Style TargetType="MenuFlyoutSubItem" BasedOn="{StaticResource DefaultMenuFlyoutSubItemStyle}">
+    <Style TargetType="MenuFlyoutSubItem">
         <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
     </Style>
@@ -525,7 +532,7 @@
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
-    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter">
         <Setter Property="Padding" Value="16" />
         <Setter Property="CornerRadius" Value="{StaticResource PopoverRadius}" />
         <Setter Property="IsTabStop" Value="True" />
