@@ -19,6 +19,14 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal ImmutableArray<GameServer> Visible(ImmutableArray<GameServer>? live = null) =>
         ServerBrowser.Visible(session.Library, live ?? session.Library.Cache, Scope, Filters, Search, Sort, Ascending);
 
+    internal int ScopedCount(ImmutableArray<GameServer>? live = null) => Scope switch
+    {
+        ServerScope.All => (live ?? session.Library.Cache).Length,
+        ServerScope.Favorites => session.Library.Favorites.Count,
+        ServerScope.Recent => Math.Min(session.Library.Recent.Length, 30),
+        _ => 0
+    };
+
     internal void SortBy(ServerSort sort)
     {
         Ascending = Sort == sort ? !Ascending : sort != ServerSort.Ping;

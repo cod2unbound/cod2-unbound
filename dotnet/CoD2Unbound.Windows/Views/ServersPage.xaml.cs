@@ -17,7 +17,7 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
-public sealed partial class ServersPage : Page
+public sealed partial class ServersPage : Page, IShellBackdrop
 {
     private readonly MainWindow shell;
     private readonly ServersViewModel model;
@@ -29,7 +29,7 @@ public sealed partial class ServersPage : Page
     private readonly ObservableCollection<ServerRow> rows = [];
     private readonly RefreshProgress progress = new();
     private ServerRefreshState? shownRefresh;
-    private string? refreshMessage;
+    private bool mastersDidNotAnswer;
     private string? filterLabel;
     private ImmutableArray<ServerPlayer> shownRoster = [];
     private bool ready;
@@ -42,6 +42,8 @@ public sealed partial class ServersPage : Page
         model = new(session, ServerScope.All);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        PageLayout.Children.Remove(ServerToolbar);
+        PageLayout.Children.Remove(ServersContours);
         AutomationProperties.SetHeadingLevel(EmptyHeading, AutomationHeadingLevel.Level2);
         ServerList.AddHandler(KeyDownEvent, new KeyEventHandler(OnServerListKeyDown), true);
         ServerList.ItemsSource = rows;
@@ -50,6 +52,8 @@ public sealed partial class ServersPage : Page
         ActualThemeChanged += (_, _) => UpdateContrast();
         Loaded += (_, _) =>
         {
+            PositionToolbar();
+            shell.SetTitleBarContent(ServerToolbar);
             UpdateContrast();
             UpdateRefreshDisplay();
         };
@@ -98,11 +102,12 @@ public sealed partial class ServersPage : Page
                 ApplyServerRow(grid, assignMenu: false);
         RenderEmpty(rows.Count == 0);
         int count = model.Filters.Count;
+        FilterBadge.Visibility = IsVisible(count > 0);
+        FilterCount.Text = count.ToString();
         string filters = count == 0 ? "Filters" : $"Filters ({count})";
         if (filterLabel != filters)
         {
             filterLabel = filters;
-            FilterButton.Content = IconLabel("Filter", filters);
             AutomationProperties.SetName(FilterButton, filters);
         }
         UpdateRefreshStatus();
@@ -131,28 +136,14 @@ public sealed partial class ServersPage : Page
         });
     }
 
-    private string WithCacheAge(string result)
+    private string CacheAge(DateTimeOffset date)
     {
-        if (model.CachedAt is not { } date)
-            return result;
         var age = DateTimeOffset.UtcNow - date;
         if (age < TimeSpan.FromMinutes(1))
-            return result + " · List updated just now";
+            return "just now";
         if (age < TimeSpan.FromHours(1))
-            return result + $" · List updated {(int)age.TotalMinutes} min ago";
-        return result + " · List updated " + LauncherText.StencilTime(date.ToLocalTime());
-    }
-
-    private string EmptyState()
-    {
-        if (!string.IsNullOrWhiteSpace(model.Search) || model.Filters.Count > 0)
-            return "No match";
-        return model.Scope switch
-        {
-            ServerScope.Favorites => "No favorites yet",
-            ServerScope.Recent => "Nothing played yet",
-            _ => "No contact yet"
-        };
+            return $"{(int)age.TotalMinutes} min ago";
+        return "from " + LauncherText.StencilTime(date.ToLocalTime());
     }
 
     private async void OnScopeChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
@@ -163,13 +154,13 @@ public sealed partial class ServersPage : Page
         bool showHosting = index == sender.Items.Count - 1;
         // New server takes Alt+N while Hosting is active in the shared Servers view.
         RecentScope.AccessKey = showHosting ? "" : "N";
-        BrowserContent.Visibility = BrowserActions.Visibility = FilterButton.Visibility =
-            SearchBox.Visibility = BrowserSubtitle.Visibility = IsVisible(!showHosting);
-        HostingContent.Visibility = HostingActions.Visibility = HostingExportFeedback.Visibility = IsVisible(showHosting);
-        if (showHosting)
-            ClearRecent.Visibility = Visibility.Collapsed;
+        BrowserContent.Visibility = BrowserActions.Visibility = BrowserTools.Visibility = IsVisible(!showHosting);
+        HostingLayout.Visibility = HostingActions.Visibility = IsVisible(showHosting);
+        shell.RefreshBackdrop();
+        UpdateToolbarOverflow(ServerToolbar.ActualWidth);
         if (showHosting)
         {
+            ClearRecent.Visibility = Visibility.Collapsed;
             CompositionTarget.Rendering -= OnRefreshRendering;
             session.Opened(UsagePage.Hosting);
             await shell.ShowProblemAsync(async () =>
@@ -181,7 +172,6 @@ public sealed partial class ServersPage : Page
             });
             return;
         }
-        refreshMessage = null;
         revealedJumpAddress = null;
         model.Scope = (ServerScope)index;
         UpdateRefreshDisplay();
@@ -204,10 +194,38 @@ public sealed partial class ServersPage : Page
 
     internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
 
-    private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args) =>
-        Details.Width = args.NewSize.Width >= 1000 ? 380 : Math.Clamp(args.NewSize.Width * 0.44, 225, 340);
+    UIElement? IShellBackdrop.ShellBackdrop => ShowsServerBrowser ? ServersContours : null;
 
-    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
+    private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        PositionToolbar();
+        DetailArtwork.Height = args.NewSize.Height < 830 ? 106 : 150;
+    }
+
+    private void PositionToolbar()
+    {
+        if (XamlRoot is null)
+            return;
+        var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point());
+        var margin = new Thickness(origin.X + 20, 16, 18, 0);
+        if (!ServerToolbar.Margin.Equals(margin))
+            ServerToolbar.Margin = margin;
+    }
+
+    private void OnToolbarSizeChanged(object sender, SizeChangedEventArgs args) => UpdateToolbarOverflow(args.NewSize.Width);
+
+    private void UpdateToolbarOverflow(double width)
+    {
+        // Budgets are in the caption-clear toolbar space. Shrink search before either trailing group leaves.
+        bool hideStatus = width < 750;
+        bool hideConnect = width < 920;
+        double trailing = !hideConnect ? 760 : !hideStatus ? 590 : 530;
+        SearchBox.Width = Math.Clamp(width - trailing, 160, 280);
+        RefreshPill.Visibility = IsVisible(!hideStatus);
+        OverflowCount.Visibility = OverflowRefresh.Visibility = IsVisible(hideStatus);
+        ConnectButton.Visibility = IsVisible(!hideConnect);
+        ToolbarOverflow.Visibility = IsVisible(hideConnect);
+    }
 
     private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
@@ -241,7 +259,12 @@ public sealed partial class ServersPage : Page
         var used = new Run { Text = server.MaxPlayers > 0 ? server.PlayerCount.ToString() : "—",
             FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
         if (!contrast)
-            used.Foreground = ThemeBrush(facts.Occupancy == ServerOccupancy.Full ? "NegativeBrush" : "BodyBrush", ActualTheme, false);
+            used.Foreground = ThemeBrush(facts.Occupancy switch
+            {
+                ServerOccupancy.Full => "NegativeBrush",
+                _ when server.PlayerCount == 0 => "TertiaryBrush",
+                _ => "numeral"
+            }, ActualTheme, false);
         players.Inlines.Add(used);
         if (server.MaxPlayers > 0)
         {
@@ -265,7 +288,7 @@ public sealed partial class ServersPage : Page
                     Width = 3,
                     Height = 2 + bar * 2,
                     VerticalAlignment = VerticalAlignment.Bottom,
-                    Fill = ThemeBrush(bar <= level ? "PositiveBrush" : "ControlStrokeBrush", ActualTheme, false)
+                    Fill = ThemeBrush(bar > level ? "ControlStrokeBrush" : level < 3 ? "caution" : "PositiveBrush", ActualTheme, false)
                 });
             }
         }
@@ -289,7 +312,6 @@ public sealed partial class ServersPage : Page
     {
         if (!ready)
             return;
-        refreshMessage = null;
         revealedJumpAddress = null;
         model.Search = SearchBox.Text;
         UpdateClearFilters();
@@ -319,8 +341,7 @@ public sealed partial class ServersPage : Page
     {
         if (sender is Button { Tag: string value } && Enum.TryParse<ServerSort>(value, out var sort))
         {
-            refreshMessage = null;
-            model.SortBy(sort);
+                model.SortBy(sort);
             RenderSort();
             Render();
         }
@@ -337,10 +358,12 @@ public sealed partial class ServersPage : Page
         if (ServerList.SelectedItem is not ServerRow row)
         {
             ClearReadyCheck();
-            Details.Visibility = Visibility.Collapsed;
+            SelectedDetails.Visibility = Visibility.Collapsed;
+            NoDetails.Visibility = Visibility.Visible;
             return;
         }
-        Details.Visibility = Visibility.Visible;
+        SelectedDetails.Visibility = Visibility.Visible;
+        NoDetails.Visibility = Visibility.Collapsed;
         var server = row.Server;
         var facts = ServerFacts.From(server);
         DetailName.Inlines.Clear();
@@ -350,9 +373,9 @@ public sealed partial class ServersPage : Page
         DetailAddress.Text = server.Address;
         DetailVersion.Text = facts.VersionLabel;
         DetailMod.Text = string.IsNullOrWhiteSpace(server.Mod) ? "None" : server.Mod;
-        DetailAccess.Text = facts.Access;
+        DetailAccess.Text = server.PasswordRequired ? "Password" : "Open";
         DetailFull.Visibility = IsVisible(facts.Occupancy == ServerOccupancy.Full);
-        DetailRoster.Text = "Roster · " + row.Players;
+        DetailRoster.Text = server.MaxPlayers > 0 ? $"ROSTER · {server.PlayerCount} of {server.MaxPlayers}" : "ROSTER";
         if (shownRoster.IsDefault || !shownRoster.SequenceEqual(server.Players))
         {
             shownRoster = server.Players;
@@ -360,7 +383,7 @@ public sealed partial class ServersPage : Page
             foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
             {
                 var columns = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(40), new GridLength(40));
-                columns.MinHeight = 22;
+                columns.MinHeight = 26;
                 var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
                 AddGameName(name, player.Name, ActualTheme, shell.IsHighContrast);
                 Put(columns, 0, name);
@@ -411,7 +434,7 @@ public sealed partial class ServersPage : Page
 
     internal async Task RefreshAsync()
     {
-        if (HostingContent.Visibility == Visibility.Visible)
+        if (!ShowsServerBrowser)
             return;
         if (refreshing is { } active)
         {
@@ -420,7 +443,6 @@ public sealed partial class ServersPage : Page
         }
         using var cancellation = new CancellationTokenSource();
         refreshing = cancellation;
-        refreshMessage = null;
         UpdateRefreshDisplay();
         shell.ClearProblem();
         try
@@ -429,7 +451,9 @@ public sealed partial class ServersPage : Page
         }
         finally
         {
-            refreshMessage = progress.TakeLatest()?.Message ?? shownRefresh?.Message;
+            var completed = progress.TakeLatest() ?? shownRefresh;
+            if (!cancellation.IsCancellationRequested && completed is { Refreshing: false })
+                mastersDidNotAnswer = completed.MastersDidNotAnswer;
             refreshing = null;
             shownRefresh = null;
             UpdateRefreshDisplay();
@@ -455,7 +479,8 @@ public sealed partial class ServersPage : Page
         }
         RefreshGlyph.Glyph = (string)Application.Current.Resources[active ? "FluentStop" : "FluentRefresh"];
         AutomationProperties.SetName(RefreshButton, active ? "Stop refresh" : "Refresh server list");
-        ToolTipService.SetToolTip(RefreshButton, active ? "Stop refresh" : "Refresh server list (Ctrl+R)");
+        ToolTipService.SetToolTip(RefreshButton, active ? "Stop refreshing" : "Refresh server list (Ctrl+R)");
+        OverflowRefresh.Text = active ? "Stop Refreshing" : "Refresh Server List";
         Render();
         UpdateJoinButton();
     }
@@ -471,15 +496,35 @@ public sealed partial class ServersPage : Page
 
     private void UpdateRefreshStatus()
     {
-        string status = refreshing is not null ? shownRefresh switch
+        bool active = refreshing is not null;
+        var state = shownRefresh;
+        int total = model.ScopedCount(state?.Servers);
+        bool filtered = model.Filters.Count > 0 || !string.IsNullOrWhiteSpace(model.Search);
+        string noun = total == 1 ? "server" : "servers";
+        string status = active ? state is { Asked: > 0 } ? $"{state.Answered} of {state.Asked} answered" : "Asking for the list…"
+            : filtered ? $"{rows.Count} of {total} {noun}"
+            : model.CachedAt is { } date ? $"{total} {noun} · {CacheAge(date)}"
+            : total == 0 ? "Not refreshed yet" : $"{total} {noun}";
+        RefreshStatus.Text = status;
+        OverflowCount.Text = status;
+        RefreshBanner.Visibility = IsVisible(active);
+        if (active)
         {
-            { Message: { } message } => message,
-            { Asked: > 0 } state => $"Checking {state.Asked} servers. {state.Finished} checked, {state.Answered} answered.",
-            _ => "Asking the master servers for the list…"
-        } : refreshMessage ?? (rows.Count == 0 ? EmptyState() : $"{rows.Count} {(rows.Count == 1 ? "server" : "servers")}");
-        string text = WithCacheAge(status);
-        if (RefreshStatus.Text != text)
-            RefreshStatus.Text = text;
+            RefreshMessage.Text = state is { Asked: > 0 }
+                ? $"Asking {state.Asked} servers. {state.Answered} {(state.Answered == 1 ? "has" : "have")} answered."
+                : "Asking the master servers for the list…";
+            RefreshProgressBar.IsIndeterminate = state is not { Asked: > 0 };
+            RefreshProgressBar.Value = state is { Asked: > 0 } ? 100d * state.Finished / state.Asked : 0;
+        }
+        OfflineBanner.IsOpen = !active && mastersDidNotAnswer;
+        OfflineBanner.Visibility = IsVisible(OfflineBanner.IsOpen);
+        if (OfflineBanner.IsOpen)
+            OfflineBanner.Message = model.CachedAt is { } cached
+                ? $"The master servers didn’t answer. You’re seeing the list from {LauncherText.StencilTime(cached.ToLocalTime())}."
+                : "The master servers didn’t answer. Check your internet connection, then try again.";
+        int filters = model.Filters.Count;
+        FilterSummary.Text = (filters == 0 ? "No filters on" : $"{filters} {(filters == 1 ? "filter" : "filters")} on")
+            + $" · {rows.Count} of {total} {noun} shown";
     }
 
     private sealed class RefreshProgress : IProgress<ServerRefreshState>

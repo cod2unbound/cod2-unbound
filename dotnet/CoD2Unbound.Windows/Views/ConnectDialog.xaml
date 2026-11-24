@@ -5,22 +5,31 @@
                DefaultButton="Primary" IsPrimaryButtonEnabled="False">
     <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
-            <TextBox x:Name="AddressBox" Header="Server address" PlaceholderText="203.0.113.24:28960" Style="{StaticResource MonoField}"
+            <TextBox x:Name="AddressBox" PlaceholderText="203.0.113.24:28960" Style="{StaticResource CapsuleTextBox}"
+                     FontFamily="{StaticResource CourierPrime}" FontWeight="Bold" FontSize="15"
                      AutomationProperties.Name="Server address" TextChanged="OnAddressChanged" MaxLength="1024" />
             <Grid x:Name="LookupLine" ColumnSpacing="6" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <FontIcon x:Name="Answered" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
+                          Style="{StaticResource PositiveIcon}" FontSize="15" Visibility="Collapsed" />
                 <ProgressRing x:Name="Asking" Width="16" Height="16" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
                 <TextBlock x:Name="Answer" Grid.Column="1" Style="{StaticResource SecondaryText}" FontSize="12" TextWrapping="Wrap"
                            AutomationProperties.LiveSetting="Polite" />
             </Grid>
-            <PasswordBox x:Name="PasswordInput" Header="Server password (optional)" PasswordRevealMode="Hidden" MaxLength="127"
+            <PasswordBox x:Name="PasswordInput" Style="{StaticResource CapsulePasswordBox}"
+                         PlaceholderText="Password, only if the server needs one" PasswordRevealMode="Hidden" MaxLength="127"
                          AutomationProperties.Name="Server password" PasswordChanged="OnPasswordChanged" />
             <TextBlock x:Name="Validation" TextWrapping="Wrap" Foreground="{ThemeResource NegativeBrush}"
                        AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
-            <CheckBox x:Name="Favorite" Content="Add to favorites" />
+            <Border Style="{StaticResource GroupCard}">
+                <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Add to Favorites" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <ToggleSwitch x:Name="Favorite" Grid.Column="1" MinWidth="0" AutomationProperties.Name="Add to favorites" />
+                </Grid>
+            </Border>
             <StackPanel x:Name="RecentAddresses" Spacing="2" />
             <TextBlock Text="Accepts an address, a name with a port, or a cod2x:// or cod2:// link."
                        Style="{StaticResource SecondaryText}" FontSize="12" />

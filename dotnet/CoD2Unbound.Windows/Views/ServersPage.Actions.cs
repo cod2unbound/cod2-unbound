@@ -19,9 +19,11 @@ public sealed partial class ServersPage
 
     private void RenderEmpty(bool empty)
     {
-        ClearRecent.Visibility = IsVisible(model.Scope == ServerScope.Recent && HostingContent.Visibility != Visibility.Visible);
+        ClearRecent.Visibility = IsVisible(model.Scope == ServerScope.Recent && ShowsServerBrowser);
         ClearRecent.IsEnabled = !session.Library.Recent.IsEmpty;
         EmptyServers.Visibility = IsVisible(empty);
+        ColumnHeaders.Visibility = IsVisible(!empty);
+        EmptyServers.Margin = new Thickness(16, IsRefreshing || mastersDidNotAnswer ? 60 : 110, 16, 0);
         if (!empty)
             return;
 
@@ -31,19 +33,20 @@ public sealed partial class ServersPage
         {
             _ when refreshing is not null => ("Finding servers", "Servers appear here as they answer.", ""),
             ServerScope.Recent when session.Library.Recent.IsEmpty =>
-                ("Nothing played yet", "Servers you launch on appear here, ready to rejoin.", "Show all servers"),
+                ("Nothing played yet", "Servers you launch on appear here, ready to rejoin.", "Show All Servers"),
             ServerScope.Favorites when session.Library.Favorites.IsEmpty =>
-                ("No favorites yet", "Star a server to keep it here and in the sidebar.", "Show all servers"),
-            _ when query.Length != 0 || filtered => ("No match",
-                query.Length == 0 ? "No server matches these filters." :
-                    filtered ? $"No server matches “{query}” with these filters." : $"No server matches “{query}”.",
-                query.Length == 0 ? "Clear filters" : filtered ? "Clear search and filters" : "Clear search"),
-            _ => ("No contact yet", "Ask the public master servers who’s online. CoD2 Unbound contacts them only when you refresh.",
-                "Refresh server list")
+                ("No favorites yet", "Star a server to keep it here and in the sidebar.", "Show All Servers"),
+            _ when model.ScopedCount() == 0 => ("No contact yet",
+                "Ask the public master servers who’s online. CoD2 Unbound contacts them only when you refresh.", "Refresh Server List"),
+            _ => ("No match", query.Length == 0 ? "No server matches these filters." :
+                filtered ? $"No server matches “{query}” with these filters." : $"No server matches “{query}”.",
+                query.Length == 0 ? "Clear Filters" : filtered ? "Clear Search and Filters" : "Clear Search")
         };
-        EmptyHeading.Text = title;
+        EmptyHeading.Text = title.ToUpperInvariant();
+        AutomationProperties.SetName(EmptyHeading, title);
         EmptyMessage.Text = message;
         EmptyAction.Content = action;
+        EmptyAction.Style = StyleFor(title == "No contact yet" ? "LauncherAccentButton" : "MediumButton");
         EmptyAction.Visibility = IsVisible(action.Length != 0);
     }
 
@@ -52,7 +55,7 @@ public sealed partial class ServersPage
         if (model.Scope == ServerScope.Recent && session.Library.Recent.IsEmpty ||
             model.Scope == ServerScope.Favorites && session.Library.Favorites.IsEmpty)
             Scopes.SelectedItem = Scopes.Items[0];
-        else if (model.Filters.Count != 0 || !string.IsNullOrWhiteSpace(model.Search))
+        else if (model.ScopedCount() != 0 && (model.Filters.Count != 0 || !string.IsNullOrWhiteSpace(model.Search)))
             await ClearFiltersAsync();
         else
             await RefreshAsync();
@@ -71,42 +74,44 @@ public sealed partial class ServersPage
         try
         {
             var filters = model.Filters;
-            FilterEdition.SelectedIndex = (int)filters.Version;
+            FilterEdition.SelectedItem = FilterEdition.Items[(int)filters.Version];
             string[] codes = ["dm", "tdm", "sd", "ctf", "hq"];
             var modes = codes.Select(code => new ComboBoxItem { Content = GameModes.Long(code), Tag = code }).ToList();
-            modes.Insert(0, new ComboBoxItem { Content = "All" });
+            modes.Insert(0, new ComboBoxItem { Content = "Any mode" });
             FilterMode.ItemsSource = modes;
             FilterMode.SelectedItem = modes.FirstOrDefault(mode => Equals(mode.Tag, filters.Mode)) ?? modes[0];
-            var limits = ServerFilters.PingLimits.Select(ping => new ComboBoxItem { Content = $"{ping} ms", Tag = ping }).ToList();
-            limits.Insert(0, new ComboBoxItem { Content = "Any" });
+            var limits = ServerFilters.PingLimits.Select(ping => new ComboBoxItem { Content = $"Under {ping} ms", Tag = ping }).ToList();
+            limits.Insert(0, new ComboBoxItem { Content = "Any ping" });
             FilterPing.ItemsSource = limits;
             FilterPing.SelectedItem = limits.FirstOrDefault(limit => Equals(limit.Tag, filters.MaxPing)) ?? limits[0];
-            HideEmpty.IsChecked = filters.HideEmpty;
-            HideFull.IsChecked = filters.HideFull;
-            HidePassworded.IsChecked = filters.HidePassworded;
+            HideEmpty.IsOn = filters.HideEmpty;
+            HideFull.IsOn = filters.HideFull;
+            HidePassworded.IsOn = filters.HidePassworded;
             UpdateClearFilters();
         }
         finally { loadingFilters = false; }
     }
 
-    private void UpdateClearFilters()
-    {
-        bool search = !string.IsNullOrWhiteSpace(model.Search);
-        ClearFilters.Content = search ? model.Filters.Count != 0 ? "Clear search and filters" : "Clear search" : "Clear filters";
-        ClearFilters.IsEnabled = search || model.Filters.Count != 0;
-    }
+    private void UpdateClearFilters() => ClearFilters.IsEnabled = model.Filters.Count != 0;
+
+    private async void OnEditionFilterSelection(SelectorBar sender, SelectorBarSelectionChangedEventArgs args) =>
+        await ApplyFiltersAsync();
 
     private async void OnFilterSelection(object sender, SelectionChangedEventArgs args) => await ApplyFiltersAsync();
     private async void OnFilterToggle(object sender, RoutedEventArgs args) => await ApplyFiltersAsync();
-    private async void OnClearFilters(object sender, RoutedEventArgs args) => await ClearFiltersAsync();
+    private async void OnClearFilters(object sender, RoutedEventArgs args) =>
+        await SetLiveFiltersAsync(new(), reloadFlyout: true);
 
     private async Task ApplyFiltersAsync()
     {
         if (!ready || loadingFilters)
             return;
-        var filters = new ServerFilters((ServerEditionFilter)FilterEdition.SelectedIndex,
+        int edition = FilterEdition.Items.IndexOf(FilterEdition.SelectedItem);
+        if (edition < 0)
+            return;
+        var filters = new ServerFilters((ServerEditionFilter)edition,
             (FilterMode.SelectedItem as ComboBoxItem)?.Tag as string, (FilterPing.SelectedItem as ComboBoxItem)?.Tag as int?,
-            HideEmpty.IsChecked == true, HideFull.IsChecked == true, HidePassworded.IsChecked == true);
+            HideEmpty.IsOn, HideFull.IsOn, HidePassworded.IsOn);
         await SetLiveFiltersAsync(filters);
     }
 
@@ -114,16 +119,15 @@ public sealed partial class ServersPage
     {
         SearchBox.Text = "";
         model.Search = "";
-        var save = SetLiveFiltersAsync(new());
-        OnFiltersOpening(FilterButton.Flyout, EventArgs.Empty);
-        await save;
+        await SetLiveFiltersAsync(new(), reloadFlyout: true);
     }
 
-    private async Task SetLiveFiltersAsync(ServerFilters filters)
+    private async Task SetLiveFiltersAsync(ServerFilters filters, bool reloadFlyout = false)
     {
-        refreshMessage = null;
         revealedJumpAddress = null;
         var save = model.SetFiltersAsync(filters);
+        if (reloadFlyout)
+            OnFiltersOpening(FilterButton.Flyout, EventArgs.Empty);
         UpdateClearFilters();
         Render();
         await shell.ShowProblemAsync(() => save);
@@ -132,26 +136,26 @@ public sealed partial class ServersPage
     private MenuFlyout BuildRowMenu(ServerRow row)
     {
         var flyout = new MenuFlyout();
-        var loadouts = new MenuFlyoutSubItem { Text = "Launch with loadout" };
+        var loadouts = new MenuFlyoutSubItem { Text = "Launch with Loadout" };
         var launch = MenuCommand("Launch", () => LaunchRowAsync(row), "Enter");
-        var favorite = MenuCommand(row.Favorite ? "Remove from favorites" : "Add to favorites",
+        var favorite = MenuCommand(row.Favorite ? "Remove from Favorites" : "Add to Favorites",
             () => ToggleFavoriteAsync(row), "Ctrl+D");
-        var copy = MenuCommand("Copy address", () => CopyRowAddressAsync(row), "Ctrl+Shift+C");
+        var copy = MenuCommand("Copy Address", () => CopyRowAddressAsync(row), "Ctrl+Shift+C");
         flyout.Items.Add(launch);
         flyout.Items.Add(loadouts);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(favorite);
         flyout.Items.Add(copy);
-        flyout.Items.Add(MenuCommand("Copy join link", () => CopyTextAsync(ServerAddress.JoinLink(row.Server.Address,
+        flyout.Items.Add(MenuCommand("Copy Join Link", () => CopyTextAsync(ServerAddress.JoinLink(row.Server.Address,
             row.Server.Fields.IsEmpty ? session.Settings.Working.Engine :
             row.Server.IsCod2x ? GameEdition.Cod2x : GameEdition.Original))));
         flyout.Items.Add(new MenuFlyoutSeparator());
-        var refresh = MenuCommand("Refresh this server", () => RefreshRowAsync(row));
+        var refresh = MenuCommand("Refresh This Server", () => RefreshRowAsync(row));
         flyout.Items.Add(refresh);
         flyout.Opening += async (_, _) =>
         {
             loadouts.Items.Clear();
-            favorite.Text = row.Favorite ? "Remove from favorites" : "Add to favorites";
+            favorite.Text = row.Favorite ? "Remove from Favorites" : "Add to Favorites";
             refresh.IsEnabled = refreshing is null;
             loadouts.IsEnabled = !session.ClientIsRunning && refreshing is null;
             launch.IsEnabled = refreshing is null;

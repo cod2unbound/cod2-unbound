@@ -83,7 +83,7 @@ public sealed partial class ServersPage
             readyCheck is { ProfileId: not null, Overrides.IsEmpty: true } && readyChosenName is { } chosen
                 ? $"Launch with {chosen}"
                 : readyCheck?.State.Report?.Status == ConfigReadyStatus.NeedsChanges && readyCheck.Overrides.IsEmpty
-                    ? "Launch anyway" : "Launch";
+                    ? "Launch Anyway" : "Launch";
         JoinButtonLabel.Text = label;
         string? name = (ServerList.SelectedItem as ServerRow)?.Name;
         AutomationProperties.SetName(JoinButton, name is null ? label : $"{label} on {name}");
@@ -182,7 +182,7 @@ public sealed partial class ServersPage
             panel.Children.Add(Caption(RuleProblem(report, problem)));
 
         if (!report.Fixes.IsEmpty)
-            panel.Children.Add(ReadyAction("Fix for this server only", ConfirmReadyFixAsync, tooltip:
+            panel.Children.Add(ReadyAction("Fix for This Server Only", ConfirmReadyFixAsync, tooltip:
                 "Use the server’s values while you play here only. Your loadout doesn’t change."));
         if (alternative is { } profile)
             panel.Children.Add(ReadyAction($"Use “{profile.DisplayName}”", () => ChangeReadyLoadoutAsync(profile.Id), tooltip:
@@ -314,7 +314,7 @@ public sealed partial class ServersPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Fix for this server only?",
-            PrimaryButtonText = "Fix for this server only", CloseButtonText = "Cancel",
+            PrimaryButtonText = "Fix for This Server Only", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary, Content = details
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary && ReferenceEquals(check, readyCheck) && !session.ClientIsRunning)
