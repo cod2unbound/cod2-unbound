@@ -16,6 +16,20 @@ public sealed partial class HomePage
     private Style LocalStyle(string key) => (Style)Resources[key];
     private readonly List<Button> recentButtons = [];
 
+    /// A card's list: a stock ListView whose items click, with the Mac's row hover and press fills set
+    /// through the item's own lightweight resources.
+    private ListView HomeList(string itemStyle)
+    {
+        var list = new ListView
+        {
+            SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true, ItemContainerStyle = LocalStyle(itemStyle),
+            Padding = new Thickness()
+        };
+        list.Resources["ListViewItemBackgroundPointerOver"] = Ink("hover");
+        list.Resources["ListViewItemBackgroundPressed"] = Ink("press");
+        return list;
+    }
+
     /// A card's empty state: a stencil heading, a sentence and at most one button.
     private static StackPanel CardEmpty(string heading, string message, (string Title, Action Run)? action = null)
     {
@@ -48,14 +62,22 @@ public sealed partial class HomePage
                 ("Find a Server", () => OnFindServer(this, new RoutedEventArgs()))));
             return;
         }
+        var list = HomeList("RecentItem");
+        AutomationProperties.SetName(list, "Recent servers");
+        list.ItemClick += async (_, args) =>
+        {
+            if (args.ClickedItem is FrameworkElement { Tag: GameServer server } && !server.Fields.IsEmpty)
+                await shell.OpenServersAsync(ServerScope.All, server.Address);
+        };
         foreach (var server in model.Recent)
-            RecentRows.Children.Add(RecentRow(server));
+            list.Items.Add(RecentRow(server));
+        RecentRows.Children.Add(list);
         RenderRecentState(model.LaunchProblem);
     }
 
     /// A recent server: art, name, map · mode · version, when it was played and Launch. The row shows the
     /// server in Servers; a server never seen in a list is plain text.
-    private Grid RecentRow(GameServer server)
+    private ListViewItem RecentRow(GameServer server)
     {
         string name = QuakeColors.Plain(server.Name);
         string? map = KnownMap(server);
@@ -82,36 +104,14 @@ public sealed partial class HomePage
         }
 
         string spoken = $"{name}, {subtitle}" + (played is null ? "" : $", played {played.ToLowerInvariant()}");
-        var row = new Grid();
-        if (listed)
-        {
-            var open = new Button
-            {
-                Content = content, Style = LocalStyle("RecentRowButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch
-            };
-            AutomationProperties.SetName(open, spoken);
-            AutomationProperties.SetHelpText(open, "Shows this server in Servers");
-            // The Mac's row hover (palette.hover), not the stronger quiet-button fill.
-            open.Resources["SubtleButtonBackgroundPointerOver"] = Ink("hover");
-            open.Resources["SubtleButtonBackgroundPressed"] = Ink("press");
-            open.Click += async (_, _) => await shell.OpenServersAsync(ServerScope.All, server.Address);
-            open.ContextFlyout = RecentMenu(server);
-            row.Children.Add(open);
-        }
-        else
-        {
-            var plain = new Border { Child = content, Padding = new Thickness(7, 7, 17, 7) };
-            AutomationProperties.SetName(plain, spoken);
-            row.Children.Add(plain);
-        }
+        var row = new Grid { Tag = server };
+        row.Children.Add(content);
         // Launch sits as far from the row's end as from its top and bottom (art 48 + 2 × 7).
         var launch = new Button
         {
             Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
                 Children = { Fluent("Play", 11, filled: true), new TextBlock { Text = "Launch" } } },
-            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 17, 0)
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center
         };
         ((FontIcon)((StackPanel)launch.Content).Children[0]).VerticalAlignment = VerticalAlignment.Center;
         AutomationProperties.SetName(launch, $"Launch {name}");
@@ -120,7 +120,11 @@ public sealed partial class HomePage
         recentButtons.Add(launch);
         row.Children.Add(launch);
         launch.SizeChanged += (_, args) => content.Margin = new Thickness(0, 0, args.NewSize.Width + 12, 0);
-        return row;
+
+        var item = new ListViewItem { Content = row, Tag = server, Style = LocalStyle("RecentItem"), ContextFlyout = RecentMenu(server) };
+        AutomationProperties.SetName(item, spoken);
+        AutomationProperties.SetHelpText(item, listed ? "Shows this server in Servers" : "");
+        return item;
     }
 
     private MenuFlyout RecentMenu(GameServer server)

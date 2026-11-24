@@ -108,11 +108,12 @@ public sealed partial class HomePage
 
     /// The menu under the loadout chip: which loadout the next game uses, then Edit … in Configs.
     /// While the game runs it keeps the loadout it started with, so the choices wait.
-    private void OnLoadoutChip(object sender, RoutedEventArgs args)
+    /// The stock DropDownButton opens the menu; its items are rebuilt each time it opens.
+    private void OnLoadoutMenuOpening(object? sender, object args)
     {
+        loadoutMenu.Items.Clear();
         if (model.Loadouts.IsEmpty)
             return;
-        loadoutMenu.Items.Clear();
         loadoutMenu.Items.Add(new MenuFlyoutItem
         {
             Text = "Use for your next game", IsEnabled = false, FontSize = 11, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
@@ -136,7 +137,6 @@ public sealed partial class HomePage
         string currentId = current.Id;
         edit.Click += async (_, _) => await shell.RunAsync(() => shell.OpenLoadoutInConfigsAsync(currentId));
         loadoutMenu.Items.Add(edit);
-        loadoutMenu.ShowAt(LoadoutChip);
     }
 
     private async Task UseLoadoutAsync(string id)

@@ -178,21 +178,21 @@ public sealed partial class HomePage
     /// Shows a short message at the bottom of Home (a join that didn't start, the game that closed).
     internal void ShowToast(string message, bool warning, string? report = null)
     {
-        ToastText.Text = message;
-        ToastIcon.Glyph = warning ? "" : "";
+        Toast.Severity = warning ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
+        Toast.Message = message;
         ToastReport.Content = report is not null && System.IO.Path.GetFileName(report).StartsWith("game-", StringComparison.Ordinal)
             ? "Show Game Log" : "Show Crash Report";
         ToastReport.Visibility = IsVisible(report is not null);
-        Toast.Visibility = Visibility.Visible;
-        AutomationProperties.SetName(Toast, "Status message: " + message);
+        Toast.IsOpen = true;
     }
 
-    private void HideToast() => Toast.Visibility = Visibility.Collapsed;
+    private void HideToast() => Toast.IsOpen = false;
 
-    private void OnDismissToast(object sender, RoutedEventArgs args)
+    // The InfoBar's own close button: the notice stays dismissed for this exit.
+    private void OnToastClosed(InfoBar sender, InfoBarClosedEventArgs args)
     {
-        dismissedExit = shownExit;
-        HideToast();
+        if (args.Reason == InfoBarCloseReason.CloseButton)
+            dismissedExit = shownExit;
     }
 
     private async void OnShowCrashReport(object sender, RoutedEventArgs args)

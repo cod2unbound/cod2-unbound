@@ -11,22 +11,43 @@
             <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
         </Style>
         <!-- A recent row: the whole row is the button, rounded like a crate, 7 in around the art. -->
-        <Style x:Key="RecentRowButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <!-- The cards' lists are stock ListViews: the item container keeps its own keyboard, pointer and
+             Narrator behaviour; only its shape, padding and the Mac's hover fill change. -->
+        <Style x:Key="RecentItem" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
             <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
             <Setter Property="Padding" Value="7,7,17,7" />
-            <Setter Property="FontWeight" Value="Normal" />
-            <Setter Property="HighContrastAdjustment" Value="None" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style x:Key="NewsItem" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <!-- The loadout capsule is a stock DropDownButton (its own chevron, flyout and expand/collapse
+             pattern) in the large glass chip's shape. -->
+        <Style x:Key="LoadoutChipStyle" TargetType="DropDownButton" BasedOn="{StaticResource DefaultDropDownButtonStyle}">
+            <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
+            <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
+            <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Padding" Value="16,0,12,0" />
+            <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+            <Setter Property="Foreground" Value="{ThemeResource chipText}" />
+            <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+            <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+            <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
         </Style>
         <Style x:Key="NewsSummary" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{ThemeResource body}" />
         </Style>
         <!-- A What's New line that leads somewhere: plain text that takes the pointer. -->
-        <Style x:Key="NewsLineButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
-            <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FontWeight" Value="Normal" />
-            <Setter Property="HighContrastAdjustment" Value="None" />
-        </Style>
     </Page.Resources>
     <!-- The Mac's Home (HomeView.swift): the last map's art behind the hero, the next game's loadout and
          display, anything that needs fixing, and three cards. Geometry follows the Home board at 1440 × 900. -->
@@ -120,15 +141,10 @@
                 <StackPanel x:Name="Lower" VerticalAlignment="Bottom" Spacing="32" Margin="0,0,0,28">
                     <StackPanel x:Name="Chips" Spacing="10">
                         <StackPanel x:Name="ChipRowOne" Orientation="Horizontal" Spacing="10">
-                            <Button x:Name="LoadoutChip" Style="{StaticResource LargeGlassChipButton}" AccessKey="O"
-                                    Click="OnLoadoutChip" ToolTipService.ToolTip="Choose the loadout for your next game">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <TextBlock x:Name="LoadoutText" VerticalAlignment="Center" />
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}"
-                                              FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource CaptionBrush}"
-                                              VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                                </StackPanel>
-                            </Button>
+                            <DropDownButton x:Name="LoadoutChip" Style="{StaticResource LoadoutChipStyle}" AccessKey="O"
+                                            ToolTipService.ToolTip="Choose the loadout for your next game">
+                                <TextBlock x:Name="LoadoutText" VerticalAlignment="Center" />
+                            </DropDownButton>
                             <Button x:Name="DisplayChip" Style="{StaticResource LargeGlassChipButton}" AccessKey="D"
                                     Click="OnDisplayChip">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -273,31 +289,14 @@
         </Border>
 
         <!-- Things that happened elsewhere (the game closed): a glass toast at the bottom, as on the Mac. -->
-        <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="32,0,32,24"
-                MinHeight="48" MaxWidth="720" CornerRadius="24" Padding="20,0,10,0"
-                Background="{ThemeResource GlassAcrylicBrush}" BorderBrush="{ThemeResource glassStroke}"
-                BorderThickness="{StaticResource Stroke}" Translation="0,0,32" Visibility="Collapsed"
-                AutomationProperties.Name="Status message" AutomationProperties.LiveSetting="Polite">
-            <Border.Shadow><ThemeShadow /></Border.Shadow>
-            <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <FontIcon x:Name="ToastIcon" Glyph="&#xE7BA;" FontSize="16" Foreground="{ThemeResource HeroAccentBrush}"
-                          VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock Grid.Column="1" x:Name="ToastText" FontSize="13" Foreground="{ThemeResource BodyBrush}"
-                           TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,14" IsTextSelectionEnabled="True" />
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button x:Name="ToastReport" Content="Show Crash Report" Click="OnShowCrashReport" Visibility="Collapsed" />
-                    <Button x:Name="ToastDismiss" Style="{StaticResource IconAction}" Width="28" Height="28"
-                            CornerRadius="{StaticResource ButtonRegularRadius}" Click="OnDismissToast"
-                            AutomationProperties.Name="Dismiss message" ToolTipService.ToolTip="Dismiss">
-                        <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="{ThemeResource ChipIconBrush}" />
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <!-- The Mac's NoticeBanner as the stock InfoBar: it announces itself to Narrator, closes with its
+             own button and carries the report action. Only its shape and fill follow the Mac. -->
+        <InfoBar x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="32,0,32,24"
+                 MaxWidth="720" CornerRadius="24" IsOpen="False" IsClosable="True" Severity="Warning"
+                 BorderBrush="{ThemeResource glassStroke}" Closed="OnToastClosed">
+            <InfoBar.ActionButton>
+                <Button x:Name="ToastReport" Content="Show Crash Report" Click="OnShowCrashReport" Visibility="Collapsed" />
+            </InfoBar.ActionButton>
+        </InfoBar>
     </Grid>
 </Page>

@@ -56,28 +56,23 @@ public sealed partial class HomePage
     private void RenderNewsRows(int rows, int summary)
     {
         NewsRows.Children.Clear();
+        var list = HomeList("NewsItem");
+        AutomationProperties.SetName(list, "What’s New");
+        list.ItemClick += async (_, args) =>
+        {
+            if (args.ClickedItem is FrameworkElement { Tag: NewsDispatch dispatch } && dispatch.Destination != NewsDestination.None)
+                await shell.RunAsync(() => OpenNewsItemAsync(dispatch));
+        };
         foreach (var item in model.News.Take(rows))
         {
             var line = NewsLine(item, 2, summary);
-            if (item.Destination == NewsDestination.None)
-            {
-                AutomationProperties.SetName(line, Spoken(item));
-                NewsRows.Children.Add(line);
-                continue;
-            }
-            var button = new Button
-            {
-                Content = line, Style = LocalStyle("NewsLineButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch
-            };
-            button.Resources["SubtleButtonBackgroundPointerOver"] = Ink("hover");
-            button.Resources["SubtleButtonBackgroundPressed"] = Ink("press");
-            AutomationProperties.SetName(button, Spoken(item));
-            AutomationProperties.SetHelpText(button, OpenTitle(item));
-            var dispatch = item;
-            button.Click += async (_, _) => await shell.RunAsync(() => OpenNewsItemAsync(dispatch));
-            NewsRows.Children.Add(button);
+            line.Tag = item;
+            var entry = new ListViewItem { Content = line, Tag = item, Style = LocalStyle("NewsItem") };
+            AutomationProperties.SetName(entry, Spoken(item));
+            AutomationProperties.SetHelpText(entry, item.Destination == NewsDestination.None ? "" : OpenTitle(item));
+            list.Items.Add(entry);
         }
+        NewsRows.Children.Add(list);
     }
 
     /// One line of What's New: the date above the title, then the summary. The card limits the lines;

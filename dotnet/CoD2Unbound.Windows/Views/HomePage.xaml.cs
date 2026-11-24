@@ -33,6 +33,8 @@ public sealed partial class HomePage : Page
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
+        loadoutMenu.Opening += OnLoadoutMenuOpening;
+        LoadoutChip.Flyout = loadoutMenu;
         ActualThemeChanged += (_, _) => UpdateTheme();
         Loaded += (_, _) => { UpdateTheme(); Arrange(); };
         Unloaded += (_, _) => shell.SetHomeCaptionPassthrough(null);
@@ -65,6 +67,9 @@ public sealed partial class HomePage : Page
 
     internal void UpdateTheme()
     {
+        // The notice's fill: the InfoBar's documented severity background resources, set to the glass.
+        foreach (string key in new[] { "InfoBarWarningSeverityBackgroundBrush", "InfoBarInformationalSeverityBackgroundBrush" })
+            Toast.Resources[key] = Ink("GlassAcrylicBrush");
         RenderBackdrop();
         RenderHeroDetail(model.Game);
         RenderRecent();
