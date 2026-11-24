@@ -159,10 +159,10 @@ public sealed partial class MainWindow : Window
         // The native title and caption buttons reserve different widths on each side.
         double hostLeft = JumpHost.TransformToVisual(WindowBar).TransformPoint(default).X;
         double hostWidth = args.NewSize.Width;
-        double availableOffset = Math.Max(0, (hostWidth - JumpBox.Width) / 2);
+        double availableOffset = Math.Max(0, (hostWidth - JumpField.Width) / 2);
         double centerOffset = WindowBar.ActualWidth / 2 - hostLeft - hostWidth / 2;
         double offset = Math.Clamp(centerOffset, -availableOffset, availableOffset);
-        JumpBox.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
+        JumpField.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
     }
 
     private void OnAppThemeChanged(FrameworkElement sender, object args) =>

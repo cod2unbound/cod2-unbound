@@ -21,44 +21,54 @@
             </TitleBar.Resources>
             <TitleBar.Content>
                 <Grid x:Name="JumpHost" Height="48" SizeChanged="OnJumpHostSizeChanged" Visibility="Collapsed">
-                    <AutoSuggestBox x:Name="JumpBox" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    IsEnabled="False" MaxSuggestionListHeight="440" UpdateTextOnSelect="False"
-                                    PlaceholderText="Servers, loadouts, settings and actions"
-                                    AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K"
-                                    ToolTipService.ToolTip="Jump to… (Ctrl+K)">
-                        <AutoSuggestBox.QueryIcon>
-                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="20" />
-                        </AutoSuggestBox.QueryIcon>
-                        <AutoSuggestBox.ItemTemplate>
-                            <DataTemplate x:DataType="local:JumpSuggestion">
-                                <StackPanel Margin="0,4">
-                                    <TextBlock Text="{x:Bind Heading}" Visibility="{x:Bind HeadingVisible}"
-                                               Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold" Margin="0,4,0,4" />
-                                    <Grid ColumnSpacing="8" Background="{x:Bind SelectionBrush, Mode=OneWay}"
-                                          Opacity="{x:Bind RowOpacity}" Padding="4,3" CornerRadius="4"
-                                          AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <FontIcon Visibility="{x:Bind IconVisible}" FontFamily="{StaticResource FluentRegular}"
-                                                  Glyph="{x:Bind Icon}" FontSize="16" VerticalAlignment="Center" />
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind Title}" TextWrapping="{x:Bind TitleWrapping}"
-                                                       TextTrimming="{x:Bind TitleTrimming}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{x:Bind Detail}" Visibility="{x:Bind DetailVisible}"
-                                                       TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        </StackPanel>
-                                        <TextBlock Grid.Column="2" Text="{x:Bind Hint, Mode=OneWay}"
-                                                   Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-                                    </Grid>
-                                    <TextBlock Text="↑ ↓ to move · Enter to jump · the setting opens in Expert"
-                                               Visibility="{x:Bind FooterVisible}" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,8,0,4" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </AutoSuggestBox.ItemTemplate>
-                    </AutoSuggestBox>
+                    <Grid x:Name="JumpField" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <AutoSuggestBox x:Name="JumpBox"
+                                        IsEnabled="False" MaxSuggestionListHeight="440" UpdateTextOnSelect="False"
+                                        PlaceholderText="Jump to…"
+                                        AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K"
+                                        ToolTipService.ToolTip="Jump to… (Ctrl+K)">
+                            <AutoSuggestBox.TextBoxStyle>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
+                                    <Setter Property="Padding" Value="34,5,10,6" />
+                                </Style>
+                            </AutoSuggestBox.TextBoxStyle>
+                            <AutoSuggestBox.ItemTemplate>
+                                <DataTemplate x:DataType="local:JumpSuggestion">
+                                    <StackPanel Margin="0,4">
+                                        <TextBlock Text="{x:Bind Heading}" Visibility="{x:Bind HeadingVisible}"
+                                                   Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold" Margin="0,4,0,4" />
+                                        <Grid ColumnSpacing="8" Background="{x:Bind SelectionBrush, Mode=OneWay}"
+                                              Opacity="{x:Bind RowOpacity}" Padding="4,3" CornerRadius="4"
+                                              AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Visibility="{x:Bind IconVisible}" FontFamily="{StaticResource FluentRegular}"
+                                                      Glyph="{x:Bind Icon}" FontSize="16" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind Title}" TextWrapping="{x:Bind TitleWrapping}"
+                                                           TextTrimming="{x:Bind TitleTrimming}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{x:Bind Detail}" Visibility="{x:Bind DetailVisible}"
+                                                           TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{x:Bind Hint, Mode=OneWay}"
+                                                       Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <TextBlock Text="↑ ↓ to move · Enter to jump · the setting opens in Expert"
+                                                   Visibility="{x:Bind FooterVisible}" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,8,0,4" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </AutoSuggestBox.ItemTemplate>
+                        </AutoSuggestBox>
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}"
+                                    FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Margin="11,0,0,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock x:Name="JumpShortcutHint" Text="Ctrl+K" Style="{StaticResource SecondaryText}"
+                                     FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                     Margin="0,0,10,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+                    </Grid>
                 </Grid>
             </TitleBar.Content>
         </TitleBar>

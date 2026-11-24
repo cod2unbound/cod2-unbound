@@ -12,6 +12,7 @@ namespace CoD2Unbound.Windows;
 public sealed partial class MainWindow
 {
     private const string AppJumpPlaceholder = "Servers, loadouts, settings and actions";
+    private const string IdleJumpPlaceholder = "Jump to…";
     private const string SettingJumpPlaceholder = "Setting or console name";
     private Control? jumpReturnFocus;
     private bool jumpOpen;
@@ -64,6 +65,7 @@ public sealed partial class MainWindow
         int generation = ++jumpGeneration;
         jumpSettings = ContentFrame.Content is ConfigsPage { ShowsLoadout: true };
         JumpBox.PlaceholderText = jumpSettings ? SettingJumpPlaceholder : AppJumpPlaceholder;
+        JumpShortcutHint.Visibility = Visibility.Collapsed;
         RenderJumpSuggestions();
         if (!jumpSettings)
         {
@@ -89,7 +91,8 @@ public sealed partial class MainWindow
         JumpBox.IsSuggestionListOpen = false;
         JumpBox.Text = "";
         JumpBox.ItemsSource = null;
-        JumpBox.PlaceholderText = AppJumpPlaceholder;
+        JumpBox.PlaceholderText = IdleJumpPlaceholder;
+        JumpShortcutHint.Visibility = Visibility.Visible;
         jumpSuggestions = [];
         jumpIndex = -1;
         var previous = jumpReturnFocus;
