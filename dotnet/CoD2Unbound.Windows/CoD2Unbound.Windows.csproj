@@ -39,6 +39,10 @@
   <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalReportReceivers)' == 'true'">
     <AssemblyMetadata Include="CoD2Unbound.ReportingFixture" Value="true" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UpdateBuildProfile)' != 'Fixture'">
+    <Page Remove="Fixtures/StylePartsWindow.xaml" />
+    <Compile Remove="Fixtures/StylePartsWindow.xaml.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
     <AssemblyMetadata Include="CoD2Unbound.UpdateFixture" Value="true" />
   </ItemGroup>
@@ -72,6 +76,8 @@
     <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf;Assets/FluentSystemIcons-*.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Update="Assets/mark-16.png;Assets/mark-48.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="Assets/LICENSE-FluentSystemIcons.txt;Assets/mark.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../docs/brand/wordmark.svg;../../docs/brand/wordmark-ink.svg"
+             Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../launcher/Resources/Fonts/OFL-BigShouldersStencilDisplay.txt;../../launcher/Resources/Fonts/CourierPrime-*.ttf;../../launcher/Resources/Fonts/OFL-CourierPrime.txt"
              Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

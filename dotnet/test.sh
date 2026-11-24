@@ -6,6 +6,7 @@ if [ "$#" -ne 1 ] || [ ! -d "$1" ]; then
     exit 2
 fi
 feed=$(CDPATH= cd -- "$1" && pwd)
+python3 "$root/tools/windows/generate-launcher-theme.py" --check
 image=mcr.microsoft.com/dotnet/sdk@sha256:bef136a371963aaa46ec97882845ef6f54dec15728bb4b128b1c2a400ffbc9b4
 exec docker run --rm --network none --cpus 4 \
     -e DOTNET_CLI_TELEMETRY_OPTOUT=1 -e DOTNET_NOLOGO=1 -e DOTNET_PROCESSOR_COUNT=4 \

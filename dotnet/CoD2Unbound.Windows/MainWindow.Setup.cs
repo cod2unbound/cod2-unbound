@@ -61,7 +61,7 @@ public sealed partial class MainWindow
                     LaunchRecoveryKind.MissingGame => "Open download page",
                     _ => "Try again"
                 },
-                SecondaryButtonText = "Show log", CloseButtonText = "Close"
+                SecondaryButtonText = "Show Log", CloseButtonText = "Close"
             };
             switch (await dialog.ShowAsync())
             {

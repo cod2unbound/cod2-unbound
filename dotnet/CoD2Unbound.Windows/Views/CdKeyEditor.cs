@@ -23,6 +23,7 @@ internal sealed class CdKeyEditor : StackPanel
     internal CdKeyEditor(MainWindow shell)
     {
         Spacing = 10;
+        input.Style = StyleFor("CapsulePasswordBox");
         AutomationProperties.SetName(input, "CD key");
         var paste = new Button { Content = "Paste", VerticalAlignment = VerticalAlignment.Bottom };
         paste.Click += async (_, _) => await shell.ShowProblemAsync(async () =>
@@ -77,7 +78,7 @@ internal sealed class CdKeyEditor : StackPanel
                 Children = { Caption(replacing ? "The key you type replaces the one stored on this PC." :
                     "Enter the 20-character key that came with your game."), editor }
             },
-            PrimaryButtonText = replacing ? "Replace" : "Save key",
+            PrimaryButtonText = replacing ? "Replace" : "Save Key",
             IsPrimaryButtonEnabled = false,
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary

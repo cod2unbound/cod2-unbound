@@ -17,6 +17,7 @@ internal sealed class ProblemReportDialog : ContentDialog
     {
         DefaultStyleKey = typeof(ContentDialog);
         Title = "Report a problem";
+        Style = StyleFor("LauncherSheet");
         PrimaryButtonText = "Open GitHub";
         CloseButtonText = "Cancel";
         DefaultButton = ContentDialogButton.Primary;
@@ -26,8 +27,8 @@ internal sealed class ProblemReportDialog : ContentDialog
         var detail = new TextBlock { Text = report.Details, Style = StyleFor("Mono"), TextWrapping = TextWrapping.Wrap,
             IsTextSelectionEnabled = true };
         AutomationProperties.SetName(detail, "Details that go in the report");
-        var copy = new Button { VerticalAlignment = VerticalAlignment.Top, Content = IconLabel("Copy", "Copy details", 16) };
-        AddCopyFeedback(copy, "Copy details", () => Task.FromResult(report.Details));
+        var copy = new Button { VerticalAlignment = VerticalAlignment.Top, Content = IconLabel("Copy", "Copy Details", 16) };
+        AddCopyFeedback(copy, "Copy Details", () => Task.FromResult(report.Details));
 
         var details = Columns(10, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         Put(details, 0, new Border { Style = StyleFor("FieldCard"), Child = detail });

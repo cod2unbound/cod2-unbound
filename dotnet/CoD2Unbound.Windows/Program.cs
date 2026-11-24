@@ -17,6 +17,16 @@ internal static class Program
         // Older shortcuts and shell activations can start inside the directory Setup replaces.
         Environment.CurrentDirectory = Environment.SystemDirectory;
         StartupTrace.Mark("managed entry");
+#if UPDATE_FIXTURES
+        if (Environment.GetCommandLineArgs().Skip(1).ToArray() is ["--style-parts", .. var options])
+        {
+            if (options is not ([] or ["light"] or ["dark"]))
+                return 2;
+            WinRT.ComWrappersSupport.InitializeComWrappers();
+            Application.Start(_ => new App(options is ["light"] ? ElementTheme.Light : ElementTheme.Dark));
+            return 0;
+        }
+#endif
         if (Platform.WindowsInstallRecovery.RedirectInterruptedStart())
             return 0;
 

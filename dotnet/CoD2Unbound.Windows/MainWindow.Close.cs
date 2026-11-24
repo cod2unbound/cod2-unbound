@@ -53,7 +53,7 @@ public sealed partial class MainWindow
             {
                 case QuitPrompt.Game:
                     var answer = await AskCloseAsync("Call of Duty 2 is still running",
-                        "Closing CoD2 Unbound leaves the game open.", "Close launcher only", "Close both");
+                        "Closing CoD2 Unbound leaves the game open.", "Close Launcher Only", "Close Both");
                     if (answer == ContentDialogResult.None)
                         return;
                     confirmedGames = games;

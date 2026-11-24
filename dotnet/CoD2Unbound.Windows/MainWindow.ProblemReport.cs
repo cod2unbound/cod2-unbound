@@ -12,9 +12,9 @@ public sealed partial class MainWindow
     private void ShowHelpMenu()
     {
         var help = new MenuFlyout();
-        var openHelp = new MenuFlyoutItem { Text = "Open help" };
+        var openHelp = new MenuFlyoutItem { Text = "Open Help" };
         openHelp.Click += async (_, _) => await ShowProblemAsync(() => OpenAsync(HelpUrl));
-        var report = new MenuFlyoutItem { Text = "Report a problem…" };
+        var report = new MenuFlyoutItem { Text = "Report a Problem…" };
         report.Click += OnReportProblem;
         help.Items.Add(openHelp);
         help.Items.Add(report);

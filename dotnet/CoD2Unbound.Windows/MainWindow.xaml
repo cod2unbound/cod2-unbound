@@ -7,101 +7,127 @@
     <Grid x:Name="Root" Background="{ThemeResource FrameContrastBrush}"
           Loaded="OnLoaded" SizeChanged="OnSizeChanged">
         <Grid.RowDefinitions>
+            <RowDefinition x:Name="CaptionRow" Height="{StaticResource CaptionRowHeight}" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border x:Name="SolidFrame" Grid.RowSpan="2" Background="{ThemeResource GroundBrush}"
-                IsHitTestVisible="False" />
-        <ContentControl x:Name="ClientJumpBar" Visibility="Collapsed" IsTabStop="False"
-                        HorizontalContentAlignment="Stretch" />
-        <TitleBar x:Name="WindowBar" Title="CoD2 Unbound" Height="48">
-            <TitleBar.Resources>
-                <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
-            </TitleBar.Resources>
-            <TitleBar.Content>
-                <Grid x:Name="JumpHost" Height="48" SizeChanged="OnJumpHostSizeChanged" Visibility="Collapsed">
-                    <Grid x:Name="JumpField" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <AutoSuggestBox x:Name="JumpBox"
-                                        IsEnabled="False" MaxSuggestionListHeight="440" UpdateTextOnSelect="False"
-                                        PlaceholderText="Jump to…"
-                                        AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K"
-                                        ToolTipService.ToolTip="Jump to… (Ctrl+K)">
-                            <AutoSuggestBox.TextBoxStyle>
-                                <Style TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
-                                    <Setter Property="Padding" Value="34,5,10,6" />
-                                </Style>
-                            </AutoSuggestBox.TextBoxStyle>
-                            <AutoSuggestBox.ItemTemplate>
-                                <DataTemplate x:DataType="local:JumpSuggestion">
-                                    <StackPanel Margin="0,4">
-                                        <TextBlock Text="{x:Bind Heading}" Visibility="{x:Bind HeadingVisible}"
-                                                   Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold" Margin="0,4,0,4" />
-                                        <Grid ColumnSpacing="8" Background="{x:Bind SelectionBrush, Mode=OneWay}"
-                                              Opacity="{x:Bind RowOpacity}" Padding="4,3" CornerRadius="4"
-                                              AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <FontIcon Visibility="{x:Bind IconVisible}" FontFamily="{StaticResource FluentRegular}"
-                                                      Glyph="{x:Bind Icon}" FontSize="16" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{x:Bind Title}" TextWrapping="{x:Bind TitleWrapping}"
-                                                           TextTrimming="{x:Bind TitleTrimming}" FontWeight="SemiBold" />
-                                                <TextBlock Text="{x:Bind Detail}" Visibility="{x:Bind DetailVisible}"
-                                                           TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" />
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="{x:Bind Hint, Mode=OneWay}"
-                                                       Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-                                        </Grid>
-                                        <TextBlock Text="↑ ↓ to move · Enter to jump · the setting opens in Expert"
-                                                   Visibility="{x:Bind FooterVisible}" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,8,0,4" />
+        <Border Grid.RowSpan="3" Background="{ThemeResource GroundBrush}" IsHitTestVisible="False" />
+        <Grid x:Name="WindowBar" Background="Transparent" />
+        <Grid x:Name="JumpHost" Grid.Row="1" Height="44" Visibility="Collapsed">
+            <Grid x:Name="JumpField" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <AutoSuggestBox x:Name="JumpBox"
+                                IsEnabled="False" MaxSuggestionListHeight="440" UpdateTextOnSelect="False"
+                                PlaceholderText="Jump to…"
+                                AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K"
+                                ToolTipService.ToolTip="Jump to… (Ctrl+K)">
+                    <AutoSuggestBox.TextBoxStyle>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchField}">
+                            <Setter Property="Padding" Value="34,5,57,6" />
+                        </Style>
+                    </AutoSuggestBox.TextBoxStyle>
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:JumpSuggestion">
+                            <StackPanel Margin="0,4">
+                                <TextBlock Text="{x:Bind Heading}" Visibility="{x:Bind HeadingVisible}"
+                                           Style="{StaticResource TypeHelp}" FontWeight="SemiBold" Margin="0,4,0,4" />
+                                <Grid ColumnSpacing="8" Background="{x:Bind SelectionBrush, Mode=OneWay}"
+                                      Opacity="{x:Bind RowOpacity}" Padding="4,3" CornerRadius="{StaticResource MenuItemRadius}"
+                                      AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Visibility="{x:Bind IconVisible}" FontFamily="{StaticResource FluentRegular}"
+                                              Glyph="{x:Bind Icon}" FontSize="16" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Title}" TextWrapping="{x:Bind TitleWrapping}"
+                                                   TextTrimming="{x:Bind TitleTrimming}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{x:Bind Detail}" Visibility="{x:Bind DetailVisible}"
+                                                   TextTrimming="CharacterEllipsis" Style="{StaticResource TypeHelp}" />
                                     </StackPanel>
-                                </DataTemplate>
-                            </AutoSuggestBox.ItemTemplate>
-                        </AutoSuggestBox>
-                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}"
-                                    FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    Margin="11,0,0,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
-                        <TextBlock x:Name="JumpShortcutHint" Text="Ctrl+K" Style="{StaticResource SecondaryText}"
-                                     FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                     Margin="0,0,10,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
-                    </Grid>
-                </Grid>
-            </TitleBar.Content>
-        </TitleBar>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Hint, Mode=OneWay}"
+                                               Style="{StaticResource TypeHelp}" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock Text="↑ ↓ to move · Enter to jump · the setting opens in Expert"
+                                           Visibility="{x:Bind FooterVisible}" Style="{StaticResource TypeHelp}" Margin="0,8,0,4" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
+                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}"
+                            FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Margin="11,0,0,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock x:Name="JumpShortcutHint" Text="Ctrl+K" Style="{StaticResource SecondaryText}"
+                             FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"
+                             Margin="0,0,10,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+            </Grid>
+        </Grid>
 
-        <NavigationView x:Name="Nav" Grid.Row="1" PaneDisplayMode="Left" OpenPaneLength="320"
+        <Border x:Name="SidebarGlass" Grid.Row="2" HorizontalAlignment="Left"
+                Width="{StaticResource SidebarWidth}" Margin="{StaticResource SidebarMargin}"
+                Visibility="Collapsed" Background="{ThemeResource GlassAcrylicBrush}"
+                CornerRadius="{StaticResource SidebarRadius}" BorderBrush="{ThemeResource glassStroke}"
+                BorderThickness="{StaticResource Stroke}" IsHitTestVisible="False">
+            <Border.Shadow><ThemeShadow /></Border.Shadow>
+            <Border Margin="1" CornerRadius="{StaticResource SidebarRadius}" BorderThickness="0,1,0,0"
+                    BorderBrush="{ThemeResource glassHighlight}" />
+        </Border>
+
+        <NavigationView x:Name="Nav" Grid.Row="2" Margin="10,10,0,10" PaneDisplayMode="LeftCompact"
+                        Background="Transparent" OpenPaneLength="{StaticResource SidebarWidth}"
                         CompactPaneLength="48" IsBackButtonVisible="Collapsed" IsPaneVisible="False"
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
+                        IsSettingsVisible="False"
                         ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
+            <NavigationView.PaneHeader>
+                <StackPanel x:Name="BrandHeader" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                            AutomationProperties.Name="CoD2 Unbound">
+                    <Image Source="ms-appx:///Assets/mark-48.png" Width="29" Height="29"
+                           AutomationProperties.AccessibilityView="Raw" />
+                    <Image x:Name="BrandWordmark" Width="110" Height="16"
+                           AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock x:Name="ContrastWordmark" Text="CoD2 Unbound" Style="{StaticResource TypeLabel}"
+                               VerticalAlignment="Center" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
+                </StackPanel>
+            </NavigationView.PaneHeader>
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" HighContrastAdjustment="None">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="20" /></NavigationViewItem.Icon>
+                <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" Style="{StaticResource ShellNavItem}">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="18" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S" HighContrastAdjustment="None">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="20" /></NavigationViewItem.Icon>
+                <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S" Style="{StaticResource ShellNavItem}">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="18" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L" HighContrastAdjustment="None">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentVideoClip}" FontSize="20" /></NavigationViewItem.Icon>
+                <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L" Style="{StaticResource ShellNavItem}">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentVideoClip}" FontSize="18" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C" HighContrastAdjustment="None">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="20" /></NavigationViewItem.Icon>
+                <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C" Style="{StaticResource ShellNavItem}">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="SettingsItem" Content="Settings" AccessKey="T" Style="{StaticResource ShellNavItem}">
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
             <NavigationView.PaneFooter>
-                <Button x:Name="PlayerPlate" Margin="8,8" HorizontalAlignment="Stretch"
+                <Button x:Name="PlayerPlate" Margin="12,6,12,8" HorizontalAlignment="Stretch"
+                        Style="{StaticResource PlayerPlateButton}"
                         HorizontalContentAlignment="Stretch" Visibility="Collapsed"
                         AutomationProperties.Name="Open your player card" AccessKey="P">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPerson}" FontSize="20" />
-                        <StackPanel>
-                            <TextBlock x:Name="PlayerName" FontWeight="SemiBold" Text="Player" />
-                            <TextBlock x:Name="PaneLoadout" Style="{StaticResource SecondaryText}" />
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <ContentControl Style="{StaticResource MiniDogTag}" AutomationProperties.AccessibilityView="Raw" />
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock x:Name="PlayerName" FontWeight="SemiBold" Text="Player"
+                                       FontSize="{StaticResource SubtitleSize}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="PaneLoadout" Style="{StaticResource TypeLabel}"
+                                       Foreground="{ThemeResource secondary}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                    </StackPanel>
+                        <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronRight}"
+                                  FontSize="11" Foreground="{ThemeResource tertiary}"
+                                  AutomationProperties.AccessibilityView="Raw" />
+                    </Grid>
                     <Button.Flyout>
                         <Flyout Opening="OnPlayerCardOpened" Closed="OnPlayerCardClosed" Placement="Right">
                             <TextBlock Text="Player card" />
@@ -111,7 +137,7 @@
             </NavigationView.PaneFooter>
 
             <Border BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="1,1,0,0"
-                    Background="{ThemeResource PanelBrush}" CornerRadius="8,0,0,0">
+                    Background="{ThemeResource GroundBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
