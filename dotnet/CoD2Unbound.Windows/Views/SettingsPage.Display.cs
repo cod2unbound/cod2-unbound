@@ -10,7 +10,6 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class SettingsPage
 {
-    private InfoBar? displayRunning;
     private InfoBar? displaySave;
     private TextBlock? displaySaved;
 
@@ -18,13 +17,6 @@ public sealed partial class SettingsPage
     {
         var container = new StackPanel { Spacing = 12, MaxWidth = 900 };
         Fields.Children.Add(container);
-        displayRunning = new InfoBar
-        {
-            Severity = InfoBarSeverity.Informational, IsClosable = false,
-            Message = "Call of Duty 2 is running. Changes you make here apply the next time it starts."
-        };
-        container.Children.Add(displayRunning);
-        RefreshDisplayRunning(session.ClientIsRunning);
 
         var previewTitle = new TextBlock { Style = StyleFor("StencilText"), FontSize = 22, TextAlignment = TextAlignment.Center };
         var previewMode = Caption("");
@@ -206,11 +198,8 @@ public sealed partial class SettingsPage
         }
     }
 
-    internal void RefreshDisplayRunning(bool running)
-    {
-        if (displayRunning is { } notice)
-            notice.IsOpen = running;
-    }
+    // While the game runs: said once, above every pane (SettingsWindow.swift notices).
+    internal void RefreshDisplayRunning(bool running) => Running.IsOpen = running;
 
     private void RefreshDisplaySave(bool failed)
     {

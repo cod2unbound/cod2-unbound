@@ -45,6 +45,7 @@ public sealed partial class SettingsPage : Page
         PaneBody.SizeChanged += (_, _) => ContentResized?.Invoke();
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
+        RefreshDisplayRunning(session.ClientIsRunning);
         var initial = Panes.Items.FirstOrDefault(item => item.Text == openPane)
             ?? Panes.Items[Math.Clamp(Current.LastSettingsPane, 0, Panes.Items.Count - 1)];
         Panes.SelectedItem = initial;
