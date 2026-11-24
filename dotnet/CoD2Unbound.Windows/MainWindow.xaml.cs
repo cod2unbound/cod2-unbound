@@ -176,20 +176,8 @@ public sealed partial class MainWindow : Window
         BrandWordmark.Visibility = IsVisible(!contrast);
         ContrastWordmark.Visibility = IsVisible(contrast);
 
-
-        // Windows 10 supports caption button colors when content extends into the title bar.
-        if (!useCustomTitleBar)
-            return;
-        var foreground = contrast ? null : (ThemeBrush("text", theme, false) as SolidColorBrush)?.Color;
-        var caption = AppWindow.TitleBar;
-        caption.ButtonForegroundColor = foreground;
-        caption.ButtonHoverForegroundColor = foreground;
-        caption.ButtonPressedForegroundColor = foreground;
-        caption.ButtonInactiveForegroundColor = foreground;
-        caption.ButtonBackgroundColor = contrast ? null : Microsoft.UI.Colors.Transparent;
-        caption.ButtonInactiveBackgroundColor = caption.ButtonBackgroundColor;
-        caption.ButtonHoverBackgroundColor = contrast ? null : (ThemeBrush("hover", theme, false) as SolidColorBrush)?.Color;
-        caption.ButtonPressedBackgroundColor = contrast ? null : (ThemeBrush("press", theme, false) as SolidColorBrush)?.Color;
+        if (useCustomTitleBar)
+            ApplyCaptionTheme(AppWindow.TitleBar, theme, contrast);
     }
 
     private void UpdatePaneMode(double width)

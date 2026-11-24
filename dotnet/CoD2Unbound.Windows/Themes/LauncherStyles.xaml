@@ -50,7 +50,7 @@
     <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
 
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -68,14 +68,14 @@
     <CornerRadius x:Key="OverlayCornerRadius">20</CornerRadius>
     <CornerRadius x:Key="ComboBoxItemCornerRadius">7</CornerRadius>
     <CornerRadius x:Key="ComboBoxHiglightBorderCornerRadius">14</CornerRadius>
-    <CornerRadius x:Key="InfoBarActionButtonCornerRadius">999</CornerRadius>
+    <CornerRadius x:Key="InfoBarActionButtonCornerRadius">14</CornerRadius>
     <x:Double x:Key="ProgressBarTrackHeight">8</x:Double>
     <CornerRadius x:Key="ProgressBarTrackCornerRadius">4</CornerRadius>
     <CornerRadius x:Key="ProgressBarCornerRadius">4</CornerRadius>
 
     <!-- Retain WinUI's input and automation templates. DesignTokens supplies their state brushes. -->
     <Style x:Key="LauncherButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -88,16 +88,18 @@
     </Style>
     <Style TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
     <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
         <Setter Property="Padding" Value="18,0" />
     </Style>
     <Style x:Key="HeroButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonHeroRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonHeroHeight}" />
         <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
         <Setter Property="Padding" Value="28,0" />
     </Style>
     <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -111,7 +113,7 @@
         <Setter Property="Padding" Value="6,0" />
     </Style>
     <Style TargetType="HyperlinkButton">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -120,6 +122,7 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style x:Key="InlineTextBox" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -130,11 +133,12 @@
     </Style>
     <Style TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}" />
     <Style x:Key="CapsuleTextBox" TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource FieldCapsuleRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
         <Setter Property="Padding" Value="16,5" />
     </Style>
     <Style x:Key="InlinePasswordBox" TargetType="PasswordBox">
+        <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -145,11 +149,12 @@
     </Style>
     <Style TargetType="PasswordBox" BasedOn="{StaticResource InlinePasswordBox}" />
     <Style x:Key="CapsulePasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource InlinePasswordBox}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource FieldCapsuleRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
         <Setter Property="Padding" Value="16,5" />
     </Style>
     <Style x:Key="InlineNumberBox" TargetType="NumberBox">
+        <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -160,12 +165,12 @@
     </Style>
     <Style TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}" />
     <Style x:Key="CapsuleNumberBox" TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource FieldCapsuleRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
         <Setter Property="Padding" Value="16,5" />
     </Style>
     <Style x:Key="SearchField" TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource FieldCapsuleRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -173,8 +178,22 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
+    <Style TargetType="AutoSuggestBox">
+        <Setter Property="CornerRadius" Value="{StaticResource FieldCapsuleRadius}" />
+        <Setter Property="TextBoxStyle" Value="{StaticResource SearchField}" />
+    </Style>
+    <Style TargetType="DropDownButton">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="Padding" Value="14,0,10,0" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
     <Style TargetType="ComboBox">
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="Padding" Value="14,0,10,0" />
@@ -187,7 +206,7 @@
     <Style TargetType="SelectorBarItem">
         <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="Foreground" Value="{ThemeResource secondary}" />
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SegmentItemRadius}" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="MinHeight" Value="22" />
@@ -263,7 +282,7 @@
         <Setter Property="IsTabStop" Value="False" />
         <Setter Property="TabNavigation" Value="Once" />
         <Setter Property="Padding" Value="2" />
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SegmentRadius}" />
         <Setter Property="Background" Value="{ThemeResource well}" />
         <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
         <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
@@ -358,7 +377,7 @@
                                           ContentTemplate="{TemplateBinding HeaderTemplate}" />
                         <Grid Width="{StaticResource SwitchWidth}" Height="{StaticResource SwitchHeight}"
                               HorizontalAlignment="Left" x:Name="SwitchAreaGrid" Control.IsTemplateFocusTarget="True"
-                              CornerRadius="{StaticResource CapsuleRadius}">
+                              CornerRadius="{StaticResource SwitchRadius}">
                             <Rectangle x:Name="OuterBorder" RadiusX="12" RadiusY="12" Fill="{ThemeResource ToggleSwitchFillOff}"
                                        Stroke="{ThemeResource ToggleSwitchStrokeOff}" StrokeThickness="1" />
                             <Rectangle x:Name="SwitchKnobBounds" RadiusX="12" RadiusY="12" Opacity="0"
@@ -401,7 +420,7 @@
     <Style TargetType="ProgressBar">
         <Setter Property="Foreground" Value="{ThemeResource ProgressFillBrush}" />
         <Setter Property="Background" Value="{ThemeResource track}" />
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ProgressTrackRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ProgressTrackHeight}" />
     </Style>
     <Style TargetType="ProgressRing">
@@ -465,12 +484,14 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Padding" Value="12,0" />
     </Style>
     <Style x:Key="LargeChipButton" TargetType="Button" BasedOn="{StaticResource ChipButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="Padding" Value="16,0" />
@@ -676,6 +697,7 @@
         <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
     </Style>
     <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonSmallRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonSmallHeight}" />
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
@@ -697,6 +719,7 @@
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
     </Style>
     <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource CircleRadius}" />
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Width" Value="{StaticResource CircleHeight}" />
@@ -706,7 +729,7 @@
     <Style x:Key="FavoriteAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
-        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="CornerRadius" Value="{StaticResource CircleRadius}" />
     </Style>
     <Style x:Key="SettingsNote" TargetType="InfoBar" BasedOn="{StaticResource LauncherBanner}">
         <Setter Property="CornerRadius" Value="{StaticResource BannerRadius}" />

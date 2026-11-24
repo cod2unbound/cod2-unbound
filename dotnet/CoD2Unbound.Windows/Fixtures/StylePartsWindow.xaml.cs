@@ -20,6 +20,8 @@ public sealed partial class StylePartsWindow : Window
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(CaptionRegion);
             AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
+            ApplyCaptionTheme(AppWindow.TitleBar, theme,
+                Microsoft.UI.System.ThemeSettings.CreateForWindowId(AppWindow.Id).HighContrast);
         }
         var work = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         AppWindow.Resize(new SizeInt32(Math.Min(work.Width, 1400), Math.Min(work.Height, 1100)));

@@ -60,6 +60,20 @@ internal static class PagePresentation
         throw new InvalidOperationException($"Missing launcher theme brush {key}.");
     }
 
+    // Windows draws these controls even when the app provides the title bar's client content.
+    internal static void ApplyCaptionTheme(Microsoft.UI.Windowing.AppWindowTitleBar caption, ElementTheme theme, bool contrast)
+    {
+        var foreground = contrast ? null : (ThemeBrush("text", theme, false) as SolidColorBrush)?.Color;
+        caption.ButtonForegroundColor = foreground;
+        caption.ButtonHoverForegroundColor = foreground;
+        caption.ButtonPressedForegroundColor = foreground;
+        caption.ButtonInactiveForegroundColor = foreground;
+        caption.ButtonBackgroundColor = contrast ? null : Microsoft.UI.Colors.Transparent;
+        caption.ButtonInactiveBackgroundColor = caption.ButtonBackgroundColor;
+        caption.ButtonHoverBackgroundColor = contrast ? null : (ThemeBrush("hover", theme, false) as SolidColorBrush)?.Color;
+        caption.ButtonPressedBackgroundColor = contrast ? null : (ThemeBrush("press", theme, false) as SolidColorBrush)?.Color;
+    }
+
     internal static ListViewItem? ContainingListItem(DependencyObject element)
     {
         DependencyObject? parent = VisualTreeHelper.GetParent(element);
