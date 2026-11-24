@@ -109,6 +109,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         {
             filterLabel = filters;
             AutomationProperties.SetName(FilterButton, filters);
+            UpdateToolbarOverflow(ServerToolbar.ActualWidth);
         }
         UpdateRefreshStatus();
         if (!ReferenceEquals(selected, target) || (target is not null && updated.Contains(target)))
@@ -218,13 +219,14 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     {
         // Budgets are in the caption-clear toolbar space. Shrink search before either trailing group leaves.
         const double minimumSearch = 160;
-        const double allCommands = 806;
-        const double statusAndOverflow = 670;
+        const double allCommands = 822;
+        const double statusAndOverflow = 686;
         const double overflowOnly = 522;
-        bool hideStatus = width < statusAndOverflow + minimumSearch;
-        bool hideConnect = width < allCommands + minimumSearch;
+        double badge = FilterBadge.Visibility == Visibility.Visible ? 22 : 0;
+        bool hideStatus = width < statusAndOverflow + minimumSearch + badge;
+        bool hideConnect = width < allCommands + minimumSearch + badge;
         double otherControls = !hideConnect ? allCommands : !hideStatus ? statusAndOverflow : overflowOnly;
-        SearchBox.Width = Math.Clamp(width - otherControls, minimumSearch, 280);
+        SearchBox.Width = Math.Clamp(width - otherControls - badge, minimumSearch, 280);
         RefreshPill.Visibility = IsVisible(!hideStatus);
         OverflowCount.Visibility = OverflowRefresh.Visibility = IsVisible(hideStatus);
         ConnectButton.Visibility = IsVisible(!hideConnect);

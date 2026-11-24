@@ -44,7 +44,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilter}" FontSize="16" />
                         <TextBlock Text="Filters" VerticalAlignment="Center" />
-                        <Border x:Name="FilterBadge" Style="{StaticResource Cod2xTag}" Visibility="Collapsed">
+                        <Border x:Name="FilterBadge" Style="{StaticResource Cod2xTag}" Padding="4,0" Visibility="Collapsed">
                             <TextBlock x:Name="FilterCount" FontSize="11" VerticalAlignment="Center" />
                         </Border>
                     </StackPanel>
