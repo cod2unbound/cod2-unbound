@@ -120,6 +120,7 @@ function Invoke-KitOpenDemo([string]$Edition) {
         Start-KitFrameSample $trace $window $console
         Focus-KitWindow $window
         Save-KitWindow $window (Join-Path $Results 'kit-shell-demo-window.png')
+        Start-Sleep -Seconds 2
     } finally {
         $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
         Stop-KitOwnedGame $game $window
