@@ -90,16 +90,16 @@
             </NavigationView.PaneCustomContent>
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="{StaticResource SidebarGlyphSize}"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarHomeGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="{StaticResource SidebarGlyphSize}"></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="{StaticResource SidebarGlyphSize}"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="{StaticResource SidebarGlyphSize}"></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="{StaticResource SidebarGlyphSize}"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="{StaticResource SidebarGlyphSize}"></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="{StaticResource SidebarGlyphSize}"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="{StaticResource SidebarGlyphSize}"></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.PaneFooter>
@@ -110,9 +110,7 @@
                         ToolTipService.ToolTip="Settings (Ctrl+,)" AccessKey="T">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="16"
-                                  AutomationProperties.AccessibilityView="Raw">
-                            <FontIcon.RenderTransform><TranslateTransform Y="1.6" /></FontIcon.RenderTransform>
-                        </FontIcon>
+                                  AutomationProperties.AccessibilityView="Raw" />
                         <TextBlock x:Name="SettingsLabel" Text="Settings" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
