@@ -164,25 +164,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
             SetupStep.Ready => "Open CoD2 Unbound",
             _ => "Continue"
         };
-        MeasureFooterActions();
         RenderDots();
-    }
-
-    private void MeasureFooterActions()
-    {
-        Button[] actions = [SetupCancel, SetupAlternate, DeclineReport, SetupNext];
-        double widest = 0;
-        foreach (var action in actions)
-        {
-            action.ClearValue(WidthProperty);
-            if (action.Visibility != Visibility.Visible)
-                continue;
-            action.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
-            widest = Math.Max(widest, action.DesiredSize.Width);
-        }
-        foreach (var action in actions)
-            if (action.Visibility == Visibility.Visible)
-                action.Width = widest;
     }
 
     /// <summary>SetupView.swift centers Welcome above the footer and pins every other step to 128 points.</summary>
@@ -471,14 +453,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
         };
         // ModelSetup.swift: the key step offers Skip for Now only while no key is kept or checks out.
         if (Setup.Step == SetupStep.Key)
-        {
-            var skip = IsVisible(!(Setup.HasStoredKey && !Setup.ReplacingKey) && keyEditor?.Verified != true);
-            if (SetupAlternate.Visibility != skip)
-            {
-                SetupAlternate.Visibility = skip;
-                MeasureFooterActions();
-            }
-        }
+            SetupAlternate.Visibility = IsVisible(!(Setup.HasStoredKey && !Setup.ReplacingKey) && keyEditor?.Verified != true);
     }
 
     private async void OnSetupBack(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
