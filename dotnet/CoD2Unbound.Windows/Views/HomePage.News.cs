@@ -186,6 +186,9 @@ public sealed partial class HomePage
         bool failed = state.Offer is not null && state.Issue is not (UpdateIssue.None or UpdateIssue.CheckUnavailable or UpdateIssue.ProtectedLocation);
         bool installing = !failed && state.Phase is UpdatePhase.Downloading or UpdatePhase.Verifying or UpdatePhase.Installing;
         bool ready = state.Offer is not null && state.Issue == UpdateIssue.None && state.Phase is UpdatePhase.Offered or UpdatePhase.Ready;
+        string version = state.AvailableVersion ?? "";
+        if (HomeFixture.UpdateVersion is { } shown)
+            (ready, installing, failed, version) = (true, false, false, shown);
         bool visible = !session.SetupUpdating && (ready || installing || failed);
         UpdatePill.Visibility = IsVisible(visible);
         if (!visible)
@@ -193,7 +196,6 @@ public sealed partial class HomePage
             shell.SetHomeCaptionPassthrough(null);
             return;
         }
-        string version = state.AvailableVersion ?? "";
         UpdateProgress.IsActive = installing;
         UpdateProgress.Visibility = IsVisible(installing);
         UpdateIcon.Visibility = IsVisible(!installing);

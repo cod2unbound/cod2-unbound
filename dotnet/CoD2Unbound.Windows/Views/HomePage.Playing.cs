@@ -32,6 +32,7 @@ public sealed partial class HomePage
 
     internal async Task RenderSessionAsync(GameSessionState game)
     {
+        game = HomeFixture.Observe(game, session.Library.Recent.FirstOrDefault());
         var server = HeroServer(game);
         string? map = KnownMap(server);
         string lead = game.Running ? "In the field now" : server is null ? "Ready to play" : "Last played";
@@ -113,6 +114,7 @@ public sealed partial class HomePage
 
     internal void RefreshPlayingTime(GameSessionState game, DateTimeOffset now)
     {
+        game = HomeFixture.Observe(game, session.Library.Recent.FirstOrDefault());
         if (playingTime is null || now < nextPlayingUpdate)
             return;
         playingTime.Text = game.PlayingFor(now) ?? "";
@@ -123,6 +125,7 @@ public sealed partial class HomePage
     /// game; Return to Game and Close Game while it runs. The hint beside them says the key.
     internal void RenderGameControls(GameSessionState game)
     {
+        game = HomeFixture.Observe(game, session.Library.Recent.FirstOrDefault());
         string? reason = model.LaunchProblem;
         var last = model.LastServer;
         bool running = game.Running, returning = !running && last is not null, first = !running && last is null;

@@ -2,13 +2,14 @@ using System.Collections.Immutable;
 using System.Globalization;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
+using CoD2Unbound.Windows.Views;
 
 namespace CoD2Unbound.Windows.ViewModels;
 
 internal sealed class HomeViewModel(WindowsLauncherSession session)
 {
     internal GameSettings Settings => session.Settings.Working;
-    internal GameSessionState Game => session.Game.State;
+    internal GameSessionState Game => HomeFixture.Observe(session.Game.State, session.Library.Recent.FirstOrDefault());
     internal bool CanLaunch => LaunchProblem is null;
     internal string? LaunchProblem => Game.Running ? "Call of Duty 2 is already running." :
         session.Setup.DataPath.Length == 0 ? "Choose a complete game data folder before launching." : null;
