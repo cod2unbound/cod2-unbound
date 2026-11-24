@@ -46,6 +46,40 @@ public static class KitDesktop {
     [StructLayout(LayoutKind.Sequential)] struct CopyData { public IntPtr Tag; public uint Size; public IntPtr Data; }
     [DllImport("user32.dll")] static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr sender,
         ref CopyData input, uint flags, uint milliseconds, out IntPtr result);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr SendMessageTimeout(IntPtr window,
+        uint message, IntPtr unused, string text, uint flags, uint milliseconds, out IntPtr result);
+    [DllImport("user32.dll")] static extern IntPtr GetDlgItem(IntPtr window, int id);
+
+    public static uint WindowPid(IntPtr window)
+    {
+        uint pid;
+        GetWindowThreadProcessId(window, out pid);
+        return pid;
+    }
+
+    public static void CloseOwnedWindow(IntPtr window)
+    {
+        if (window != IntPtr.Zero) PostMessage(window, 0x0010, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    public static void SendGameConsole(IntPtr game, string command)
+    {
+        uint pid = WindowPid(game);
+        if (pid == 0 || GetForegroundWindow() != game || WindowClass(game) != "SDL_app")
+            throw new InvalidOperationException("The kit game must have focus to request the return picture.");
+        IntPtr console = IntPtr.Zero;
+        while ((console = FindWindowEx(IntPtr.Zero, console, "CoD2 WinConsole", null)) != IntPtr.Zero) {
+            if (WindowPid(console) != pid) continue;
+            IntPtr input = GetDlgItem(console, 101);
+            IntPtr result;
+            if (input == IntPtr.Zero ||
+                SendMessageTimeout(input, 0x000C, IntPtr.Zero, command, 2, 3000, out result) == IntPtr.Zero ||
+                result == IntPtr.Zero || !PostMessage(input, 0x0102, new IntPtr(13), new IntPtr(1)))
+                throw new InvalidOperationException("The game did not accept the return picture command.");
+            return;
+        }
+        throw new InvalidOperationException("The kit game's native console was not found.");
+    }
 
     public static bool SendJoinProbe(int gamePid, string payload, int tag)
     {
