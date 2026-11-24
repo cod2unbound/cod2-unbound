@@ -42,6 +42,7 @@ internal static class PagePresentation
         FontSize = size
     };
 
+    // Glyph and label: a horizontal StackPanel of a FontIcon then a TextBlock, which GlyphAlign lines up.
     internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false) => new()
     {
         Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
