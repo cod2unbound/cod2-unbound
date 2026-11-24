@@ -159,7 +159,7 @@ public sealed partial class MainWindow
         if (command == ShellCommand.RefreshServers)
         {
             if (ContentFrame.Content is not ServersPage { ShowsServerBrowser: true })
-                await RunAsync(() => NavigateAsync(LauncherPlace.Servers, refreshServers: false));
+                await RunAsync(() => NavigateAsync(LauncherPlace.Servers, ServerScope.All, refreshServers: false));
             if (ContentFrame.Content is ServersPage servers)
                 await servers.RefreshAsync();
             return;
@@ -261,7 +261,7 @@ public sealed partial class MainWindow
     private async Task ConnectFromShellAsync()
     {
         if (ContentFrame.Content is not ServersPage { ShowsServerBrowser: true })
-            await NavigateAsync(LauncherPlace.Servers, refreshServers: false);
+            await NavigateAsync(LauncherPlace.Servers, ServerScope.All, refreshServers: false);
         await ((ServersPage)ContentFrame.Content).ConnectFromShellAsync();
     }
 

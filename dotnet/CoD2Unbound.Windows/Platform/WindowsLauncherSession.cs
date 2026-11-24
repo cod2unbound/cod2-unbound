@@ -441,7 +441,8 @@ internal sealed partial class WindowsLauncherSession
         Record(new(UsageKind.ServerListRefreshed, (int)scope));
         try
         {
-            var next = await Browser.RefreshAsync(Library, Library.Cache, progress, cancellationToken, TestMaster);
+            var library = Library;
+            var next = await Task.Run(() => Browser.RefreshAsync(library, library.Cache, progress, cancellationToken, TestMaster));
             await UpdateLibraryAsync(library => library with { Cache = next.Cache, CachedAt = next.CachedAt });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Net.Sockets.SocketException)

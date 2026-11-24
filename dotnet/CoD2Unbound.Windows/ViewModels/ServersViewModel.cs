@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.ComponentModel;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 
@@ -35,8 +36,11 @@ internal sealed class ServersViewModel(WindowsLauncherSession session, ServerSco
     internal Task FavoriteAsync(GameServer server) => session.ToggleFavoriteAsync(server.Address);
 }
 
-internal sealed record ServerRow(GameServer Server, bool Favorite)
+internal sealed class ServerRow(GameServer server, bool favorite) : INotifyPropertyChanged
 {
+    public GameServer Server { get; private set; } = server;
+    public bool Favorite { get; private set; } = favorite;
+    public string Mod => Server.Mod;
     public string Name => QuakeColors.Plain(Server.Name);
     public string Map => MapCatalog.DisplayName(Server.Map);
     public string MapMode => Map + " · " + (GameModes.Short(Server.GameType) is "SD" ? "S&D" : GameModes.Short(Server.GameType));
@@ -54,4 +58,16 @@ internal sealed record ServerRow(GameServer Server, bool Favorite)
         Server.PasswordRequired ? "needs a password" : null,
         Favorite ? "favorite" : null
     }.OfType<string>());
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal bool Update(ServerRow incoming)
+    {
+        if (Server == incoming.Server && Favorite == incoming.Favorite)
+            return false;
+        Server = incoming.Server;
+        Favorite = incoming.Favorite;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        return true;
+    }
 }

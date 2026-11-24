@@ -121,6 +121,7 @@ public sealed partial class ServersPage
 
     private async Task SetLiveFiltersAsync(ServerFilters filters)
     {
+        refreshMessage = null;
         revealedJumpAddress = null;
         var save = model.SetFiltersAsync(filters);
         UpdateClearFilters();
@@ -141,14 +142,17 @@ public sealed partial class ServersPage
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(favorite);
         flyout.Items.Add(copy);
-        var edition = row.Server.Fields.IsEmpty ? session.Settings.Working.Engine :
-            row.Server.IsCod2x ? GameEdition.Cod2x : GameEdition.Original;
-        flyout.Items.Add(MenuCommand("Copy join link", () => CopyTextAsync(ServerAddress.JoinLink(row.Server.Address, edition))));
+        flyout.Items.Add(MenuCommand("Copy join link", () => CopyTextAsync(ServerAddress.JoinLink(row.Server.Address,
+            row.Server.Fields.IsEmpty ? session.Settings.Working.Engine :
+            row.Server.IsCod2x ? GameEdition.Cod2x : GameEdition.Original))));
         flyout.Items.Add(new MenuFlyoutSeparator());
-        flyout.Items.Add(MenuCommand("Refresh this server", () => RefreshRowAsync(row)));
+        var refresh = MenuCommand("Refresh this server", () => RefreshRowAsync(row));
+        flyout.Items.Add(refresh);
         flyout.Opening += async (_, _) =>
         {
             loadouts.Items.Clear();
+            favorite.Text = row.Favorite ? "Remove from favorites" : "Add to favorites";
+            refresh.IsEnabled = refreshing is null;
             loadouts.IsEnabled = !session.ClientIsRunning && refreshing is null;
             launch.IsEnabled = refreshing is null;
             if (!loadouts.IsEnabled)
@@ -239,6 +243,8 @@ public sealed partial class ServersPage
 
     private Task RefreshRowAsync(ServerRow row) => shell.RunAsync(async () =>
     {
+        if (refreshing is not null)
+            return;
         var found = await session.RefreshServerAsync(row.Server.Address);
         Render();
         if (found is not null)

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
@@ -9,6 +10,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -23,44 +26,109 @@ public sealed partial class ServersPage : Page
     private HostingPage? hosting;
     private string? currentMap;
     private CancellationTokenSource? refreshing;
+    private readonly ObservableCollection<ServerRow> rows = [];
+    private readonly RefreshProgress progress = new();
+    private ServerRefreshState? shownRefresh;
+    private string? refreshMessage;
+    private string? filterLabel;
+    private ImmutableArray<ServerPlayer> shownRoster = [];
     private bool ready;
     private bool renderingRows;
-    private ImmutableArray<GameServer>? liveRows;
 
-    internal ServersPage(MainWindow shell, WindowsLauncherSession session, ServerScope scope, string? address)
+    internal ServersPage(MainWindow shell, WindowsLauncherSession session)
     {
         this.shell = shell;
         this.session = session;
-        model = new(session, scope);
+        model = new(session, ServerScope.All);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
         AutomationProperties.SetHeadingLevel(EmptyHeading, AutomationHeadingLevel.Level2);
         ServerList.AddHandler(KeyDownEvent, new KeyEventHandler(OnServerListKeyDown), true);
-        ActualThemeChanged += (_, _) => Render();
-        Scopes.SelectedItem = Scopes.Items[(int)scope];
+        ServerList.ItemsSource = rows;
+        // Moving a server to its sorted position should not animate it as a new arrival.
+        ServerList.ItemContainerTransitions = new TransitionCollection();
+        ActualThemeChanged += (_, _) => UpdateContrast();
+        Loaded += (_, _) =>
+        {
+            UpdateContrast();
+            UpdateRefreshDisplay();
+        };
+        Unloaded += (_, _) => CompositionTarget.Rendering -= OnRefreshRendering;
+        Scopes.SelectedItem = Scopes.Items[(int)ServerScope.All];
         ready = true;
         RenderSort();
+    }
+
+    internal void Open(ServerScope? scope, string? address, bool refreshOnOpen)
+    {
+        if (scope is { } target)
+            Scopes.SelectedItem = Scopes.Items[(int)target];
+        if (address is not null)
+            revealedJumpAddress = null;
         Render(address);
+        if (ShowsServerBrowser && refreshOnOpen && refreshing is null &&
+            session.Browser.ShouldRefreshOnOpen(session.Settings.Working.RefreshServersOnOpen, session.Library))
+            _ = RefreshAsync();
     }
 
     private void Render(string? address = null)
     {
-        address ??= (ServerList.SelectedItem as ServerRow)?.Server.Address;
-        var rows = model.Visible(liveRows).Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
-        if (revealedJumpAddress is { } revealed && !rows.Any(row => row.Server.Address == revealed))
-            rows = [new ServerRow(session.ServerForAddress(revealed), model.IsFavorite(revealed)), .. rows];
+        var selected = ServerList.SelectedItem as ServerRow;
+        address ??= selected?.Server.Address;
+        var focus = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot);
+        var focusedRow = RowFrom(focus);
+        var next = model.Visible(shownRefresh?.Servers).DistinctBy(server => server.Address)
+            .Select(server => new ServerRow(server, model.IsFavorite(server.Address))).ToArray();
+        if (revealedJumpAddress is { } revealed && !next.Any(row => row.Server.Address == revealed))
+            next = [new ServerRow(session.ServerForAddress(revealed), model.IsFavorite(revealed)), .. next];
+        var updated = new List<ServerRow>();
         renderingRows = true;
-        ServerList.ItemsSource = rows;
-        ServerList.SelectedItem = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
+        rows.Reconcile(next, row => row.Server.Address, (row, incoming) =>
+        {
+            if (row.Update(incoming))
+                updated.Add(row);
+            return row;
+        });
+        var target = rows.FirstOrDefault(row => row.Server.Address == address) ?? rows.FirstOrDefault();
+        if (!ReferenceEquals(ServerList.SelectedItem, target))
+            ServerList.SelectedItem = target;
         renderingRows = false;
-        RenderEmpty(rows.Length == 0);
+        foreach (var row in updated)
+            if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid })
+                ApplyServerRow(grid, assignMenu: false);
+        RenderEmpty(rows.Count == 0);
         int count = model.Filters.Count;
         string filters = count == 0 ? "Filters" : $"Filters ({count})";
-        FilterButton.Content = IconLabel("Filter", filters);
-        AutomationProperties.SetName(FilterButton, filters);
-        if (refreshing is null)
-            RefreshStatus.Text = WithCacheAge(rows.Length == 0 ? EmptyState() : $"{rows.Length} {(rows.Length == 1 ? "server" : "servers")}");
-        RenderDetails();
+        if (filterLabel != filters)
+        {
+            filterLabel = filters;
+            FilterButton.Content = IconLabel("Filter", filters);
+            AutomationProperties.SetName(FilterButton, filters);
+        }
+        UpdateRefreshStatus();
+        if (!ReferenceEquals(selected, target) || (target is not null && updated.Contains(target)))
+            RenderDetails();
+        if (focusedRow is not null && !ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), focus))
+            RestoreRowFocus(rows.Contains(focusedRow) ? focusedRow : target, focus is Button { Name: "RowFavorite" });
+    }
+
+    private void RestoreRowFocus(ServerRow? target, bool star)
+    {
+        if (target is null)
+        {
+            EmptyAction.Focus(FocusState.Programmatic);
+            return;
+        }
+        var fallback = FocusManager.GetFocusedElement(XamlRoot);
+        ServerList.ScrollIntoView(target);
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsLoaded || !ShowsServerBrowser || !ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), fallback) ||
+                ServerList.ContainerFromItem(target) is not ListViewItem container)
+                return;
+            var button = star && container.ContentTemplateRoot is Grid grid ? grid.FindName("RowFavorite") as Button : null;
+            ((Control?)button ?? container).Focus(FocusState.Programmatic);
+        });
     }
 
     private string WithCacheAge(string result)
@@ -102,18 +170,21 @@ public sealed partial class ServersPage : Page
             ClearRecent.Visibility = Visibility.Collapsed;
         if (showHosting)
         {
+            CompositionTarget.Rendering -= OnRefreshRendering;
             session.Opened(UsagePage.Hosting);
             await shell.ShowProblemAsync(async () =>
             {
                 hosting ??= new HostingPage(shell, session, ExportHost, HostingExportStatus);
-                HostingContent.Content = hosting;
+                if (!ReferenceEquals(HostingContent.Content, hosting))
+                    HostingContent.Content = hosting;
                 await hosting.RefreshAsync();
             });
             return;
         }
+        refreshMessage = null;
         revealedJumpAddress = null;
         model.Scope = (ServerScope)index;
-        Render();
+        UpdateRefreshDisplay();
     }
 
     private async void OnNewHostedServer(object sender, RoutedEventArgs args)
@@ -122,7 +193,14 @@ public sealed partial class ServersPage : Page
             await shell.RunAsync(hosting.NewAsync);
     }
 
-    internal void UpdateContrast() => Render();
+    internal void UpdateContrast()
+    {
+        foreach (var row in rows)
+            if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid })
+                ApplyServerRow(grid, assignMenu: false);
+        shownRoster = default;
+        RenderDetails();
+    }
 
     internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
 
@@ -134,7 +212,7 @@ public sealed partial class ServersPage : Page
     private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
 
-    private void ApplyServerRow(Grid row)
+    private void ApplyServerRow(Grid row, bool assignMenu = true)
     {
         if (row.DataContext is not ServerRow entry || row.FindName("RowName") is not TextBlock name)
             return;
@@ -142,7 +220,8 @@ public sealed partial class ServersPage : Page
         if (ContainingListItem(row) is { } item)
         {
             AutomationProperties.SetName(item, entry.Label);
-            item.ContextFlyout = BuildRowMenu(entry);
+            if (assignMenu)
+                item.ContextFlyout = BuildRowMenu(entry);
         }
         var facts = ServerFacts.From(server);
         bool contrast = shell.IsHighContrast;
@@ -191,7 +270,9 @@ public sealed partial class ServersPage : Page
             }
         }
         SetFavorite((Button)row.FindName("RowFavorite")!, server);
-        _ = previews.FillAsync((Image)row.FindName("RowArt")!, server.Map);
+        var artwork = (Image)row.FindName("RowArt")!;
+        if (!Equals(artwork.Tag, server.Map))
+            _ = previews.FillAsync(artwork, server.Map);
     }
 
     private void SetFavorite(Button button, GameServer server)
@@ -208,6 +289,7 @@ public sealed partial class ServersPage : Page
     {
         if (!ready)
             return;
+        refreshMessage = null;
         revealedJumpAddress = null;
         model.Search = SearchBox.Text;
         UpdateClearFilters();
@@ -237,6 +319,7 @@ public sealed partial class ServersPage : Page
     {
         if (sender is Button { Tag: string value } && Enum.TryParse<ServerSort>(value, out var sort))
         {
+            refreshMessage = null;
             model.SortBy(sort);
             RenderSort();
             Render();
@@ -270,20 +353,24 @@ public sealed partial class ServersPage : Page
         DetailAccess.Text = facts.Access;
         DetailFull.Visibility = IsVisible(facts.Occupancy == ServerOccupancy.Full);
         DetailRoster.Text = "Roster · " + row.Players;
-        Roster.Children.Clear();
-        foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
+        if (shownRoster.IsDefault || !shownRoster.SequenceEqual(server.Players))
         {
-            var columns = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(40), new GridLength(40));
-            columns.MinHeight = 22;
-            var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
-            AddGameName(name, player.Name, ActualTheme, shell.IsHighContrast);
-            Put(columns, 0, name);
-            Put(columns, 1, new TextBlock { Text = player.Score.ToString(), TextAlignment = TextAlignment.Right,
-                Style = StyleFor("BodyStrongTextBlockStyle") });
-            var ping = Body(player.Ping.ToString());
-            ping.TextAlignment = TextAlignment.Right;
-            Put(columns, 2, ping);
-            Roster.Children.Add(columns);
+            shownRoster = server.Players;
+            Roster.Children.Clear();
+            foreach (var player in server.Players.OrderByDescending(player => player.Score).Take(32))
+            {
+                var columns = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(40), new GridLength(40));
+                columns.MinHeight = 22;
+                var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+                AddGameName(name, player.Name, ActualTheme, shell.IsHighContrast);
+                Put(columns, 0, name);
+                Put(columns, 1, new TextBlock { Text = player.Score.ToString(), TextAlignment = TextAlignment.Right,
+                    Style = StyleFor("BodyStrongTextBlockStyle") });
+                var ping = Body(player.Ping.ToString());
+                ping.TextAlignment = TextAlignment.Right;
+                Put(columns, 2, ping);
+                Roster.Children.Add(columns);
+            }
         }
         SetFavorite(FavoriteButton, server);
         UpdateReadyCheck(server);
@@ -316,31 +403,8 @@ public sealed partial class ServersPage : Page
     private Task ToggleFavoriteAsync(ServerRow row) => shell.RunAsync(async () =>
     {
         await model.FavoriteAsync(row.Server);
-        var focused = FocusManager.GetFocusedElement(XamlRoot);
-        var focusedRow = RowFrom(focused);
-        bool focusStar = focused is Button { Name: "RowFavorite" };
         shell.RefreshFavorites();
         Render();
-        if (focusedRow is null || ServerList.ItemsSource is not ServerRow[] rows)
-            return;
-
-        var replacement = rows.FirstOrDefault(item => item.Server.Address == focusedRow.Server.Address);
-        var target = replacement ?? ServerList.SelectedItem as ServerRow;
-        if (target is null)
-        {
-            EmptyAction.Focus(FocusState.Programmatic);
-            return;
-        }
-
-        ServerList.ScrollIntoView(target);
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
-        {
-            if (!ReferenceEquals(ServerList.ItemsSource, rows) || ServerList.ContainerFromItem(target) is not ListViewItem container)
-                return;
-            var star = focusStar && replacement is not null && container.ContentTemplateRoot is Grid template
-                ? template.FindName("RowFavorite") as Button : null;
-            ((Control?)star ?? container).Focus(FocusState.Programmatic);
-        });
     });
 
     private async void OnRefresh(object sender, RoutedEventArgs args) => await RefreshAsync();
@@ -354,43 +418,75 @@ public sealed partial class ServersPage : Page
             active.Cancel();
             return;
         }
-        await shell.RunAsync(async () =>
+        using var cancellation = new CancellationTokenSource();
+        refreshing = cancellation;
+        refreshMessage = null;
+        UpdateRefreshDisplay();
+        shell.ClearProblem();
+        try
         {
-            using var cancellation = new CancellationTokenSource();
-            refreshing = cancellation;
-            UpdateJoinButton();
-            RefreshGlyph.Glyph = (string)Application.Current.Resources["FluentStop"];
-            AutomationProperties.SetName(RefreshButton, "Stop refresh");
-            ToolTipService.SetToolTip(RefreshButton, "Stop refresh");
-            string? message = null;
-            try
-            {
-                var progress = new Progress<ServerRefreshState>(state =>
-                {
-                    if (refreshing != cancellation)
-                        return;
-                    liveRows = state.Servers;
-                    Render();
-                    if (state.Refreshing)
-                        RefreshStatus.Text = WithCacheAge(state.Asked == 0 ? "Asking the master servers for the list…" :
-                            $"Checking {state.Asked} servers. {state.Finished} checked, {state.Answered} answered.");
-                    else
-                        message = state.Message;
-                });
-                await model.RefreshAsync(progress, cancellation.Token);
-            }
-            finally
-            {
-                refreshing = null;
-                liveRows = null;
-                RefreshGlyph.Glyph = (string)Application.Current.Resources["FluentRefresh"];
-                AutomationProperties.SetName(RefreshButton, "Refresh server list");
-                ToolTipService.SetToolTip(RefreshButton, "Refresh server list (Ctrl+R)");
-                Render();
-                if (message is not null)
-                    RefreshStatus.Text = WithCacheAge(message);
-            }
-        });
+            await shell.ShowProblemAsync(() => model.RefreshAsync(progress, cancellation.Token));
+        }
+        finally
+        {
+            refreshMessage = progress.TakeLatest()?.Message ?? shownRefresh?.Message;
+            refreshing = null;
+            shownRefresh = null;
+            UpdateRefreshDisplay();
+        }
+    }
+
+    internal void StopRefresh()
+    {
+        CompositionTarget.Rendering -= OnRefreshRendering;
+        refreshing?.Cancel();
+    }
+
+    private void UpdateRefreshDisplay()
+    {
+        CompositionTarget.Rendering -= OnRefreshRendering;
+        if (!IsLoaded || !ShowsServerBrowser)
+            return;
+        bool active = refreshing is not null;
+        if (active)
+        {
+            shownRefresh = progress.TakeLatest() ?? shownRefresh;
+            CompositionTarget.Rendering += OnRefreshRendering;
+        }
+        RefreshGlyph.Glyph = (string)Application.Current.Resources[active ? "FluentStop" : "FluentRefresh"];
+        AutomationProperties.SetName(RefreshButton, active ? "Stop refresh" : "Refresh server list");
+        ToolTipService.SetToolTip(RefreshButton, active ? "Stop refresh" : "Refresh server list (Ctrl+R)");
+        Render();
+        UpdateJoinButton();
+    }
+
+    private void OnRefreshRendering(object? sender, object args)
+    {
+        if (ShowsServerBrowser && progress.TakeLatest() is { } state)
+        {
+            shownRefresh = state;
+            Render();
+        }
+    }
+
+    private void UpdateRefreshStatus()
+    {
+        string status = refreshing is not null ? shownRefresh switch
+        {
+            { Message: { } message } => message,
+            { Asked: > 0 } state => $"Checking {state.Asked} servers. {state.Finished} checked, {state.Answered} answered.",
+            _ => "Asking the master servers for the list…"
+        } : refreshMessage ?? (rows.Count == 0 ? EmptyState() : $"{rows.Count} {(rows.Count == 1 ? "server" : "servers")}");
+        string text = WithCacheAge(status);
+        if (RefreshStatus.Text != text)
+            RefreshStatus.Text = text;
+    }
+
+    private sealed class RefreshProgress : IProgress<ServerRefreshState>
+    {
+        private ServerRefreshState? latest;
+        public void Report(ServerRefreshState value) => Interlocked.Exchange(ref latest, value);
+        internal ServerRefreshState? TakeLatest() => Interlocked.Exchange(ref latest, null);
     }
 
     private async void OnConnect(object sender, RoutedEventArgs args) => await ConnectAsync();

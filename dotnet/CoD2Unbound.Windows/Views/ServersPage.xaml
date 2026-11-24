@@ -189,7 +189,7 @@
                                                                VerticalAlignment="Center" />
                                                 </Border>
                                                 <Border Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="64">
-                                                    <TextBlock Text="{Binding Server.Mod}" FontSize="12" VerticalAlignment="Center"
+                                                    <TextBlock Text="{Binding Mod}" FontSize="12" VerticalAlignment="Center"
                                                                TextTrimming="CharacterEllipsis" />
                                                 </Border>
                                             </StackPanel>

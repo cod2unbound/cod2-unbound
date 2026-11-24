@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window
     private bool flushedForClose;
     private bool closing;
     private bool closeRequested;
+    private ServersPage? serversPage;
     private DateTimeOffset hostPolled;
     private DateTimeOffset? attemptedUpdate;
     private CancellationTokenSource? updateRequest;
@@ -85,6 +86,7 @@ public sealed partial class MainWindow : Window
             CompositionTarget.Rendered -= OnFirstContentRendered;
 #endif
             gameWatcher.Stop();
+            serversPage?.StopRefresh();
             session.Reports.CancelCrash();
             session.Updates.Changed -= OnUpdateChanged;
             if (updateRequest is { } request)
@@ -251,7 +253,7 @@ public sealed partial class MainWindow : Window
         else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
         else if (ReferenceEquals(args.InvokedItemContainer, ServersItem))
-            await OpenServersAsync(ServerScope.All);
+            await RunAsync(() => NavigateAsync(LauncherPlace.Servers));
         else if (ReferenceEquals(args.InvokedItemContainer, LibraryItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Library));
         else if (ReferenceEquals(args.InvokedItemContainer, ConfigsItem))
@@ -277,7 +279,7 @@ public sealed partial class MainWindow : Window
             configs.OpenResolution();
     }
 
-    internal async Task NavigateAsync(LauncherPlace place, ServerScope scope = ServerScope.All, string? address = null,
+    internal async Task NavigateAsync(LauncherPlace place, ServerScope? scope = null, string? address = null,
         bool refreshServers = true, LauncherPlace cancelSetupTo = LauncherPlace.GameDataSettings)
     {
         CloseJumpTo(restoreFocus: false);
@@ -318,10 +320,9 @@ public sealed partial class MainWindow : Window
         else if (place == LauncherPlace.Servers)
         {
             Nav.SelectedItem = ServersItem;
-            var page = new ServersPage(this, session, scope, address);
-            if (refreshServers && session.Browser.ShouldRefreshOnOpen(session.Settings.Working.RefreshServersOnOpen, session.Library))
-                page.Loaded += OnServersLoaded;
+            var page = serversPage ??= new ServersPage(this, session);
             ContentFrame.Content = page;
+            page.Open(scope, address, refreshServers);
         }
         else if (place == LauncherPlace.Library)
         {
@@ -356,16 +357,6 @@ public sealed partial class MainWindow : Window
                 page.Focus(FocusState.Programmatic);
             }
         });
-    }
-
-    private async void OnServersLoaded(object sender, RoutedEventArgs args)
-    {
-        var page = (ServersPage)sender;
-        page.Loaded -= OnServersLoaded;
-        // Yield until the navigation action releases the shell.
-        await Task.Yield();
-        if (ReferenceEquals(ContentFrame.Content, page))
-            await page.RefreshAsync();
     }
 
     private void OnClientStarted() => MinimizeForGame();

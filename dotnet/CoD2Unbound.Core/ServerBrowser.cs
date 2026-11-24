@@ -73,7 +73,8 @@ public sealed class ServerBrowser(ServerQueryClient query, TimeProvider clock)
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
                 }
-                progress.Report(new(Result(), true, asked, finished, fresh.Count, !masters));
+                // Keep existing rows while their queries are still in flight.
+                progress.Report(new(Result(keepEarlier: true), true, asked, finished, fresh.Count, !masters));
                 if (cancellationToken.IsCancellationRequested)
                     break;
             }
@@ -93,22 +94,23 @@ public sealed class ServerBrowser(ServerQueryClient query, TimeProvider clock)
                 false, asked, finished, fresh.Count, !masters, message));
         }
 
-        ImmutableArray<GameServer> Result()
+        ImmutableArray<GameServer> Result(bool keepEarlier = false)
         {
+            if (masters && !keepEarlier)
+                return [.. fresh];
             var answered = fresh.Select(item => item.Address).ToHashSet(StringComparer.Ordinal);
-            return masters ? [.. fresh] : [.. fresh.Concat(earlier.Where(item => !answered.Contains(item.Address)))];
+            return [.. fresh.Concat(earlier.Where(item => !answered.Contains(item.Address)))];
         }
     }
 
     public static ImmutableArray<GameServer> Visible(LauncherLibrary library, ImmutableArray<GameServer> current,
         ServerScope scope, ServerFilters filters, string search, ServerSort sort, bool ascending, CultureInfo? culture = null)
     {
-        var byAddress = current.Concat(library.Cache).ToLookup(item => item.Address, StringComparer.Ordinal);
         IEnumerable<GameServer> selected = scope switch
         {
             ServerScope.All => current,
-            ServerScope.Favorites => library.Favorites.Order(StringComparer.Ordinal).Select(address => byAddress[address].FirstOrDefault()).OfType<GameServer>(),
-            ServerScope.Recent => library.Recent.Take(30).Select(address => byAddress[address].FirstOrDefault()).OfType<GameServer>(),
+            ServerScope.Favorites => SavedServers(library.Favorites.Order(StringComparer.Ordinal)),
+            ServerScope.Recent => SavedServers(library.Recent.Take(30)),
             _ => []
         };
         string value = search.Trim();
@@ -117,6 +119,12 @@ public sealed class ServerBrowser(ServerQueryClient query, TimeProvider clock)
             (value.Length == 0 || compare.IndexOf(string.Join(' ', QuakeColors.Plain(server.Name), server.Map,
                 MapCatalog.DisplayName(server.Map), server.Mod, server.Address), value, CompareOptions.IgnoreCase) >= 0));
         return [.. selected.Order(Comparer<GameServer>.Create((left, right) => ascending ? Compare(left, right) : Compare(right, left)))];
+
+        IEnumerable<GameServer> SavedServers(IEnumerable<string> addresses)
+        {
+            var byAddress = current.Concat(library.Cache).ToLookup(item => item.Address, StringComparer.Ordinal);
+            return addresses.Select(address => byAddress[address].FirstOrDefault()).OfType<GameServer>();
+        }
 
         int Compare(GameServer left, GameServer right)
         {

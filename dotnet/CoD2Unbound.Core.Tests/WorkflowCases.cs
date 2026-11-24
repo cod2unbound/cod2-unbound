@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Text;
 
@@ -164,6 +166,49 @@ internal static partial class Program
                 admission.Evaluate(link, target, GameEdition.Original, ImmutableHashSet.Create(GameEdition.Original), false).Action);
         });
 
+        Check("Browser retains cached rows until the last refresh batch", () =>
+        {
+            var clock = new AdvancingClock();
+            var query = new ServerQueryClient(new BrowserUdp(listServer: true), clock, () => Guid.Empty);
+            var browser = new ServerBrowser(query, clock);
+            var cached = new GameServer("127.0.0.1:28961", ImmutableDictionary<string, string>.Empty, 20, []);
+            var library = new LauncherLibrary { Cache = [cached] };
+            var observed = new List<ServerRefreshState>();
+            var refreshed = browser.RefreshAsync(library, library.Cache, new DirectProgress<ServerRefreshState>(observed.Add))
+                .GetAwaiter().GetResult();
+            Equal(true, observed.Any(state => state.Refreshing && state.Answered == 1 && state.Servers.Contains(cached)));
+            Sequence(["127.0.0.1:28960"], refreshed.Cache.Select(server => server.Address));
+            Sequence(refreshed.Cache, observed[^1].Servers);
+        });
+
+        Check("Sorted server rows update in place and retain the selected row", () =>
+        {
+            var servers = new[] { new TestRow("a", 10), new TestRow("b", 20), new TestRow("c", 30), new TestRow("d", 40) };
+            var rows = new ObservableCollection<TestRow>(servers);
+            var selected = rows[2];
+            var changes = new List<(NotifyCollectionChangedAction Action, string? Key)>();
+            rows.CollectionChanged += (_, args) => changes.Add((args.Action, ((args.OldItems ?? args.NewItems)?[0] as TestRow)?.Key));
+            var next = servers.Select(row => new TestRow(row.Key, row.Key == "a" ? 50 : row.Ping))
+                .Append(new("new", 25)).OrderBy(row => row.Ping).ToArray();
+            rows.Reconcile(next, row => row.Key, (existing, incoming) =>
+            {
+                existing.Ping = incoming.Ping;
+                return existing;
+            });
+            Sequence(["b", "new", "c", "d", "a"], rows.Select(row => row.Key));
+            Sequence<(NotifyCollectionChangedAction, string?)>(
+                [(NotifyCollectionChangedAction.Remove, "a"), (NotifyCollectionChangedAction.Add, "new"),
+                 (NotifyCollectionChangedAction.Add, "a")], changes);
+            Equal(true, ReferenceEquals(selected, rows[2]));
+            Equal(true, ReferenceEquals(servers[0], rows[^1]));
+            Equal(50, rows[^1].Ping);
+            changes.Clear();
+            rows.Reconcile([rows[1], rows[2]], row => row.Key);
+            Sequence(["new", "c"], rows.Select(row => row.Key));
+            Equal(true, ReferenceEquals(selected, rows[1]));
+            Equal(true, changes.All(change => change.Action == NotifyCollectionChangedAction.Remove));
+        });
+
         Check("Session log is bounded across chunk boundaries and retains only the allowed sessions", () =>
         {
             var output = new GameSessionLog(["synthetic-key"], "/fake");
@@ -241,15 +286,24 @@ internal static partial class Program
         }
     }
 
-    private sealed class BrowserUdp : IUdpTransport
+    private sealed class TestRow(string key, int ping)
+    {
+        internal string Key { get; } = key;
+        internal int Ping { get; set; } = ping;
+    }
+
+    private sealed class BrowserUdp(bool listServer = false) : IUdpTransport
     {
         public int Count { get; private set; }
         public Task<UdpReplies> ExchangeAsync(UdpExchange exchange, CancellationToken cancellationToken)
         {
             Count++;
-            if (!exchange.Endpoint.Host.Equals("localhost", StringComparison.Ordinal))
-                return Task.FromResult(new UdpReplies([]));
             string command = Encoding.UTF8.GetString(exchange.Request.AsSpan()[4..]);
+            if (listServer && command.StartsWith("getservers", StringComparison.Ordinal))
+                return Task.FromResult(new UdpReplies([[.. WireParser.Marker, .. "getserversResponse"u8,
+                    92, 127, 0, 0, 1, 113, 32, 92, 69, 79, 84, 0, 0, 0]]));
+            if (exchange.Endpoint.Host != "localhost" && (!listServer || exchange.Endpoint.Host != "127.0.0.1"))
+                return Task.FromResult(new UdpReplies([]));
             return Task.FromResult(command.StartsWith("getstatus", StringComparison.Ordinal)
                 ? new UdpReplies([[.. WireParser.Marker, .. "statusResponse\n\\shortversion\\1.4.6.8\\mapname\\mp_toujane\n"u8]]) : new UdpReplies([]));
         }
