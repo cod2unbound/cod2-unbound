@@ -45,13 +45,13 @@ public sealed partial class SetupPage
             if (unfinished)
                 items.Add(Cornered(Action("Finish in Steam", async (_, _) =>
                     await shell.ShowProblemAsync(() => OpenAsync("steam://install/2630")))));
-            panel = GlassPanel(16, 12, [.. items]);
+            panel = GlassPanel(6, 12, [.. items]);
             focusTarget = choose;
         }
         else if (found && copies.Length > 1 && showCopyChoices &&
             copies.Any(copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path)))
         {
-            panel = GlassPanel(16, 12, CopyChoices(copies, data.Path), Cornered(FolderButton("Choose a Different Folder…")));
+            panel = GlassPanel(6, 12, CopyChoices(copies, data.Path), Cornered(FolderButton("Choose a Different Folder…")));
             focusTarget = SetupNext;
         }
         else if (found)
@@ -60,7 +60,7 @@ public sealed partial class SetupPage
             var used = Note("Used where it is. Nothing is copied or changed. Configs, demos and screenshots get their own folder.");
             used.Padding = new Thickness(16, 12, 16, 12);
             used.MinHeight = 44;
-            panel = GlassPanel(16, 12,
+            panel = GlassPanel(6, 12,
                 Group(16, Row("folder", data.Path, FoundDetail(source), mono: true, status: Status(SetupStatus.Ready, "Game data found")), used),
                 Cornered(FolderButton("Choose a Different Folder…")));
             focusTarget = SetupNext;
@@ -93,7 +93,7 @@ public sealed partial class SetupPage
                         "Steam installs it, about 3.7 GB. CoD2 Unbound finds the files when Steam finishes.",
                         trailing: Action("Install with Steam", OnInstallWithSteam))));
             }
-            panel = GlassPanel(16, 12, [.. items]);
+            panel = GlassPanel(6, 12, [.. items]);
         }
         AcceptFolders(panel);
         StepContent.Children.Add(panel);

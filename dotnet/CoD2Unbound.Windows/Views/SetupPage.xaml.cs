@@ -87,8 +87,8 @@ public sealed partial class SetupPage : Page
         SetupMark.Visibility = IsVisible(welcome);
         string eyebrow = welcome ? "Reporting for duty" : StepTitle(step);
         SetupEyebrow.Text = eyebrow.ToUpperInvariant();
-        // The board's Welcome eyebrow keeps 14 more under it before the larger title.
-        SetupEyebrow.Margin = new Thickness(0, 0, 0, welcome ? 14 : 0);
+        // The Mac sets the Welcome eyebrow 14 further below the mark.
+        SetupEyebrow.Margin = new Thickness(0, welcome ? 14 : 0, 0, 0);
         AutomationProperties.SetName(SetupEyebrow, eyebrow);
         SetupTitle.FontSize = welcome ? 40 : 30;
         SetupTitle.LineHeight = welcome ? 46 : 36;
@@ -253,7 +253,7 @@ public sealed partial class SetupPage : Page
             }));
             var keep = Note("Continue keeps this key. You never have to type it again to move on.");
             keep.Margin = new Thickness(18, 0, 0, 8);
-            StepContent.Children.Add(GlassPanel(16, 12,
+            StepContent.Children.Add(GlassPanel(6, 12,
                 Group(Row("key", "A CD key is already stored on this PC", "•••• •••• •••• •••• " + (ending ?? "••••"),
                     trailing: replace, status: Status(SetupStatus.Ready, "Verified"))),
                 keep));
@@ -304,7 +304,7 @@ public sealed partial class SetupPage : Page
         var stored = Note("Stored only on this PC, in the game’s own settings. Sent only to game servers when you join, as the original game does.", "lock");
         stored.Margin = new Thickness(8, 0, 8, 0);
         items.Add(stored);
-        StepContent.Children.Add(GlassPanel(16, 12, [.. items]));
+        StepContent.Children.Add(GlassPanel(22, 12, [.. items]));
         RenderKeyFeedback();
         focusTarget = null;
         if (focusPending)
@@ -403,8 +403,8 @@ public sealed partial class SetupPage : Page
     private void RenderQuestion(bool crash)
     {
         var link = PrivacyPresentation.PreviewButton(crash, "W", shell, session.Reports);
-        // The board draws it as the regular small capsule button, as on the Mac.
-        link.ClearValue(StyleProperty);
+        // The Mac's quiet action: a link-weight button, not a capsule.
+        link.Style = StyleFor("SetupLink");
         previewLink = link;
         var change = new TextBlock { Text = PrivacyPresentation.ChangeLater, Style = StyleFor("SetupDetail"), VerticalAlignment = VerticalAlignment.Center };
         var foot = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
@@ -413,8 +413,8 @@ public sealed partial class SetupPage : Page
         Put(foot, 1, link);
         string[] symbols = ["eye", "lock", "share"];
         var rows = PrivacyPresentation.QuestionRows(crash)
-            .Select((row, index) => (UIElement)Row(symbols[index], row.Title, row.Detail, tall: true)).ToArray();
-        StepContent.Children.Add(GlassPanel(16, 12, Group(rows), foot));
+            .Select((row, index) => (UIElement)Row(symbols[index], row.Title, row.Detail)).ToArray();
+        StepContent.Children.Add(GlassPanel(6, 12, Group(rows), foot));
         // Neither answer is the default: nothing takes the focus and Enter presses neither.
         focusTarget = null;
     }
