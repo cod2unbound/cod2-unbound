@@ -99,7 +99,7 @@ public sealed partial class SettingsPage : Page
         Switch("Minimize CoD2 Unbound while the game is running", "It comes back when you close the game.",
             Current.HideWhilePlaying, value => ChangeAsync(Current with { HideWhilePlaying = value }));
         Group("Launcher");
-        Choice("Appearance", null, ["Use system setting", "Light", "Dark"], (int)Current.Appearance,
+        Choice("Appearance", null, ["Match System", "Light", "Dark"], (int)Current.Appearance,
             async value => await ChangeAsync(Current with { Appearance = (LauncherAppearance)value }));
         Switch("Refresh the server list when Servers opens", "Off, nothing is contacted until you press Refresh.",
             Current.RefreshServersOnOpen, value => ChangeAsync(Current with { RefreshServersOnOpen = value }));
@@ -621,15 +621,12 @@ public sealed partial class SettingsPage : Page
     private void Row(string label, string? description = null, FrameworkElement? action = null) =>
         Fields.Children.Add(SettingRow(label, description, action));
 
+    // The Mac draws a short set of choices as a segmented control (SettingsWin board).
     private void Choice(string label, string? description, string[] options, int selected, Func<int, Task> change)
     {
-        var choice = new ComboBox { ItemsSource = options, SelectedIndex = selected, MinWidth = 180 };
+        var choice = Tabs(options, selected, index => _ = change(index));
+        choice.HorizontalAlignment = HorizontalAlignment.Right;
         AutomationProperties.SetName(choice, label);
-        choice.SelectionChanged += async (_, _) =>
-        {
-            if (choice.SelectedIndex >= 0)
-                await change(choice.SelectedIndex);
-        };
         Row(label, description, choice);
     }
 

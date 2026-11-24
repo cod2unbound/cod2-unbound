@@ -87,10 +87,13 @@ public sealed partial class SettingsPage
         var modeHint = Caption("");
         AddRow("Mode", mode, modeHint);
 
-        var graphics = new ComboBox { ItemsSource = new[] { "Direct3D 9", "DirectX 7" }, MinWidth = 160,
-            SelectedIndex = (int)model.Renderer };
+        // The Mac's segmented control, with Windows' two renderers (SetDisplay board).
+        Action<int> chooseGraphics = _ => { };
+        var graphics = Tabs(["Direct3D 9", "DirectX 7"], (int)model.Renderer, index => chooseGraphics(index));
+        graphics.HorizontalAlignment = HorizontalAlignment.Right;
         AutomationProperties.SetName(graphics, "Graphics");
-        rows.Children.Add(SettingRow("Graphics", "Choose how the game draws on Windows.", graphics));
+        rows.Children.Add(SettingRow("Graphics",
+            "Direct3D 9 is how the game draws on Windows. DirectX 7 is the older way, kept in case something looks wrong.", graphics));
 
         var resolution = Body("");
         var choose = Action("Choose in Configs", shell.OpenResolutionAsync);
@@ -157,11 +160,7 @@ public sealed partial class SettingsPage
             if (mode.SelectedIndex >= 0)
                 await Save(Current with { Fullscreen = modes[mode.SelectedIndex] }, mode);
         };
-        graphics.SelectionChanged += async (_, _) =>
-        {
-            if (graphics.SelectedIndex >= 0)
-                await Save(Current with { WindowsRenderer = (WindowsRenderMode)graphics.SelectedIndex }, graphics);
-        };
+        chooseGraphics = index => _ = Save(Current with { WindowsRenderer = (WindowsRenderMode)index }, graphics);
 
         void AddRow(string label, FrameworkElement action, TextBlock detail)
         {
