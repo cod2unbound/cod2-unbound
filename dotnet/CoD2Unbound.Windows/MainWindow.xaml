@@ -48,7 +48,7 @@
                             AutomationProperties.Name="CoD2 Unbound">
                     <Image Source="ms-appx:///Assets/mark-48.png" Width="36" Height="36"
                            AutomationProperties.AccessibilityView="Raw" />
-                    <Image x:Name="BrandWordmark" Width="110" Height="16"
+                    <Image x:Name="BrandWordmark" Width="102" Height="15"
                            AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock x:Name="ContrastWordmark" Text="CoD2 Unbound" Style="{StaticResource TypeLabel}"
                                VerticalAlignment="Center" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
