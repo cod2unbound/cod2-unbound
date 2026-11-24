@@ -10,6 +10,21 @@ namespace CoD2Unbound.Windows.Views;
 public sealed partial class SetupPage
 {
     private static bool previewed;
+    private string? previewKey, previewName;
+    private bool previewColours;
+
+    /// <summary>Re-applied after every render: the page renders again when its theme settles after loading.</summary>
+    partial void AfterRender()
+    {
+        if (previewKey is not null && keyEditor is not null && keyEditor.Value != CdKey.Display(previewKey))
+            keyEditor.Value = previewKey;
+        if (previewName is not null && nameEditor is not null && nameEditor.NameText != previewName)
+        {
+            nameEditor.NameText = previewName;
+            if (previewColours)
+                nameEditor.OpenColours();
+        }
+    }
     private const string SampleKey = "000000000000000086D3";
 
     private async Task PreviewAsync()
@@ -68,15 +83,14 @@ public sealed partial class SetupPage
                     Setup.Back();
                 }
                 discKeyMissing = state == "key-nodisc";
+                previewKey = state switch
+                {
+                    "key-typing" => "0000 0000 0000 0",
+                    "key-mismatch" => "000000000000000086D4",
+                    "key-verified" => SampleKey,
+                    _ => null
+                };
                 await RefreshAsync();
-                if (keyEditor is not null)
-                    keyEditor.Value = state switch
-                    {
-                        "key-typing" => "0000 0000 0000 0",
-                        "key-mismatch" => "000000000000000086D4",
-                        "key-verified" => SampleKey,
-                        _ => ""
-                    };
                 return;
             }
             if (state.EndsWith("skipped", StringComparison.Ordinal))
@@ -85,12 +99,9 @@ public sealed partial class SetupPage
                 await Setup.ContinueAsync(SampleKey);
             if (state.StartsWith("yours", StringComparison.Ordinal))
             {
+                previewName = "^3Sgt. ^7Morrow";
+                previewColours = state == "yours-colours";
                 await RefreshAsync();
-                if (nameEditor is not null)
-                    nameEditor.NameText = "^3Sgt. ^7Morrow";
-                if (state == "yours-colours")
-                    nameEditor?.OpenColours();
-                UpdateContinue();
                 return;
             }
             Setup.ReviewPersonalization(new("^3Sgt. ^7Morrow", "borderless"));

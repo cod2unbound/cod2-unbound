@@ -129,9 +129,13 @@ public sealed partial class SetupPage : Page
                 await RenderReadyAsync();
                 break;
         }
+        AfterRender();
         UpdateContinue();
         FocusStep();
     }
+
+    /// <summary>Fixture builds fill in a board state's typed text here; other builds compile no call.</summary>
+    partial void AfterRender();
 
     private void RenderFooter()
     {

@@ -47,7 +47,6 @@
         <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
         <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
-        <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <Style x:Key="SetupGlassHighlight" TargetType="Border">
         <Setter Property="BorderBrush" Value="{ThemeResource glassHighlight}" />
