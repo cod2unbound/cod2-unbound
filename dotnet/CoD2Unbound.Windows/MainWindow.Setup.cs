@@ -14,6 +14,11 @@ public sealed partial class MainWindow
         if (session.ClientIsRunning || session.SetupUpdating)
             return;
         await session.StartSetupAgainAsync();
+        if (returnTo == LauncherPlace.GameDataSettings)
+        {
+            settingsWindow?.Close();
+            Activate();
+        }
         await NavigateAsync(LauncherPlace.Setup, cancelSetupTo: returnTo);
     }
 
