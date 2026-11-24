@@ -9,6 +9,7 @@
     <x:String x:Key="FluentHome">&#xF480;</x:String>
     <x:String x:Key="FluentLive">&#xF4F0;</x:String>
     <x:String x:Key="FluentVideoClip">&#xEDFF;</x:String>
+    <x:String x:Key="FluentFilmstrip">&#xEEFB;</x:String>
     <x:String x:Key="FluentStack">&#xF792;</x:String>
     <x:String x:Key="FluentSettings">&#xF6A9;</x:String>
     <x:String x:Key="FluentAdd">&#xF109;</x:String>
@@ -1707,6 +1708,10 @@
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- PcSide's pane toggle: the 17 px navigation symbol; WinUI's GlobalNav glyph at 20 has the same ink. -->
+    <Style x:Key="SidebarPaneToggle" TargetType="Button" BasedOn="{StaticResource PaneToggleButtonStyle}">
+        <Setter Property="FontSize" Value="20" />
     </Style>
     <!-- PcSide: the icon column is this minus NavigationView's 8, so glyph centres land on 13 + 12 + 9 = 34. -->
     <x:Double x:Key="SidebarCompactLength">50</x:Double>
