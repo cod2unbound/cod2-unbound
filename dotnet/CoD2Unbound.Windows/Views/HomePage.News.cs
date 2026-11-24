@@ -67,7 +67,7 @@ public sealed partial class HomePage
             }
             var button = new Button
             {
-                Content = line, Style = StyleFor("NewsLineButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
+                Content = line, Style = LocalStyle("NewsLineButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch
             };
             button.Resources["SubtleButtonBackgroundPointerOver"] = Ink("hover");
@@ -88,13 +88,13 @@ public sealed partial class HomePage
         line.Children.Add(new TextBlock { Text = item.Stamp, Style = StyleFor("AddressText"), FontSize = 12, TextWrapping = TextWrapping.NoWrap });
         line.Children.Add(new TextBlock
         {
-            Text = item.Title, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Style = StyleFor("RecentName"),
+            Text = item.Title, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Style = LocalStyle("RecentName"),
             TextWrapping = TextWrapping.Wrap, MaxLines = titleLines ?? 0, TextTrimming = TextTrimming.CharacterEllipsis
         });
         if (item.Summary.Length > 0 && summaryLines != 0)
             line.Children.Add(new TextBlock
             {
-                Text = item.Summary, FontSize = 13, LineHeight = 18.2, Style = StyleFor("NewsSummary"),
+                Text = item.Summary, FontSize = 13, LineHeight = 18.2, Style = LocalStyle("NewsSummary"),
                 TextWrapping = TextWrapping.Wrap, MaxLines = summaryLines ?? 0, TextTrimming = TextTrimming.CharacterEllipsis
             });
         return line;

@@ -11,6 +11,9 @@ namespace CoD2Unbound.Windows.Views;
 public sealed partial class HomePage
 {
     private const int SettingsPrivacyPane = 3;
+
+    /// Home's own row styles (HomePage.xaml), built from the shared tokens.
+    private Style LocalStyle(string key) => (Style)Resources[key];
     private readonly List<Button> recentButtons = [];
 
     /// A card's empty state: a stencil heading, a sentence and at most one button.
@@ -68,8 +71,8 @@ public sealed partial class HomePage
         Put(content, 0, art);
         var lines = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         lines.Children.Add(new TextBlock { Text = name, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Style = StyleFor("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
-        lines.Children.Add(new TextBlock { Text = subtitle, Style = StyleFor("RecentDetail"),
+            Style = LocalStyle("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+        lines.Children.Add(new TextBlock { Text = subtitle, Style = LocalStyle("RecentDetail"),
             TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
         Put(content, 1, lines);
         if (played is not null)
@@ -84,7 +87,7 @@ public sealed partial class HomePage
         {
             var open = new Button
             {
-                Content = content, Style = StyleFor("RecentRowButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
+                Content = content, Style = LocalStyle("RecentRowButton"), HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch
             };
             AutomationProperties.SetName(open, spoken);
@@ -183,7 +186,7 @@ public sealed partial class HomePage
         var title = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         string titleText = $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}";
         title.Children.Add(new TextBlock { Text = titleText, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Style = StyleFor("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+            Style = LocalStyle("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
         string stamp = MatchFacts.Duration(match.DurationSeconds).ToUpperInvariant();
         if (MatchFacts.Date(match.EndedAt) is { } date)
             stamp = MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: false) + " · " + stamp;

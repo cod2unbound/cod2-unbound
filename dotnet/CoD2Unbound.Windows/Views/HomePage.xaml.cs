@@ -95,7 +95,8 @@ public sealed partial class HomePage : Page
         double width = PageRoot.ActualWidth, height = PageRoot.ActualHeight;
         if (width <= 0 || height <= 0)
             return;
-        double windowHeight = height + origin.Y;
+        // The Mac measures from the window's top and bottom; the shell's frame may stop short of the bottom edge.
+        double windowHeight = Math.Max(height + origin.Y, XamlRoot?.Size.Height ?? 0);
         double lead = Math.Max(32, 300 - origin.X);
         double inner = Math.Max(0, width - lead - 32);
         bool narrow = inner < 980;

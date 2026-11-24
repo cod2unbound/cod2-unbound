@@ -16,11 +16,15 @@ internal static class HomeFixture
     {
         "running" when !real.Running => new(Started, [new(4242, Started)], null,
             Activity: new(new(4242, Started), lastServer, null)),
-        "crash" when !real.Running && real.LastExit is null => real with { LastExit = new GameExit(true, null) },
+        "crash" when !real.Running && real.LastExit is null => real with { LastExit = new GameExit(true, CrashReport) },
         _ => real
     };
 
     internal static string? UpdateVersion => View == "update" ? "0.5.1" : null;
+
+    // The capture script writes this report into the fixture home, so Show Crash Report has a file to show.
+    private static string? CrashReport => Platform.WindowsLauncherSession.ResolveHome() is { } home
+        ? Path.Join(home, "crash-reports", "crash-fixture.txt") : null;
 #else
     internal static GameSessionState Observe(GameSessionState real, string? lastServer) => real;
 

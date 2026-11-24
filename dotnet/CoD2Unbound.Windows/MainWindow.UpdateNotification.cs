@@ -56,7 +56,8 @@ public sealed partial class MainWindow
         try
         {
             var source = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
-            var kept = source.GetRegionRects(NonClientRegionKind.Passthrough)
+            // GetRegionRects answers null, not an empty array, before any rectangle is set.
+            var kept = (source.GetRegionRects(NonClientRegionKind.Passthrough) ?? [])
                 .Where(existing => homeCaptionPassthrough is not { } previous || !existing.Equals(previous)).ToList();
             if (rect is { } next)
                 kept.Add(next);
