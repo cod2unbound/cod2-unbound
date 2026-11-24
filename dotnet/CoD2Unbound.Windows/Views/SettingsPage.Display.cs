@@ -111,7 +111,7 @@ public sealed partial class SettingsPage
         {
             Severity = InfoBarSeverity.Error, IsClosable = false,
             Message = "Your changes couldn't be saved. Check that your CoD2 Unbound folder is writable, then try again.",
-            ActionButton = Action("Try again", async () =>
+            ActionButton = Action("Try Again", async () =>
             {
                 await ChangeAsync(Current, display: true);
                 if (Current == model.Settings.Saved && retryFocus.IsLoaded)
@@ -122,7 +122,7 @@ public sealed partial class SettingsPage
         displaySaved = Caption("Saved. Applies the next time the game starts.");
         container.Children.Add(displaySaved);
         RefreshDisplaySave(Current != model.Settings.Saved);
-        var restore = Action("Restore defaults", async () =>
+        var restore = Action("Restore Defaults", async () =>
         {
             previousDisplay = Current;
             var defaults = new GameSettings();

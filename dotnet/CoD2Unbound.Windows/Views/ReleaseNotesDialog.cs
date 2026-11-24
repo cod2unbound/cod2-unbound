@@ -18,7 +18,7 @@ internal sealed class ReleaseNotesDialog : ContentDialog
         Width = 620;
         Title = $"What’s new in {version}";
         this.WithSymbol("mark");
-        PrimaryButtonText = offer is null ? "Done" : "Install and relaunch";
+        PrimaryButtonText = offer is null ? "Done" : "Install and Relaunch";
         PrimaryButtonStyle = StyleFor("LauncherAccentButton");
         IsPrimaryButtonEnabled = offer is null || canInstall;
         CloseButtonText = offer is null ? "" : "Later";

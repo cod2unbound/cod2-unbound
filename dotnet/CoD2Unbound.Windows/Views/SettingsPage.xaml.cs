@@ -133,7 +133,7 @@ public sealed partial class SettingsPage : Page
         var dataActions = Buttons(reveal, choose);
         if (model.HasPendingData)
         {
-            var use = Action("Use this folder", async () =>
+            var use = Action("Use This Folder", async () =>
             {
                 await model.SaveDataAsync();
                 session.Record(new(UsageKind.SettingChanged, (int)UsageSetting.GameDataFolder));
@@ -161,7 +161,7 @@ public sealed partial class SettingsPage : Page
         AddEdition(GameEdition.Original, "Original 1.3");
         if (versions.Children.Count > 0)
             Row("Game versions installed", null, versions);
-        var setupAgain = Action("Set up again…", ConfirmSetupAgainAsync);
+        var setupAgain = Action("Set Up Again…", ConfirmSetupAgainAsync);
         setupAgain.IsEnabled = !session.ClientIsRunning && !session.SetupUpdating;
         Row("Set up again", "Walks through game data and CD key once more. Your loadouts, demos and screenshots stay. You can cancel at any step.",
             setupAgain);
@@ -228,7 +228,7 @@ public sealed partial class SettingsPage : Page
                 number.VerticalAlignment = VerticalAlignment.Center;
                 AutomationProperties.SetName(number, "Install number " + full);
                 ToolTipService.SetToolTip(number, full);
-                var reset = Action("Reset number", async () => { await session.ResetUsageAsync(); Render(); });
+                var reset = Action("Reset Number", async () => { await session.ResetUsageAsync(); Render(); });
                 reset.Style = StyleFor("SubtleAction");
                 reset.AccessKey = "R";
                 AutomationProperties.SetName(reset, "Reset number");
@@ -239,13 +239,13 @@ public sealed partial class SettingsPage : Page
         Group("On this PC");
         Switch("Match summaries", "Notes on how each match ran, so Check-up can advise you. Kept on this PC, the last 200 matches.", Current.MatchSummariesEnabled,
             value => ChangeAsync(Current with { MatchSummariesEnabled = value }));
-        var delete = Action("Delete summaries…", async () =>
+        var delete = Action("Delete Summaries…", async () =>
         {
             int count = session.ReadMatches().Length;
             if (session.ClientIsRunning || count == 0 ||
                 !await ConfirmAsync("Delete match summaries?",
                     count == 1 ? "Delete the one match summary on this PC?" : $"Delete all {count} match summaries on this PC?",
-                    "Delete summaries"))
+                    "Delete Summaries"))
                 return;
             if (session.ClientIsRunning)
                 return;
@@ -347,7 +347,7 @@ public sealed partial class SettingsPage : Page
         {
             title = "Couldn’t check for updates";
             message = state.Message;
-            AddAction("Try again");
+            AddAction("Try Again");
         }
         else if (state.Issue == UpdateIssue.Refused)
         {
@@ -366,19 +366,19 @@ public sealed partial class SettingsPage : Page
             title = "The update didn’t finish.";
             message = session.InstallNeedsRepair ? "Run Setup again to repair CoD2 Unbound." :
                 $"{current} is still installed and works.";
-            AddAction("Try again");
+            AddAction("Try Again");
             AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.Interrupted)
         {
             message = "The download stopped before it finished.";
-            AddAction("Try again", install: true);
+            AddAction("Try Again", install: true);
         }
         else if (state.Issue == UpdateIssue.Unexpected)
         {
             title = state.Offer is null ? installed : available;
             message = state.Message ?? "The update could not be completed.";
-            AddAction("Try again", install: state.Offer is not null);
+            AddAction("Try Again", install: state.Offer is not null);
             if (state.Offer is not null)
                 AddDownloadPage();
         }
@@ -390,7 +390,7 @@ public sealed partial class SettingsPage : Page
                     title = installed;
                     message = "Checking for updates…";
                     showProgress = true;
-                    AddAction("Check now", enabled: false);
+                    AddAction("Check Now", enabled: false);
                     break;
                 case UpdatePhase.Downloading:
                     message = DownloadMessage(state);
@@ -408,12 +408,12 @@ public sealed partial class SettingsPage : Page
                         ? "Close Call of Duty 2 to install it. The update waits until then."
                         : $"Downloaded, {Megabytes(state.Offer!.Archive.Size)} MB. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
+                    AddAction("Install and Relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
                     break;
                 case UpdatePhase.Offered:
                     message = state.Message ?? $"You have {current}. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and relaunch", install: true, primary: true);
+                    AddAction("Install and Relaunch", install: true, primary: true);
                     break;
                 case UpdatePhase.Installed:
                     title = $"CoD2 Unbound is now {current}.";
@@ -423,7 +423,7 @@ public sealed partial class SettingsPage : Page
                 default:
                     title = state.WasChecked || checkedAt is not null ? $"CoD2 Unbound {current} is up to date" : installed;
                     message = checkedAt;
-                    AddAction("Check now");
+                    AddAction("Check Now");
                     break;
             }
         }
@@ -464,7 +464,7 @@ public sealed partial class SettingsPage : Page
         void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
         void AddDownloadPage() => AddLink("Open download page", state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage);
         void AddWhatsNew(string release) =>
-            actions.Children.Add(Action("What’s new", () => shell.ShowReleaseNotesAsync(release)));
+            actions.Children.Add(Action("What’s New", () => shell.ShowReleaseNotesAsync(release)));
     }
 
     private static string? LastChecked(DateTimeOffset? time)
@@ -544,7 +544,7 @@ public sealed partial class SettingsPage : Page
         Group("Logs and reset");
         var logs = Action("Show in File Explorer", () => OpenAsync(session.LogsPath));
         logs.IsEnabled = Directory.Exists(session.LogsPath);
-        var copyLog = Action("Copy last game log", async () =>
+        var copyLog = Action("Copy Last Game Log", async () =>
         {
             if (await session.ReadLatestLogAsync() is { } log)
             {
@@ -556,17 +556,17 @@ public sealed partial class SettingsPage : Page
         });
         copyLog.IsEnabled = logs.IsEnabled;
         Row("Logs", "Game logs stay on this PC.", Buttons(logs, copyLog));
-        var warnings = Action("Reset warnings", async () =>
+        var warnings = Action("Reset Warnings", async () =>
         {
             await ChangeAsync(Current with { DismissedWarnings = [] });
             Render();
         });
         warnings.IsEnabled = !Current.DismissedWarnings.IsEmpty;
         Row("Warnings", null, warnings);
-        Row("Launcher settings", null, Action("Reset settings…", async () =>
+        Row("Launcher settings", null, Action("Reset Settings…", async () =>
         {
             if (!await ConfirmAsync("Reset launcher settings?",
-                "Restore the original settings and keep your loadouts, demos, screenshots and CD key.", "Reset settings"))
+                "Restore the original settings and keep your loadouts, demos, screenshots and CD key.", "Reset Settings"))
                 return;
             advancedDraft = advancedProblem = null;
             previousDisplay = null;
