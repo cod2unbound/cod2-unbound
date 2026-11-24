@@ -23,8 +23,8 @@ internal sealed class ProblemReportDialog : ContentDialog
         SecondaryButtonText = "Copy Details";
         CloseButtonText = "Cancel";
         DefaultButton = ContentDialogButton.Primary;
-        Resources["ContentDialogMaxWidth"] = 560d;
-        Resources["ContentDialogMinWidth"] = 560d;
+        Resources["ContentDialogMaxWidth"] = 520d;
+        Resources["ContentDialogMinWidth"] = 520d;
 
         var detail = new TextBlock
         {
@@ -58,11 +58,16 @@ internal sealed class ProblemReportDialog : ContentDialog
             Children = { well, new Border { Style = StyleFor("GroupCard"), Child = choices }, note }
         };
 
+        var copyStyle = new Style(typeof(Button)) { BasedOn = StyleFor("SheetButton") };
+        copyStyle.Setters.Add(new Setter(AutomationProperties.NameProperty, "Copy details"));
+        SecondaryButtonStyle = copyStyle;
+
         int copyGeneration = 0;
         SecondaryButtonClick += async (_, args) =>
         {
             args.Cancel = true;
             int attempt = ++copyGeneration;
+            SecondaryButtonStyle = StyleFor("SheetButton");
             try
             {
                 CopyText(report.Details);
@@ -74,7 +79,10 @@ internal sealed class ProblemReportDialog : ContentDialog
             }
             await Task.Delay(1800);
             if (attempt == copyGeneration)
+            {
                 SecondaryButtonText = "Copy Details";
+                SecondaryButtonStyle = copyStyle;
+            }
         };
     }
 
