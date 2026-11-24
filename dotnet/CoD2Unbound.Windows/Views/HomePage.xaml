@@ -47,6 +47,14 @@
             <Setter Property="FocusVisualSecondaryThickness" Value="0" />
             <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
         </Style>
+        <!-- The hero title's box is its ink: the map name is set in capitals, so Tight bounds run from the cap
+             top to the baseline (107 at 132). The board's 113.5 box ends 6.5 under the baseline, so the meta
+             line and the button pair land where the Mac puts them. -->
+        <Style x:Key="HomeHeroTitle" TargetType="TextBlock" BasedOn="{StaticResource HeroTitle}">
+            <Setter Property="TextLineBounds" Value="Tight" />
+            <Setter Property="LineStackingStrategy" Value="MaxHeight" />
+            <Setter Property="Margin" Value="0,0,0,6.5" />
+        </Style>
         <Style x:Key="NewsSummary" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{ThemeResource body}" />
         </Style>
@@ -94,12 +102,12 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="HeroLead" Style="{StaticResource HeroEyebrow}" FontSize="15" LineHeight="15"
+                    <TextBlock x:Name="HeroLead" Style="{StaticResource HeroEyebrow}" FontSize="15" LineHeight="15" LineStackingStrategy="BlockLineHeight"
                                CharacterSpacing="340" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                     <Viewbox Grid.Row="1" x:Name="HeroTitleFit" StretchDirection="DownOnly" Stretch="Uniform"
                              HorizontalAlignment="Left">
                         <TextBlock x:Name="HeroTitle"
-                                   Style="{StaticResource HeroTitle}" TextWrapping="NoWrap" />
+                                   Style="{StaticResource HomeHeroTitle}" TextWrapping="NoWrap" />
                     </Viewbox>
                     <StackPanel Grid.Row="2" x:Name="HeroMeta" Orientation="Horizontal" Spacing="14" />
                     <TextBlock Grid.Row="2" x:Name="HeroDetail" MaxWidth="520" HorizontalAlignment="Left"
