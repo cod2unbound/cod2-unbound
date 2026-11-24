@@ -295,6 +295,21 @@
         <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
         <Setter Property="Padding" Value="28,0" />
     </Style>
+    <!-- The Mac's glass action at the hero size (Find a Server beside Launch). -->
+    <Style x:Key="HeroGlassButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonHeroRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonHeroHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonHeroHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
+        <Setter Property="Padding" Value="28,0" />
+    </Style>
+    <!-- The Mac's prominent action at the action size (Install Update in the update pill). -->
+    <Style x:Key="MediumAccentButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="Padding" Value="18,0" />
+    </Style>
     <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
@@ -1392,6 +1407,12 @@
         <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="Padding" Value="16,0" />
+    </Style>
+    <!-- The large chip on glass (Home's loadout, display and attention chips). -->
+    <Style x:Key="LargeGlassChipButton" TargetType="Button" BasedOn="{StaticResource LargeChipButton}">
+        <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+        <Setter Property="Foreground" Value="{ThemeResource chipText}" />
     </Style>
     <Style x:Key="GroupCard" TargetType="Border">
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />

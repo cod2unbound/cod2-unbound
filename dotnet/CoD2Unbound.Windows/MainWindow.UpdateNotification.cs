@@ -35,6 +35,15 @@ public sealed partial class MainWindow
         await ShowReleaseNotesAsync(version);
     }
 
+    /// Home's Install Update: the same path as the release notes' Install, from Settings › Updates.
+    internal async Task InstallOfferedUpdateAsync()
+    {
+        if (session.Updates.State.Offer is null || updateRequest is not null)
+            return;
+        await NavigateAsync(LauncherPlace.UpdateSettings);
+        await RunUpdateAsync(install: true);
+    }
+
     [DllImport("user32.dll")]
     private static extern nint GetForegroundWindow();
 }

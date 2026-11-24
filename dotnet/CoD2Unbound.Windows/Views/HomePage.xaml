@@ -1,173 +1,323 @@
 <Page x:Class="CoD2Unbound.Windows.Views.HomePage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:local="using:CoD2Unbound.Windows.Views">
-    <ScrollViewer x:Name="Scroll" SizeChanged="OnLayoutChanged">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <InfoBar x:Name="UpdateBanner" IsClosable="False" Margin="20,12,20,0" Visibility="Collapsed">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="UpdateNotes" Content="What’s new" Click="OnUpdateNotes" />
-                    <Button x:Name="UpdateButton" Click="OnUpdateAction" />
-                </StackPanel>
-            </InfoBar>
-            <Grid Grid.Row="1" x:Name="ArtLayer" Height="520" VerticalAlignment="Top" IsHitTestVisible="False"
-                  AutomationProperties.AccessibilityView="Raw">
-                <Border x:Name="PanelPalette" Background="{ThemeResource PanelBrush}" />
-                <Image x:Name="HeroArt" Stretch="UniformToFill" />
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Page.Resources>
+        <!-- Home's card rows, from the shared tokens. -->
+        <Style x:Key="RecentName" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource BodyBrush}" />
+        </Style>
+        <Style x:Key="RecentDetail" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
+            <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
+        </Style>
+        <!-- A recent row: the whole row is the button, rounded like a crate, 7 in around the art. -->
+        <!-- The cards' lists are stock ListViews: the item container keeps its own keyboard, pointer and
+             Narrator behaviour; only its shape, padding and the Mac's hover fill change. No BasedOn: WinUI
+             always applies the control's own default style beneath an explicit Style, and its internal
+             Default*Style keys cannot be resolved from a page (Cannot find a Resource with the Name/Key
+             DefaultDropDownButtonStyle, native start crash 2026-11-24). -->
+        <Style x:Key="RecentItem" TargetType="ListViewItem">
+            <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
+            <Setter Property="Padding" Value="7,7,17,7" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style x:Key="NewsItem" TargetType="ListViewItem">
+            <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <!-- The loadout capsule is a stock DropDownButton (its own chevron, flyout and expand/collapse
+             pattern) in the large glass chip's shape. -->
+        <Style x:Key="LoadoutChipStyle" TargetType="DropDownButton">
+            <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
+            <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
+            <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Padding" Value="16,0,12,0" />
+            <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+            <Setter Property="Foreground" Value="{ThemeResource chipText}" />
+            <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+            <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+            <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+        </Style>
+        <Style x:Key="NewsSummary" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource body}" />
+        </Style>
+        <!-- A What's New line that leads somewhere: plain text that takes the pointer. -->
+        <!-- Card headings and their links sit on one baseline (the Mac's .firstTextBaseline): both trim their
+             line box to the baseline and align to the bottom of the heading row. -->
+        <Style x:Key="CardHeading" TargetType="TextBlock" BasedOn="{StaticResource TypePanel}">
+            <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
+            <Setter Property="TextLineBounds" Value="TrimToBaseline" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
+        <Style x:Key="CardLinkText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextLineBounds" Value="TrimToBaseline" />
+        </Style>
+        <Style x:Key="CardLink" TargetType="HyperlinkButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
+    </Page.Resources>
+    <!-- The Mac's Home (HomeView.swift): the last map's art behind the hero, the next game's loadout and
+         display, anything that needs fixing, and three cards. Geometry follows the Home board at 1440 × 900. -->
+    <Grid x:Name="PageRoot" SizeChanged="OnLayoutChanged">
+        <!-- The art fills the whole window behind the sidebar, as the board draws it: the page hands this layer
+             to the shell's backdrop host (IShellBackdrop) and removes it from its own tree. -->
+        <Grid x:Name="ArtLayer" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
+            <Border x:Name="PanelPalette" Background="{ThemeResource GroundBrush}" />
+            <Grid x:Name="ArtCanvas" VerticalAlignment="Top" Height="620">
+                <Image x:Name="HeroArt" Stretch="UniformToFill" AutomationProperties.AccessibilityView="Raw" />
                 <Rectangle x:Name="HeroScrim" />
+                <Rectangle x:Name="HeroVignette" />
                 <Rectangle x:Name="HeroFade" />
             </Grid>
-            <Grid Grid.Row="1" x:Name="ContentLayout" Padding="48,72,48,32" RowSpacing="18">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <StackPanel x:Name="Hero" HorizontalAlignment="Left" MaxWidth="768" Spacing="16" Padding="0,0,0,4"
-                            Background="{ThemeResource HeroBackplateBrush}">
-                    <TextBlock x:Name="HeroLead" Text="READY TO PLAY" Style="{StaticResource HeroEyebrow}" />
-                    <TextBlock x:Name="HeroTitle" Text="COD2 UNBOUND" Style="{StaticResource HeroTitle}" />
-                    <TextBlock x:Name="HeroDetail" MaxWidth="540" HorizontalAlignment="Left" FontSize="16"
-                               TextWrapping="Wrap" Foreground="{ThemeResource HeroInkBrush}" />
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <local:LaunchSplitButton x:Name="LaunchButton" AutomationProperties.Name="Launch" AccessKey="L"
-                                AutomationProperties.AcceleratorKey="Ctrl+Enter" Height="40" MinWidth="140" CornerRadius="20"
-                                Click="OnLaunchSplit" Visibility="Collapsed">
-                            <local:LaunchSplitButton.Resources>
-                                <ResourceDictionary Source="ms-appx:///Views/HomeLaunchResources.xaml" />
-                            </local:LaunchSplitButton.Resources>
-                            <local:LaunchSplitButton.Flyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem x:Name="RejoinMenu" Click="OnLaunch" KeyboardAcceleratorTextOverride="Ctrl+Enter">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem Text="Open the game menu" Click="OnOpenGameMenu" KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPlayOutline}" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="Connect to an address…" Click="OnConnectAddress" KeyboardAcceleratorTextOverride="Ctrl+L">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                </MenuFlyout>
-                            </local:LaunchSplitButton.Flyout>
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
-                                <TextBlock Text="Launch" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </local:LaunchSplitButton>
-                        <Button x:Name="FindServerButton" Height="40" AccessKey="F" Click="OnFindServer" AutomationProperties.Name="Find a server">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="16" />
-                                <TextBlock Text="Find a server" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="OpenGameMenuButton" Height="40" Click="OnOpenGameMenu"
-                                AutomationProperties.Name="Open game menu" AutomationProperties.AcceleratorKey="Ctrl+Shift+Enter">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
-                                <TextBlock Text="Open game menu" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="ReturnGameButton" Height="40" CornerRadius="20" Click="OnReturnGame"
-                                Style="{StaticResource LauncherAccentButton}" Visibility="Collapsed"
-                                AutomationProperties.Name="Return to game">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
-                                <TextBlock Text="Return to game" />
-                            </StackPanel>
-                        </Button>
-                        <Button x:Name="CloseGameButton" Height="40" Click="OnCloseGame" Visibility="Collapsed"
-                                AutomationProperties.Name="Close game">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7E8;" FontSize="16" />
-                                <TextBlock x:Name="CloseGameLabel" Text="Close game" />
-                            </StackPanel>
-                        </Button>
-                        <TextBlock x:Name="LaunchHint" Style="{StaticResource SecondaryText}" FontSize="12"
-                                   Margin="8,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <TextBlock x:Name="LaunchReason" Foreground="{ThemeResource HeroInkBrush}" TextWrapping="Wrap"
-                               Visibility="Collapsed" />
-                </StackPanel>
+        </Grid>
 
-                <StackPanel Grid.Row="1" Spacing="12">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ComboBox x:Name="LoadoutChoice" AutomationProperties.Name="Loadout"
-                                  AccessKey="O" IsEnabled="False" MinWidth="160" SelectionChanged="OnLoadoutChanged" />
-                        <DropDownButton x:Name="DisplayChoice" AutomationProperties.Name="Display mode" AccessKey="D" MinWidth="128">
-                            <DropDownButton.Flyout>
-                                <MenuFlyout>
-                                    <RadioMenuFlyoutItem x:Name="BorderlessMode" Text="Borderless" GroupName="DisplayMode"
-                                                         Tag="borderless" Click="OnDisplayChanged" />
-                                    <RadioMenuFlyoutItem x:Name="ExclusiveMode" Text="Exclusive fullscreen" GroupName="DisplayMode"
-                                                         Tag="exclusive" Click="OnDisplayChanged" />
-                                    <RadioMenuFlyoutItem x:Name="WindowMode" Text="Window" GroupName="DisplayMode"
-                                                         Tag="windowed" Click="OnDisplayChanged" />
-                                </MenuFlyout>
-                            </DropDownButton.Flyout>
-                        </DropDownButton>
-                        <Button x:Name="NarrowNews" Content="What’s New" Click="OnShowNews" Visibility="Collapsed" />
-                        <Button x:Name="AdjustedResolution" Visibility="Collapsed" Click="OnChooseResolution" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="OpenGameData" Click="OnOpenGameData" Visibility="Collapsed"
-                                AutomationProperties.Name="Game data not found" />
-                        <Button x:Name="OpenCdKey" Click="OnOpenCdKey" Visibility="Collapsed"
-                                AutomationProperties.Name="No CD key" />
-                    </StackPanel>
-                </StackPanel>
-
-                <Grid x:Name="Cards" Grid.Row="2" ColumnSpacing="12" RowSpacing="12">
+        <ScrollViewer x:Name="Scroll" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+            <Grid x:Name="ContentLayout">
+                <Grid x:Name="Hero" HorizontalAlignment="Left" VerticalAlignment="Top" RowSpacing="18">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.45*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition x:Name="NewsColumn" Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border x:Name="RecentCard" Style="{StaticResource FieldCard}">
-                        <StackPanel Spacing="6">
-                            <Grid>
-                                <TextBlock Text="Jump back in" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
-                                <HyperlinkButton Content="All recent" HorizontalAlignment="Right" Click="OnRecent" />
-                            </Grid>
-                            <StackPanel x:Name="RecentRows" Spacing="6" />
+                    <TextBlock x:Name="HeroLead" Style="{StaticResource HeroEyebrow}" FontSize="15" LineHeight="15" LineStackingStrategy="BlockLineHeight"
+                               CharacterSpacing="340" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <Viewbox Grid.Row="1" x:Name="HeroTitleFit" StretchDirection="DownOnly" Stretch="Uniform"
+                             HorizontalAlignment="Left">
+                        <TextBlock x:Name="HeroTitle"
+                                   Style="{StaticResource HeroTitle}" TextWrapping="NoWrap" />
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" x:Name="HeroMeta" Orientation="Horizontal" Spacing="14" />
+                    <TextBlock Grid.Row="2" x:Name="HeroDetail" MaxWidth="520" HorizontalAlignment="Left"
+                               FontSize="16" LineHeight="26" TextWrapping="Wrap" Foreground="{ThemeResource HeroInkBrush}"
+                               Text="You’re set up. Pick a server to join your first match, or open the game’s own menu."
+                               Visibility="Collapsed" />
+                    <Grid Grid.Row="3" x:Name="ActionRow" Padding="0,14,0,0" ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <Button x:Name="LaunchButton" Style="{StaticResource HeroButton}" Click="OnLaunch"
+                                    AccessKey="L" AutomationProperties.AcceleratorKey="Ctrl+Enter" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}"
+                                              FontSize="15" VerticalAlignment="Center" />
+                                    <TextBlock Text="Launch" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="FindServerButton" Style="{StaticResource HeroGlassButton}" Click="OnFindServer"
+                                    AccessKey="F" AutomationProperties.Name="Find a server">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}"
+                                              FontSize="16" VerticalAlignment="Center" />
+                                    <TextBlock Text="Find a Server" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="OpenGameMenuButton" Style="{StaticResource HeroGlassButton}" Click="OnOpenGameMenu"
+                                    AccessKey="G" AutomationProperties.Name="Open Game Menu"
+                                    AutomationProperties.AcceleratorKey="Ctrl+Shift+Enter" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}"
+                                              FontSize="15" VerticalAlignment="Center" />
+                                    <TextBlock Text="Open Game Menu" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ReturnGameButton" Style="{StaticResource HeroButton}" Click="OnReturnGame"
+                                    AccessKey="R" AutomationProperties.Name="Return to game" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}"
+                                              FontSize="15" VerticalAlignment="Center" />
+                                    <TextBlock Text="Return to Game" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="CloseGameButton" Style="{StaticResource HeroGlassButton}" Click="OnCloseGame"
+                                    AccessKey="C" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="&#xE7E8;" FontSize="16" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="CloseGameLabel" Text="Close Game" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
-                    </Border>
-                    <Border x:Name="MatchCard" Grid.Column="1" Style="{StaticResource FieldCard}">
-                        <StackPanel Spacing="10">
-                            <Grid>
-                                <TextBlock Text="Last match" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
-                                <HyperlinkButton x:Name="AllMatches" Content="All matches" HorizontalAlignment="Right"
-                                                 Click="OnAllMatches" Visibility="Collapsed" />
-                            </Grid>
-                            <StackPanel x:Name="MatchRows" Spacing="8" />
-                        </StackPanel>
-                    </Border>
-                    <Border x:Name="NewsCard" Grid.Column="2" Style="{StaticResource FieldCard}">
-                        <StackPanel Spacing="8">
-                            <Grid>
-                                <TextBlock Text="What’s New" Style="{StaticResource CardTitle}" VerticalAlignment="Center" />
-                                <HyperlinkButton Content="See all" HorizontalAlignment="Right" Click="OnShowNews" />
-                            </Grid>
-                            <StackPanel x:Name="NewsRows" Spacing="8" />
-                            <TextBlock x:Name="NewsChecked" Style="{StaticResource SecondaryText}" FontSize="12" />
-                        </StackPanel>
-                    </Border>
+                        <TextBlock Grid.Column="1" x:Name="LaunchHint" Margin="6,0,0,0" VerticalAlignment="Center"
+                                   FontSize="12" CharacterSpacing="40" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource HeroHintBrush}" />
+                    </Grid>
                 </Grid>
+
+                <StackPanel x:Name="Lower" VerticalAlignment="Bottom" Spacing="32" Margin="0,0,0,28">
+                    <StackPanel x:Name="Chips" Spacing="10">
+                        <StackPanel x:Name="ChipRowOne" Orientation="Horizontal" Spacing="10">
+                            <DropDownButton x:Name="LoadoutChip" Style="{StaticResource LoadoutChipStyle}" AccessKey="O"
+                                            ToolTipService.ToolTip="Choose the loadout for your next game">
+                                <TextBlock x:Name="LoadoutText" VerticalAlignment="Center" />
+                            </DropDownButton>
+                            <Button x:Name="DisplayChip" Style="{StaticResource LargeGlassChipButton}" AccessKey="D"
+                                    Click="OnDisplayChip">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDesktop}"
+                                              FontSize="16" Foreground="{ThemeResource ChipIconBrush}" VerticalAlignment="Center"
+                                              AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock x:Name="DisplayText" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ResolutionChip" Style="{StaticResource LargeGlassChipButton}"
+                                    BorderBrush="{ThemeResource selectionStroke}" Click="OnResolutionChip" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE7BA;" FontSize="15" Margin="0,0,4,0" Foreground="{ThemeResource HeroAccentBrush}"
+                                              VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock x:Name="ResolutionText" VerticalAlignment="Center" />
+                                    <TextBlock Text="Choose…" FontWeight="SemiBold" Foreground="{ThemeResource HeroAccentBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="DataChip" Style="{StaticResource LargeGlassChipButton}"
+                                    BorderBrush="{ThemeResource selectionStroke}" Click="OnDataChip" Visibility="Collapsed"
+                                    AutomationProperties.Name="Game data not found. Choose your game folder again"
+                                    ToolTipService.ToolTip="Choose your game folder again">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE7BA;" FontSize="15" Margin="0,0,4,0" Foreground="{ThemeResource HeroAccentBrush}"
+                                              VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock Text="Game data not found ·" VerticalAlignment="Center" />
+                                    <TextBlock Text="Fix…" FontWeight="SemiBold" Foreground="{ThemeResource HeroAccentBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="KeyChip" Style="{StaticResource LargeGlassChipButton}"
+                                    BorderBrush="{ThemeResource selectionStroke}" Click="OnKeyChip" Visibility="Collapsed"
+                                    AutomationProperties.Name="No CD key. Enter your CD key" ToolTipService.ToolTip="Enter your CD key">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE7BA;" FontSize="15" Margin="0,0,4,0" Foreground="{ThemeResource HeroAccentBrush}"
+                                              VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock Text="No CD key ·" VerticalAlignment="Center" />
+                                    <TextBlock Text="Fix…" FontWeight="SemiBold" Foreground="{ThemeResource HeroAccentBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="NewsChip" Style="{StaticResource LargeGlassChipButton}" Click="OnShowNews"
+                                    Visibility="Collapsed" AutomationProperties.Name="What’s New. Shows the news and releases">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDocument}"
+                                              FontSize="16" Foreground="{ThemeResource ChipIconBrush}" VerticalAlignment="Center"
+                                              AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock Text="What’s New" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel x:Name="ChipRowTwo" Orientation="Horizontal" Spacing="10" Visibility="Collapsed" />
+                    </StackPanel>
+                    <Grid x:Name="Cards" ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="RecentColumn" />
+                            <ColumnDefinition x:Name="MatchColumn" />
+                            <ColumnDefinition x:Name="NewsColumn" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="RecentCard" Style="{StaticResource GroupCard}" Padding="20"
+                                AutomationProperties.Name="Jump back in">
+                            <Grid RowSpacing="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <TextBlock x:Name="RecentHeading" Text="Jump back in" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="AllRecent" Style="{StaticResource CardLink}" Click="OnRecent"
+                                                     AutomationProperties.Name="All recent">
+                                        <TextBlock Text="All Recent" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
+                                </Grid>
+                                <StackPanel Grid.Row="1" x:Name="RecentRows" Spacing="4" Margin="-8,0,-8,0" />
+                            </Grid>
+                        </Border>
+                        <Border x:Name="MatchCard" Grid.Column="1" Style="{StaticResource GroupCard}" Padding="20"
+                                AutomationProperties.Name="Last match">
+                            <Grid RowSpacing="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <TextBlock x:Name="MatchHeading" Text="Last match" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="AllMatches" Style="{StaticResource CardLink}" Click="OnAllMatches"
+                                                     AutomationProperties.Name="All matches">
+                                        <TextBlock Text="All Matches" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
+                                </Grid>
+                                <Grid Grid.Row="1" x:Name="MatchRows" />
+                            </Grid>
+                        </Border>
+                        <Border x:Name="NewsCard" Grid.Column="2" Style="{StaticResource GroupCard}" Padding="20"
+                                AutomationProperties.Name="What’s New">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <TextBlock x:Name="NewsHeading" Text="What’s New" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="SeeAllNews" Style="{StaticResource CardLink}" Click="OnShowNews"
+                                                     AutomationProperties.Name="See all">
+                                        <TextBlock Text="See All" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
+                                </Grid>
+                                <StackPanel Grid.Row="1" x:Name="NewsRows" Spacing="14" Margin="0,14,0,8" />
+                                <TextBlock Grid.Row="2" x:Name="NewsChecked" FontSize="12" MaxLines="2" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TertiaryBrush}" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </StackPanel>
             </Grid>
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <!-- The Mac's update pill: at the trailing end of the title bar row, clear of the caption buttons. -->
+        <Border x:Name="UpdatePill" HorizontalAlignment="Right" VerticalAlignment="Top" Height="44"
+                CornerRadius="22" Padding="16,0,4,0" Background="{ThemeResource GlassAcrylicBrush}"
+                BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
+                Margin="0,16,18,0" Translation="0,0,32" Visibility="Collapsed"
+                AutomationProperties.Name="Update">
+            <Border.Shadow><ThemeShadow /></Border.Shadow>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <ProgressRing x:Name="UpdateProgress" Width="16" Height="16" IsActive="False" Visibility="Collapsed"
+                              VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                <FontIcon x:Name="UpdateIcon" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}"
+                          FontSize="16" Foreground="{ThemeResource HeroAccentBrush}" VerticalAlignment="Center"
+                          AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock x:Name="UpdateText" FontSize="13" Foreground="{ThemeResource BodyBrush}" MaxWidth="420"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <Button x:Name="UpdateNotes" Style="{StaticResource QuietButton}" Content="What’s New"
+                        VerticalAlignment="Center" Click="OnUpdateNotes" />
+                <Button x:Name="UpdateDetails" Style="{StaticResource QuietButton}" Content="Details"
+                        VerticalAlignment="Center" Click="OnUpdateDetails" Visibility="Collapsed" />
+                <Button x:Name="UpdateButton" Style="{StaticResource MediumAccentButton}" Content="Install Update"
+                        VerticalAlignment="Center" Click="OnUpdateAction" />
+            </StackPanel>
+        </Border>
+
+        <!-- Things that happened elsewhere (the game closed): a glass toast at the bottom, as on the Mac. -->
+        <!-- The Mac's NoticeBanner as the stock InfoBar: it announces itself to Narrator, closes with its
+             own button and carries the report action. Only its shape and fill follow the Mac. -->
+        <InfoBar x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="32,0,32,24"
+                 MaxWidth="720" CornerRadius="24" IsOpen="False" IsClosable="True" Severity="Warning"
+                 BorderBrush="{ThemeResource glassStroke}" Closed="OnToastClosed">
+            <InfoBar.ActionButton>
+                <Button x:Name="ToastReport" Content="Show Crash Report" Click="OnShowCrashReport" Visibility="Collapsed" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+    </Grid>
 </Page>
