@@ -98,15 +98,7 @@ public sealed partial class ConfigsPage
                     return;
 
                 var policies = resources.Rules.Rulesets;
-                if (checkupMode != mode)
-                {
-                    var initial = policies.FirstOrDefault(item => item.Id == "public-cod2x" && item.Mode == mode) ??
-                        policies.FirstOrDefault(item => item.Mode == mode);
-                    checkupRules = initial is null ? [] : [initial.Id];
-                    checkupMode = mode;
-                    checkupShowRules = false;
-                    expandedAdvice.Clear();
-                }
+                InitializeCheckupRules(mode, policies);
                 string[] titles = policies.Where(item => checkupRules.Contains(item.Id)).Select(item => item.Title).ToArray();
                 string rulesTitle = titles.Length == 0 ? "No rules" : string.Join(" + ", titles);
                 var scope = (profile.Profile.Id, mode, string.Join(",", checkupRules.Order(StringComparer.Ordinal)), checkupTune);
@@ -372,6 +364,19 @@ public sealed partial class ConfigsPage
                 }
             }
         }
+    }
+
+    private void InitializeCheckupRules(ConfigCatalogMode mode, IEnumerable<ConfigRuleset> policies)
+    {
+        if (checkupMode == mode)
+            return;
+
+        var initial = policies.FirstOrDefault(item => item.Id == "public-cod2x" && item.Mode == mode) ??
+            policies.FirstOrDefault(item => item.Mode == mode);
+        checkupRules = initial is null ? [] : [initial.Id];
+        checkupMode = mode;
+        checkupShowRules = false;
+        expandedAdvice.Clear();
     }
 
     private CheckupResources LoadCheckupResources()

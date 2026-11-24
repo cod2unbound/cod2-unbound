@@ -19,6 +19,7 @@ public sealed partial class ConfigsPage : Page
     private readonly ConfigsViewModel model;
     private readonly StackPanel studioBody = new() { Spacing = 14 };
     private bool syncing;
+    private bool restoringStudioChoice;
     private int studioTab;
     private bool expert;
     private SelectorBar? studioModes;
@@ -110,12 +111,16 @@ public sealed partial class ConfigsPage : Page
     {
         if (syncing || Loadouts.SelectedItem is not LoadoutRow loadout)
             return;
-        await shell.RunAsync(() =>
+        await shell.RunAsync(async () =>
         {
+            if (loadout.Profile.Id != model.State.Current?.Profile.Id && !await ConfirmLeaveTextAsync())
+            {
+                RenderLoadouts();
+                return;
+            }
             model.Studio.Focus(loadout.Profile.Id);
             ShowStudio();
             RenderLoadouts();
-            return Task.CompletedTask;
         });
     }
 
@@ -229,14 +234,27 @@ public sealed partial class ConfigsPage : Page
         Detail.Children.Add(shareNotice);
         var pages = new[] { UsagePage.Loadout, UsagePage.Binds, UsagePage.Checkup, UsagePage.History };
         model.Opened(pages[studioTab]);
-        var tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, index =>
+        SelectorBar tabs = null!;
+        tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, ChangeTab);
+        async void ChangeTab(int index)
         {
-            studioTab = index;
-            model.Opened(pages[index]);
-            UpdateStudioHeader();
-            RenderStudioBody();
-            ResetDetailScroll();
-        });
+            if (restoringStudioChoice || index == studioTab)
+                return;
+            await shell.RunAsync(async () =>
+            {
+                if (!await ConfirmLeaveTextAsync())
+                {
+                    restoringStudioChoice = true;
+                    tabs.SelectedItem = tabs.Items[studioTab];
+                    restoringStudioChoice = false;
+                    return;
+                }
+                studioTab = index;
+                model.Opened(pages[index]);
+                RenderStudioBody();
+                ResetDetailScroll();
+            });
+        }
         AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
         ShowConfigStudioToolbar(tabs, profile);
         var title = Heading(profile.Profile.DisplayName);
@@ -269,13 +287,26 @@ public sealed partial class ConfigsPage : Page
             studioNext.IsEnabled = CanEdit;
             studioHeaderActions.Children.Add(studioNext);
         }
-        studioModes = Tabs(["Guided", "Expert"], expert ? 1 : 0, index =>
+        studioModes = Tabs(["Guided", "Expert"], expert ? 1 : 0, ChangeLevel);
+        async void ChangeLevel(int index)
         {
-            expert = index == 1;
-            query = "";
-            UpdateStudioHeader();
-            RenderStudioBody();
-        });
+            if (restoringStudioChoice || expert == (index == 1))
+                return;
+            await shell.RunAsync(async () =>
+            {
+                if (!await ConfirmLeaveTextAsync())
+                {
+                    restoringStudioChoice = true;
+                    studioModes!.SelectedItem = studioModes.Items[expert ? 1 : 0];
+                    restoringStudioChoice = false;
+                    return;
+                }
+                expert = index == 1;
+                ClearSettingSearch();
+                expertFilter = ConfigExpertFilter.Group;
+                RenderStudioBody();
+            });
+        }
         studioModes.Style = StyleFor("SegmentedLarge");
         AutomationProperties.SetName(studioModes, "Detail level");
         studioHeaderActions.Children.Add(studioModes);
@@ -344,6 +375,7 @@ public sealed partial class ConfigsPage : Page
     private void RenderStudioBody()
     {
         studioFind = null;
+        settingSearch = null;
         studioBody.Children.Clear();
         UpdateStudioHeader();
         var state = model.State;
@@ -360,43 +392,39 @@ public sealed partial class ConfigsPage : Page
 
     private void ShowSettings(ConfigStudioState state, ConfigProfileRead profile)
     {
-        if (expert && ShowExpertTextIfOpen(profile))
-            return;
         var groups = model.Catalog.Groups;
         category ??= groups.FirstOrDefault(group => model.Model.Guided(group.Id).Any(spec => spec.Name == "sensitivity"))?.Id ?? groups[0].Id;
         var fields = new StackPanel { Spacing = 14 };
-        var filter = ConfigExpertFilter.Group;
-        var groupChoice = new ComboBox { Header = "Group", ItemsSource = groups, DisplayMemberPath = "Title",
-            SelectedItem = groups.FirstOrDefault(group => group.Id == category) };
+        SelectorBar? smallFilters = null;
+        var groupChoice = new ComboBox { ItemsSource = groups, DisplayMemberPath = "Title",
+            SelectedItem = groups.FirstOrDefault(group => group.Id == category), HorizontalAlignment = HorizontalAlignment.Left };
+        AutomationProperties.SetName(groupChoice, "Group");
         groupChoice.SelectionChanged += (_, _) =>
         {
             if (groupChoice.SelectedItem is ConfigCatalogGroup group)
                 SelectGroup(group.Id);
         };
-        if (!wideGroupRail)
-            studioBody.Children.Add(groupChoice);
         if (expert)
         {
-            var search = new TextBox { Header = "Find a setting", Text = query };
-            studioFind = search;
-            search.TextChanged += (_, _) =>
-            {
-                jumpSetting = null;
-                query = search.Text;
-                RenderRows();
-            };
-            studioBody.Children.Add(search);
-            var filters = new ComboBox { Header = "Show", ItemsSource = new[] { "Selected group", "Changed", "Locked" }, SelectedIndex = 0 };
-            filters.SelectionChanged += (_, _) =>
-            {
-                if (filters.SelectedIndex >= 0)
-                {
-                    filter = (ConfigExpertFilter)filters.SelectedIndex;
-                    RenderRows();
-                }
-            };
-            studioBody.Children.Add(filters);
             AddExpertTools(profile, RenderRows);
+            if (ShowExpertTextIfOpen(profile))
+                return;
+        }
+
+        if (!wideGroupRail)
+        {
+            var groupTools = Buttons(groupChoice);
+            if (expert)
+            {
+                smallFilters = Tabs(["Selected group", "Changed", "Locked"], (int)expertFilter, index =>
+                {
+                    expertFilter = (ConfigExpertFilter)index;
+                    RenderRows();
+                });
+                AutomationProperties.SetName(smallFilters, "Show");
+                groupTools.Children.Add(smallFilters);
+            }
+            studioBody.Children.Add(groupTools);
         }
         if (wideGroupRail)
         {
@@ -410,7 +438,7 @@ public sealed partial class ConfigsPage : Page
                 };
                 AutomationProperties.SetName(row, group.Title);
                 rail.Items.Add(row);
-                if (group.Id == category)
+                if (group.Id == category && (!expert || expertFilter == ConfigExpertFilter.Group && query.Length == 0))
                     rail.SelectedItem = row;
             }
             rail.SelectionChanged += (_, _) =>
@@ -418,8 +446,44 @@ public sealed partial class ConfigsPage : Page
                 if (rail.SelectedItem is ListViewItem { Tag: string group })
                     SelectGroup(group);
             };
+            var side = new StackPanel { Spacing = 8, Children = { rail } };
+            if (expert)
+            {
+                side.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider"), Margin = new Thickness(12, 4, 12, 0) });
+                side.Children.Add(new TextBlock { Text = "Filters", Style = StyleFor("GroupLabelText"), Margin = new Thickness(12, 0, 0, 0) });
+                var changed = FilterChoice(ConfigExpertFilter.Changed, "Changed");
+                var locked = FilterChoice(ConfigExpertFilter.Locked, "Locked");
+                side.Children.Add(changed);
+                side.Children.Add(locked);
+                changed.Click += (_, _) => SetFilter(changed, locked, ConfigExpertFilter.Changed);
+                locked.Click += (_, _) => SetFilter(locked, changed, ConfigExpertFilter.Locked);
+                rail.SelectionChanged += (_, _) =>
+                {
+                    if (rail.SelectedItem is not null)
+                        changed.IsChecked = locked.IsChecked = false;
+                };
+
+                CheckBox FilterChoice(ConfigExpertFilter filter, string title)
+                {
+                    int count = model.Model.Expert("", filter, "", profile.Document, profile.Metadata)
+                        .SelectMany(section => section.Rows).Count(VisibleSpec);
+                    var check = new CheckBox { Content = $"{title}  {count}", IsChecked = filter == expertFilter };
+                    AutomationProperties.SetName(check, title);
+                    return check;
+                }
+
+                void SetFilter(CheckBox chosen, CheckBox other, ConfigExpertFilter filter)
+                {
+                    expertFilter = chosen.IsChecked == true ? filter : ConfigExpertFilter.Group;
+                    other.IsChecked = false;
+                    if (expertFilter != ConfigExpertFilter.Group)
+                        rail.SelectedItem = null;
+                    ClearSettingSearch();
+                    RenderRows();
+                }
+            }
             var columns = Columns(22, new GridLength(200), new GridLength(1, GridUnitType.Star));
-            Put(columns, 0, rail);
+            Put(columns, 0, side);
             Put(columns, 1, fields);
             studioBody.Children.Add(columns);
         }
@@ -431,6 +495,13 @@ public sealed partial class ConfigsPage : Page
         void SelectGroup(string group)
         {
             category = group;
+            if (expert)
+            {
+                expertFilter = ConfigExpertFilter.Group;
+                if (smallFilters is not null)
+                    smallFilters.SelectedItem = smallFilters.Items[0];
+                ClearSettingSearch();
+            }
             RenderRows();
         }
 
@@ -441,25 +512,25 @@ public sealed partial class ConfigsPage : Page
                 return;
             if (expert)
             {
-                foreach (var section in model.Model.Expert(group, filter, query, model.State.Current?.Document, model.State.Current?.Metadata))
+                foreach (var section in model.Model.Expert(group, expertFilter, query, model.State.Current?.Document, model.State.Current?.Metadata))
                     AddGroup(section.Group, jumpSetting == query
                         ? section.Rows.Where(spec => spec.Name == jumpSetting) : section.Rows);
             }
             else
                 AddGroup(group, model.Model.Guided(group));
             if (fields.Children.Count == 0)
-                fields.Children.Add(Caption("No settings found."));
+                fields.Children.Add(EmptyState("Search", "No settings found", "Try a different search or choose a setting group."));
         }
 
         void AddGroup(string group, IEnumerable<ConfigSettingSpec> settings)
         {
-            var specs = settings.Where(spec => !IsHiddenFromExpert(spec) || IsCheckupTimingSetting(spec)).ToArray();
+            var specs = settings.Where(VisibleSpec).ToArray();
             if (specs.Length == 0)
                 return;
             var groupTitle = groups.First(item => item.Id == group).Title;
             var groupHeader = new StackPanel { Spacing = 2 };
             groupHeader.Children.Add(new TextBlock { Text = groupTitle, Style = StyleFor("SectionTitle") });
-            if (!expert)
+            if (!expert || query.Length == 0 && expertFilter == ConfigExpertFilter.Group)
                 groupHeader.Children.Add(Body(GroupBlurb(group)));
             if (!expert)
             {
@@ -481,12 +552,11 @@ public sealed partial class ConfigsPage : Page
                 fields.Children.Add(heading);
             }
             else
-                fields.Children.Add(groupHeader);
-            if (expert)
             {
-                foreach (var spec in specs)
-                    fields.Children.Add(ExpertSetting(profile, IsCheckupTimingSetting(spec) ? CheckupTimingSpec(spec) : spec));
-                return;
+                int changed = specs.Count(spec => !spec.LauncherOwned && ConfigStudioModel.State(spec, profile.Document, profile.Metadata).Changed);
+                var count = Caption((specs.Length == 1 ? "1 setting" : $"{specs.Length} settings") + (changed == 0 ? "" : $" · {changed} changed"));
+                count.VerticalAlignment = VerticalAlignment.Bottom;
+                fields.Children.Add(CheckPair(groupHeader, count, 0, rightAuto: true));
             }
 
             var rows = new StackPanel();
@@ -494,16 +564,20 @@ public sealed partial class ConfigsPage : Page
             {
                 if (rows.Children.Count > 0)
                     rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
-                rows.Children.Add(Setting(state, profile.Profile.Id, spec));
-                if (spec.Name == "sensitivity")
+                var display = IsCheckupTimingSetting(spec) ? CheckupTimingSpec(spec) : spec;
+                rows.Children.Add(expert ? ExpertSetting(profile, display) : Setting(state, profile.Profile.Id, display));
+                if (!expert && spec.Name == "sensitivity")
                 {
                     rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
                     rows.Children.Add(MouseDpiRow(state, profile));
                 }
             }
             fields.Children.Add(new Border { Style = StyleFor("StudioSettingsGroup"), Child = rows });
-            fields.Children.Add(Caption("Changes save to this loadout as you make them. Undo anytime from History."));
+            if (!expert)
+                fields.Children.Add(Caption("Changes save to this loadout as you make them. Undo anytime from History."));
         }
+
+        bool VisibleSpec(ConfigSettingSpec spec) => !IsHiddenFromExpert(spec) || IsCheckupTimingSetting(spec);
     }
 
     private static string GroupIcon(string id) => id switch
@@ -533,7 +607,7 @@ public sealed partial class ConfigsPage : Page
         if (spec.Name == "r_mode")
             return DisplayResolutionRow(state, profileId, spec, item.Value, block);
         if (block is not null)
-            return SettingRow(title, block, Caption(item.Display), grouped: !expert);
+            return SettingRow(title, block, Caption(item.Display), grouped: true);
 
         if (mouseDirection)
         {
@@ -595,8 +669,8 @@ public sealed partial class ConfigsPage : Page
         }
         else if (spec.Type is "int" or "float")
         {
-            var number = new NumberBox { Value = ConfigValues.Number(item.Value ?? "", spec.Type) ?? double.NaN, Width = 120,
-                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact, SmallChange = spec.Step > 0 ? spec.Step : 0.1 };
+            var number = new NumberBox { Value = ConfigValues.Number(item.Value ?? "", spec.Type) ?? double.NaN, Width = 86,
+                Style = StyleFor("CapsuleNumberBox"), SmallChange = spec.Step > 0 ? spec.Step : 0.1 };
             number.ValueChanged += async (_, args) =>
             {
                 if (!double.IsFinite(args.NewValue))
@@ -606,18 +680,51 @@ public sealed partial class ConfigsPage : Page
                 if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double normalized))
                     number.Value = normalized;
             };
+            if (spec.SliderRange is { } bounds && double.IsFinite(number.Value))
+            {
+                var slider = new Slider { Minimum = bounds.Min, Maximum = bounds.Max,
+                    Value = Math.Clamp(number.Value, bounds.Min, bounds.Max), Width = 134,
+                    StepFrequency = number.SmallChange, IsThumbToolTipEnabled = false };
+                AutomationProperties.SetName(slider, spec.Title);
+                AutomationProperties.SetName(number, $"{spec.Title}, value");
+                var settle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                settle.Tick += (_, _) => { settle.Stop(); number.Value = slider.Value; };
+                slider.Unloaded += (_, _) => settle.Stop();
+                slider.ValueChanged += (_, _) =>
+                {
+                    if (!slider.IsLoaded)
+                        return;
+                    settle.Stop();
+                    settle.Start();
+                };
+                number.ValueChanged += (_, args) =>
+                {
+                    if (!double.IsFinite(args.NewValue))
+                        return;
+                    slider.Value = Math.Clamp(args.NewValue, bounds.Min, bounds.Max);
+                    settle.Stop();
+                };
+                var controls = Buttons(slider, number);
+                if (spec.Unit is { Length: > 0 } unit && !IsCheckupTimingSetting(spec))
+                {
+                    var caption = Caption(unit);
+                    caption.VerticalAlignment = VerticalAlignment.Center;
+                    controls.Children.Add(caption);
+                }
+                return SettingRow(spec.Title, spec.Setting.Summary, controls, grouped: true);
+            }
             control = number;
         }
         else
         {
-            var text = new TextBox { Text = item.Value ?? "", Width = 160 };
+            var text = new TextBox { Text = item.Value ?? "", Width = 160, Style = StyleFor("CapsuleTextBox") };
             text.LostFocus += async (_, _) => { if (text.Text != (item.Value ?? "")) await Apply(text.Text); };
             control = text;
         }
         AutomationProperties.SetName(control, spec.Title);
         return !expert && spec.Name == "sensitivity"
             ? SettingRow("Mouse speed", "Enter your mouse’s DPI to see how far you turn.", control, grouped: true)
-            : SettingRow(spec.Title, spec.Setting.Summary, control, grouped: !expert);
+            : SettingRow(spec.Title, spec.Setting.Summary, control, grouped: true);
 
         Task Apply(string value) => shell.RunAsync(() =>
         {
@@ -634,10 +741,21 @@ public sealed partial class ConfigsPage : Page
         int place = DiscoverPlaces.SelectedIndex;
         if (syncing || place < 0)
             return;
-        configToolbar.Children.Clear();
-        RecoveryStatus.IsOpen = false;
-        ExportStatus.Visibility = Visibility.Collapsed;
-        await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
+        await shell.RunAsync(async () =>
+        {
+            if (!await ConfirmLeaveTextAsync())
+            {
+                DiscoverPlaces.SelectedItem = null;
+                return;
+            }
+            configToolbar.Children.Clear();
+            RecoveryStatus.IsOpen = false;
+            ExportStatus.Visibility = Visibility.Collapsed;
+            if (place == 2)
+                await ShowCheckerAsync();
+            else
+                await ShowCatalogueAsync(place == 1);
+        });
     }
 
     private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0

@@ -23,9 +23,23 @@ public sealed partial class ConfigsPage
 
     internal bool FocusShellSearch()
     {
+        if (ShowsLoadout && studioTab == 0 && !expert && studioModes is { } levels)
+        {
+            levels.SelectedItem = levels.Items[1];
+            if (studioFind is { } search)
+                search.Loaded += FocusSearch;
+            return true;
+        }
         var field = DiscoverPlaces.SelectedIndex is 0 or 1 ? catalogueFind :
             ShowsLoadout && (studioTab == 0 && expert || studioTab == 1 && listening is null) ? studioFind : null;
         return field is { IsLoaded: true } && field.Focus(FocusState.Keyboard);
+
+        static void FocusSearch(object sender, RoutedEventArgs args)
+        {
+            var search = (Control)sender;
+            search.Loaded -= FocusSearch;
+            search.Focus(FocusState.Keyboard);
+        }
     }
 
     internal IEnumerable<JumpTarget> JumpSettings() =>
