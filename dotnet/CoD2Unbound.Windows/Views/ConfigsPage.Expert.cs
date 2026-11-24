@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Documents;
 using Windows.System;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -25,6 +26,17 @@ public sealed partial class ConfigsPage
         internal string Text { get; set; } = text;
     }
     private TextEdit? loadoutText;
+    private ConfigExpertFilter expertFilter;
+    private AutoSuggestBox? settingSearch;
+    private ConfigRules? expertRules;
+
+    private void ClearSettingSearch()
+    {
+        query = "";
+        jumpSetting = null;
+        if (settingSearch is not null)
+            settingSearch.Text = "";
+    }
 
     private void AddExpertTools(ConfigProfileRead profile, Action renderRows)
     {
@@ -36,15 +48,49 @@ public sealed partial class ConfigsPage
             comparison = null;
         if (comparison?.Source.SetupId is not null)
             sources.Add(comparison.Source);
-        var choices = new ComboBox { Header = "Compare with", DisplayMemberPath = "Name", ItemsSource = sources,
+        var choices = new ComboBox { DisplayMemberPath = "Name", ItemsSource = sources,
             SelectedItem = sources.FirstOrDefault(item => item == comparison?.Source) ?? nobody };
+        AutomationProperties.SetName(choices, "Compare with");
         var marker = Caption("");
-        var open = SmallButton("Loadout as text…", () =>
+        bool textMode = loadoutText is { } text && text.Source.Profile.Id == profile.Profile.Id;
+        var open = Action(textMode ? "Show Controls" : "Edit as Text", async () =>
         {
-            loadoutText = OpenText(model.Studio.ReadProfile(profile.Profile.Id));
+            if (textMode)
+            {
+                if (!await ConfirmLeaveTextAsync())
+                    return;
+                loadoutText = null;
+            }
+            else
+                loadoutText = OpenText(model.Studio.ReadProfile(profile.Profile.Id));
             RenderStudioBody();
         });
-        studioBody.Children.Add(Buttons(choices, open));
+        AutomationProperties.SetName(open, textMode ? "Show controls" : "Loadout as text…");
+        var search = new AutoSuggestBox
+        {
+            PlaceholderText = "Find a setting", Text = query, QueryIcon = Fluent("Search", 18), MinWidth = 184,
+            HorizontalAlignment = HorizontalAlignment.Stretch, IsEnabled = !textMode
+        };
+        settingSearch = search;
+        studioFind = search;
+        AutomationProperties.SetName(search, "Find a setting");
+        search.TextChanged += (_, _) =>
+        {
+            if (query != search.Text)
+                jumpSetting = null;
+            query = search.Text;
+            renderRows();
+        };
+
+        var comparisonTools = Buttons(Label("Compare with"), choices);
+        var searchTools = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        Put(searchTools, 0, search);
+        Put(searchTools, 1, open);
+        var ruleTools = ExpertRuleTools(profile, renderRows);
+        var first = CheckPair(ruleTools, comparisonTools, 528, rightAuto: true);
+        var tools = CheckPair(first, searchTools, 885, rightAuto: true);
+        AutomationProperties.SetName(tools, "Expert tools");
+        studioBody.Children.Add(tools);
         studioBody.Children.Add(marker);
         UpdateMarker();
         bool rebuilding = false;
@@ -59,6 +105,8 @@ public sealed partial class ConfigsPage
                 sources.RemoveAll(item => item.SetupId is not null);
                 sources.AddRange(saved.Where(item => item.Entry is not null)
                     .Select(item => new ExpertSource(item.Entry!.Player, SetupId: item.Id)));
+                if (comparison?.Source is { SetupId: not null } player && !sources.Contains(player))
+                    sources.Add(player);
                 choices.ItemsSource = sources.ToArray();
                 choices.SelectedItem = sources.FirstOrDefault(item => item == comparison?.Source) ?? nobody;
                 rebuilding = false;
@@ -81,7 +129,7 @@ public sealed partial class ConfigsPage
             try
             {
                 var candidate = requested.LoadoutId is { } id ? new ExpertComparison(requested, model.Studio.ReadProfile(id), null) :
-                    new ExpertComparison(requested, null, await model.ReadSavedSettingsAsync(requested.SetupId!));
+                    new ExpertComparison(requested, null, await model.ReadSetupSettingsAsync(requested.SetupId!));
                 if (choices.IsLoaded && Equals(choices.SelectedItem, requested))
                 {
                     comparison = candidate;
@@ -99,12 +147,84 @@ public sealed partial class ConfigsPage
             }
         };
 
+        static TextBlock Label(string text) => new()
+        {
+            Text = text, Style = StyleFor("BodyStrongTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center
+        };
+
         void UpdateMarker()
         {
             marker.Text = comparison is { } current ? $"◆ Compare markers show {current.Source.Name}’s values" : "";
             marker.Visibility = IsVisible(comparison is not null);
         }
     }
+
+    private FrameworkElement ExpertRuleTools(ConfigProfileRead profile, Action renderRows)
+    {
+        var label = CheckStrong("Rules");
+        label.VerticalAlignment = VerticalAlignment.Center;
+        var rules = new Button { Content = "Loading…", IsEnabled = false };
+        AutomationProperties.SetName(rules, "Rules to check against");
+        var status = Caption("");
+        status.VerticalAlignment = VerticalAlignment.Center;
+        var controls = Buttons(label, rules, status);
+        controls.Loaded += async (_, _) =>
+        {
+            try
+            {
+                expertRules = (await (checkupResources ??= Task.Run(LoadCheckupResources))).Rules;
+                if (!controls.IsLoaded)
+                    return;
+                var policies = expertRules.Rulesets.Where(item => item.Mode == model.Model.Mode).ToArray();
+                InitializeCheckupRules(model.Model.Mode, policies);
+                var menu = new MenuFlyout();
+                menu.Opening += (_, _) =>
+                {
+                    menu.Items.Clear();
+                    menu.Items.Add(MenuItem("No Rules", () =>
+                    {
+                        checkupRules = [];
+                        Update();
+                        return Task.CompletedTask;
+                    }));
+                    foreach (var policy in policies)
+                    {
+                        var item = new ToggleMenuFlyoutItem { Text = policy.Title, IsChecked = checkupRules.Contains(policy.Id) };
+                        item.Click += (_, _) =>
+                        {
+                            checkupRules = item.IsChecked ? checkupRules.Add(policy.Id) : checkupRules.Remove(policy.Id);
+                            Update();
+                        };
+                        menu.Items.Add(item);
+                    }
+                };
+                rules.Flyout = menu;
+                rules.IsEnabled = true;
+                Update();
+
+                void Update()
+                {
+                    rules.Content = checkupRules.IsEmpty ? "No rules" :
+                        string.Join(" + ", policies.Where(policy => checkupRules.Contains(policy.Id)).Select(policy => policy.Title));
+                    int count = model.Model.Specs.Count(spec => RuleFor(profile, spec)?.Status == ConfigRuleStatus.Violation);
+                    status.Text = checkupRules.IsEmpty ? "" : count == 0 ? "Follows these rules" :
+                        count == 1 ? "1 setting breaks them" : $"{count} settings break them";
+                    ColorCheckTone(status, count == 0 ? ConfigCheckupTone.Positive : ConfigCheckupTone.Negative);
+                    renderRows();
+                }
+            }
+            catch (Exception error) when (error is IOException or InvalidDataException)
+            {
+                if (controls.IsLoaded)
+                    rules.Content = "Rules unavailable";
+            }
+        };
+        return controls;
+    }
+
+    private ConfigRuleEvaluation? RuleFor(ConfigProfileRead profile, ConfigSettingSpec spec) =>
+        checkupRules.IsEmpty ? null : expertRules?.Evaluate(spec.Name,
+            ConfigStudioModel.State(spec, profile.Document, profile.Metadata).Value, checkupRules, model.Model.Mode);
 
     private FrameworkElement ExpertSetting(ConfigProfileRead profile, ConfigSettingSpec spec)
     {
@@ -114,26 +234,21 @@ public sealed partial class ConfigsPage
         var card = Setting(state, profile.Profile.Id, spec);
         var content = (Grid)card.Child;
         var details = (StackPanel)content.Children[0];
-        if (details.Children[0] is TextBlock heading && (setting.Locked || setting.Changed))
+        if (details.Children[0] is TextBlock heading)
         {
-            var identity = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 };
-            details.Children.RemoveAt(0);
-            if (setting.Locked)
+            if (setting.Locked || setting.Changed)
             {
-                var icon = new FontIcon { Glyph = "\uE72E", FontSize = 12 };
-                AutomationProperties.SetName(icon, "Locked");
-                identity.Children.Add(icon);
+                string icon = setting.Locked ? "LockClosed" : "Check";
+                var identity = IconLabel(icon, heading.Text, 13);
+                AutomationProperties.SetName(identity, heading.Text +
+                    (setting.Locked ? ", locked" : "") + (setting.Changed ? ", changed from default" : ""));
+                details.Children.RemoveAt(0);
+                details.Children.Insert(0, identity);
             }
-            if (setting.Changed)
-            {
-                var dot = new TextBlock { Text = "●", FontSize = 9, VerticalAlignment = VerticalAlignment.Center,
-                    Foreground = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast) };
-                AutomationProperties.SetName(dot, "Changed from default");
-                identity.Children.Add(dot);
-            }
-            identity.Children.Add(heading);
-            details.Children.Insert(0, identity);
+            details.Children.Insert(1, MonoCaption(spec.Name));
         }
+        if (RuleFor(current, spec) is { Status: ConfigRuleStatus.Violation or ConfigRuleStatus.Conflict } rule)
+            details.Children.Add(CheckTone(CheckTimingCopy(rule.Reason), ConfigCheckupTone.Negative));
         if (setting.Note is { } note)
         {
             var text = Caption(note);
@@ -141,7 +256,7 @@ public sealed partial class ConfigsPage
             details.Children.Add(text);
         }
 
-        var actions = new StackPanel { Spacing = 6 };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         if (comparison is { } source)
         {
             var other = ConfigStudioModel.Compare(spec, setting, source.Loadout, source.Player);
@@ -152,11 +267,11 @@ public sealed partial class ConfigsPage
                 var take = Action("Take theirs", () =>
                 {
                     var latest = ForBindingEdit(profile.Profile.Id);
-                    model.Model.TakeTheirs(model.Studio, spec, latest.Version, value, source.Source.Name, null, [], "");
+                    model.Model.TakeTheirs(model.Studio, spec, latest.Version, value, source.Source.Name, expertRules, checkupRules, "the selected rules");
                     RenderStudioBody();
                     return Task.CompletedTask;
                 });
-                take.IsEnabled = model.Model.TakeTheirsBlock(spec, state, null, [], "") is null;
+                take.IsEnabled = model.Model.TakeTheirsBlock(spec, state, expertRules, checkupRules, "the selected rules") is null;
                 AutomationProperties.SetName(take, $"Take {source.Source.Name}’s {spec.Title}, {other.Display}");
                 compared.Children.Add(take);
             }
@@ -174,7 +289,7 @@ public sealed partial class ConfigsPage
         reset.IsEnabled = setting.Changed && model.Model.TakeTheirsBlock(spec, state, null, [], "") is null;
         var changeLock = ExpertIcon(setting.Locked ? "\uE785" : "\uE72E", $"{(setting.Locked ? "Unlock" : "Lock")} {spec.Title}",
             () => SaveMetadata(!setting.Locked, null));
-        var noteButton = new Button { Content = new FontIcon { Glyph = "\uE70F", FontSize = 14 } };
+        var noteButton = new Button { Style = StyleFor("IconAction"), Content = new FontIcon { Glyph = "\uE70F", FontSize = 14 } };
         string noteAction = $"{(setting.Note is null ? "Add" : "Edit")} the note on {spec.Title}";
         ToolTipService.SetToolTip(noteButton, noteAction);
         AutomationProperties.SetName(noteButton, noteAction);
@@ -201,6 +316,15 @@ public sealed partial class ConfigsPage
         if (content.ColumnDefinitions.Count == 1)
             content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Put(content, 1, actions);
+        int actionRow = content.RowDefinitions.Count;
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.SizeChanged += (_, args) =>
+        {
+            bool stacked = args.NewSize.Width < 540;
+            content.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : GridLength.Auto;
+            Grid.SetColumn(actions, stacked ? 0 : 1);
+            Grid.SetRow(actions, stacked ? actionRow : 0);
+        };
         return card;
 
         Task SaveMetadata(bool? locked, string? note)
@@ -216,6 +340,7 @@ public sealed partial class ConfigsPage
         var button = Action(title, call);
         ToolTipService.SetToolTip(button, title);
         AutomationProperties.SetName(button, title);
+        button.Style = StyleFor("IconAction");
         button.Content = new FontIcon { Glyph = glyph, FontSize = 14 };
         return button;
     }
@@ -245,7 +370,7 @@ public sealed partial class ConfigsPage
         var header = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         var heading = new StackPanel { Children = { new TextBlock { Text = "Loadout as text", Style = StyleFor("SectionTitle") }, count } };
         Put(header, 0, heading);
-        Put(header, 1, Buttons(revert, SmallButton("Show controls", () => { loadoutText = null; RenderStudioBody(); })));
+        Put(header, 1, revert);
         body.Children.Add(header);
 
         var stale = new InfoBar { Severity = InfoBarSeverity.Warning, IsClosable = false,
@@ -260,18 +385,7 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(editor, "Loadout as text");
         ScrollViewer.SetHorizontalScrollBarVisibility(editor, ScrollBarVisibility.Auto);
         editor.Document.SetText(TextSetOptions.None, edit.Text.ReplaceLineEndings("\r"));
-        var gutter = new TextBlock { FontFamily = editor.FontFamily, FontSize = editor.FontSize, TextAlignment = TextAlignment.Right,
-            Foreground = ThemeBrush("CaptionBrush", ActualTheme, shell.IsHighContrast) };
-        AutomationProperties.SetAccessibilityView(gutter, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
-        var translate = new TranslateTransform();
-        gutter.RenderTransform = translate;
-        var numbers = new Border { Width = 44, Padding = new Thickness(4, 7, 7, 0), Height = 266, Child = gutter };
-        numbers.SizeChanged += (_, args) => numbers.Clip = new RectangleGeometry
-            { Rect = new global::Windows.Foundation.Rect(0, 0, args.NewSize.Width, args.NewSize.Height) };
-        var textGrid = Columns(0, GridLength.Auto, new GridLength(1, GridUnitType.Star));
-        Put(textGrid, 0, numbers);
-        Put(textGrid, 1, editor);
-        body.Children.Add(textGrid);
+        body.Children.Add(editor);
 
         var issues = new StackPanel { Spacing = 3 };
         var issueList = new ScrollViewer { Content = issues, MaxHeight = 132, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -305,8 +419,7 @@ public sealed partial class ConfigsPage
             }
             try
             {
-                string lineEnding = Encoding.Latin1.GetString(edit.Source.Document.Serialized.AsSpan()).Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-                ConfigExpertEdits.ApplyText(model.Studio, edit.Source, edit.Text.ReplaceLineEndings(lineEnding), model.Catalog, model.Model.Mode);
+                CommitExpertText(edit);
                 loadoutText = OpenText(model.State.Current!);
                 Feedback("Saved. Edited as text.");
                 RenderStudioBody();
@@ -341,8 +454,6 @@ public sealed partial class ConfigsPage
         };
         editor.Loaded += (_, _) =>
         {
-            if (DescendantScroll(editor) is { } scroll)
-                scroll.ViewChanged += (_, _) => translate.Y = -scroll.VerticalOffset;
             editor.Focus(FocusState.Programmatic);
             RefreshStale();
             diskCheck.Start();
@@ -356,7 +467,6 @@ public sealed partial class ConfigsPage
             var review = ConfigTextCheck.Inspect(edit.Text, model.Dialect, model.Catalog, model.Model.Mode);
             int lines = edit.Text.Count(c => c == '\n') + 1;
             count.Text = lines == 1 ? "1 line" : $"{lines} lines";
-            gutter.Text = string.Join("\n", Enumerable.Range(1, lines));
             issueList.Visibility = IsVisible(!review.Issues.IsEmpty);
             issues.Children.Clear();
             decorating = true;
@@ -420,16 +530,41 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private static ScrollViewer? DescendantScroll(DependencyObject root)
+    private async Task<bool> ConfirmLeaveTextAsync()
     {
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        if (loadoutText is not { } edit || edit.Text == edit.Original)
+            return true;
+
+        var review = ConfigTextCheck.Inspect(edit.Text, model.Dialect, model.Catalog, model.Model.Mode);
+        var dialog = Dialog("Apply your text edits?", Body("Your text edits aren’t saved to this loadout yet."), "Apply Edits");
+        dialog.SecondaryButtonText = "Discard Edits";
+        dialog.CloseButtonText = "Keep Editing";
+        dialog.DefaultButton = ContentDialogButton.Close;
+        dialog.IsPrimaryButtonEnabled = review.CanApply && CanEdit;
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.None)
+            return false;
+        if (result == ContentDialogResult.Primary)
         {
-            var child = VisualTreeHelper.GetChild(root, i);
-            if (child is ScrollViewer scroll)
-                return scroll;
-            if (DescendantScroll(child) is { } nested)
-                return nested;
+            try
+            {
+                CommitExpertText(edit);
+            }
+            catch (ConfigProfileException error) when (error.Failure == ConfigProfileFailure.Conflict)
+            {
+                ShowStatus(InfoBarSeverity.Warning, "This loadout changed on disk",
+                    "Revert to see the new version. Your text edits are still open.");
+                return false;
+            }
         }
-        return null;
+        loadoutText = null;
+        return true;
+    }
+
+    private void CommitExpertText(TextEdit edit)
+    {
+        string lineEnding = Encoding.Latin1.GetString(edit.Source.Document.Serialized.AsSpan()).Contains("\r\n", StringComparison.Ordinal)
+            ? "\r\n" : "\n";
+        ConfigExpertEdits.ApplyText(model.Studio, edit.Source, edit.Text.ReplaceLineEndings(lineEnding), model.Catalog, model.Model.Mode);
     }
 }

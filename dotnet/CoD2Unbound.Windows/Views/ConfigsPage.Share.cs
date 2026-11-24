@@ -12,57 +12,24 @@ public sealed partial class ConfigsPage
 
     internal void UpdateSharingAvailability() => refreshSharing?.Invoke();
 
-    private FrameworkElement LoadoutShareActions(ConfigProfile profile, TextBlock readOnlyNotice, InfoBar shareNotice)
+    private FrameworkElement LoadoutShareStatus(ConfigProfile profile, InfoBar readOnlyNotice)
     {
-        var next = Command("Use for next game", () => UseNextAsync(profile));
-        var rename = Command("Rename…", () => RenameAsync(profile));
-        var duplicate = Command("Duplicate", () => DuplicateAsync(profile), "Copy");
-        var share = new AppBarButton { AccessKey = "S" };
-        var delete = Command("Delete loadout…", () => DeleteAsync(profile));
-        var export = Command("Export…", () => ExportAsync(profile), "ArrowDownload");
-        var reveal = Command("Show in File Explorer", () => RevealLoadoutAsync(profile), "Folder");
-        var row = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
-            HorizontalAlignment = HorizontalAlignment.Left, Background = null };
-        AutomationProperties.SetName(row, "Loadout actions");
         var details = new StackPanel { Spacing = 4 };
-        var panel = new StackPanel { Spacing = 8, Children = { row, details } };
-        bool? compact = null;
-        Adapt(XamlRoot?.Size.Width is > 0 and < 1120);
-        panel.SizeChanged += (_, args) => Adapt(args.NewSize.Width < 685);
-        share.Click += async (_, _) => await shell.RunAsync(ChangeAndRenderAsync);
-        refreshSharing = UpdateEnabled;
-        RenderState();
-        return panel;
-
-        void Adapt(bool narrow)
+        refreshSharing = () =>
         {
-            if (narrow == compact)
-                return;
-            compact = narrow;
-            row.PrimaryCommands.Clear();
-            row.SecondaryCommands.Clear();
-            foreach (var command in narrow ? new[] { next, rename } : new[] { next, rename, duplicate, share, delete })
-                row.PrimaryCommands.Add(command);
-            foreach (var command in narrow ? new[] { duplicate, share, export, reveal, delete } : new[] { export, reveal })
-                row.SecondaryCommands.Add(command);
-            NameShareCommand();
-        }
-
-        void NameShareCommand() => AutomationProperties.SetAutomationId(share,
-            (model.Share.CanStop(profile.Id) ? "StopSharing" : "ShareSetup") + (compact == true ? "InMore" : ""));
+            readOnlyNotice.IsOpen = model.State.ReadOnly;
+            UpdateStudioHeader();
+            RenderState();
+        };
+        refreshSharing();
+        return details;
 
         void RenderState()
         {
             var state = model.Share.Status(profile.Id, model.ShareCatalogue);
             bool shared = state.Phase != ConfigShareLoadoutPhase.NotShared;
-            string action = shared ? "Stop sharing…" : "Share setup…";
-            share.Label = action;
-            share.Icon = Fluent("Share", 16);
-            UpdateEnabled();
-            AutomationProperties.SetName(share, action);
-            NameShareCommand();
-
             details.Children.Clear();
+            details.Visibility = IsVisible(shared || model.Share.RecordsProblem is not null);
             if (!shared)
             {
                 if (model.Share.RecordsProblem is { } problem)
@@ -110,22 +77,6 @@ public sealed partial class ConfigsPage
             }
         }
 
-        void UpdateEnabled()
-        {
-            var studio = model.State;
-            readOnlyNotice.Visibility = IsVisible(studio.ReadOnly);
-            bool writable = CanEdit && studio.ReadProblem is null;
-            next.IsEnabled = writable && !profile.IsActive;
-            rename.IsEnabled = duplicate.IsEnabled = writable;
-            delete.IsEnabled = writable && ConfigStudioModel.DeleteBlock(studio, profile.Id) is null;
-            share.IsEnabled = model.Share.CanStop(profile.Id) || model.Share.CanShare(profile.Id, !writable);
-        }
-
-        async Task ChangeAndRenderAsync()
-        {
-            await ChangeSharingAsync(profile, shareNotice, RenderState);
-            RenderState();
-        }
     }
 
     private async Task ChangeSharingAsync(ConfigProfile profile, InfoBar? noticeBar = null, Action? onPending = null)
@@ -141,7 +92,9 @@ public sealed partial class ConfigsPage
 
         var confirmation = Dialog($"Stop sharing “{profile.DisplayName}”?",
             Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
-            "Stop sharing");
+            "Stop Sharing");
+        confirmation.AsAlert(destructive: true);
+        confirmation.DefaultButton = ContentDialogButton.Close;
         if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
             return;
         if (noticeBar is not null)
@@ -161,9 +114,9 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private FrameworkElement PlayerSetupsHeading(TextBlock title)
+    private Grid PlayerSetupsHeading(FrameworkElement title)
     {
-        var action = new Button { Content = IconLabel("Share", "Share your setup…", 16), AccessKey = "S" };
+        var action = new Button { Content = IconLabel("Share", "Share Your Setup…", 16), AccessKey = "S" };
         AutomationProperties.SetName(action, "Share your setup");
         AutomationProperties.SetAutomationId(action, "ShareYourSetup");
         var profiles = model.State.Profiles;
@@ -218,7 +171,7 @@ public sealed partial class ConfigsPage
         if (!model.Share.CanShare(profile.Id, model.Studio.IsReadOnly))
             return;
         var form = await model.PrepareShareAsync(profile);
-        var dialog = new ShareSetupDialog(profile.DisplayName, form, (DataTemplate)Resources["ShareLeftOutLine"], () => model.Studio.IsReadOnly,
+        var dialog = new ShareSetupDialog(profile.DisplayName, model.AppVersion, form, (DataTemplate)Resources["ShareLeftOutLine"], () => model.Studio.IsReadOnly,
             token => model.Share.PublishAsync(profile.Id, form, model.Dialect, model.AppVersion, model.Studio.IsReadOnly, token))
         {
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme

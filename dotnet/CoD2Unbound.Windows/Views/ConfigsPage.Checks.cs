@@ -18,6 +18,20 @@ public sealed partial class ConfigsPage
         IsOpen = true, IsClosable = false, Severity = severity, Title = title, Message = message
     };
 
+    private static void SpaceOpenNotice(InfoBar notice)
+    {
+        void Update() => notice.Margin = new Thickness(0, 0, 0, notice.IsOpen ? 14 : 0);
+        notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) => Update());
+        Update();
+    }
+
+    private static void HideClosedNotice(InfoBar notice)
+    {
+        void Update() => notice.Visibility = IsVisible(notice.IsOpen);
+        notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) => Update());
+        Update();
+    }
+
     private TextBlock CheckTone(string text, ConfigCheckupTone tone)
     {
         var label = Body(text);
@@ -40,10 +54,11 @@ public sealed partial class ConfigsPage
         _ => "HeroAccentBrush"
     };
 
-    private static Grid CheckPair(FrameworkElement left, FrameworkElement right, double stackBelow, double leftNarrow = 0, bool rightAuto = false)
+    private static Grid CheckPair(FrameworkElement left, FrameworkElement right, double stackBelow, double leftNarrow = 0, bool rightAuto = false, double rightWidth = 0)
     {
-        var layout = Columns(12, new GridLength(1, GridUnitType.Star),
-            rightAuto ? GridLength.Auto : new GridLength(1, GridUnitType.Star));
+        var rightColumn = rightWidth > 0 ? new GridLength(rightWidth) :
+            rightAuto ? GridLength.Auto : new GridLength(1, GridUnitType.Star);
+        var layout = Columns(rightWidth > 0 ? 16 : 12, new GridLength(1, GridUnitType.Star), rightColumn);
         layout.RowSpacing = 12;
         layout.RowDefinitions.Add(new RowDefinition());
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -56,8 +71,7 @@ public sealed partial class ConfigsPage
             bool stacked = width < stackBelow;
             layout.ColumnDefinitions[0].Width = !stacked && leftNarrow > 0 && width < 730
                 ? new GridLength(leftNarrow) : new GridLength(1, GridUnitType.Star);
-            layout.ColumnDefinitions[1].Width = stacked ? new GridLength(0)
-                : rightAuto ? GridLength.Auto : new GridLength(1, GridUnitType.Star);
+            layout.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : rightColumn;
             Grid.SetColumn(right, stacked ? 0 : 1);
             Grid.SetRow(right, stacked ? 1 : 0);
         };

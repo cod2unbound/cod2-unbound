@@ -35,16 +35,7 @@ public sealed partial class ConfigsPage
         }
         windowsKeyboard = new WindowsKeyboard();
         var binds = ConfigBindingDetails.ForWindows(profile.Document, model.Catalog, model.Model.Mode);
-        var surface = new StackPanel { Spacing = 10 };
-        var heading = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(heading, 0, new TextBlock { Text = "Binds", Style = StyleFor("SectionTitle"), VerticalAlignment = VerticalAlignment.Center });
-        Put(heading, 1, Tabs(["List", "Visual"], bindView, index =>
-        {
-            bindView = index;
-            bindApproval = null;
-            RenderStudioBody();
-        }));
-        surface.Children.Add(heading);
+        var surface = new StackPanel { Spacing = 16 };
         bindNotice = new InfoBar { IsClosable = true };
         surface.Children.Add(bindNotice);
         studioBody.Children.Add(surface);
@@ -65,8 +56,8 @@ public sealed partial class ConfigsPage
             return;
         }
 
-        var list = new StackPanel { Spacing = 8 };
-        var find = new TextBox { PlaceholderText = "Find an action or key", Text = bindQuery };
+        var list = new StackPanel { Spacing = 16 };
+        var find = new AutoSuggestBox { PlaceholderText = "Find an action or key", Text = bindQuery, QueryIcon = Fluent("Search", 18) };
         studioFind = find;
         AutomationProperties.SetName(find, "Find an action or key");
         var shortcut = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
@@ -77,13 +68,15 @@ public sealed partial class ConfigsPage
         };
         list.KeyboardAccelerators.Add(shortcut);
         list.Children.Add(find);
-        var cards = new StackPanel { Spacing = 6 };
+        var cards = new StackPanel { Spacing = 8 };
+        var conflicts = new StackPanel { Spacing = 8 };
+        list.Children.Add(conflicts);
         list.Children.Add(cards);
 
         var workspace = new Grid();
         surface.Children.Add(workspace);
         BuildChainRail(cards, state, profile);
-        var rows = new StackPanel { Spacing = 8 };
+        var rows = new StackPanel { Spacing = 16 };
         list.Children.Add(rows);
         find.TextChanged += (_, _) => { bindQuery = find.Text; BuildRows(); };
         BuildRows();
@@ -92,8 +85,10 @@ public sealed partial class ConfigsPage
         workspace.Children.Add(list);
         if (editor is not null)
         {
-            var back = SmallButton("‹ Binds", () => { chainDraft = null; RenderStudioBody(); });
-            var right = new StackPanel { Spacing = 8, Children = { back, editor } };
+            var back = SmallButton("Back to Binds", () => { chainDraft = null; RenderStudioBody(); });
+            back.Content = IconLabel("ChevronLeft", "Back to Binds", 16);
+            AutomationProperties.SetName(back, "Back to Binds");
+            var right = new StackPanel { Spacing = 12, Children = { back, editor } };
             workspace.Children.Add(right);
             workspace.ColumnDefinitions.Add(new ColumnDefinition());
             workspace.ColumnDefinitions.Add(new ColumnDefinition());
@@ -102,10 +97,11 @@ public sealed partial class ConfigsPage
 
             void Resize(double width)
             {
-                bool side = width >= 980;
-                workspace.ColumnSpacing = side ? 16 : 0;
+                bool side = width >= 820;
+                back.Visibility = IsVisible(!side);
+                workspace.ColumnSpacing = side ? 24 : 0;
                 workspace.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-                workspace.ColumnDefinitions[1].Width = side ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+                workspace.ColumnDefinitions[1].Width = side ? new GridLength(420) : new GridLength(0);
                 list.Visibility = IsVisible(side);
                 Grid.SetColumn(right, side ? 1 : 0);
             }
@@ -113,6 +109,7 @@ public sealed partial class ConfigsPage
 
         void BuildRows()
         {
+            conflicts.Children.Clear();
             rows.Children.Clear();
             foreach (var entry in ConfigBindingDetails.Shared(binds, profile.Document.Dialect))
             {
@@ -131,13 +128,13 @@ public sealed partial class ConfigsPage
                 {
                     Severity = InfoBarSeverity.Warning, IsOpen = true, IsClosable = false,
                     Message = $"{label} does {(actions.Length == 2 ? "both " : "")}{ConfigBindingDetails.Title(binds, entry, profile.Document.Dialect)} in one press.",
-                    Content = Buttons(keep, SmallButton(actions.Length == 2 ? "Keep both" : "Keep all", () =>
+                    Content = Buttons(keep, SmallButton(actions.Length == 2 ? "Keep Both" : "Keep All", () =>
                     {
                         acceptedShared.Add(id);
                         BuildRows();
                     }))
                 };
-                rows.Children.Add(bar);
+                conflicts.Children.Add(bar);
             }
 
             foreach (var group in binds.Actions.GroupBy(action => action.Group).OrderBy(group => group.Key))
@@ -147,30 +144,73 @@ public sealed partial class ConfigsPage
                     .OrderByDescending(row => row.Primary.HasValue).ToArray();
                 if (matching.Length == 0)
                     continue;
-                rows.Children.Add(new TextBlock { Text = BindingGroup(group.Key), Style = StyleFor("SectionTitle") });
+                var heading = new TextBlock { Text = BindingGroup(group.Key), Style = StyleFor("GroupLabelText") };
+                var labels = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(92), new GridLength(92));
+                labels.Margin = new Thickness(6, 0, 16, 0);
+                Put(labels, 0, heading);
+                Put(labels, 1, KeyColumn("Primary"));
+                Put(labels, 2, KeyColumn("Second"));
+                var groupRows = new StackPanel();
                 foreach (var row in matching)
                 {
                     var primary = Slot(row, ConfigBindingSlot.Primary, row.Primary);
                     var second = Slot(row, ConfigBindingSlot.Secondary, row.Secondary);
-                    var keys = new StackPanel { Spacing = 6, Children = { Buttons(primary, second) } };
+                    var keys = new StackPanel { Spacing = 4, Children = { Buttons(primary, second) } };
                     foreach (var extra in row.Additional)
                         keys.Children.Add(Slot(row, null, extra));
-                    var binding = SettingRow(row.Action.Title, row.Action.Summary, keys);
-                    rows.Children.Add(binding);
+                    var binding = SettingRow(row.Action.Title, null, keys, grouped: true);
+                    AutomationProperties.SetHelpText(binding, row.Action.Summary);
+                    AddBindRow(groupRows, binding);
                     if (row.Action.Name == jumpBinding)
                         jumpBindingRow = binding;
                 }
+                rows.Children.Add(new StackPanel { Spacing = 8, Children = { labels, BindCard(groupRows) } });
             }
+            var other = new StackPanel();
+            var owned = advancedBindRows.Select(item => item.Chain.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in binds.Entries.Where(entry => entry.Action is null && !owned.Contains(entry.Key.Spelling) &&
+                (Matches(KeyLabel(entry.Key)) || Matches(entry.Text))))
+            {
+                var key = new Button { Content = KeyLabel(entry.Key) };
+                key.Style = StyleFor("Keycap");
+                key.IsEnabled = !state.ReadOnly;
+                AutomationProperties.SetName(key, $"Change {KeyLabel(entry.Key)}");
+                key.Click += (_, _) => StartListening(key, pressed =>
+                {
+                    var current = ForBindingEdit(profile.Profile.Id);
+                    var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
+                    return OfferBind(fresh.PrepareMove(current, entry.Key, pressed), current);
+                });
+                var menu = new MenuFlyout();
+                menu.Items.Add(MenuItem("Clear Key", async () =>
+                {
+                    var current = ForBindingEdit(profile.Profile.Id);
+                    var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
+                    await SaveBind(fresh.PrepareKey(current, entry.Key, null), false);
+                }, !state.ReadOnly));
+                key.ContextFlyout = menu;
+                AddBindRow(other, SettingRow(ConfigBindingDetails.Title(binds, entry, profile.Document.Dialect), null, key, grouped: true));
+            }
+            if (other.Children.Count != 0)
+                rows.Children.Add(new StackPanel { Spacing = 8, Children =
+                {
+                    new TextBlock { Text = "Other binds", Style = StyleFor("GroupLabelText") }, BindCard(other)
+                }});
             if (rows.Children.Count == 0)
-                rows.Children.Add(Caption("No actions or keys match."));
+                rows.Children.Add(EmptyState("Search", "No match", "No action or key matches. Try a key name like “Space”, or an action like “reload”."));
         }
+
+        static TextBlock KeyColumn(string name) => new()
+        {
+            Text = name, Style = StyleFor("GroupLabelText"), HorizontalAlignment = HorizontalAlignment.Center
+        };
 
         bool Matches(string value) => value.Contains(bindQuery.Trim(), StringComparison.CurrentCultureIgnoreCase);
 
         FrameworkElement Slot(ConfigBindingRow row, ConfigBindingSlot? slot, EngineKey? key)
         {
             string name = slot switch { ConfigBindingSlot.Primary => "Primary", ConfigBindingSlot.Secondary => "Second", _ => "Additional" };
-            var button = new Button { Content = key is { } existing ? KeyLabel(existing) : "Add key", MinWidth = 85, IsEnabled = !state.ReadOnly };
+            var button = new Button { Content = key is { } existing ? KeyLabel(existing) : "Add Key", Width = 92, IsEnabled = !state.ReadOnly };
             button.Style = StyleFor(key.HasValue ? "Keycap" : "AddKeycap");
             AutomationProperties.SetName(button, $"{row.Action.Title}, {name.ToLowerInvariant()} key, {button.Content}");
             button.Click += (_, _) => StartListening(button, pressed =>
@@ -194,8 +234,17 @@ public sealed partial class ConfigsPage
                 menu.Items.Add(clear);
                 button.ContextFlyout = menu;
             }
-            return new StackPanel { Spacing = 2, Children = { Caption(name), button } };
+            return button;
         }
+    }
+
+    private static Border BindCard(UIElement content) => new() { Style = StyleFor("StudioSettingsGroup"), Child = content };
+
+    private static void AddBindRow(Panel group, UIElement row)
+    {
+        if (group.Children.Count != 0)
+            group.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+        group.Children.Add(row);
     }
 
     private ConfigProfileRead ForBindingEdit(string id)

@@ -32,7 +32,7 @@ public sealed partial class ConfigsPage
         }
         choice.PlaceholderText = LauncherText.Resolution(requested);
         var note = Caption("");
-        var row = SettingRow(spec.Title, block ?? DisplaySizeNote(display), choice, grouped: !expert);
+        var row = SettingRow(spec.Title, block ?? DisplaySizeNote(display), choice, grouped: true);
         var content = (Grid)row.Child;
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });

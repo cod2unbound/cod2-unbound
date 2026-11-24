@@ -36,7 +36,8 @@ public sealed class ConfigDiscover(ConfigDirectory directory, ConfigCatalog cata
                 if (result.Snapshot is not { } snapshot)
                 {
                     Popularity = null;
-                    Publish(new(ConfigDiscoverPhase.Unavailable,
+                    var phase = result.RefreshError is null ? ConfigDiscoverPhase.Unavailable : ConfigDiscoverPhase.Failed;
+                    Publish(new(phase,
                         Problem: result.UnavailableReason ?? "The player directory isn’t available.", Saved: []));
                     return;
                 }

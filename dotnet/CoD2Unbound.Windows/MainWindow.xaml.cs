@@ -169,8 +169,6 @@ public sealed partial class MainWindow : Window
                 home.UpdateTheme();
             else if (ContentFrame.Content is ServersPage servers)
                 servers.UpdateContrast();
-            else if (ContentFrame.Content is ConfigsPage configs)
-                configs.UpdateContrast();
             settingsWindow?.Page.UpdateContrast();
         });
 

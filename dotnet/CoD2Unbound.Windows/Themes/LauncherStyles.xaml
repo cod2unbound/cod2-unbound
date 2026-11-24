@@ -1712,6 +1712,14 @@
         <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
     </Style>
+    <Style x:Key="StudioKeyboardKey" TargetType="Button" BasedOn="{StaticResource Keycap}">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="1" />
+    </Style>
     <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
@@ -1757,6 +1765,31 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style x:Key="StudioColumnItem" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style x:Key="StudioCodeRow" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style x:Key="StudioColumnAction" TargetType="Button" BasedOn="{StaticResource SidebarAction}">
+        <Setter Property="Height" Value="48" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style x:Key="StudioMonogramTile" TargetType="Border" BasedOn="{StaticResource InitialTile}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style x:Key="StudioSettingsGroup" TargetType="Border" BasedOn="{StaticResource FieldCard}">
+        <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
+        <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="ReviewRow" TargetType="Border" BasedOn="{StaticResource FieldCard}">
         <Setter Property="Padding" Value="12,8" />

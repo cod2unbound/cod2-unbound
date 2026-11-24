@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using CoD2Unbound.Core;
@@ -28,6 +29,7 @@ public sealed partial class ConfigsPage
     private bool markedOnly;
     private int? checkerSelectedLine;
     private ListView? checkerLines;
+    private readonly ObservableCollection<CheckerLineRow> checkerLineRows = [];
     private Button? checkerSave;
     private TextBlock? checkerReadOnly;
     private Button? checkerAnother;
@@ -90,7 +92,7 @@ public sealed partial class ConfigsPage
         var label = CheckStrong("Check for");
         label.VerticalAlignment = VerticalAlignment.Center;
         var pickers = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { label, editions, rules } };
-        var another = Action("Check another", () =>
+        var another = Action("Check Another", () =>
         {
             checkedSource = null;
             checkedCopy = null;
@@ -101,13 +103,29 @@ public sealed partial class ConfigsPage
             chooseCheckerFile?.Focus(FocusState.Programmatic);
             return Task.CompletedTask;
         });
-        another.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
-            Children = { new SymbolIcon(Symbol.Cancel), new TextBlock { Text = "Check another" } } };
+        another.Style = StyleFor("ToolbarPill");
+        another.Content = IconLabel("ChevronLeft", "Check Another", 16);
         AutomationProperties.SetName(another, "Check another");
         another.HorizontalAlignment = HorizontalAlignment.Right;
         ToolTipService.SetToolTip(another, "Close this check.");
         checkerAnother = another;
-        Detail.Children.Add(CheckPair(pickers, another, 590, rightAuto: true));
+        configToolbar.Children.Clear();
+        Put(configToolbar, 0, new Border { Style = StyleFor("ToolbarSurface"), Padding = new Thickness(12, 0, 8, 0),
+            HorizontalAlignment = HorizontalAlignment.Left, Child = pickers });
+        Put(configToolbar, 1, another);
+        configToolbar.SizeChanged += FitToolbar;
+        pickers.Unloaded += (_, _) => configToolbar.SizeChanged -= FitToolbar;
+        FitToolbar(configToolbar, null!);
+
+        void FitToolbar(object sender, SizeChangedEventArgs args)
+        {
+            bool compact = configToolbar.ActualWidth < 665;
+            label.Visibility = IsVisible(!compact);
+            rules.MaxWidth = compact ? 190 : 260;
+            ((TextBlock)((StackPanel)another.Content).Children[1]).Visibility = IsVisible(!compact);
+            another.Width = compact ? 44 : double.NaN;
+            another.Padding = compact ? new Thickness(0) : new Thickness(16, 0, 16, 0);
+        }
         var readOnly = Caption(ConfigProfileException.ReadOnlyWhilePlaying);
         checkerReadOnly = readOnly;
         Detail.Children.Add(readOnly);
@@ -140,6 +158,8 @@ public sealed partial class ConfigsPage
             if (source is null)
                 return;
             checkedSource = source;
+            if (CheckingConfig)
+                RenderCheckerBody();
             await EvaluateCheckerAsync();
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or COMException or ConfigEditException)
@@ -198,7 +218,9 @@ public sealed partial class ConfigsPage
         }
         if (checkerProblem is { } problem)
             checkerBody.Children.Add(CheckNotice(InfoBarSeverity.Error, "Couldn't check that", problem));
-        if (checkedCopy is { } copy && checkedSource is { } source)
+        if (checkerBusy && checkedCopy is null)
+            checkerBody.Children.Add(Progress("Checking this config…"));
+        else if (checkedCopy is { } copy && checkedSource is { } source)
             RenderCheckerResults(copy, source);
         else
             RenderCheckerStart();
@@ -207,7 +229,7 @@ public sealed partial class ConfigsPage
 
     private void RenderCheckerStart()
     {
-        var pick = Action("Choose a file…", () => StartCheckAsync(async () =>
+        var pick = Action("Choose a File…", () => StartCheckAsync(async () =>
         {
             var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Choose a config file to check" };
             foreach (string extension in new[] { ".cfg", ".bak", ".txt", "*" })
@@ -217,8 +239,9 @@ public sealed partial class ConfigsPage
         }));
         chooseCheckerFile = pick;
         pick.Style = StyleFor("LauncherAccentButton");
+        pick.Style = StyleFor("LauncherAccentButton");
         pick.IsEnabled = !checkerBusy;
-        var paste = Action("Paste from clipboard", () => StartCheckAsync(async () =>
+        var paste = Action("Paste from Clipboard", () => StartCheckAsync(async () =>
         {
             var data = Clipboard.GetContent();
             return data.Contains(StandardDataFormats.Text) ? CheckerText(await data.GetTextAsync(), false)
@@ -235,12 +258,14 @@ public sealed partial class ConfigsPage
             })));
         }
         loadouts.Flyout = menu;
-        var target = new StackPanel { Spacing = 12, Children =
+        var actions = Buttons(pick, paste, loadouts);
+        actions.HorizontalAlignment = HorizontalAlignment.Center;
+        var target = new StackPanel { Spacing = 14, Children =
         {
             Fluent("Document", 36),
-            new TextBlock { Text = "DROP A CONFIG HERE", Style = StyleFor("EmptyHeading"), TextAlignment = TextAlignment.Center },
+            new TextBlock { Text = "DROP A CONFIG HERE", Style = StyleFor("EmptyHeading"), FontSize = 30, TextAlignment = TextAlignment.Center },
             Body("Or paste one. It is read on this PC only: nothing is uploaded, and nothing is added to your loadouts unless you ask."),
-            Buttons(pick, paste, loadouts)
+            actions
         } };
         target.HorizontalAlignment = HorizontalAlignment.Center;
         target.VerticalAlignment = VerticalAlignment.Center;
@@ -248,7 +273,8 @@ public sealed partial class ConfigsPage
         intro.MaxWidth = 440;
         intro.TextAlignment = TextAlignment.Center;
         var drop = CheckCard(target);
-        drop.MinHeight = 330;
+        drop.MinHeight = 420;
+        drop.SizeChanged += (_, args) => actions.Orientation = args.NewSize.Width < 424 ? Orientation.Vertical : Orientation.Horizontal;
         drop.AllowDrop = true;
         drop.DragOver += (_, args) =>
         {
@@ -257,19 +283,44 @@ public sealed partial class ConfigsPage
             args.Handled = true;
         };
         drop.Drop += OnCheckerDrop;
-        checkerBody.Children.Add(drop);
-        var checks = new StackPanel { Spacing = 8, Children = { CheckStrong("What gets checked") } };
-        foreach (var (title, detail) in new[]
+        var checks = new StackPanel { Spacing = 14, Children = { CheckStrong("What gets checked") } };
+        foreach (var (glyph, title, detail) in new[]
         {
-            ("Settings that don't exist", "Typos and settings from other games, with the likely fix."),
-            ("Values outside the limits", "Values the game refuses, and the nearest one it takes."),
-            ("Protected settings", "Read-only, or only changing with cheats on."),
-            ("What server rules change", "Settings that zPAM and other rule sets fix or limit."),
-            ("Repeats", "The same setting written twice, and which line wins."),
-            ("Passwords and logins", "Pointed out before you share the file, and hidden in the review.")
+            ("Search", "Settings that don’t exist", "Typos and settings from other games, with the likely fix."),
+            ("Gauge", "Values outside the limits", "Values the game refuses, and the nearest one it takes."),
+            ("Lock", "Protected settings", "Read-only, or only changing with cheats on."),
+            ("ShieldCheckmark", "What server rules change", "Settings that zPAM and other rule sets fix or limit."),
+            ("Copy", "Repeats", "The same setting written twice, and which line wins."),
+            ("Eye", "Passwords and logins", "Pointed out before you share the file, and hidden in the review.")
         })
-            checks.Children.Add(SettingRow(title, detail, grouped: true));
-        checkerBody.Children.Add(CheckCard(checks));
+        {
+            var words = Caption(detail);
+            words.Margin = new Thickness(26, 0, 0, 0);
+            var bar = IconLabel(glyph, title, 18);
+            ((TextBlock)bar.Children[1]).FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+            checks.Children.Add(new StackPanel { Spacing = 2, Children = { bar, words } });
+        }
+        const double sideBySide = 700;
+        var layout = CheckPair(drop, CheckCard(checks), sideBySide, rightWidth: 320);
+        checkerBody.Children.Add(layout);
+        layout.SizeChanged += FitDropZone;
+        drop.Loaded += (_, _) =>
+        {
+            DetailScroll.SizeChanged += FitDropZone;
+            FitDropZone(drop, null!);
+        };
+        drop.Unloaded += (_, _) => DetailScroll.SizeChanged -= FitDropZone;
+
+        void FitDropZone(object sender, SizeChangedEventArgs args)
+        {
+            bool wide = layout.ActualWidth >= sideBySide;
+            if (wide)
+                layout.ColumnDefinitions[1].Width = new GridLength(Math.Max(300, (layout.ActualWidth - layout.ColumnSpacing) / 2.3));
+            double noticeHeight = checkerReadOnly is { Visibility: Visibility.Visible } notice
+                ? notice.ActualHeight + Detail.Spacing : 0;
+            double insets = DetailColumn.Padding.Top + DetailColumn.Padding.Bottom;
+            drop.MinHeight = wide ? Math.Max(420, DetailScroll.ActualHeight - insets - noticeHeight) : 420;
+        }
     }
 
     private async void OnCheckerDrop(object sender, DragEventArgs args)
@@ -319,7 +370,8 @@ public sealed partial class ConfigsPage
     {
         var lines = new ListView
         {
-            ItemTemplate = (DataTemplate)Resources["CheckerLine"], MaxHeight = 520,
+            ItemTemplate = (DataTemplate)Resources["CheckerLine"], ItemsSource = checkerLineRows, MaxHeight = 600,
+            ItemContainerStyle = StyleFor("StudioCodeRow"),
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             SelectionMode = ListViewSelectionMode.Single, TabNavigation = KeyboardNavigationMode.Once
         };
@@ -330,8 +382,8 @@ public sealed partial class ConfigsPage
         {
             int? previous = checkerSelectedLine;
             var rows = copy.Lines(markedOnly).Select(item => new CheckerLineRow(item)).ToArray();
-            lines.ItemsSource = rows;
-            lines.SelectedItem = rows.FirstOrDefault(item => item.Id == previous);
+            checkerLineRows.Reconcile(rows, item => item.Id);
+            lines.SelectedItem = checkerLineRows.FirstOrDefault(item => item.Id == previous);
         }
         SetLines();
         var linePanel = new StackPanel { Spacing = 8, Children =
@@ -353,9 +405,9 @@ public sealed partial class ConfigsPage
                 ? "The remaining lines are notes. Nothing was changed on disk." : "Nothing was changed on disk.")
             : CheckerBreakdown(findings);
 
-        var save = Action("Save as loadout…", () => SaveCheckedLoadoutAsync(copy, source));
+        var save = Action("Save as Loadout…", () => SaveCheckedLoadoutAsync(copy, source));
         checkerSave = save;
-        var copyButton = Action(copy.HasEdits ? "Copy cleaned config" : "Copy config", () =>
+        var copyButton = Action(copy.HasEdits ? "Copy Cleaned Config" : "Copy Config", () =>
         {
             var clipboard = new DataPackage();
             clipboard.SetText(Encoding.Latin1.GetString(copy.Bytes.AsSpan()));
@@ -366,10 +418,15 @@ public sealed partial class ConfigsPage
         var count = CheckTone(remaining.ToString(), clean ? ConfigCheckupTone.Positive : ConfigCheckupTone.Information);
         count.FontFamily = (FontFamily)Application.Current.Resources["StencilExtraBold"];
         count.FontSize = 52;
-        var summary = new StackPanel { Spacing = 8, Children = { count, CheckStrong(title), Caption(detail) } };
+        var words = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center,
+            Children = { CheckStrong(title), Caption(detail) } };
+        var result = Columns(14, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+        Put(result, 0, count);
+        Put(result, 1, words);
+        var summary = new StackPanel { Spacing = 10, Children = { result } };
         if (!fixable.IsEmpty)
         {
-            var fix = Action(fixable.Length == 1 ? "Fix 1 line" : $"Fix all {fixable.Length}", () =>
+            var fix = Action(fixable.Length == 1 ? "Fix 1 Line" : $"Fix All {fixable.Length}", () =>
             {
                 copy.FixAll();
                 RenderCheckerBody();
@@ -446,7 +503,7 @@ public sealed partial class ConfigsPage
                 Spacing = 4, Children = { CheckStrong(heading), Caption(countLines == 1 ? "1 line" : $"{countLines} lines"), marked }
             }));
         }
-        checkerBody.Children.Add(CheckPair(CheckCard(linePanel), right, 620, leftNarrow: 360));
+        checkerBody.Children.Add(CheckPair(CheckCard(linePanel), right, 730, rightWidth: 380));
     }
 
     private static string CheckerBreakdown(ImmutableArray<ConfigCheckFinding> findings)

@@ -77,6 +77,8 @@ internal sealed class WindowsConfigFetch : IConfigTextFetcher
                 responses[new Uri(index, "popularity.json")] = [.. figures.GetProperty("json").GetBytesFromBase64()];
                 responses[new Uri(index, "popularity.sig")] = [.. figures.GetProperty("signature").GetBytesFromBase64()];
             }
+            if (data.TryGetProperty("unavailable", out var unavailable) && unavailable.ValueKind == JsonValueKind.True)
+                responses.Clear();
             return new(new(index, signature, [.. data.GetProperty("publicKey").GetBytesFromBase64()]),
                 storage, new WindowsConfigFetch(responses));
         }

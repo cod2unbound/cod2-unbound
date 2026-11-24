@@ -34,7 +34,7 @@ internal sealed partial class ConfigsViewModel : IConfigImportStore
         return await directory.SavedAsync(snapshot);
     }
 
-    internal async Task<IReadOnlyDictionary<string, string>> ReadSavedSettingsAsync(string id)
+    internal async Task<IReadOnlyDictionary<string, string>> ReadSetupSettingsAsync(string id)
     {
         var snapshot = ShareCatalogue ?? throw new InvalidOperationException("The player directory isn’t available.");
         var catalog = new ConfigImportCatalogAdapter(Catalog);
