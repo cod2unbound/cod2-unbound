@@ -38,6 +38,8 @@ internal sealed class CdKeyEditor : StackPanel
         AutomationProperties.SetName(input, "CD key");
         AutomationProperties.SetHelpText(input, "Twenty characters");
         var paste = new Button { Content = "Paste", VerticalAlignment = large ? VerticalAlignment.Center : VerticalAlignment.Bottom };
+        if (large)
+            paste.Style = StyleFor("SetupAction");
         AutomationProperties.SetName(paste, "Paste the CD key");
         paste.Click += async (_, _) => await shell.ShowProblemAsync(async () =>
         {

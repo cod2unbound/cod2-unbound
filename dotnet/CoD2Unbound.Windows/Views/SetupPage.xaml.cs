@@ -101,7 +101,6 @@ public sealed partial class SetupPage : Page
             _ => ("Welcome to CoD2 Unbound",
                 "Call of Duty 2 multiplayer, set up for this PC. Setup takes about two minutes and uses your own copy of the game.")
         };
-        StepContent.Margin = new Thickness(0, 2, 0, 0);
         RenderFooter();
         Layout();
 
@@ -390,7 +389,8 @@ public sealed partial class SetupPage : Page
     private void RenderQuestion(bool crash)
     {
         var link = PrivacyPresentation.PreviewButton(crash, "W", shell, session.Reports);
-        link.Style = StyleFor("SetupLink");
+        // The board draws it as the regular small capsule button, as on the Mac.
+        link.ClearValue(StyleProperty);
         previewLink = link;
         var change = new TextBlock { Text = PrivacyPresentation.ChangeLater, Style = StyleFor("SetupDetail"), VerticalAlignment = VerticalAlignment.Center };
         var foot = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
@@ -399,7 +399,7 @@ public sealed partial class SetupPage : Page
         Put(foot, 1, link);
         string[] symbols = ["eye", "lock", "share"];
         var rows = PrivacyPresentation.QuestionRows(crash)
-            .Select((row, index) => (UIElement)Row(symbols[index], row.Title, row.Detail)).ToArray();
+            .Select((row, index) => (UIElement)Row(symbols[index], row.Title, row.Detail, tall: true)).ToArray();
         StepContent.Children.Add(GlassPanel(16, 12, Group(rows), foot));
         // Neither answer is the default: nothing takes the focus and Enter presses neither.
         focusTarget = null;

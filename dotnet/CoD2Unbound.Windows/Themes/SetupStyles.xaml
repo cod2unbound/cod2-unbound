@@ -102,11 +102,6 @@
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
-    <Style x:Key="SetupLink" TargetType="Button" BasedOn="{StaticResource SubtleLinkAction}">
-        <Setter Property="Foreground" Value="{ThemeResource link}" />
-        <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
-        <Setter Property="MinHeight" Value="{StaticResource ButtonSmallHeight}" />
-    </Style>
 
     <!-- The CD key: a 56-point capsule in the mono face, typed text visible as on the Mac. The outer border
          draws the stroke so focus, a mismatch and a verified key each get their own colour. -->

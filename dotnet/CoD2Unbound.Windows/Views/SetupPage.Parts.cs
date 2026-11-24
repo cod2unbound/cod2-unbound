@@ -86,20 +86,25 @@ public sealed partial class SetupPage
     }
 
     /// <summary>A group row: tile, title and detail, then the trailing pieces. 60 tall with a button.</summary>
+    /// <summary>A row as the board measures it: 16 in, 14 between tile and text, 9 above and below with the
+    /// tile centred; <paramref name="tall"/> rows (the questions' several-line answers) pad 12 and keep the
+    /// tile level with the title.</summary>
     private Grid Row(string symbol, string title, string detail, FrameworkElement? trailing = null, bool mono = false,
-        bool negative = false, FrameworkElement? status = null)
+        bool negative = false, FrameworkElement? status = null, bool tall = false)
     {
         FrameworkElement[] ends = [.. new[] { status, trailing }.OfType<FrameworkElement>()];
-        var row = Columns(12, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
-        row.Padding = new Thickness(16, 10, 16, 10);
-        row.MinHeight = ends.Any(item => item is Button) ? 60 : 56;
-        Put(row, 0, Tile(symbol, negative));
+        var row = Columns(14, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
+        row.Padding = new Thickness(16, tall ? 12 : 9, 16, tall ? 12 : 9);
+        var tile = Tile(symbol, negative);
+        if (tall)
+            tile.VerticalAlignment = VerticalAlignment.Top;
+        Put(row, 0, tile);
         var heading = new TextBlock { Text = title, Style = StyleFor(mono ? "SetupMonoTitle" : "SetupRowTitle") };
         if (mono)
             ToolTipService.SetToolTip(heading, title);
         var lines = new StackPanel
         {
-            Spacing = 3, VerticalAlignment = VerticalAlignment.Center,
+            Spacing = 3, VerticalAlignment = tall ? VerticalAlignment.Top : VerticalAlignment.Center,
             Children = { heading, new TextBlock { Text = detail, Style = StyleFor("SetupDetail") } }
         };
         AutomationProperties.SetName(lines, $"{title}. {detail}");
