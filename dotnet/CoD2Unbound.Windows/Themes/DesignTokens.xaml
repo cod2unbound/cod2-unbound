@@ -82,6 +82,7 @@
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="#00000000" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="#00000000" />
+            <SolidColorBrush x:Key="HeroHintBrush" Color="#FFC9C1AD" />
             <SolidColorBrush x:Key="LauncherSelectionPillBrush" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFC4984C" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF1C170C" />
@@ -472,6 +473,7 @@
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="#00000000" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="#00000000" />
+            <SolidColorBrush x:Key="HeroHintBrush" Color="#FF4D4A3F" />
             <SolidColorBrush x:Key="LauncherSelectionPillBrush" Color="#FF55622F" />
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF46522A" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFF8E8" />
@@ -862,6 +864,7 @@
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="HeroBackplateBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="HeroHintBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="LauncherSelectionPillBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />

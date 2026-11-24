@@ -10,6 +10,7 @@ OUTPUT = ROOT / "dotnet/CoD2Unbound.Windows/Themes/DesignTokens.xaml"
 PALETTE = ROOT / "launcher/Theme.swift"
 ARTWORK = ROOT / "launcher/Artwork.swift"
 COMPONENTS = ROOT / "launcher/Components.swift"
+HOME = ROOT / "launcher/HomeView.swift"
 
 # Values specified by WinParts/launcher.css. Where there is a directly equivalent
 # Swift constant, read it below. The board specifies the Windows DIP geometry.
@@ -111,6 +112,9 @@ def generate(source):
     dark, light = swift_palettes(source)
     tag = ARTWORK.read_text(encoding="utf-8").split("struct MiniDogTag: View", 1)[1].split("struct StampedDogTag", 1)[0]
     dark_tag, light_tag, dark_hole, light_hole, tag_stamp = re.findall(r"0x([0-9a-f]{6})", tag)
+    # The shortcut hint over the hero art has its own ink on the Mac (HeroInk.hint), set for the scrim.
+    hero_hint = re.search(r"static let hint = \(dark: Palette\.hex\(0x([0-9a-f]{6})\), light: Palette\.hex\(0x([0-9a-f]{6})\)\)",
+                          HOME.read_text(encoding="utf-8")).groups()
     root = ET.Element("ResourceDictionary", {
         "xmlns": "http://schemas.microsoft.com/winfx/2006/xaml/presentation",
         "xmlns:x": "http://schemas.microsoft.com/winfx/2006/xaml",
@@ -144,6 +148,7 @@ def generate(source):
         brush("FocusVisualSecondaryBrush", TRANSPARENT)
         brush("FrameContrastBrush", TRANSPARENT if palette else system_color("Window"))
         brush("HeroBackplateBrush", TRANSPARENT if palette else system_color("Window"))
+        brush("HeroHintBrush", xaml_color(hero_hint[name == "Light"]) if palette else system_color("WindowText"))
         # Native presenters can still request these legacy screen resources.
         token("LauncherSelectionPillBrush", "control", "HighlightText")
         token("AccentFillColorDefaultBrush", "prominentBottom", "Highlight")
