@@ -207,6 +207,10 @@ internal static partial class Program
             Sequence(["new", "c"], rows.Select(row => row.Key));
             Equal(true, ReferenceEquals(selected, rows[1]));
             Equal(true, changes.All(change => change.Action == NotifyCollectionChangedAction.Remove));
+            rows.Reconcile([new("x", 1), new("x", 2)], row => row.Key);
+            Sequence(["x", "x"], rows.Select(row => row.Key));
+            rows.Reconcile([new("y", 3)], row => row.Key);
+            Sequence(["y"], rows.Select(row => row.Key));
         });
 
         Check("Session log is bounded across chunk boundaries and retains only the allowed sessions", () =>
