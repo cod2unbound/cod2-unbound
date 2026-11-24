@@ -30,6 +30,7 @@ public sealed partial class SetupPage : Page
     private bool focusPending;
     private Control? focusTarget;
     private Button? previewLink;
+    private FrameworkElement? welcomeNote;
 
     private static readonly string[] ModeValues = ["borderless", "exclusive", "windowed"];
     private static readonly string[] ModeDetails =
@@ -44,6 +45,11 @@ public sealed partial class SetupPage : Page
         this.session = session;
         this.cancelDestination = cancelDestination;
         InitializeComponent();
+        SetupColumn.SizeChanged += (_, _) =>
+        {
+            if (Setup.Step == SetupStep.Welcome)
+                Layout();
+        };
         SetupMark.Shadow = new ThemeShadow();
         SetupMark.Translation = new System.Numerics.Vector3(0, 0, 32);
         Unloaded += (_, _) => StopSteamWatch();
@@ -181,12 +187,20 @@ public sealed partial class SetupPage : Page
         double mark = window < 760 ? 84 : 124;
         SetupMark.Width = SetupMark.Height = mark;
         double headingTop = Math.Clamp(76 + (window - 640) * 0.2, 76, 128);
+        if (welcome)
+        {
+            // The board centres the block from the mark to the panel (the lock line under it stays outside)
+            // in the window's height less 120; it cannot start above the shell's caption row.
+            double note = welcomeNote is { ActualHeight: > 0 } line ? line.ActualHeight + StepContent.Spacing : 0;
+            double block = Math.Max(0, SetupColumn.ActualHeight - note);
+            headingTop = Math.Max(CaptionSpace, (window - 120 - block) / 2);
+        }
         // The page starts under the shell's caption row, so window coordinates lose CaptionSpace here.
-        SetupStage.Padding = welcome
-            ? new Thickness(24, 0, 24, 120 + CaptionSpace)
-            : new Thickness(24, headingTop - CaptionSpace, 24, 84 + 16);
+        var padding = new Thickness(24, headingTop - CaptionSpace, 24, 84 + 16);
+        if (SetupStage.Padding != padding)
+            SetupStage.Padding = padding;
         SetupStage.MinHeight = Math.Max(0, height);
-        SetupColumn.VerticalAlignment = welcome ? VerticalAlignment.Center : VerticalAlignment.Top;
+        SetupColumn.VerticalAlignment = VerticalAlignment.Top;
         if (height > 0)
             PlaceScene(height);
     }
@@ -219,6 +233,7 @@ public sealed partial class SetupPage : Page
                 $"Whether to send {(crash ? "crash reports" : "usage data")}. Your choice, and it can be changed later."));
         StepContent.Children.Add(GlassPanel(6, 12, Group([.. rows])));
         var note = Note("Nothing leaves this PC during setup.", "lock");
+        welcomeNote = note;
         note.HorizontalAlignment = HorizontalAlignment.Center;
         note.Margin = new Thickness(0, 6, 0, 0);
         StepContent.Children.Add(note);

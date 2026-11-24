@@ -140,7 +140,10 @@ public sealed partial class SetupPage
         string count = copies.Length switch { 2 => "Two", 3 => "Three", 4 => "Four", _ => copies.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) };
         var intro = new TextBlock { Text = $"{count} copies found. Choose the one to use.", Style = StyleFor("SetupDetail"), Margin = new Thickness(10, 6, 0, 0) };
         // The stock RadioButtons control: arrow keys, roving focus and selection stay the system's.
-        var list = new RadioButtons { Margin = new Thickness(16, 8, 16, 8) };
+        // The board's rows are 57 high with no gap between them; the stock control's own row spacing is a theme
+        // resource of its template, set here.
+        var list = new RadioButtons { Margin = new Thickness(16, 0, 16, 0) };
+        list.Resources["RadioButtonsRowSpacing"] = 0.0;
         AutomationProperties.SetName(list, "Game data folder");
         foreach (var copy in copies)
         {
@@ -161,7 +164,7 @@ public sealed partial class SetupPage
             var radio = new RadioButton
             {
                 Content = layout, HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0, MinHeight = 48
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0, MinHeight = 57
             };
             AutomationProperties.SetName(radio, copy.DataPath);
             AutomationProperties.SetHelpText(radio, FoundDetail(copy.Source));
