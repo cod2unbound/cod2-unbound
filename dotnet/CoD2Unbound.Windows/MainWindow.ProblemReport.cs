@@ -18,7 +18,10 @@ public sealed partial class MainWindow
         report.Click += OnReportProblem;
         help.Items.Add(openHelp);
         help.Items.Add(report);
-        help.ShowAt(JumpHost.Visibility == Visibility.Visible ? JumpBox : Root);
+        help.ShowAt(Root, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+        {
+            Position = new global::Windows.Foundation.Point(Root.ActualWidth / 2, 72)
+        });
     }
 
     private async void OnReportProblem(object sender, RoutedEventArgs args) => await RunAsync(ShowProblemReportAsync);

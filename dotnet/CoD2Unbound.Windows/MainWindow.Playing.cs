@@ -80,8 +80,7 @@ public sealed partial class MainWindow
         bool ended = !state.Running && state.LastExit is not null;
         lastGame = state;
         RefreshShellGameActions();
-        if (ContentFrame.Content is SettingsPage settings)
-            settings.RefreshDisplayRunning(state.Running);
+        settingsWindow?.Page.RefreshDisplayRunning(state.Running);
         playerCard?.UpdateRunning(state.Running);
         if (ContentFrame.Content is HomePage home)
         {

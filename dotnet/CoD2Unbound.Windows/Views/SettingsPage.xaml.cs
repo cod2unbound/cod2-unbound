@@ -27,15 +27,26 @@ public sealed partial class SettingsPage : Page
     private string? advancedProblem;
     private int lastPane = -1;
 
-    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false, bool openUpdates = false)
+    internal const string GameDataPane = "Game Data", UpdatesPane = "Updates";
+
+    /// The chosen pane's name; the Settings window takes it as its title, as the Mac's does.
+    internal event Action<string>? PaneChanged;
+    internal string PaneTitle => (Panes.SelectedItem ?? Panes.Items[0]).Text;
+    internal event Action? ContentResized;
+    internal double HeaderHeight => Panes.ActualHeight + Panes.Margin.Top + Panes.Margin.Bottom + 1;
+    internal double PaneContentHeight => PaneBody.ActualHeight;
+
+    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, string? openPane = null)
     {
         this.shell = shell;
         this.session = session;
         model = new(session);
         InitializeComponent();
+        PaneBody.SizeChanged += (_, _) => ContentResized?.Invoke();
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
-        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : Current.LastSettingsPane];
+        var initial = Panes.Items.FirstOrDefault(item => item.Text == openPane)
+            ?? Panes.Items[Math.Clamp(Current.LastSettingsPane, 0, Panes.Items.Count - 1)];
         Panes.SelectedItem = initial;
         Loaded += (_, _) =>
         {
@@ -51,6 +62,7 @@ public sealed partial class SettingsPage : Page
         Feedback.IsOpen = false;
         PaneScroll.ChangeView(null, 0, null);
         Render();
+        PaneChanged?.Invoke(PaneTitle);
         int pane = Panes.Items.IndexOf(Panes.SelectedItem);
         if (pane >= 0 && Current.LastSettingsPane != pane)
             await ChangeAsync(Current with { LastSettingsPane = pane }, display: pane == 1);

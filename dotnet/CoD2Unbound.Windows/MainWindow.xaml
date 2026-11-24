@@ -6,66 +6,9 @@
     Title="CoD2 Unbound">
     <Grid x:Name="Root" Background="{ThemeResource FrameContrastBrush}"
           Loaded="OnLoaded" SizeChanged="OnSizeChanged">
-        <Grid.RowDefinitions>
-            <RowDefinition x:Name="CaptionRow" Height="{StaticResource CaptionRowHeight}" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        <Border Background="{ThemeResource GroundBrush}" IsHitTestVisible="False" />
 
-        <Border Grid.RowSpan="3" Background="{ThemeResource GroundBrush}" IsHitTestVisible="False" />
-        <Grid x:Name="WindowBar" Background="Transparent" />
-        <Grid x:Name="JumpHost" Grid.Row="1" Height="44" Visibility="Collapsed">
-            <Grid x:Name="JumpField" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <AutoSuggestBox x:Name="JumpBox"
-                                IsEnabled="False" MaxSuggestionListHeight="440" UpdateTextOnSelect="False"
-                                PlaceholderText="Jump to…"
-                                AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K"
-                                ToolTipService.ToolTip="Jump to… (Ctrl+K)">
-                    <AutoSuggestBox.TextBoxStyle>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchField}">
-                            <Setter Property="Padding" Value="34,5,57,6" />
-                        </Style>
-                    </AutoSuggestBox.TextBoxStyle>
-                    <AutoSuggestBox.ItemTemplate>
-                        <DataTemplate x:DataType="local:JumpSuggestion">
-                            <StackPanel Margin="0,4">
-                                <TextBlock Text="{x:Bind Heading}" Visibility="{x:Bind HeadingVisible}"
-                                           Style="{StaticResource TypeHelp}" FontWeight="SemiBold" Margin="0,4,0,4" />
-                                <Grid ColumnSpacing="8" Background="{x:Bind SelectionBrush, Mode=OneWay}"
-                                      Opacity="{x:Bind RowOpacity}" Padding="4,3" CornerRadius="{StaticResource MenuItemRadius}"
-                                      AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <FontIcon Visibility="{x:Bind IconVisible}" FontFamily="{StaticResource FluentRegular}"
-                                              Glyph="{x:Bind Icon}" FontSize="16" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{x:Bind Title}" TextWrapping="{x:Bind TitleWrapping}"
-                                                   TextTrimming="{x:Bind TitleTrimming}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{x:Bind Detail}" Visibility="{x:Bind DetailVisible}"
-                                                   TextTrimming="CharacterEllipsis" Style="{StaticResource TypeHelp}" />
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{x:Bind Hint, Mode=OneWay}"
-                                               Style="{StaticResource TypeHelp}" VerticalAlignment="Center" />
-                                </Grid>
-                                <TextBlock Text="↑ ↓ to move · Enter to jump · the setting opens in Expert"
-                                           Visibility="{x:Bind FooterVisible}" Style="{StaticResource TypeHelp}" Margin="0,8,0,4" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </AutoSuggestBox.ItemTemplate>
-                </AutoSuggestBox>
-                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}"
-                            FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"
-                            Margin="11,0,0,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Name="JumpShortcutHint" Text="Ctrl+K" Style="{StaticResource SecondaryText}"
-                             FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"
-                             Margin="0,0,10,0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
-            </Grid>
-        </Grid>
-
-        <Border x:Name="SidebarGlass" Grid.Row="2" HorizontalAlignment="Left"
+        <Border x:Name="SidebarGlass" HorizontalAlignment="Left"
                 Width="{StaticResource SidebarWidth}" Margin="{StaticResource SidebarMargin}"
                 Visibility="Collapsed" Background="{ThemeResource GlassAcrylicBrush}"
                 CornerRadius="{StaticResource SidebarRadius}" BorderBrush="{ThemeResource glassStroke}"
@@ -75,12 +18,20 @@
                     BorderBrush="{ThemeResource glassHighlight}" />
         </Border>
 
-        <NavigationView x:Name="Nav" Grid.Row="2" Margin="10,10,0,10" PaneDisplayMode="LeftCompact"
+        <NavigationView x:Name="Nav" Margin="10,0,0,0" PaneDisplayMode="Left" IsPaneOpen="True"
                         Background="Transparent" OpenPaneLength="{StaticResource SidebarWidth}"
                         CompactPaneLength="48" IsBackButtonVisible="Collapsed" IsPaneVisible="False"
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
                         IsSettingsVisible="False"
                         ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
+            <NavigationView.Resources>
+                <!-- The pane sits inside the inset glass: 10 above and below it, as the Mac sidebar does. -->
+                <Thickness x:Key="NavigationViewPaneContentGridMargin">-1,13,-1,10</Thickness>
+                <Thickness x:Key="NavigationViewButtonHolderGridMargin">0,14,0,4</Thickness>
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+                <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+            </NavigationView.Resources>
             <NavigationView.PaneHeader>
                 <StackPanel x:Name="BrandHeader" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
                             AutomationProperties.Name="CoD2 Unbound">
@@ -106,13 +57,20 @@
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <NavigationView.FooterMenuItems>
-                <NavigationViewItem x:Name="SettingsItem" Content="Settings" AccessKey="T" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18" /></NavigationViewItem.Icon>
-                </NavigationViewItem>
-            </NavigationView.FooterMenuItems>
             <NavigationView.PaneFooter>
-                <Button x:Name="PlayerPlate" Margin="12,6,12,8" HorizontalAlignment="Stretch"
+                <StackPanel x:Name="PaneFooterStack">
+                <!-- The Mac's footer order: the labelled Settings entry, a hairline, then the player plate. -->
+                <Button x:Name="SettingsItem" Style="{StaticResource SidebarSettingsButton}" Click="OnSettingsEntry"
+                        AutomationProperties.Name="Settings" AutomationProperties.AcceleratorKey="Ctrl+,"
+                        ToolTipService.ToolTip="Settings (Ctrl+,)" AccessKey="T">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18"
+                                  AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock x:Name="SettingsLabel" Text="Settings" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Border x:Name="FooterRule" Height="1" Margin="16,6,16,0" Background="{ThemeResource separator}" />
+                <Button x:Name="PlayerPlate" Margin="12,8,12,0" HorizontalAlignment="Stretch"
                         Style="{StaticResource PlayerPlateButton}"
                         HorizontalContentAlignment="Stretch" Visibility="Collapsed"
                         AutomationProperties.Name="Open your player card" AccessKey="P">
@@ -134,16 +92,16 @@
                         </Flyout>
                     </Button.Flyout>
                 </Button>
+                </StackPanel>
             </NavigationView.PaneFooter>
 
-            <Border BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="1,1,0,0"
-                    Background="{ThemeResource GroundBrush}">
+            <Border Background="{ThemeResource GroundBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <StackPanel>
+                    <StackPanel x:Name="ShellNotices" Spacing="8">
                         <InfoBar x:Name="Problem" Severity="Error" IsClosable="False" />
                         <InfoBar x:Name="ReportCopied" Severity="Success" />
                         <InfoBar x:Name="ReportWarning" Severity="Warning" />
@@ -152,5 +110,65 @@
                 </Grid>
             </Border>
         </NavigationView>
+
+        <!-- The caption strip: drag region over the page art, right of the sidebar; the system's caption
+             buttons sit over it at the top right. Nothing pressable lives in it. -->
+        <Grid x:Name="WindowBar" Height="{StaticResource CaptionHeight}" VerticalAlignment="Top" Background="Transparent" />
+
+        <!-- Jump to (JumpPalette.swift, HomeJump board): a centred palette over the window, opened with Ctrl+K. -->
+        <Grid x:Name="JumpLayer" Visibility="Collapsed">
+            <Rectangle Fill="Transparent" Tapped="OnJumpScrimTapped" AutomationProperties.AccessibilityView="Raw" />
+            <Border x:Name="JumpPanel" Width="640" Margin="16,72,16,16" HorizontalAlignment="Center" VerticalAlignment="Top"
+                    CornerRadius="{StaticResource SheetRadius}" Background="{ThemeResource GlassAcrylicBrush}"
+                    BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
+                    Translation="0,0,32" AutomationProperties.Name="Jump to" AutomationProperties.LandmarkType="Search">
+                <Border.Shadow><ThemeShadow /></Border.Shadow>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="58" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="44" />
+                    </Grid.RowDefinitions>
+                    <Grid Padding="18,0" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="17"
+                                  Foreground="{ThemeResource secondary}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBox x:Name="JumpBox" Grid.Column="1" Style="{StaticResource JumpField}"
+                                 PlaceholderText="Servers, loadouts, settings and actions"
+                                 AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K">
+                            <TextBox.Resources>
+                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <Border Grid.Column="2" Style="{StaticResource KeyCapLabel}" AutomationProperties.Name="Escape closes">
+                            <TextBlock Text="esc" Style="{StaticResource KeyCapText}" />
+                        </Border>
+                    </Grid>
+                    <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
+                    <ScrollViewer x:Name="JumpScroll" Grid.Row="2" MaxHeight="380" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled" IsTabStop="False">
+                        <StackPanel x:Name="JumpRows" Padding="8" Spacing="2"
+                                    AutomationProperties.Name="Results" />
+                    </ScrollViewer>
+                    <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="20,18" TextWrapping="Wrap" Visibility="Collapsed"
+                               FontSize="{StaticResource SubtitleSize}" Foreground="{ThemeResource secondary}" />
+                    <Grid Grid.Row="3" Padding="14,0" BorderBrush="{ThemeResource separator}" BorderThickness="0,1,0,0"
+                          AutomationProperties.Name="Up and Down to move, Enter to open, Ctrl+Enter to launch on a server">
+                        <StackPanel x:Name="JumpFooter" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

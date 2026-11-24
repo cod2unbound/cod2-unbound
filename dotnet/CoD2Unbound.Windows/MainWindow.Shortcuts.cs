@@ -22,6 +22,7 @@ public sealed partial class MainWindow
                 var key = chord.Split('+')[^1] switch
                 {
                     "," => (VirtualKey)0xBC, // VK_OEM_COMMA
+                    "/" => (VirtualKey)0xBF, // VK_OEM_2
                     "1" => VirtualKey.Number1, "2" => VirtualKey.Number2,
                     "3" => VirtualKey.Number3, "4" => VirtualKey.Number4,
                     var name => Enum.Parse<VirtualKey>(name)
@@ -53,7 +54,7 @@ public sealed partial class MainWindow
         ShellCommand.Library or ShellCommand.Configs or ShellCommand.Settings or ShellCommand.Jump or ShellCommand.Find or
         ShellCommand.RefreshServers or ShellCommand.Connect or ShellCommand.Favorite or ShellCommand.CopyAddress or
         ShellCommand.FilterServers or ShellCommand.Import or ShellCommand.Paste or ShellCommand.NewLoadout or
-        ShellCommand.FullScreen or ShellCommand.Help;
+        ShellCommand.FullScreen or ShellCommand.Help or ShellCommand.ShortcutHelp;
 
     private GameServer? LastJumpServer => session.Library.Recent.FirstOrDefault() is { } address
         ? session.ServerForAddress(address) : null;
@@ -61,8 +62,8 @@ public sealed partial class MainWindow
     private bool CanRunShellCommand(ShellCommand command)
     {
         if (command == ShellCommand.Help)
-            return initialized && JumpBox.IsEnabled && !busy && !closing;
-        if (!initialized || !JumpBox.IsEnabled || closing)
+            return initialized && jumpEnabled && !busy && !closing;
+        if (!initialized || !jumpEnabled || closing)
             return false;
         if (busy && command is not (ShellCommand.Jump or ShellCommand.ReturnToGame) &&
             (command != ShellCommand.RefreshServers || ContentFrame.Content is not ServersPage { IsRefreshing: true }))
@@ -102,32 +103,34 @@ public sealed partial class MainWindow
         };
     }
 
+    // The Mac's menu-bar commands, in its order and words (JumpPalette.swift actions), plus what Windows adds:
+    // returning to and closing the game, and the hosting commands while Hosting is open.
     private IEnumerable<JumpTarget> JumpActions()
     {
-        yield return Action(ShellCommand.Connect, "Connect to an address…");
-        yield return Action(ShellCommand.RefreshServers, "Refresh server list");
+        yield return Action(ShellCommand.Connect, "Connect to Address…");
+        yield return Action(ShellCommand.RefreshServers, "Refresh Server List");
         yield return Action(ShellCommand.Launch, LastJumpServer is { } server ? $"Launch on {QuakeColors.Plain(server.Name)}" : "Launch");
-        yield return Action(ShellCommand.OpenGameMenu, "Open game menu");
+        yield return Action(ShellCommand.OpenGameMenu, "Open Game Menu");
         foreach (var action in JumpIndex.GameActions(CanRunShellCommand(ShellCommand.ReturnToGame),
                      closingGame: !CanRunShellCommand(ShellCommand.CloseGame)))
-            yield return action;
-        yield return Action(ShellCommand.Import, "Import config…");
-        yield return Action(ShellCommand.Paste, "Paste config");
+            yield return action with { Title = action.Id == nameof(ShellCommand.ReturnToGame) ? "Return to Game" : "Close Game" };
+        yield return Action(ShellCommand.Import, "Import Config…");
+        yield return Action(ShellCommand.Paste, "Paste Config");
         yield return Action(ShellCommand.Home, "Home");
         yield return Action(ShellCommand.Servers, "Servers");
         yield return Action(ShellCommand.Library, "Library");
         yield return Action(ShellCommand.Configs, "Configs");
-        yield return Action(ShellCommand.Settings, "Settings");
+        yield return Action(ShellCommand.Settings, "Settings…");
         yield return Action(ShellCommand.Checkup, "Run Check-up");
         yield return Action(ShellCommand.History, "Show History");
-        yield return Action(ShellCommand.GameDataFolder, "Show game data in File Explorer");
-        yield return Action(ShellCommand.MyFilesFolder, "Show my files in File Explorer");
-        yield return Action(ShellCommand.LogsFolder, "Show logs in File Explorer");
-        yield return Action(ShellCommand.CheckUpdates, "Check for updates…");
-        yield return Action(ShellCommand.ShortcutHelp, "Keyboard shortcuts");
-        yield return Action(ShellCommand.ReleaseNotes, "Release notes");
-        yield return Action(ShellCommand.ReportProblem, "Report a problem…");
-        yield return Action(ShellCommand.ClearRecent, "Clear recent servers");
+        yield return Action(ShellCommand.GameDataFolder, "Show Game Data in File Explorer");
+        yield return Action(ShellCommand.MyFilesFolder, "Show My Files in File Explorer");
+        yield return Action(ShellCommand.LogsFolder, "Show Logs in File Explorer");
+        yield return Action(ShellCommand.CheckUpdates, "Check for Updates…");
+        yield return Action(ShellCommand.ShortcutHelp, "Keyboard Shortcuts");
+        yield return Action(ShellCommand.ReleaseNotes, "Release Notes");
+        yield return Action(ShellCommand.ReportProblem, "Report a Problem…");
+        yield return Action(ShellCommand.ClearRecent, "Clear Recent Servers");
         if (ContentFrame.Content is ServersPage { ActiveHosting: not null })
             foreach (var target in JumpIndex.HostingActions(CanRunShellCommand))
                 yield return target;
@@ -147,8 +150,12 @@ public sealed partial class MainWindow
         }
         if (command == ShellCommand.Jump)
         {
-            JumpBox.Focus(FocusState.Keyboard);
             OpenJumpTo();
+            return;
+        }
+        if (command == ShellCommand.Settings)
+        {
+            OpenSettingsWindow(null);
             return;
         }
         if (command == ShellCommand.Help)
@@ -189,7 +196,6 @@ public sealed partial class MainWindow
                 case ShellCommand.Servers: await NavigateAsync(LauncherPlace.Servers); break;
                 case ShellCommand.Library: await NavigateAsync(LauncherPlace.Library); break;
                 case ShellCommand.Configs: await NavigateAsync(LauncherPlace.Configs); break;
-                case ShellCommand.Settings: await NavigateAsync(LauncherPlace.Settings); break;
                 case ShellCommand.Launch:
                 case ShellCommand.OpenGameMenu:
                     await LaunchFromShellAsync(useServer: command == ShellCommand.Launch);
@@ -216,7 +222,7 @@ public sealed partial class MainWindow
                     await OpenAsync(session.LogsPath);
                     break;
                 case ShellCommand.CheckUpdates:
-                    await NavigateAsync(LauncherPlace.UpdateSettings);
+                    OpenSettingsWindow(SettingsPage.UpdatesPane);
                     await RunUpdateAsync(install: false);
                     break;
                 case ShellCommand.ShortcutHelp: await KeyboardShortcutsDialog.ShowAsync(this); break;
@@ -224,8 +230,7 @@ public sealed partial class MainWindow
                     await ShowReleaseNotesAsync(session.Updates.State.Offer?.Version ?? session.Version);
                     break;
                 case ShellCommand.ReportProblem:
-                    await OpenSettingsPaneAsync("About");
-                    await ((SettingsPage)ContentFrame.Content).ReportProblemFromShellAsync();
+                    await ShowProblemReportAsync();
                     break;
                 case ShellCommand.ClearRecent:
                     await ClearRecentFromShellAsync();
@@ -249,12 +254,6 @@ public sealed partial class MainWindow
         await action((ConfigsPage)ContentFrame.Content);
     }
 
-    internal async Task OpenSettingsPaneAsync(string pane)
-    {
-        if (ContentFrame.Content is not SettingsPage)
-            await NavigateAsync(LauncherPlace.Settings);
-        ((SettingsPage)ContentFrame.Content).OpenJumpPane(pane);
-    }
 
     internal Task OpenConnectAsync() => RunAsync(ConnectFromShellAsync);
 
