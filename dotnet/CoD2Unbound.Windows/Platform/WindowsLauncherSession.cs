@@ -500,7 +500,7 @@ internal sealed partial class WindowsLauncherSession
         return new SetupSession(files, folder, credentials, initialPath, hasKey, canCancel: review, step: step,
             hasReportService: Reports.CrashAvailable && (review || (!Settings.Working.CrashReportsAsked && !SetupComplete)),
             hasUsageService: review ? Reports.Usage.Available : Reports.Usage.ShouldAsk && !SetupComplete,
-            deferWrites: wizard);
+            unfinishedSteam: WindowsGameDiscovery.SteamDownloadUnfinished, deferWrites: wizard);
     }
 
     private sealed class ProbeCredentials(bool rejectServerWrites) : ISecretStore
