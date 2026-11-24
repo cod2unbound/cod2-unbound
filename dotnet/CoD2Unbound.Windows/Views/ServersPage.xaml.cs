@@ -217,10 +217,14 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     private void UpdateToolbarOverflow(double width)
     {
         // Budgets are in the caption-clear toolbar space. Shrink search before either trailing group leaves.
-        bool hideStatus = width < 750;
-        bool hideConnect = width < 920;
-        double trailing = !hideConnect ? 760 : !hideStatus ? 590 : 530;
-        SearchBox.Width = Math.Clamp(width - trailing, 160, 280);
+        const double minimumSearch = 160;
+        const double allCommands = 806;
+        const double statusAndOverflow = 670;
+        const double overflowOnly = 522;
+        bool hideStatus = width < statusAndOverflow + minimumSearch;
+        bool hideConnect = width < allCommands + minimumSearch;
+        double otherControls = !hideConnect ? allCommands : !hideStatus ? statusAndOverflow : overflowOnly;
+        SearchBox.Width = Math.Clamp(width - otherControls, minimumSearch, 280);
         RefreshPill.Visibility = IsVisible(!hideStatus);
         OverflowCount.Visibility = OverflowRefresh.Visibility = IsVisible(hideStatus);
         ConnectButton.Visibility = IsVisible(!hideConnect);
@@ -341,7 +345,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     {
         if (sender is Button { Tag: string value } && Enum.TryParse<ServerSort>(value, out var sort))
         {
-                model.SortBy(sort);
+            model.SortBy(sort);
             RenderSort();
             Render();
         }
@@ -507,6 +511,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
             : total == 0 ? "Not refreshed yet" : $"{total} {noun}";
         RefreshStatus.Text = status;
         OverflowCount.Text = status;
+        AutomationProperties.SetHelpText(ToolbarOverflow, status);
         RefreshBanner.Visibility = IsVisible(active);
         if (active)
         {

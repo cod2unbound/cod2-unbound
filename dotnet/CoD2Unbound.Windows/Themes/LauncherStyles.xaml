@@ -655,6 +655,12 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}" />
+    <Style x:Key="HostedPlayerItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
     <Style TargetType="GridViewItem">
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />

@@ -21,7 +21,7 @@ public sealed partial class HostingPage
         private readonly HostedServer server;
         private readonly Button join;
         private readonly StackPanel joinRows = new() { Spacing = 1 };
-        private readonly ItemsControl playerRows = new();
+        private readonly ListView playerRows = PlayerList();
         private readonly ObservableCollection<Border> inlineRows = [];
         private readonly Border emptyPlayers = SettingRow("No players connected", null, grouped: true);
         private readonly Border morePlayers;
@@ -91,7 +91,7 @@ public sealed partial class HostingPage
             AutomationProperties.SetName(log, "Server log");
             tail = new ScrollViewer
             {
-                MinHeight = 295, Content = log, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Height = 295, Content = log, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 Padding = new Thickness(10), ZoomMode = ZoomMode.Disabled
             };
             var reveal = page.Action("Show in File Explorer", () => OpenAsync(page.hosting.LogFolder(server.Id)));
@@ -122,15 +122,19 @@ public sealed partial class HostingPage
                 Content.ColumnDefinitions[1].Width = narrow ? new GridLength(0) : Fill;
                 Grid.SetRow(logPanel, narrow ? 1 : 0);
                 Grid.SetColumn(logPanel, narrow ? 0 : 1);
+                ResizeLog(narrow);
             };
             Content.Loaded += (_, _) => page.DetailScroll.SizeChanged += ResizePlayerList;
             Content.Unloaded += (_, _) => page.DetailScroll.SizeChanged -= ResizePlayerList;
 
             void ResizePlayerList(object sender, SizeChangedEventArgs args)
             {
+                ResizeLog(Content.ActualWidth < 620);
                 inlineLimit = args.NewSize.Height < 575 ? 3 : 6;
                 UpdatePlayers(HostedDashboard.From(server, page.hosting.DashboardState(page.State(server))));
             }
+
+            void ResizeLog(bool stacked) => tail.Height = stacked ? 295 : Math.Max(295, page.DetailScroll.ActualHeight - 166);
         }
 
         internal async Task UpdateAsync(HostedRunState state)
@@ -255,11 +259,10 @@ public sealed partial class HostingPage
         {
             var rows = new ObservableCollection<Border>();
             var empty = SettingRow("No players connected", null, grouped: true);
-            var list = new ScrollViewer
-            {
-                Content = Card(new StackPanel { Children = { empty, new ItemsControl { ItemsSource = rows } } }),
-                MaxHeight = 360, VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-            };
+            var players = PlayerList();
+            players.ItemsSource = rows;
+            players.MaxHeight = 360;
+            var list = Card(new StackPanel { Children = { empty, players } });
             var count = Caption("");
             updateModal = roster =>
             {
@@ -283,9 +286,16 @@ public sealed partial class HostingPage
             internal TextBlock Ping { get; } = ping;
             internal Button Kick { get; } = kick;
         }
+        private static ListView PlayerList() => new()
+        {
+            SelectionMode = ListViewSelectionMode.None,
+            IsItemClickEnabled = false,
+            ItemContainerStyle = StyleFor("HostedPlayerItem")
+        };
+
         private static TextBlock NumberValue(string value = "") => new()
         {
-            Text = value, Style = StyleFor("TypePage"),
+            Text = value, Style = StyleFor("StencilText"), FontSize = 30,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
 

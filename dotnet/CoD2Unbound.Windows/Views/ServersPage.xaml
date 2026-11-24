@@ -301,8 +301,8 @@
                                     <Image x:Name="DetailArt" Stretch="UniformToFill" />
                                 </Border>
                                 <StackPanel Spacing="6" Margin="6,0">
-                                    <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" FontSize="12" />
-                                    <TextBlock x:Name="DetailName" Style="{StaticResource TypePanel}" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" FontSize="12" Foreground="{ThemeResource accent}" />
+                                    <TextBlock x:Name="DetailName" Style="{StaticResource TypePanel}" FontSize="19" TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" VerticalAlignment="Center"
                                                    MaxWidth="214" Style="{StaticResource AddressText}" />
@@ -337,14 +337,14 @@
                                         <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="40" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="DetailRoster" Style="{StaticResource SecondaryText}" FontSize="12" />
+                                    <TextBlock x:Name="DetailRoster" Style="{StaticResource Eyebrow}" FontSize="12" Foreground="{ThemeResource tertiary}" />
                                     <TextBlock Grid.Column="1" Text="Score" Style="{StaticResource SecondaryText}" FontSize="12" TextAlignment="Right" />
                                     <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource SecondaryText}" FontSize="12" TextAlignment="Right" />
                                 </Grid>
                                 <StackPanel x:Name="Roster" Spacing="2" Margin="6,0" />
                             </StackPanel>
                         </ScrollViewer>
-                        <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid Grid.Row="1" ColumnSpacing="8" Margin="6,0,6,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />

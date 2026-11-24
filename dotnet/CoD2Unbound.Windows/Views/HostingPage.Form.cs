@@ -69,7 +69,7 @@ public sealed partial class HostingPage
             IsNew = isNew;
             EditingRunning = editingRunning;
             previews = new(map => Task.Run(() => page.session.ReadMapArtwork(map)));
-            name = new() { Text = server.Name, MaxLength = 64, Width = 155 };
+            name = new() { Text = server.Name, MaxLength = 64, Width = 200 };
             AutomationProperties.SetName(name, "Server name");
             edition = Segments("Game version", ["CoD2x", "Original 1.3"], (int)server.Engine);
             reach = Choice("Who can join", ["My Network", "The Internet"], page.hosting.LoopbackOnly ? 0 : (int)server.Reach);
@@ -78,11 +78,11 @@ public sealed partial class HostingPage
             slots = Choice("Player slots", values.Select(value => value.ToString()).ToArray(), Array.IndexOf(values, server.Players));
             port = Number("UDP port", 1025, 65535, server.Port);
             join = new() { Password = server.JoinPassword, MaxLength = 32, PasswordRevealMode = PasswordRevealMode.Hidden,
-                PlaceholderText = "None", Width = 122 };
+                PlaceholderText = "None", Width = 180 };
             AutomationProperties.SetName(join, "Password to join");
             admin = new() { Password = server.AdminPassword, MaxLength = 32, PasswordRevealMode = PasswordRevealMode.Peek, Width = 122 };
             AutomationProperties.SetName(admin, "Admin password");
-            rules = Segments("Rules", ["Public", "Competitive"], (int)server.Rules);
+            rules = Segments("Rules", ["Public", "Competitive · zPAM"], (int)server.Rules);
             type = Choice("Game type", HostingCatalog.GameTypes.Select(item => item.Title).ToArray(),
                 HostingCatalog.GameTypes.IndexOf((server.GameType, HostingCatalog.GameTypeTitle(server.GameType))));
             match = Choice("Match mode", HostingCatalog.MatchModes.Select(item => item.Title).ToArray(),
