@@ -105,6 +105,8 @@ public sealed partial class ConfigsPage
                 sources.RemoveAll(item => item.SetupId is not null);
                 sources.AddRange(saved.Where(item => item.Entry is not null)
                     .Select(item => new ExpertSource(item.Entry!.Player, SetupId: item.Id)));
+                if (comparison?.Source is { SetupId: not null } player && !sources.Contains(player))
+                    sources.Add(player);
                 choices.ItemsSource = sources.ToArray();
                 choices.SelectedItem = sources.FirstOrDefault(item => item == comparison?.Source) ?? nobody;
                 rebuilding = false;
@@ -127,7 +129,7 @@ public sealed partial class ConfigsPage
             try
             {
                 var candidate = requested.LoadoutId is { } id ? new ExpertComparison(requested, model.Studio.ReadProfile(id), null) :
-                    new ExpertComparison(requested, null, await model.ReadSavedSettingsAsync(requested.SetupId!));
+                    new ExpertComparison(requested, null, await model.ReadSetupSettingsAsync(requested.SetupId!));
                 if (choices.IsLoaded && Equals(choices.SelectedItem, requested))
                 {
                     comparison = candidate;

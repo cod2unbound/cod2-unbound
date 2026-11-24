@@ -515,7 +515,7 @@ public sealed partial class ConfigsPage
             var view = Action("See this setup", () => ShowSetupAsync(entry, false));
             view.Style = StyleFor("LauncherAccentButton");
             picture.Content = SetupHero(entry, $"Featured setup · {entry.Era}", view,
-                Bookmark(entry), hasPager);
+                Bookmark(entry), featured: true, withPips: hasPager);
         }
     }
 
@@ -716,9 +716,29 @@ public sealed partial class ConfigsPage
         var notableCard = Panel(notable);
         var changes = new StackPanel { Spacing = 8 };
         var inSetup = new StackPanel { Spacing = 8 };
-        var columns = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
-        Put(columns, 0, new StackPanel { Spacing = 12, Children = { Panel(story), notableCard } });
-        Put(columns, 1, new StackPanel { Spacing = 12, Children = { Panel(changes), Panel(inSetup) } });
+        var storyAndFacts = new StackPanel { Spacing = 16, Children = { Panel(story), notableCard } };
+        var contentsCard = Panel(inSetup);
+        var changesCard = Panel(changes);
+        var columns = Columns(16, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
+        columns.RowSpacing = 16;
+        columns.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        columns.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        columns.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
+        Put(columns, 0, storyAndFacts);
+        Put(columns, 0, contentsCard);
+        Put(columns, 1, changesCard);
+        Grid.SetRow(contentsCard, 1);
+        Grid.SetRowSpan(changesCard, 2);
+        columns.SizeChanged += (_, args) =>
+        {
+            bool stacked = args.NewSize.Width < 760;
+            columns.ColumnDefinitions[1].Width = new GridLength(stacked ? 0 : 1, GridUnitType.Star);
+            columns.RowDefinitions[2].Height = stacked ? GridLength.Auto : new GridLength(0);
+            Grid.SetColumn(changesCard, stacked ? 0 : 1);
+            Grid.SetRow(changesCard, stacked ? 1 : 0);
+            Grid.SetRowSpan(changesCard, stacked ? 1 : 2);
+            Grid.SetRow(contentsCard, stacked ? 2 : 1);
+        };
         Detail.Children.Add(columns);
         Detail.Children.Add(Provenance(entry));
 
@@ -804,18 +824,26 @@ public sealed partial class ConfigsPage
 
                 var compare = Action("Compare", async () =>
                 {
-                    var all = new StackPanel { Spacing = 6, MinWidth = 320 };
-                    foreach (var row in rows)
-                        all.Children.Add(SettingRow(row.Title, Comparison(row)));
-                    await new ContentDialog
-                    {
-                        XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Compare setups",
-                        Content = new ScrollViewer { Content = all, MaxHeight = 338 }, CloseButtonText = "Close"
-                    }.ShowAsync();
+                    if (active is null || !await ConfirmLeaveTextAsync())
+                        return;
+                    var player = await model.ReadSetupSettingsAsync(entry.Id);
+                    model.Studio.Focus(active.Profile.Id);
+                    loadoutText = null;
+                    studioTab = 0;
+                    expert = true;
+                    expertFilter = ConfigExpertFilter.Group;
+                    ClearSettingSearch();
+                    comparison = new ExpertComparison(new ExpertSource(entry.Player, SetupId: entry.Id), null, player);
+                    ShowStudio();
+                    RenderLoadouts();
                 });
                 compare.Style = StyleFor("SubtleAction");
-                compare.IsEnabled = rows.Length > 0;
-                changes.Children.Add(Buttons(compare, import));
+                compare.IsEnabled = active is not null && rows.Length > 0;
+                changes.Children.Remove(heading);
+                var tools = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+                Put(tools, 0, heading);
+                Put(tools, 1, Buttons(compare, import));
+                changes.Children.Add(tools);
 
                 var different = rows.Where(row => row.Locked || row.Before != row.After).ToArray();
                 foreach (var row in different.Take(6))
@@ -928,7 +956,8 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private Border SetupHero(ConfigDirectoryEntry entry, string eyebrow, Button primary, Button bookmark, bool withPips = false)
+    private Border SetupHero(ConfigDirectoryEntry entry, string eyebrow, Button primary, Button bookmark,
+        bool featured = false, bool withPips = false)
     {
         var art = Artwork(entry, new CornerRadius(4));
         var body = new Grid { MinHeight = 240, Children = { art, new Border { Style = StyleFor("SetupHeroScrim") } } };
@@ -948,7 +977,8 @@ public sealed partial class ConfigsPage
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Child = text });
         Put(footer, 2, actions);
         body.Children.Add(footer);
-        body.SizeChanged += (_, args) => body.MinHeight = args.NewSize.Width >= 850 ? 300 : 240;
+        if (featured)
+            body.SizeChanged += (_, args) => body.MinHeight = args.NewSize.Width >= 850 ? 300 : 240;
         return new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = body };
     }
 
