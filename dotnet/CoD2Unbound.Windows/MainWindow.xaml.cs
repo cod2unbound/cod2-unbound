@@ -397,6 +397,7 @@ public sealed partial class MainWindow : Window
             // its line box to the icon box's height so the item's Viewbox draws it at 16 rather than enlarging it.
             var icon = Fluent("StarFilled", 16, filled: true);
             icon.Margin = new Thickness(1);
+            icon.RenderTransform = new TranslateTransform { Y = 1 };
             if (!IsHighContrast)
                 icon.Foreground = ThemeBrush("accent", Root.ActualTheme, false);
             string plain = QuakeColors.Plain(favorite.Name);

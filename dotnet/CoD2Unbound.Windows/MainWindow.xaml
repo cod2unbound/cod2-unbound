@@ -73,16 +73,16 @@
             </NavigationView.PaneCustomContent>
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="18" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="18"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarHomeGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="ServersItem" Content="Servers" AccessKey="S" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="18" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="18"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="LibraryItem" Content="Library" AccessKey="L" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="18" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="18"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="ConfigsItem" Content="Configs" AccessKey="C" Style="{StaticResource ShellNavItem}">
-                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18"><FontIcon.RenderTransform><TranslateTransform Y="{StaticResource SidebarGlyphNudge}" /></FontIcon.RenderTransform></FontIcon></NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.PaneFooter>
@@ -93,7 +93,9 @@
                         ToolTipService.ToolTip="Settings (Ctrl+,)" AccessKey="T">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18"
-                                  AutomationProperties.AccessibilityView="Raw" />
+                                  AutomationProperties.AccessibilityView="Raw">
+                            <FontIcon.RenderTransform><TranslateTransform Y="1" /></FontIcon.RenderTransform>
+                        </FontIcon>
                         <TextBlock x:Name="SettingsLabel" Text="Settings" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -110,8 +112,8 @@
                             <TextBlock x:Name="PaneLoadout" Style="{StaticResource TypeLabel}"
                                        Foreground="{ThemeResource secondary}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                        <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronRight}"
-                                  FontSize="11" Foreground="{ThemeResource tertiary}"
+                        <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronRight20}"
+                                  FontSize="12" Foreground="{ThemeResource tertiary}"
                                   AutomationProperties.AccessibilityView="Raw" />
                     </Grid>
                     <Button.Flyout>
