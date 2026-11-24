@@ -12,8 +12,11 @@
         </Style>
         <!-- A recent row: the whole row is the button, rounded like a crate, 7 in around the art. -->
         <!-- The cards' lists are stock ListViews: the item container keeps its own keyboard, pointer and
-             Narrator behaviour; only its shape, padding and the Mac's hover fill change. -->
-        <Style x:Key="RecentItem" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+             Narrator behaviour; only its shape, padding and the Mac's hover fill change. No BasedOn: WinUI
+             always applies the control's own default style beneath an explicit Style, and its internal
+             Default*Style keys cannot be resolved from a page (Cannot find a Resource with the Name/Key
+             DefaultDropDownButtonStyle, native start crash 2026-11-24). -->
+        <Style x:Key="RecentItem" TargetType="ListViewItem">
             <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
             <Setter Property="Padding" Value="7,7,17,7" />
             <Setter Property="Margin" Value="0,0,0,4" />
@@ -21,7 +24,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
-        <Style x:Key="NewsItem" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+        <Style x:Key="NewsItem" TargetType="ListViewItem">
             <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,0,0,14" />
@@ -30,7 +33,7 @@
         </Style>
         <!-- The loadout capsule is a stock DropDownButton (its own chevron, flyout and expand/collapse
              pattern) in the large glass chip's shape. -->
-        <Style x:Key="LoadoutChipStyle" TargetType="DropDownButton" BasedOn="{StaticResource DefaultDropDownButtonStyle}">
+        <Style x:Key="LoadoutChipStyle" TargetType="DropDownButton">
             <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
             <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
             <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
