@@ -26,6 +26,21 @@
                            FontSize="12" />
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="AdvancedBindRow">
+            <Grid ColumnSpacing="12" AutomationProperties.Name="{Binding Title}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource StudioMonogramTile}">
+                    <TextBlock Text="{Binding Key}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Summary}" Style="{StaticResource SecondaryText}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
         <DataTemplate x:Key="CheckerLine">
             <Border Padding="8,4" Loaded="OnCheckerLineLoaded" DataContextChanged="OnCheckerLineContextChanged"
                     ActualThemeChanged="OnCheckerLineThemeChanged" AutomationProperties.Name="{Binding AccessibleName}">

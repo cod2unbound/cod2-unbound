@@ -310,6 +310,17 @@ public sealed partial class ConfigsPage : Page
         studioModes.Style = StyleFor("SegmentedLarge");
         AutomationProperties.SetName(studioModes, "Detail level");
         studioHeaderActions.Children.Add(studioModes);
+        bindModes = Tabs(["List", "Visual"], bindView, index =>
+        {
+            if (bindView == index)
+                return;
+            bindView = index;
+            bindApproval = null;
+            RenderStudioBody();
+        });
+        bindModes.Style = StyleFor("SegmentedLarge");
+        AutomationProperties.SetName(bindModes, "Show binds as");
+        studioHeaderActions.Children.Add(bindModes);
         Detail.Children.Add(CheckPair(identity, studioHeaderActions, 590, rightAuto: true));
         var readOnly = CheckNotice(InfoBarSeverity.Informational, "Read-only while playing", ConfigProfileException.ReadOnlyWhilePlaying);
         readOnly.IsOpen = state.ReadOnly;
@@ -326,6 +337,12 @@ public sealed partial class ConfigsPage : Page
     {
         if (studioModes is not null)
             studioModes.Visibility = IsVisible(studioTab == 0);
+        if (bindModes is { } modes)
+        {
+            modes.Visibility = IsVisible(studioTab == 1);
+            if (modes.SelectedItem != modes.Items[bindView])
+                modes.SelectedItem = modes.Items[bindView];
+        }
         if (studioChangedCount is not null)
         {
             studioChangedCount.Visibility = IsVisible(studioTab == 0 && expert);

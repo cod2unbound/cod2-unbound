@@ -11,6 +11,7 @@ public sealed partial class ConfigsPage
     private readonly Grid configToolbar = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
     private TextBlock? studioChangedCount;
     private Button? studioNext;
+    private SelectorBar? bindModes;
 
     private void PositionConfigToolbar()
     {

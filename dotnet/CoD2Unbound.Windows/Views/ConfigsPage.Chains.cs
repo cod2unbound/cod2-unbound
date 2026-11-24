@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -21,6 +22,10 @@ public sealed partial class ConfigsPage
     private static readonly string[] ChainStepKinds =
         ["Set my name to", "Say to everyone", "Say to team", "Do an action", "Run a console command"];
 
+    private sealed record AdvancedBindRow(ConfigChain Chain, string Key, string Title, string Summary);
+
+    private readonly ObservableCollection<AdvancedBindRow> advancedBindRows = [];
+
     private void BuildChainRail(StackPanel panel, ConfigStudioState state, ConfigProfileRead profile)
     {
         var title = new StackPanel { Spacing = 2, Children =
@@ -28,12 +33,14 @@ public sealed partial class ConfigsPage
             new TextBlock { Text = "Advanced binds", Style = StyleFor("SectionTitle") },
             Caption("One key that does more than one thing.")
         }};
-        var add = SmallButton("New bind", () =>
+        var add = SmallButton("New Bind", () =>
         {
             chainDraft = ConfigChainDraft.New(ConfigChains.OwnedChains(profile));
             listenOnNewChain = true;
             RenderStudioBody();
         });
+        add.Content = IconLabel("AddSmall", "New Bind", 16);
+        add.Style = StyleFor("QuietButton");
         add.IsEnabled = !state.ReadOnly;
         var row = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
         Put(row, 0, title);
@@ -41,19 +48,38 @@ public sealed partial class ConfigsPage
         panel.Children.Add(row);
         try
         {
-            foreach (var chain in ConfigChains.OwnedChains(profile))
+            var chains = ConfigChains.OwnedChains(profile);
+            advancedBindRows.Reconcile(chains.Select(chain =>
             {
+                int kind = (int)ConfigChainDraft.From(chain).Kind;
                 string key = EngineKey.Parse(chain.Key) is { } parsed ? KeyLabel(parsed) : chain.Key;
-                var open = SmallButton($"{key} · {chain.Name ?? ChainKinds[(int)ConfigChainDraft.From(chain).Kind]}", () =>
+                return new AdvancedBindRow(chain, key, chain.Name ?? ChainKinds[kind], ChainKindsHelp[kind]);
+            }).ToArray(), item => item.Chain.Id);
+            if (advancedBindRows.Count > 0)
+            {
+                var list = new ListView
                 {
-                    chainDraft = ConfigChainDraft.From(chain);
-                    RenderStudioBody();
-                });
-                panel.Children.Add(open);
+                    ItemsSource = advancedBindRows, ItemTemplate = (DataTemplate)Resources["AdvancedBindRow"],
+                    ItemContainerStyle = StyleFor("StudioColumnItem"),
+                    SelectedItem = advancedBindRows.FirstOrDefault(item => item.Chain.Id == chainDraft?.Id)
+                };
+                AutomationProperties.SetName(list, "Advanced binds");
+                list.SelectionChanged += (_, _) =>
+                {
+                    if (list.SelectedItem is AdvancedBindRow item && item.Chain.Id != chainDraft?.Id)
+                    {
+                        chainDraft = ConfigChainDraft.From(item.Chain);
+                        RenderStudioBody();
+                    }
+                };
+                panel.Children.Add(BindCard(list));
             }
+            else
+                panel.Children.Add(Caption("No advanced binds yet."));
         }
         catch (ConfigChainException error)
         {
+            advancedBindRows.Clear();
             add.IsEnabled = false;
             panel.Children.Add(new InfoBar
             {
@@ -99,9 +125,18 @@ public sealed partial class ConfigsPage
         delete.IsEnabled = !state.ReadOnly;
         var status = Caption("Saved as you go");
         panel.Children.Add(heading);
-        panel.Children.Add(name);
-        panel.Children.Add(new StackPanel { Spacing = 2, Children = { Caption("Key"), key } });
-        panel.Children.Add(kind);
+        name.Header = null;
+        name.Style = StyleFor("CapsuleTextBox");
+        name.Width = 190;
+        kind.Header = null;
+        kind.MaxWidth = 190;
+        AutomationProperties.SetName(name, "Name");
+        AutomationProperties.SetName(kind, "Type");
+        var identity = new StackPanel();
+        AddBindRow(identity, SettingRow("Name", null, name, grouped: true));
+        AddBindRow(identity, SettingRow("Key", null, key, grouped: true));
+        AddBindRow(identity, SettingRow("Type", null, kind, grouped: true));
+        panel.Children.Add(BindCard(identity));
         panel.Children.Add(help);
         panel.Children.Add(steps);
         panel.Children.Add(preview);

@@ -31,59 +31,89 @@ public sealed partial class ConfigsPage
         var details = new StackPanel { Spacing = 4 };
         var keyTiles = new Dictionary<Button, EngineKey>();
         var keyboardDrawing = new StackPanel { Spacing = 3 };
-        var keyboardHeader = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(keyboardHeader, 0, new TextBlock { Text = "Keyboard", Style = StyleFor("SectionTitle") });
-        var settings = new Button { Content = $"{keyboard.Name} · {PcKeyboardVerification.SizeName(keyboardSize)} ▾" };
+        var keyboardHeader = Columns(16, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+        var settings = new Button { Style = StyleFor("SmallAction") };
         AutomationProperties.SetName(settings, "Keyboard layout and size");
-        var picker = new ComboBox { Header = "Size", ItemsSource = KeyboardSizes.Select(PcKeyboardVerification.SizeName).ToArray(),
+        UpdateKeyboardLabel();
+        var picker = new ComboBox { ItemsSource = KeyboardSizes.Select(PcKeyboardVerification.SizeName).ToArray(),
             SelectedIndex = Array.IndexOf(KeyboardSizes, keyboardSize) };
+        AutomationProperties.SetName(picker, "Size");
         picker.SelectionChanged += (_, _) =>
         {
             if (picker.SelectedIndex >= 0)
             {
                 keyboardSize = KeyboardSizes[picker.SelectedIndex];
-                settings.Content = $"{keyboard.Name} · {PcKeyboardVerification.SizeName(keyboardSize)} ▾";
+                UpdateKeyboardLabel();
                 DrawKeys();
             }
         };
-        var verify = Action("Press keys to verify…", async () =>
+        var shapes = new KeyboardShape?[] { null, KeyboardShape.Ansi, KeyboardShape.Iso, KeyboardShape.Jis };
+        var shape = new ComboBox { ItemsSource = new[] { "Automatic", "ANSI", "ISO", "JIS" },
+            SelectedIndex = Array.IndexOf(shapes, verifiedShape) };
+        AutomationProperties.SetName(shape, "Key shape");
+        shape.SelectionChanged += (_, _) =>
+        {
+            if (shape.SelectedIndex >= 0)
+            {
+                verifiedShape = shapes[shape.SelectedIndex];
+                DrawKeys();
+            }
+        };
+        var verify = Action("Press Keys to Verify…", async () =>
         {
             (settings.Flyout as Flyout)?.Hide();
             await VerifyKeyboardAsync();
         });
-        settings.Flyout = new Flyout { Content = new StackPanel { Spacing = 8, MaxWidth = 290, Children =
+        settings.Flyout = new Flyout { Content = new StackPanel { Spacing = 12, MaxWidth = 380, Children =
         {
-            SettingRow("Keyboard", "PC keyboard"),
-            SettingRow("Layout", $"{keyboard.Name} · from Windows"),
-            picker,
+            CheckStrong("Keyboard"), Caption("Connected · detected automatically"),
+            SettingRow("Key shape", null, shape), SettingRow("Size", null, picker),
+            SettingRow("Modifier labels", "Ctrl / Win / Alt"), SettingRow("Layout", $"{keyboard.Name} · from Windows"),
             Caption("Shape and layout come from Windows. Change the size if the drawing looks wrong. Labels follow your keyboard; binds stay on the same game keys."),
             verify
         }}};
-        Put(keyboardHeader, 1, settings);
-        surface.Children.Add(keyboardHeader);
+        Put(keyboardHeader, 0, settings);
+        var instruction = Caption("Click any key or button to see or change what it does.");
+        instruction.VerticalAlignment = VerticalAlignment.Center;
+        instruction.HorizontalAlignment = HorizontalAlignment.Right;
+        Put(keyboardHeader, 1, instruction);
 
-        var legend = new StackPanel { Spacing = 4, Children = { Caption("Key groups") } };
+        var legend = new StackPanel { Spacing = 10, Children = { new TextBlock { Text = "Key colours", Style = StyleFor("GroupLabelText") } } };
         foreach (var group in Enum.GetValues<ConfigBindingGroup>())
         {
-            var swatch = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(2), Background = GroupBrush(group) };
+            var swatch = new Border { Width = 14, Height = 14, VerticalAlignment = VerticalAlignment.Center, Background = GroupBrush(group) };
             legend.Children.Add(Buttons(swatch, Caption(BindingGroup(group))));
         }
         legend.Children.Add(Caption("▧ Game can’t use this key"));
-        var columns = Columns(10, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(columns, 0, keyboardDrawing);
-        Put(columns, 1, legend);
-        surface.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = columns });
+        AutomationProperties.SetName(keyboardDrawing, "PC keyboard");
+        var keysAndLegend = CheckPair(keyboardDrawing, legend, 690, rightAuto: true);
+        var keyboardPanel = new StackPanel { Spacing = 16, Children = { keyboardHeader, keysAndLegend } };
+        surface.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = keyboardPanel });
 
-        var peripheral = new StackPanel { Spacing = 8 };
+        var peripheral = new StackPanel { Spacing = 10 };
         var pointer = new StackPanel { Spacing = 6 };
-        peripheral.Children.Add(Tabs(["Mouse", "Touchpad"], mouseTab, index => { mouseTab = index; DrawPointer(); }));
+        var pointerTabs = Tabs(["Mouse", "Touchpad"], mouseTab, index => { mouseTab = index; DrawPointer(); });
+        AutomationProperties.SetName(pointerTabs, "Pointing device");
+        peripheral.Children.Add(pointerTabs);
         peripheral.Children.Add(pointer);
-        surface.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = peripheral });
-        surface.Children.Add(MouseDpiRow(state, profile));
-        surface.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = details });
+        peripheral.Children.Add(MouseDpiRow(state, profile));
+        var pointerCard = new Border { Style = StyleFor("FieldCard"), Child = peripheral };
+        var keyCard = new Border { Style = StyleFor("FieldCard"), Child = details };
+        var lower = CheckPair(pointerCard, keyCard, 1040);
+        lower.SizeChanged += (_, args) =>
+        {
+            // At narrow widths keep the selected key beside the keyboard it describes.
+            bool compact = args.NewSize.Width < 1040;
+            Grid.SetRow(pointerCard, compact ? 1 : 0);
+            Grid.SetRow(keyCard, 0);
+        };
+        surface.Children.Add(lower);
         DrawKeys();
         DrawPointer();
         ShowSelected();
+
+        void UpdateKeyboardLabel() => settings.Content =
+            IconLabel("Desktop", $"{keyboard.Name} · {PcKeyboardVerification.SizeName(keyboardSize)}", 16);
 
         var layoutWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         layoutWatch.Tick += (_, _) =>
@@ -116,12 +146,22 @@ public sealed partial class ConfigsPage
                         else
                             BindStatus(InfoBarSeverity.Informational, "", $"{label} can’t be used by the game.");
                     });
-                    tile.Content = unavailable ? $"▧ {label}" : label;
-                    tile.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    tile.MinWidth = 0;
-                    tile.MinHeight = 30;
-                    tile.Padding = new Thickness(1);
-                    tile.FontSize = 11;
+                    tile.Style = StyleFor("StudioKeyboardKey");
+                    var keyText = MonoCaption(unavailable ? $"▧ {label}" : label);
+                    keyText.HorizontalAlignment = HorizontalAlignment.Center;
+                    keyText.TextWrapping = TextWrapping.NoWrap;
+                    keyText.TextTrimming = TextTrimming.CharacterEllipsis;
+                    var keyFace = new StackPanel { Spacing = 0, Children = { keyText } };
+                    if (!actions.IsEmpty)
+                    {
+                        var name = Caption(actions[0].Title);
+                        name.FontSize = 9;
+                        name.TextWrapping = TextWrapping.NoWrap;
+                        name.TextTrimming = TextTrimming.CharacterEllipsis;
+                        name.HorizontalAlignment = HorizontalAlignment.Center;
+                        keyFace.Children.Add(name);
+                    }
+                    tile.Content = keyFace;
                     if (!actions.IsEmpty && !shell.IsHighContrast)
                         tile.Background = GroupBrush(actions[0].Group);
                     if (key.HasValue && !unavailable)
@@ -235,7 +275,8 @@ public sealed partial class ConfigsPage
             string label = KeyLabel(key);
             string text = actions.IsEmpty ? binding is null ? "Unassigned" : "Advanced or console bind" :
                 string.Join(" and ", actions.Select(action => action.Title));
-            details.Children.Add(new TextBlock { Text = $"{label} · {text}", Style = StyleFor("SectionTitle") });
+            details.Children.Add(new TextBlock { Text = "Selected key", Style = StyleFor("GroupLabelText") });
+            details.Children.Add(new TextBlock { Text = $"{label} · {text}", Style = StyleFor("SectionTitle"), TextWrapping = TextWrapping.Wrap });
             if (!actions.IsEmpty)
                 details.Children.Add(Caption(BindingGroup(actions[0].Group)));
             if (binding is not null)
