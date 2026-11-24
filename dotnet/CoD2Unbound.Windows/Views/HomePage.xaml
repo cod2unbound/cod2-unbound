@@ -78,7 +78,7 @@
         <Grid x:Name="ArtLayer" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
             <Border x:Name="PanelPalette" Background="{ThemeResource GroundBrush}" />
             <Grid x:Name="ArtCanvas" VerticalAlignment="Top" Height="620">
-                <Image x:Name="HeroArt" Stretch="UniformToFill" />
+                <Image x:Name="HeroArt" Stretch="UniformToFill" AutomationProperties.AccessibilityView="Raw" />
                 <Rectangle x:Name="HeroScrim" />
                 <Rectangle x:Name="HeroVignette" />
                 <Rectangle x:Name="HeroFade" />
