@@ -2574,12 +2574,41 @@ void Dvar_SetColorByName(const char *dvarName, int r, int g, int b, int a)
     Dvar_SetColorFromSource(var, (float)red, (float)green, (float)blue, (float)alpha, DVAR_SOURCE_INTERNAL);
 }
 
+#if COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+static const char *dvarConfigureProtectedNames;
+
+void Dvar_ProtectConfigureValues(const char *names)
+{
+    dvarConfigureProtectedNames = names;
+}
+
+static qboolean Dvar_IsProtectedDuringConfigure(const char *name)
+{
+    size_t length = strlen(name);
+    const char *entry = dvarConfigureProtectedNames;
+    while (*entry) {
+        size_t entryLength = strcspn(entry, " ");
+        if (entryLength == length && !strnicmp(entry, name, length))
+            return 1;
+        entry += entryLength;
+        if (*entry)
+            ++entry;
+    }
+    return 0;
+}
+#endif
+
 const dvar_t *Dvar_SetFromStringByNameFromSource(const char *dvarName, const char *string, DvarSetSource source)
 {
     const dvar_t *dvar;
 
     dvar = Dvar_FindVar_inl(dvarName);
     if (dvar) {
+#if COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+        // configure_mp.cfg and the CSV rows both set dvars through this function.
+        if (dvarConfigureProtectedNames && Dvar_IsProtectedDuringConfigure(dvarName))
+            return dvar;
+#endif
         Dvar_SetFromStringFromSourceReg(dvar, string, source);
         return dvar;
     }

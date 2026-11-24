@@ -208,7 +208,9 @@ public sealed partial class ConfigProfileStore(
     }
 
     internal static ImmutableDictionary<string, string> LauncherValues(ConfigDocument document) =>
-        GameSettings.LoadoutDefaultNames.Append("r_monitor").Select(name => (Name: name, Value: document.EffectiveSetting(name)))
+        GameSettings.LoadoutDefaultNames.Append("r_monitor").Concat(WindowsLaunchPlan.ConfigureGraphicsDvars)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(name => (Name: name, Value: document.EffectiveSetting(name)))
             .Where(entry => entry.Value is not null)
             .ToImmutableDictionary(entry => entry.Name, entry => entry.Value!, StringComparer.OrdinalIgnoreCase);
 

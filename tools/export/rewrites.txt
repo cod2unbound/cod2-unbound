@@ -18,6 +18,7 @@ opencod2-native-CoD2x- => opencod2-CoD2x-
 COD2_UNBOUND_COD2X_REPORTS => COD2_COD2X_REPORTS
 COD2_UNBOUND_JOIN => COD2_LAUNCH_JOIN
 COD2_UNBOUND_HIDE_SERVER_CONSOLE => COD2_LAUNCH_HIDE_SERVER_CONSOLE
+COD2_UNBOUND_CONFIGURE_KEEP => COD2_LAUNCH_CONFIGURE_KEEP
 CoD2Unbound.LauncherJoin.1 => CallOfDuty2.LauncherJoin.1
 cod2_unbound_crash_ => cod2_crash_
 /opt/cod2-silicon => /opt/cod2-source

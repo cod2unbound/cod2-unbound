@@ -35,6 +35,35 @@ internal static partial class Program
             var plan = WindowsLaunchPlan.Client(request, new(GameEdition.Cod2x, EngineRole.Client, "C:/game.exe"), "C:/home", display: external);
             Equal(true, WindowsCommandLine.Format(plan.Start).Contains("+set r_monitor \"2\" +set r_mode \"1920x1080\""));
         });
+        Check("Windows launch protects only explicit loadout graphics choices from autoconfigure", () =>
+        {
+            const string variable = "COD2_UNBOUND_CONFIGURE_KEEP";
+            foreach (var (edition, dialect) in new[] { (GameEdition.Original, ConfigDialect.Stock), (GameEdition.Cod2x, ConfigDialect.Cod2x) })
+            {
+                var files = new FixtureProfileFiles();
+                var store = new ConfigProfileStore(files, dialect);
+                store.Create("Main", "Main", new("""
+                    seta R_MODE "1280x720"
+                    seta r_aaSamples "4"
+                    seta r_picmip_manual "1"
+                    seta fx_sort "0"
+                    seta sensitivity "2"
+                    seta sys_configSum "123"
+                    """u8, dialect));
+                files.Files[ActivePath] = [.. "Main\n"u8];
+                var studio = new ConfigStudioSession(files, dialect, () => false, new FixedClock());
+                var request = new ClientLaunchRequest(edition, new(), "C:/data", "C:/home");
+                var prepared = studio.PrepareClientLaunch(request);
+                var client = new GameBinary(edition, EngineRole.Client, "C:/game.exe");
+                var launch = WindowsLaunchPlan.Client(prepared, client, "C:/home");
+                Equal("fx_sort r_mode r_aaSamples r_picmip_manual", launch.Start.EnvironmentChanges[variable]);
+                Equal(false, WindowsCommandLine.Format(launch.Start).Contains("+set r_aaSamples"));
+                Equal(null, WindowsLaunchPlan.Client(request, client, "C:/home").Start.EnvironmentChanges[variable]);
+                var server = new GameBinary(edition, EngineRole.Dedicated, "C:/ded.exe");
+                Equal(null, WindowsLaunchPlan.Dedicated(server, "C:/home", "C:/data", "C:/home", 28960, false)
+                    .Start.EnvironmentChanges[variable]);
+            }
+        });
         Check("Windows restores inherited display values after launcher restart", () =>
         {
             var files = new FixtureProfileFiles();

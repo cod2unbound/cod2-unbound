@@ -1523,7 +1523,15 @@ void Com_CheckSetRecommended(void)
     }
 
     if (needSet) {
+#if COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+        extern void Dvar_ProtectConfigureValues(const char *names);
+        if (!com_dedicated->current.integer && !com_recommendedSet->current.enabled)
+            Dvar_ProtectConfigureValues(getenv("COD2_UNBOUND_CONFIGURE_KEEP"));
+#endif
         Com_SetRecommended(0);
+#if COD2_WINDOWS_NATIVE && !defined(DEDICATED)
+        Dvar_ProtectConfigureValues(NULL);
+#endif
         Dvar_SetBool(com_recommendedSet, 1);
     }
 

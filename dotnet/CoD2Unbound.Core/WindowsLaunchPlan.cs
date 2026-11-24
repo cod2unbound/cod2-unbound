@@ -12,6 +12,16 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
 {
     public const string ServerJoinVariable = "COD2_UNBOUND_JOIN";
     private const string DedicatedPrefix = "+set dedicated 2 ";
+    private const string ConfigureKeepVariable = "COD2_UNBOUND_CONFIGURE_KEEP";
+
+    // Graphics entries in the stock configure_mp.cfg and the CPU/GPU columns of configure_mp.csv.
+    internal static readonly ImmutableArray<string> ConfigureGraphicsDvars =
+    [
+        "fx_sort",
+        "r_rendererPreference", "r_mode", "sc_enable", "r_zfeather", "r_glow", "r_distortion", "r_lodscale",
+        "r_dlightLimit", "cg_marks", "cg_brass", "r_depthPrepassModels", "r_aaSamples",
+        "r_aspectRatio", "r_gamma", "r_picmip_manual", "r_swapInterval", "r_textureMode", "r_multiGpu"
+    ];
 
     public static WindowsLaunchPlan Client(ClientLaunchRequest request, GameBinary binary, string workingDirectory,
         WindowsRenderMode renderMode = WindowsRenderMode.Direct3D9, IGameFiles? files = null,
@@ -46,10 +56,13 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
         }
 
         ValidateTail(arguments, request.Edition, dedicated: false);
+        var explicitValues = request.Loadout?.WithComparers(StringComparer.OrdinalIgnoreCase);
+        string keep = explicitValues is null ? "" : string.Join(' ', ConfigureGraphicsDvars.Where(explicitValues.ContainsKey));
         var start = new EngineProcessStart(binary.Path, workingDirectory, request.HomePath, arguments, [])
         {
             EnvironmentChanges = CrashConsent(request.Edition == GameEdition.Cod2x && request.Settings.SendCoD2xReports)
                 .Add(ServerJoinVariable, join)
+                .Add(ConfigureKeepVariable, keep.Length == 0 ? null : keep)
         };
         return new(start, plan.PlaysIntroFilms);
     }
@@ -67,6 +80,7 @@ public sealed record WindowsLaunchPlan(EngineProcessStart Start, bool PlaysIntro
         var start = new EngineProcessStart(binary.Path, workingDirectory, homePath, arguments, [])
         {
             EnvironmentChanges = CrashConsent(enabled: false).Add("COD2_CAPTURE_SERVER_CONSOLE", "1")
+                .Add(ConfigureKeepVariable, null)
         };
         return new(start, false);
     }
