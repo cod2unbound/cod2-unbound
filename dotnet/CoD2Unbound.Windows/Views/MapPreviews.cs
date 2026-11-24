@@ -1,6 +1,8 @@
 using CoD2Unbound.Core;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -31,11 +33,37 @@ internal sealed class MapPreviews(Func<string, Task<MapPixels?>> read)
 
     internal async Task FillAsync(Image image, string map)
     {
-        image.Tag = map;
-        image.Source = null;
+        if (image.Tag is not PreviewRequest)
+        {
+            image.ActualThemeChanged -= OnPreviewThemeChanged;
+            image.ActualThemeChanged += OnPreviewThemeChanged;
+        }
+        var request = new PreviewRequest(map);
+        image.Tag = request;
+        OnPreviewThemeChanged(image, null);
         var source = await GetAsync(map);
-        if (Equals(image.Tag, map))
+        if (ReferenceEquals(image.Tag, request) && source is not null)
+        {
+            request.HasArtwork = true;
             image.Source = source;
+        }
+    }
+
+    internal static SvgImageSource Fallback(string map, bool light = false)
+    {
+        var region = MapCatalog.Scenery(map).ToString().ToLowerInvariant();
+        return new(new Uri($"ms-appx:///Assets/scene-{region}-{(light ? "light" : "dark")}.svg"));
+    }
+
+    private static void OnPreviewThemeChanged(FrameworkElement sender, object? args)
+    {
+        if (sender is Image { Tag: PreviewRequest { HasArtwork: false } request } image)
+            image.Source = Fallback(request.Map, image.ActualTheme == ElementTheme.Light);
+    }
+
+    private sealed record PreviewRequest(string Map)
+    {
+        internal bool HasArtwork { get; set; }
     }
 
     private async Task<ImageSource?> ReadAsync(string map)
