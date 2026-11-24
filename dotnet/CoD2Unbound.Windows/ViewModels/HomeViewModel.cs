@@ -23,9 +23,8 @@ internal sealed class HomeViewModel(WindowsLauncherSession session)
         "News appears after the first update check.";
     internal ImmutableArray<NewsDispatch> News => NewsRows(3);
     internal ImmutableArray<NewsDispatch> AllNews => NewsRows(12);
+    // Before the first check only this version's own line shows (the Mac's built-in line, with no date).
     private ImmutableArray<NewsDispatch> NewsRows(int limit) =>
-        session.Library.DispatchesCheckedAt is null && session.Library.Dispatches.IsEmpty &&
-        session.Library.News.IsEmpty && session.Library.NewsNext is null ? [] :
         NewsFeed.Home(session.Version, session.Library.Dispatches, session.Library.News, session.Library.NewsNext, limit);
     internal ImmutableArray<ConfigProfile> Loadouts { get; private set; } = [];
     internal ImmutableArray<MatchSummary> Matches { get; private set; } = [];

@@ -6,6 +6,22 @@ namespace CoD2Unbound.Windows;
 
 public sealed partial class MainWindow
 {
+    /// Home's All Matches: Library, on Matches (the Mac's libraryTab = .matches).
+    internal async Task OpenMatchesAsync()
+    {
+        await NavigateAsync(LauncherPlace.Library);
+        if (ContentFrame.Content is LibraryPage library && library.FindName("MatchesSection") is SelectorBarItem matches)
+            matches.IsSelected = true;
+    }
+
+    /// The loadout chip's Edit … in Configs.
+    internal async Task OpenLoadoutInConfigsAsync(string id)
+    {
+        await NavigateAsync(LauncherPlace.Configs);
+        if (ContentFrame.Content is ConfigsPage configs)
+            configs.OpenJumpLoadout(id);
+    }
+
     internal async Task ShowReleaseNotesAsync(string version)
     {
         var state = session.Updates.State;

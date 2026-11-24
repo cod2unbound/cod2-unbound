@@ -2,38 +2,52 @@ using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Shapes;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
+/// The hero (HomeHero on the Mac): the eyebrow, the map in the stencil face, where and when, the pair of
+/// buttons and their hint; and the toast for a game that closed unexpectedly.
 public sealed partial class HomePage
 {
     private const string PlayingHint = "The game is running. Settings you change apply next time.";
     private const string CloseGameHint = "Closes Call of Duty 2. The launcher stays open.";
+    private const string CrashNotice = "The game closed unexpectedly. Your settings and loadouts are safe.";
     private string? artworkMap;
-    private Run? playingTime;
+    private TextBlock? playingTime;
     private DateTimeOffset nextPlayingUpdate;
+    private GameExit? shownExit;
+    private GameExit? dismissedExit;
+    private string? crashReport;
 
     private GameServer? HeroServer(GameSessionState game) => game.Running
         ? game.Activity?.ServerAddress is { } address ? session.ServerForAddress(address) : null
         : model.LastServer;
 
+    private static string? KnownMap(GameServer? server) =>
+        server is null || server.Map == "Unknown" ? null : MapCatalog.Key(server.Map);
+
     internal async Task RenderSessionAsync(GameSessionState game)
     {
         var server = HeroServer(game);
-        string? map = server is null || server.Map == "Unknown" ? null : MapCatalog.Key(server.Map);
-        string lead = game.Running ? "IN THE FIELD NOW" : server is null ? "READY TO PLAY" : "LAST PLAYED";
-        HeroLead.Text = map is not null && MapCatalog.Region(map) is { } region
-            ? lead + " · " + region.ToUpperInvariant() : lead;
-        HeroTitle.Text = map is null ? "COD2 UNBOUND" : MapCatalog.DisplayName(map).ToUpperInvariant();
+        string? map = KnownMap(server);
+        string lead = game.Running ? "In the field now" : server is null ? "Ready to play" : "Last played";
+        HeroLead.Text = (map is not null && MapCatalog.Region(map) is { } region ? lead + " · " + region : lead).ToUpperInvariant();
+        HeroTitle.Text = (map is null ? "CoD2 Unbound" : MapCatalog.DisplayName(map)).ToUpperInvariant();
+        AutomationProperties.SetName(HeroTitle, map is null ? "CoD2 Unbound" : MapCatalog.DisplayName(map));
         RenderHeroDetail(game);
         RenderGameControls(game);
-        if (map == artworkMap)
+        RenderExit(game);
+        Arrange();
+        // A server joined by address with no match summary has no known map: the backdrop keeps the scene.
+        string? artMap = map ?? KnownMap(model.LastServer);
+        if (artMap == artworkMap)
             return;
-        artworkMap = map;
-        if (map is not null && await model.ReadArtAsync(map) is { } art)
+        artworkMap = artMap;
+        if (artMap is not null && await model.ReadArtAsync(artMap) is { } art)
             ApplyArtwork(art);
         else if (HeroArt.Source is WriteableBitmap)
         {
@@ -43,32 +57,58 @@ public sealed partial class HomePage
         }
     }
 
+    /// The server in its own colours, its mode and when: "Played yesterday at 21:14", or how long the game
+    /// has been running. Nothing played yet: the first-run sentence instead.
     private void RenderHeroDetail(GameSessionState game)
     {
-        HeroDetail.Inlines.Clear();
+        HeroMeta.Children.Clear();
         playingTime = null;
-        if (HeroServer(game) is { } server)
+        var server = HeroServer(game);
+        bool first = !game.Running && server is null;
+        HeroMeta.Visibility = IsVisible(!first);
+        HeroDetail.Visibility = IsVisible(first);
+        if (first)
+            return;
+        if (server is not null)
         {
-            AddGameName(HeroDetail, server.Name, ActualTheme, shell.IsHighContrast);
+            var name = MetaText();
+            AddGameName(name, server.Name, ActualTheme, shell.IsHighContrast);
+            AddMeta(name);
             if (server.GameType != "—")
-                HeroDetail.Inlines.Add(new Run { Text = "   ·   " + GameModes.Long(server.GameType) });
+                AddMeta(MetaText(GameModes.Long(server.GameType)));
             if (!game.Running && model.Played(server.Address, includeTime: true) is { } played)
-                HeroDetail.Inlines.Add(new Run { Text = "   ·   Played " + played });
+                AddMeta(MetaText("Played " + played));
         }
-        else if (game.Running && game.Activity?.DemoName is { } demo)
-            HeroDetail.Inlines.Add(new Run { Text = $"Demo: {demo}" });
-        else if (!game.Running)
-            HeroDetail.Inlines.Add(new Run { Text = "You’re set up. Pick a server to join your first match, or open the game’s own menu." });
-
+        else if (game.Activity?.DemoName is { } demo)
+            AddMeta(MetaText("Demo: " + demo));
         if (game.Running)
         {
-            if (HeroDetail.Inlines.Count > 0)
-                HeroDetail.Inlines.Add(new Run { Text = "   ·   " });
-            playingTime = new Run();
-            HeroDetail.Inlines.Add(playingTime);
+            playingTime = MetaText();
+            AddMeta(playingTime);
             nextPlayingUpdate = default;
             RefreshPlayingTime(game, DateTimeOffset.UtcNow);
         }
+        AutomationProperties.SetName(HeroMeta, string.Join(", ", HeroMeta.Children.OfType<TextBlock>().Select(text => text.Text)));
+    }
+
+    private TextBlock MetaText(string text = "") => new()
+    {
+        Text = text, FontSize = 16, Foreground = Ink("HeroInkBrush"), TextWrapping = TextWrapping.NoWrap,
+        VerticalAlignment = VerticalAlignment.Center
+    };
+
+    /// A launcher brush in this page's appearance (the page may differ from the system's).
+    private Brush Ink(string key) => ThemeBrush(key, ActualTheme, shell.IsHighContrast);
+
+    private void AddMeta(TextBlock item)
+    {
+        if (HeroMeta.Children.Count > 0)
+            HeroMeta.Children.Add(new Ellipse
+            {
+                Width = 4, Height = 4, VerticalAlignment = VerticalAlignment.Center,
+                Fill = Ink("TertiaryBrush")
+            });
+        HeroMeta.Children.Add(item);
     }
 
     internal void RefreshPlayingTime(GameSessionState game, DateTimeOffset now)
@@ -79,65 +119,110 @@ public sealed partial class HomePage
         nextPlayingUpdate = now.AddSeconds(30);
     }
 
+    /// Launch and Find a Server for a returning player; Find a Server and Open Game Menu before the first
+    /// game; Return to Game and Close Game while it runs. The hint beside them says the key.
     internal void RenderGameControls(GameSessionState game)
     {
         string? reason = model.LaunchProblem;
         var last = model.LastServer;
-        LaunchButton.Visibility = IsVisible(!game.Running && last is not null);
-        LaunchButton.IsEnabled = OpenGameMenuButton.IsEnabled = reason is null;
+        bool running = game.Running, returning = !running && last is not null, first = !running && last is null;
+        LaunchButton.Visibility = IsVisible(returning);
+        FindServerButton.Visibility = IsVisible(!running);
+        FindServerButton.Style = StyleFor(first ? "HeroButton" : "HeroGlassButton");
+        OpenGameMenuButton.Visibility = IsVisible(first);
+        ReturnGameButton.Visibility = CloseGameButton.Visibility = IsVisible(running);
+        LaunchButton.IsEnabled = OpenGameMenuButton.IsEnabled = reason is null || running;
+        FindServerButton.IsEnabled = !running;
         if (last is not null)
-        {
-            string name = QuakeColors.Plain(last.Name);
-            RejoinMenu.Text = "Launch and rejoin " + name;
-            AutomationProperties.SetName(LaunchButton, "Launch and rejoin " + name);
-        }
-        FindServerButton.Visibility = OpenGameMenuButton.Visibility = IsVisible(!game.Running && last is null);
-        FindServerButton.Style = StyleFor("LauncherAccentButton");
-        FindServerButton.CornerRadius = new CornerRadius(20);
-        ReturnGameButton.Visibility = CloseGameButton.Visibility = IsVisible(game.Running);
+            AutomationProperties.SetName(LaunchButton, "Launch on " + QuakeColors.Plain(last.Name));
         CloseGameButton.IsEnabled = !game.Quitting;
-        CloseGameLabel.Text = game.Quitting ? "Closing…" : "Close game";
-        AutomationProperties.SetName(CloseGameButton, CloseGameLabel.Text);
-        LoadoutChoice.IsEnabled = !model.Loadouts.IsEmpty && !game.Running;
-        DisplayChoice.IsEnabled = !game.Running;
-        OpenGameData.Visibility = IsVisible(session.Setup.Data.State != SetupDataState.Found);
-        OpenCdKey.Visibility = IsVisible(!session.Setup.HasStoredKey);
-        OpenGameData.IsEnabled = OpenCdKey.IsEnabled = !game.Running;
-        LaunchReason.Text = game.Running ? "" : reason ??
-            (game.LastExit is { Unexpected: true } ? "The game closed unexpectedly. Your settings and loadouts are safe." : "");
-        LaunchReason.Visibility = IsVisible(LaunchReason.Text.Length > 0);
-        LaunchHint.Text = game.Running ? PlayingHint : last is null ? "Ctrl+Shift+Enter" :
-            "Ctrl+Enter launches and rejoins this server. Ctrl+Shift+Enter opens the game menu.";
-        RenderGameHint(game.Running, shell.AppWindow.Size.Width / (XamlRoot?.RasterizationScale ?? 1) >= 1200);
-        AutomationProperties.SetHelpText(LaunchButton, reason ?? "More ways to launch. Press Alt+Down to open the menu.");
-        AutomationProperties.SetHelpText(LoadoutChoice, game.Running ? ConfigProfileException.ReadOnlyWhilePlaying : "");
-        AutomationProperties.SetHelpText(DisplayChoice, game.Running ? PlayingHint : "");
-        foreach (var button in recentButtons)
+        CloseGameLabel.Text = game.Quitting ? "Closing…" : "Close Game";
+        AutomationProperties.SetName(CloseGameButton, game.Quitting ? "Closing…" : "Close game");
+        ToolTipService.SetToolTip(CloseGameButton, CloseGameHint);
+        AutomationProperties.SetHelpText(CloseGameButton, CloseGameHint);
+        AutomationProperties.SetHelpText(ReturnGameButton, running ? PlayingHint : "");
+
+        LaunchHint.Text = running ? PlayingHint : first ? "Ctrl+Shift+Enter" : "Ctrl+Enter launches and rejoins this server";
+        AutomationProperties.SetName(LaunchHint, running ? PlayingHint : first ? "Control Shift Enter opens the game menu" :
+            "Control Enter launches and rejoins this server");
+        LaunchHint.Visibility = IsVisible(running || reason is null);
+        AutomationProperties.SetHelpText(LaunchButton, reason ?? "");
+        AutomationProperties.SetHelpText(OpenGameMenuButton, reason ?? "");
+        ToolTipService.SetToolTip(LaunchButton, reason);
+        ToolTipService.SetToolTip(OpenGameMenuButton, reason);
+        RenderChips();
+        RenderRecentState(reason);
+    }
+
+    // MARK: Toast (NoticeBanner on the Mac)
+
+    private void RenderExit(GameSessionState game)
+    {
+        if (game.Running)
         {
-            button.IsEnabled = reason is null;
-            AutomationProperties.SetHelpText(button, reason ?? "");
+            if (shownExit is not null && ToastReport.Visibility == Visibility.Visible)
+                HideToast();
+            return;
+        }
+        if (game.LastExit is { Unexpected: true } exit && exit != dismissedExit && exit != shownExit)
+        {
+            shownExit = exit;
+            crashReport = exit.Report is { } report && File.Exists(report) ? report : null;
+            ShowToast(CrashNotice, warning: true, crashReport);
         }
     }
 
-    private void RenderGameHint(bool running, bool wide)
+    /// Shows a short message at the bottom of Home (a join that didn't start, the game that closed).
+    internal void ShowToast(string message, bool warning, string? report = null)
     {
-        LaunchHint.Visibility = IsVisible(wide && (running || model.CanLaunch));
-        string? compactHint = wide ? null : LaunchHint.Text;
-        ToolTipService.SetToolTip(ReturnGameButton, running ? compactHint : null);
-        string closeHint = running && !wide ? CloseGameHint + "\n" + PlayingHint : CloseGameHint;
-        ToolTipService.SetToolTip(CloseGameButton, closeHint);
-        AutomationProperties.SetHelpText(ReturnGameButton, running ? PlayingHint : "");
-        AutomationProperties.SetHelpText(CloseGameButton, closeHint);
-        ToolTipService.SetToolTip(LaunchButton, running ? null : compactHint);
-        ToolTipService.SetToolTip(OpenGameMenuButton, LauncherShortcuts.Keys(ShellCommand.OpenGameMenu));
+        ToastText.Text = message;
+        ToastIcon.Glyph = warning ? "" : "";
+        ToastReport.Content = report is not null && System.IO.Path.GetFileName(report).StartsWith("game-", StringComparison.Ordinal)
+            ? "Show Game Log" : "Show Crash Report";
+        ToastReport.Visibility = IsVisible(report is not null);
+        Toast.Visibility = Visibility.Visible;
+        AutomationProperties.SetName(Toast, "Status message: " + message);
     }
 
-    private async void OnLaunchSplit(SplitButton sender, SplitButtonClickEventArgs args) =>
-        await LaunchAsync(model.LastServer?.Address);
+    private void HideToast() => Toast.Visibility = Visibility.Collapsed;
+
+    private void OnDismissToast(object sender, RoutedEventArgs args)
+    {
+        dismissedExit = shownExit;
+        HideToast();
+    }
+
+    private async void OnShowCrashReport(object sender, RoutedEventArgs args)
+    {
+        if (crashReport is { } report && System.IO.Path.GetDirectoryName(report) is { } folder)
+            await shell.RunAsync(() => OpenAsync(folder));
+    }
+
+    // MARK: Actions
+
+    private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync(model.LastServer?.Address);
+
+    private Task LaunchAsync(string? address) => shell.RunAsync(async () =>
+    {
+        if (!model.CanLaunch)
+            return;
+        string? status = null;
+        if (address is { } target)
+            status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
+        else
+            await shell.RunGameStartAsync(model.Settings.Engine, model.LaunchAsync);
+        session.Setup.ChooseData(session.Setup.DataPath);
+        if (model.Game.Running)
+            await RenderPlayHistoryAsync();
+        else
+            await RenderSessionAsync(model.Game);
+        if (status is not null && !model.Game.Running)
+            ShowToast(status, warning: true);
+    });
+
+    private async void OnFindServer(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);
 
     private async void OnOpenGameMenu(object sender, RoutedEventArgs args) => await LaunchAsync(null);
-
-    private async void OnConnectAddress(object sender, RoutedEventArgs args) => await shell.OpenConnectAsync();
 
     private void OnReturnGame(object sender, RoutedEventArgs args) => shell.ReturnToGame();
 

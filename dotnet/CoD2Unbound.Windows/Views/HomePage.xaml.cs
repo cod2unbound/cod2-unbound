@@ -2,26 +2,29 @@ using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
-using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Color = global::Windows.UI.Color;
+using Point = global::Windows.Foundation.Point;
+using Rect = global::Windows.Foundation.Rect;
+using Size = global::Windows.Foundation.Size;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
+/// The Mac's Home (HomeView.swift) on Windows: the hero over the last map's art, the next game's loadout and
+/// display chips, anything that needs fixing, and the three cards. Sizes are the Home board's at 1440 × 900.
 public sealed partial class HomePage : Page
 {
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
     private readonly HomeViewModel model;
     private readonly MapPreviews previews;
-    private readonly List<Button> recentButtons = [];
-    private bool settingLoadout = true;
     private (double Low, double High)? artworkLuminance;
+    private Point origin;
+    private bool stacked;
+    private double cardHeight = 276;
 
     internal HomePage(MainWindow shell, WindowsLauncherSession session)
     {
@@ -30,70 +33,27 @@ public sealed partial class HomePage : Page
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
-        OpenGameData.Content = Guidance("Game data not found");
-        OpenCdKey.Content = Guidance("No CD key");
         ActualThemeChanged += (_, _) => UpdateTheme();
-        Loaded += (_, _) => UpdateTheme();
+        Loaded += (_, _) => { UpdateTheme(); Arrange(); };
+        Unloaded += (_, _) => shell.SetHomeCaptionPassthrough(null);
+        LayoutUpdated += (_, _) => TrackOrigin();
     }
-
-    internal void RefreshUpdate(LauncherUpdateState state)
-    {
-        bool updated = state.Phase == UpdatePhase.Installed;
-        bool failed = state.Issue == UpdateIssue.SetupFailed;
-        bool offered = state.Offer is not null && state.Issue == UpdateIssue.None &&
-            state.Phase is UpdatePhase.Offered or UpdatePhase.Ready;
-        bool visible = !session.SetupUpdating && (updated || failed || offered);
-        UpdateBanner.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        UpdateBanner.IsOpen = visible;
-        if (!visible)
-            return;
-
-        UpdateBanner.Title = updated ? $"CoD2 Unbound is now {session.Version}." :
-            failed ? (session.InstallNeedsRepair ? "The update didn’t finish. Run Setup again to repair CoD2 Unbound." :
-                $"The update didn’t finish. {session.Version} is still installed and works.") :
-            $"CoD2 Unbound {state.AvailableVersion} is available.";
-        UpdateBanner.Severity = updated ? InfoBarSeverity.Success : failed ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
-        UpdateNotes.Visibility = IsVisible(updated || offered);
-        UpdateButton.Visibility = IsVisible(!updated);
-        UpdateButton.Content = failed ? "Try again" : "Install update";
-        UpdateButton.Style = failed ? null : StyleFor("LauncherAccentButton");
-    }
-
-    private async void OnUpdateAction(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.NavigateAsync(LauncherPlace.UpdateSettings));
 
     internal async Task RefreshAsync()
     {
         await model.RefreshAsync();
         RefreshUpdate(session.Updates.State);
-        var settings = model.Settings;
-        settingLoadout = true;
-        var loadouts = model.Loadouts.Select(profile => new ComboBoxItem
-        {
-            Content = DisplayResolution.TryParse(profile.RequestedResolution ?? settings.Resolution, out var resolution)
-                ? profile.DisplayName + " · " + LauncherText.Resolution(resolution.ToString())
-                : profile.DisplayName,
-            Tag = profile.Id
-        }).ToList();
-        var active = model.Loadouts.FirstOrDefault(profile => profile.IsActive);
-        if (active is null && loadouts.Count > 0)
-            loadouts.Insert(0, new ComboBoxItem { Content = "Loadout unavailable" });
-        LoadoutChoice.ItemsSource = loadouts;
-        LoadoutChoice.SelectedItem = active is null ? loadouts.FirstOrDefault() :
-            loadouts.First(choice => Equals(choice.Tag, active.Id));
-        LoadoutChoice.Visibility = IsVisible(loadouts.Count > 0);
-        settingLoadout = false;
-        RenderDisplay();
-        RenderAdjustedResolution(active);
-
+        RenderChips();
         RenderNews();
         await RenderPlayHistoryAsync();
+        Arrange();
     }
 
     internal async Task RefreshPlayHistoryAsync()
     {
         await model.RefreshMatchesAsync();
         await RenderPlayHistoryAsync();
+        Arrange();
     }
 
     private async Task RenderPlayHistoryAsync()
@@ -103,137 +63,89 @@ public sealed partial class HomePage : Page
         await RenderSessionAsync(model.Game);
     }
 
-    private void RenderRecent()
-    {
-        RecentRows.Children.Clear();
-        recentButtons.Clear();
-        if (model.Recent.IsEmpty)
-        {
-            RecentRows.Children.Add(EmptyState("History", "Nothing played yet", "Servers you join appear here, ready to rejoin."));
-            return;
-        }
-        foreach (var server in model.Recent)
-        {
-            var row = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto);
-            row.Padding = new Thickness(8, 6, 8, 6);
-            Put(row, 0, previews.Tile(server.Map, 64, 44));
-            var lines = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            lines.Children.Add(new TextBlock { Text = QuakeColors.Plain(server.Name), Style = StyleFor("BodyStrongTextBlockStyle"),
-                TextTrimming = TextTrimming.CharacterEllipsis });
-            var description = Caption($"{MapCatalog.DisplayName(server.Map)} · {GameModes.Long(server.GameType)} · " +
-                (server.IsCod2x ? "CoD2x" : "Original 1.3"));
-            description.TextWrapping = TextWrapping.NoWrap;
-            description.TextTrimming = TextTrimming.CharacterEllipsis;
-            lines.Children.Add(description);
-            Put(row, 1, lines);
-            var stamp = MonoCaption(model.Played(server.Address, includeTime: false) ?? "");
-            stamp.VerticalAlignment = VerticalAlignment.Center;
-            Put(row, 2, stamp);
-            var launch = new Button { Style = StyleFor("SmallSubtleAction"), VerticalAlignment = VerticalAlignment.Center,
-                Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
-                    Children = { Fluent("PlayOutline", 14), new TextBlock { Text = "Launch" } } } };
-            AutomationProperties.SetName(launch, $"Launch {QuakeColors.Plain(server.Name)}");
-            launch.Click += async (_, _) => await LaunchAsync(server.Address);
-            recentButtons.Add(launch);
-            Put(row, 3, launch);
-            RecentRows.Children.Add(row);
-        }
-    }
-
-    private void RenderMatch()
-    {
-        MatchRows.Children.Clear();
-        AllMatches.Visibility = IsVisible(!model.Matches.IsEmpty);
-        if (model.Matches.LastOrDefault() is { } match)
-        {
-            AddMatch(MatchRows, match);
-            var check = new Button { Content = "Open Check-up", HorizontalAlignment = HorizontalAlignment.Right,
-                Style = StyleFor("SubtleLinkAction") };
-            check.Click += async (_, _) => await shell.OpenCheckupAsync();
-            MatchRows.Children.Add(check);
-        }
-        else if (!model.Settings.MatchSummariesEnabled)
-            MatchRows.Children.Add(EmptyState("HeartPulse", "Match summaries are off", "Turn them on to see how each match ran. They stay on this PC."));
-        else if (model.UnreadableMatches)
-            MatchRows.Children.Add(EmptyState("HeartPulse", "Couldn’t read matches", "Try again after your next match."));
-        else
-            MatchRows.Children.Add(EmptyState("HeartPulse", "Not measured yet", "After your first match, its ping and connection show up here."));
-    }
-
-    private void AddMatch(StackPanel target, MatchSummary match)
-    {
-        var heading = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star));
-        Put(heading, 0, previews.Tile(match.Map, 64, 44));
-        var title = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        title.Children.Add(new TextBlock { Text = $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}",
-            Style = StyleFor("BodyStrongTextBlockStyle"), TextTrimming = TextTrimming.CharacterEllipsis });
-        string duration = MatchFacts.Duration(match.DurationSeconds).ToUpperInvariant();
-        if (MatchFacts.Date(match.EndedAt) is { } date)
-            duration = MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: false) + " · " + duration;
-        title.Children.Add(MonoCaption(duration));
-        Put(heading, 1, title);
-        target.Children.Add(heading);
-        if (match.PingAverageMS is { } ping)
-        {
-            target.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
-            MatchFact("Ping", Strong($"{ping:F0} ms"));
-        }
-        var connection = MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent);
-        string label = MatchFacts.ConnectionText(connection);
-        if (connection == MatchConnection.Steady)
-        {
-            var positive = IconLabel("CheckCircle", label, 14);
-            ((FontIcon)positive.Children[0]).Style = StyleFor("PositiveIcon");
-            ((TextBlock)positive.Children[1]).Style = StyleFor("PositiveCaption");
-            MatchFact("Connection", positive);
-        }
-        else
-            MatchFact("Connection", Strong(label));
-
-        static TextBlock Strong(string value) => new() { Text = value, Style = StyleFor("BodyStrongTextBlockStyle") };
-
-        void MatchFact(string title, FrameworkElement value)
-        {
-            var row = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-            Put(row, 0, Body(title));
-            Put(row, 1, value);
-            target.Children.Add(row);
-        }
-    }
-
-    private async void OnAllMatches(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
-    {
-        var list = new StackPanel { Spacing = 8 };
-        foreach (var match in model.Matches.Reverse())
-        {
-            var row = new StackPanel { Spacing = 6 };
-            AddMatch(row, match);
-            list.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = row });
-        }
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "All matches", CloseButtonText = "Close",
-            Content = new ScrollViewer { MaxHeight = 360, Content = list }
-        };
-        await dialog.ShowAsync();
-    });
-
-    private static void AddFact(StackPanel panel, string title, string detail)
-    {
-        panel.Children.Add(new TextBlock { Text = title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
-        panel.Children.Add(Secondary(detail));
-    }
-
-    private static TextBlock Secondary(string text) => new()
-    {
-        Text = text, Style = (Style)Application.Current.Resources["SecondaryText"]
-    };
-
     internal void UpdateTheme()
     {
         RenderBackdrop();
         RenderHeroDetail(model.Game);
+        RenderRecent();
+        RenderMatch();
+        RenderNews();
     }
+
+    // MARK: Layout (HomeView.body)
+
+    /// The page's place in the window. The Mac lays Home out in window coordinates: the hero 300 from the
+    /// window's left edge, 138 from its top, and the art from the window's corner.
+    private void TrackOrigin()
+    {
+        if (XamlRoot is null || !IsLoaded)
+            return;
+        var point = TransformToVisual(null).TransformPoint(new Point(0, 0));
+        ReportPillBounds();
+        if (Math.Abs(point.X - origin.X) < 0.5 && Math.Abs(point.Y - origin.Y) < 0.5)
+            return;
+        origin = point;
+        Arrange();
+    }
+
+    private void OnLayoutChanged(object sender, SizeChangedEventArgs args) => Arrange();
+
+    private void Arrange()
+    {
+        double width = PageRoot.ActualWidth, height = PageRoot.ActualHeight;
+        if (width <= 0 || height <= 0)
+            return;
+        double windowHeight = height + origin.Y;
+        double lead = Math.Max(32, 300 - origin.X);
+        double inner = Math.Max(0, width - lead - 32);
+        bool narrow = inner < 980;
+        double heroTop = Math.Max(16, Math.Min(138, Math.Max(84, windowHeight - 762)) - origin.Y);
+        cardHeight = Math.Min(276, Math.Max(262, windowHeight - 624));
+
+        Hero.Width = Math.Min(780, inner);
+        Hero.Margin = new Thickness(0, heroTop, 0, 0);
+        HeroTitleFit.MaxWidth = Math.Min(780, inner);
+        ContentLayout.Padding = new Thickness(lead, 0, 32, 0);
+        Cards.Height = cardHeight;
+        if (narrow != stacked)
+        {
+            stacked = narrow;
+            RenderChips();
+        }
+        ArrangeCards();
+        FitChips(inner);
+
+        Hero.Measure(new Size(Hero.Width, double.PositiveInfinity));
+        Lower.Measure(new Size(inner, double.PositiveInfinity));
+        ContentLayout.Height = Math.Max(height, heroTop + Hero.DesiredSize.Height + 24 + Lower.DesiredSize.Height + 28);
+
+        ArtLayer.Height = Math.Max(0, 620 - origin.Y);
+        ArtLayer.Clip = new RectangleGeometry { Rect = new Rect(0, 0, width, ArtLayer.Height) };
+        ArtCanvas.Width = width + origin.X;
+        ArtCanvas.Margin = new Thickness(-origin.X, -origin.Y, 0, 0);
+
+        // The update pill sits 16 from the window's top, its end 18 from the caption buttons' 138.
+        double rightGap = Math.Max(0, (XamlRoot?.Size.Width ?? width + origin.X) - origin.X - width);
+        UpdatePill.Margin = new Thickness(0, Math.Max(8, 16 - origin.Y), Math.Max(18, 156 - rightGap), 0);
+        FitNews();
+        ReportPillBounds();
+    }
+
+    /// One row of cards at every size. Recent servers listed: Jump back in takes the width its rows need
+    /// (508 : 298 : 266 at 1440 wide); otherwise 1.22 : 0.9 : 1. Too narrow for three, What's New leaves
+    /// the row and becomes a chip.
+    private void ArrangeCards()
+    {
+        double[] shares = stacked ? [1.22, 0.9, 0] : !model.Recent.IsEmpty ? [508, 298, 266] : [1.22, 0.9, 1];
+        RecentColumn.Width = new GridLength(shares[0], GridUnitType.Star);
+        MatchColumn.Width = new GridLength(shares[1], GridUnitType.Star);
+        NewsColumn.Width = stacked ? new GridLength(0) : new GridLength(shares[2], GridUnitType.Star);
+        NewsCard.Visibility = IsVisible(!stacked);
+        Cards.ColumnSpacing = 18;
+        MatchCard.Margin = stacked ? new Thickness(0, 0, -18, 0) : new Thickness();
+    }
+
+    // MARK: Backdrop (HeroBackdrop)
 
     private void RenderBackdrop()
     {
@@ -245,134 +157,76 @@ public sealed partial class HomePage : Page
         RenderArtScrim();
     }
 
+    /// The scrims that keep the hero's text legible. Over a loading screen they are sized for the dimmest
+    /// text in dark (the eyebrow and the hint) and the palest in light, held across the text column to
+    /// 74% of the width; over the drawn scene light gets a wash on the left and dark a vignette.
     private void RenderArtScrim()
     {
         HeroScrim.Fill = null;
+        HeroVignette.Fill = null;
         HeroFade.Fill = null;
-        if (shell.IsHighContrast || PanelPalette.Background is not SolidColorBrush panel ||
-            HeroLead.Foreground is not SolidColorBrush lead || HeroTitle.Foreground is not SolidColorBrush title)
+        if (shell.IsHighContrast || PanelPalette.Background is not SolidColorBrush ground)
             return;
+        bool dark = ActualTheme != ElementTheme.Light;
+        var paper = ground.Color;
 
         var fade = new LinearGradientBrush { StartPoint = new(0, 0), EndPoint = new(0, 1) };
-        var paper = panel.Color;
-        fade.GradientStops.Add(new GradientStop { Color = WithAlpha(paper, 0), Offset = 0.65 });
+        fade.GradientStops.Add(new GradientStop { Color = WithAlpha(paper, 0), Offset = dark ? 0.62 : 0.6 });
         fade.GradientStops.Add(new GradientStop { Color = paper, Offset = 1 });
         HeroFade.Fill = fade;
-        if (artworkLuminance is not { } brightness)
-            return;
 
-        bool dark = ActualTheme != ElementTheme.Light;
-        var shade = dark ? Microsoft.UI.Colors.Black : paper;
-        double first = Luminance(lead.Color);
-        double second = Luminance(title.Color);
-        double opacity = dark ? ScrimMath.DarkScrim(brightness.High, Math.Min(first, second)) :
-            ScrimMath.LightWash(brightness.Low, Math.Max(first, second), Luminance(paper));
-        var tint = WithAlpha(shade, opacity);
+        if (dark)
+        {
+            var vignette = new RadialGradientBrush
+            {
+                Center = new(0.62, 0.42), GradientOrigin = new(0.62, 0.42), RadiusX = 0.78, RadiusY = 0.78,
+                MappingMode = BrushMappingMode.RelativeToBoundingBox
+            };
+            vignette.GradientStops.Add(new GradientStop { Color = WithAlpha(Microsoft.UI.Colors.Black, 0), Offset = 0.55 });
+            vignette.GradientStops.Add(new GradientStop { Color = WithAlpha(Microsoft.UI.Colors.Black, 0.62), Offset = 1 });
+            HeroVignette.Fill = vignette;
+        }
+
         var brush = new LinearGradientBrush { StartPoint = new(0, 0), EndPoint = new(1, 0) };
-        brush.GradientStops.Add(new GradientStop { Color = tint, Offset = 0 });
-        brush.GradientStops.Add(new GradientStop { Color = tint, Offset = 0.64 });
-        brush.GradientStops.Add(new GradientStop { Color = WithAlpha(shade, 0), Offset = 1 });
+        if (artworkLuminance is { } brightness)
+        {
+            double text = LimitingLuminance(dark);
+            var shade = dark ? Microsoft.UI.Colors.Black : paper;
+            double opacity = dark ? ScrimMath.DarkScrim(brightness.High, text) :
+                ScrimMath.LightWash(brightness.Low, text, ScrimMath.Luminance((byte)0xef, (byte)0xe8, (byte)0xd8));
+            brush.GradientStops.Add(new GradientStop { Color = WithAlpha(shade, opacity), Offset = 0 });
+            brush.GradientStops.Add(new GradientStop { Color = WithAlpha(shade, opacity), Offset = 0.74 });
+            brush.GradientStops.Add(new GradientStop { Color = WithAlpha(shade, dark ? 0.15 : 0.1), Offset = 0.95 });
+        }
+        else if (!dark)
+        {
+            brush.GradientStops.Add(new GradientStop { Color = WithAlpha(paper, 0.85), Offset = 0.14 });
+            brush.GradientStops.Add(new GradientStop { Color = WithAlpha(paper, 0), Offset = 0.6 });
+        }
+        else
+            return;
         HeroScrim.Fill = brush;
+    }
+
+    /// Light text needs the darkest background for its dimmest colour; dark text the lightest for its palest
+    /// (title, meta, eyebrow and hint: HeroInk on the Mac).
+    private double LimitingLuminance(bool dark)
+    {
+        double[] inks = [.. new[] { "HeroInkBrush", "HeroAccentBrush", "HeroHintBrush" }
+            .Select(key => ThemeBrush(key, dark ? ElementTheme.Dark : ElementTheme.Light, false))
+            .OfType<SolidColorBrush>().Select(brush => Luminance(brush.Color))];
+        return inks.Length == 0 ? (dark ? 0.5 : 0.1) : dark ? inks.Min() : inks.Max();
     }
 
     private static double Luminance(Color color) => ScrimMath.Luminance(color.R, color.G, color.B);
 
     private static Color WithAlpha(Color color, double opacity) =>
-        Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
+        Color.FromArgb((byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255), color.R, color.G, color.B);
 
     private void ApplyArtwork(MapPixels art)
     {
-        artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0, 1);
+        artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0.01, 1);
         HeroArt.Source = MapBitmap(art);
         RenderArtScrim();
-    }
-
-    private void OnLayoutChanged(object sender, SizeChangedEventArgs args)
-    {
-        bool wide = shell.AppWindow.Size.Width / (XamlRoot?.RasterizationScale ?? 1) >= 1200;
-        bool compactCards = args.NewSize.Width < 1000;
-        ContentLayout.Padding = wide ? new Thickness(48, 72, 48, 32) : new Thickness(40, 40, 40, 24);
-        HeroTitle.FontSize = wide ? 132 : 112;
-        HeroTitle.LineHeight = 0.86 * HeroTitle.FontSize;
-        RenderGameHint(model.Game.Running, wide);
-        ArtLayer.Height = wide ? 560 : 420;
-        NewsColumn.Width = compactCards ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        NewsCard.Visibility = IsVisible(!compactCards);
-        NarrowNews.Visibility = IsVisible(compactCards);
-        Cards.ColumnSpacing = compactCards ? 0 : 12;
-        Cards.RowSpacing = compactCards ? 20 : 0;
-        RecentCard.Margin = compactCards ? new Thickness(0, 0, 12, 0) : new Thickness();
-        RecentCard.MinHeight = MatchCard.MinHeight = compactCards ? 226 : 0;
-        ContentLayout.MinHeight = args.NewSize.Height;
-    }
-
-    private async void OnLaunch(object sender, RoutedEventArgs args) => await LaunchAsync(model.LastServer?.Address);
-
-    private Task LaunchAsync(string? address) => shell.RunAsync(async () =>
-    {
-        if (!model.CanLaunch)
-            return;
-        string? status = null;
-        if (address is { } target)
-            status = await shell.JoinServerAsync(new(target, null), UsageJoin.List, lookupUnknown: true);
-        else
-            await shell.RunGameStartAsync(model.Settings.Engine, model.LaunchAsync);
-        session.Setup.ChooseData(session.Setup.DataPath);
-        if (model.Game.Running)
-            await RenderPlayHistoryAsync();
-        else
-            await RenderSessionAsync(model.Game);
-        if (status is not null && !model.Game.Running)
-        {
-            LaunchReason.Text = status;
-            LaunchReason.Visibility = Visibility.Visible;
-        }
-    });
-
-    private async void OnFindServer(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.All);
-    private async void OnRecent(object sender, RoutedEventArgs args) => await shell.OpenServersAsync(ServerScope.Recent);
-    private async void OnOpenGameData(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(() => shell.OpenSetupAgainAsync(LauncherPlace.Home));
-
-    private async void OnOpenCdKey(object sender, RoutedEventArgs args) =>
-        await shell.RunAsync(async () => { await shell.EditCdKeyAsync(); });
-
-    private static StackPanel Guidance(string caption)
-    {
-        var icon = new FontIcon { Glyph = "\uE7BA", FontSize = 16 };
-        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
-        return Buttons(icon, new TextBlock { Text = caption });
-    }
-
-    private async void OnLoadoutChanged(object sender, SelectionChangedEventArgs args)
-    {
-        if (settingLoadout || model.Game.Running || LoadoutChoice.SelectedItem is not ComboBoxItem { Tag: string id })
-            return;
-        await shell.RunAsync(async () =>
-        {
-            try { await model.SetLoadoutAsync(id); }
-            finally { await RefreshAsync(); }
-            await shell.RefreshPlayerAsync();
-        });
-    }
-
-    private void RenderDisplay()
-    {
-        var settings = model.Settings;
-        var selected = settings.Fullscreen switch { "exclusive" => ExclusiveMode, "windowed" => WindowMode, _ => BorderlessMode };
-        selected.IsChecked = true;
-        string prefix = model.Loadouts.IsEmpty ? LauncherText.Resolution(settings.Resolution) + " · " : "";
-        DisplayChoice.Content = IconLabel("Desktop", prefix + selected.Text);
-        AutomationProperties.SetName(DisplayChoice, "Display mode: " + selected.Text);
-    }
-
-    private async void OnDisplayChanged(object sender, RoutedEventArgs args)
-    {
-        if (!model.Game.Running && sender is RadioMenuFlyoutItem { Tag: string mode })
-            await shell.RunAsync(async () =>
-            {
-                try { await model.SetDisplayAsync(mode); }
-                finally { RenderDisplay(); }
-            });
     }
 }
