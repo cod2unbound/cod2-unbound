@@ -51,9 +51,11 @@ public sealed partial class MainWindow
                 (int)Math.Floor(bounds.X * scale), (int)Math.Floor(bounds.Y * scale),
                 (int)Math.Ceiling(bounds.Width * scale), (int)Math.Ceiling(bounds.Height * scale)));
         }
-        if (rects.SequenceEqual(passthrough))
+        if (rects.SequenceEqual(passthrough) || AppWindow is not { } window ||
+            InputNonClientPointerSource.GetForWindowId(window.Id) is not { } source)
             return;
-        passthrough = [.. rects];
-        InputNonClientPointerSource.GetForWindowId(AppWindow.Id).SetRegionRects(NonClientRegionKind.Passthrough, passthrough);
+        var next = rects.ToArray();
+        source.SetRegionRects(NonClientRegionKind.Passthrough, next);
+        passthrough = next;
     }
 }

@@ -23,6 +23,7 @@ public sealed partial class HostingPage : Page
     private TextBlock? actionFeedback;
     private Dashboard? dashboard;
     private HostForm? form;
+    private HostedServer? draft;
 
     internal HostingPage(MainWindow shell, WindowsLauncherSession session, Button exportButton, InfoBar exportStatus)
     {
@@ -32,6 +33,7 @@ public sealed partial class HostingPage : Page
         this.exportStatus = exportStatus;
         hosting = session.Hosting;
         InitializeComponent();
+        HostingBody.SizeChanged += (_, args) => Sidebar.Width = args.NewSize.Width < 950 ? 220 : 300;
         Servers.ItemsSource = hosts;
         exportButton.Click += async (_, _) => await shell.RunAsync(ExportSelectedAsync);
         exportStatus.Closed += (_, _) =>
@@ -44,6 +46,7 @@ public sealed partial class HostingPage : Page
         {
             if (form is not null)
                 shownPhase = null;
+            DiscardDraft();
             EndForm();
         };
         Loaded += async (_, _) => await shell.ShowProblemAsync(UpdateRunStateAsync);
@@ -57,6 +60,13 @@ public sealed partial class HostingPage : Page
         id ??= Selected?.Id;
         var next = await hosting.ReadAsync();
         syncing = true;
+        if (draft is { } fresh && id == fresh.Id && !next.Any(server => server.Id == fresh.Id))
+        {
+            hosts.Reconcile([fresh, .. next], item => item.Id);
+            syncing = false;
+            return;
+        }
+        draft = null;
         hosts.Reconcile(next, item => item.Id);
         var target = hosts.FirstOrDefault(item => item.Id == id) ?? hosts.FirstOrDefault();
         if (!ReferenceEquals(Selected, target))
@@ -65,8 +75,6 @@ public sealed partial class HostingPage : Page
         Sidebar.Visibility = IsVisible(hosts.Count != 0);
         await ShowServerAsync();
     }
-
-    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
 
     private void OnServerRowChanged(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
@@ -80,7 +88,10 @@ public sealed partial class HostingPage : Page
         if (args.Item is HostedServer server)
         {
             AutomationProperties.SetName(item, server.Name);
-            AttachRowMenu(item);
+            if (server.Id != draft?.Id)
+                AttachRowMenu(item);
+            else
+                item.ContextFlyout = null;
             args.RegisterUpdateCallback((_, update) => UpdateRow(server, update.ItemContainer as ListViewItem));
         }
     }
@@ -94,11 +105,21 @@ public sealed partial class HostingPage : Page
             {
                 { Phase: HostedPhase.Running, Status: { } live } =>
                     $"Running · {live.Players.Length} of {live.MaxPlayers} · {MapCatalog.DisplayName(HostingCatalog.StockMap(live.Map))}",
+                _ when server.Id == draft?.Id => "Not saved yet",
                 { Phase: HostedPhase.Stopped } => $"Stopped · {Edition(server)}",
+                { Phase: HostedPhase.PortBusy or HostedPhase.Failed } => "Couldn’t start",
                 _ => $"{Edition(server)} · {PhaseTitle(state.Phase)}"
             };
             if (detail.Text != status)
                 detail.Text = status;
+            if (root.FindName("HostRowIcon") is FontIcon icon)
+                icon.Foreground = ThemeBrush(state.Phase switch
+                {
+                    HostedPhase.Running => "positive",
+                    HostedPhase.PortBusy or HostedPhase.Failed => "negative",
+                    _ when server.Id == draft?.Id => "accent",
+                    _ => "tertiary"
+                }, ActualTheme, shell.IsHighContrast);
             if (AutomationProperties.GetHelpText(item) != status)
                 AutomationProperties.SetHelpText(item, status);
         }
@@ -107,7 +128,11 @@ public sealed partial class HostingPage : Page
     private async void OnServerChanged(object sender, SelectionChangedEventArgs args)
     {
         if (!syncing)
+        {
+            if (Selected?.Id != draft?.Id)
+                DiscardDraft();
             await shell.ShowProblemAsync(ShowServerAsync);
+        }
     }
 
     private async Task ShowServerAsync()
@@ -122,15 +147,39 @@ public sealed partial class HostingPage : Page
         exportButton.Visibility = IsVisible(Selected is not null);
         if (Selected is not { } server)
         {
-            var empty = EmptyState("Live", "Host your own server",
-                "Run a server on this PC with Original 1.3 or CoD2x, or write the files for a server on another machine.");
-            empty.MaxWidth = 520;
-            empty.HorizontalAlignment = HorizontalAlignment.Center;
-            empty.Margin = new Thickness(12, 44, 12, 0);
-            var create = Action("New server", NewAsync);
+            Sidebar.Visibility = Visibility.Collapsed;
+            var icon = Fluent("Live", 48);
+            icon.HorizontalAlignment = HorizontalAlignment.Center;
+            var title = new TextBlock
+            {
+                Text = "HOST YOUR OWN SERVER", TextAlignment = TextAlignment.Center,
+                Style = StyleFor("EmptyHeading"), FontSize = 34
+            };
+            var description = Body("Run a server on this PC for friends on your network or over the internet, with the original 1.3 or CoD2x, public rules or a competitive zPAM match. Or write the files for a server that runs somewhere else.");
+            description.TextAlignment = TextAlignment.Center;
+            var note = Caption("The server uses your own game files. Nothing is contacted until you start it.");
+            note.TextAlignment = TextAlignment.Center;
+            var create = Action("New Server", NewAsync);
+            AutomationProperties.SetName(create, "New server");
+            create.Content = IconLabel("Add", "New Server", 16);
             create.Style = StyleFor("LauncherAccentButton");
-            empty.Children.Add(Buttons(create, Action("Write a server.cfg…", ExportSelectedAsync, "X")));
-            Details.Children.Add(empty);
+            var write = Action("Write a server.cfg…", ExportSelectedAsync, "X");
+            write.Style = StyleFor("MediumButton");
+            var emptyActions = Buttons(create, write);
+            emptyActions.HorizontalAlignment = HorizontalAlignment.Center;
+            Details.Children.Add(new StackPanel
+            {
+                MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(12, 106, 12, 0), Spacing = 12,
+                Children = { icon, title, description, emptyActions, note }
+            });
+            return;
+        }
+        Sidebar.Visibility = Visibility.Visible;
+        if (server.Id == draft?.Id)
+        {
+            ShowForm(server, isNew: true);
+            exportButton.Visibility = Visibility.Collapsed;
             return;
         }
         var state = State(server);
@@ -148,7 +197,7 @@ public sealed partial class HostingPage : Page
         actionFeedback = Caption("");
         actionFeedback.Visibility = Visibility.Collapsed;
         AutomationProperties.SetLiveSetting(actionFeedback, AutomationLiveSetting.Polite);
-        var nextMap = Action("Next map", async () =>
+        var nextMap = Action("Next Map", async () =>
         {
             if (!await hosting.NextMapAsync(server.Id))
                 Notify("The server is no longer ready for a map change.");
@@ -156,13 +205,16 @@ public sealed partial class HostingPage : Page
         nextMap.IsEnabled = HostingConfig.Password(server.AdminPassword).Length > 0;
         var join = Action("Join", () => JoinAsync(server), "J");
         join.Style = StyleFor("LauncherAccentButton");
+        var stop = Action("Stop Server", () => ToggleAsync(server), "R");
+        stop.Style = StyleFor("NegativeButton");
+        AutomationProperties.SetName(stop, "Stop server");
         var actions = Buttons(Action("Edit…", () =>
         {
             Details.Children.Clear();
             dashboard = null;
             ShowForm(configured, isNew: false, editingRunning: true);
             return Task.CompletedTask;
-        }, "E"), nextMap, join, Action("Stop server", () => ToggleAsync(server), "R"));
+        }, "E"), nextMap, join, stop);
         Details.Children.Add(RunningHeader(server.Name, phaseText, actions));
         Details.Children.Add(actionFeedback);
 
@@ -231,6 +283,7 @@ public sealed partial class HostingPage : Page
             phase = $"Running for {Math.Max(0, (int)(DateTimeOffset.UtcNow - since).TotalMinutes)} min";
         if (phaseText.Text != phase)
             phaseText.Text = phase;
+        phaseText.Style = StyleFor(state.Phase == HostedPhase.Running ? "PositiveCaption" : "SecondaryText");
     }
 
     private async Task JoinAsync(HostedServer server)
@@ -268,17 +321,35 @@ public sealed partial class HostingPage : Page
             await ShowServerAsync();
     }
 
-    internal Task NewAsync()
+    internal async Task NewAsync()
     {
-        var fresh = HostedServer.New(edition: session.Settings.Working.Engine);
+        if (draft is not null)
+            return;
+        var fresh = HostedServer.New(name: "New server", edition: session.Settings.Working.Engine);
         if (hosts.Any(server => server.Port == fresh.Port))
             fresh = fresh with { Port = HostingConfig.OtherPort(fresh, port => hosts.All(server => server.Port != port)) };
-        EndForm();
-        Details.Children.Clear();
-        dashboard = null;
-        exportButton.Visibility = Visibility.Collapsed;
-        ShowForm(fresh, isNew: true);
-        return Task.CompletedTask;
+        draft = fresh;
+        syncing = true;
+        hosts.Insert(0, fresh);
+        Servers.SelectedItem = fresh;
+        syncing = false;
+        await ShowServerAsync();
+    }
+
+    private async Task CancelDraftAsync()
+    {
+        DiscardDraft();
+        await RefreshAsync();
+    }
+
+    private void DiscardDraft()
+    {
+        if (draft is not { } fresh)
+            return;
+        syncing = true;
+        draft = null;
+        hosts.Remove(fresh);
+        syncing = false;
     }
 
     private ContentDialog Dialog(string title, UIElement content, string primary = "", string close = "Cancel") => new()

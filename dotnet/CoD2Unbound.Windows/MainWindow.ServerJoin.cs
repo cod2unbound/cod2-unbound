@@ -150,9 +150,9 @@ public sealed partial class MainWindow
         var dialog = new ContentDialog
         {
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = $"“{name}” runs {version}",
-            Content = new StackPanel { Spacing = 10, Children = { Body(explanation), remember } },
+            Content = remember,
             PrimaryButtonText = $"Launch with {version}", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
-        }.WithSymbol("FluentGauge");
+        }.WithSymbol("FluentGauge", explanation);
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return false;
         if (remember.IsChecked == true)

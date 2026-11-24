@@ -9,9 +9,9 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class HostingPage
 {
-    private const string ExportTitle = "Export for another machine…";
-    private const string RevealFolderTitle = "Show its folder in File Explorer";
-    private const string DeleteTitle = "Delete server…";
+    private const string ExportTitle = "Export for Another PC…";
+    private const string RevealFolderTitle = "Show Its Folder in File Explorer";
+    private const string DeleteTitle = "Delete Server…";
     private readonly Button exportButton;
     private readonly InfoBar exportStatus;
     private (ShellCommand Command, Func<Task> Action)? exportFeedback;
@@ -45,18 +45,18 @@ public sealed partial class HostingPage
             menu.Items.Clear();
             if (row.Content is not HostedServer server)
                 return;
-            menu.Items.Add(Item(ExportTitle, "X", () => ExportSavedAsync(server.Id)));
+            menu.Items.Add(Item(ExportTitle, "X", () => ExportSavedAsync(server.Id), automationName: "Export for another machine…"));
             menu.Items.Add(Item(RevealFolderTitle, "F", () => hosting.RevealServerFolderAsync(server.Id),
-                hosting.HasServerFolder(server.Id)));
+                hosting.HasServerFolder(server.Id), "Show its folder in File Explorer"));
             menu.Items.Add(new MenuFlyoutSeparator());
             menu.Items.Add(Item(DeleteTitle, "D", () => DeleteServerAsync(server), !hosting.IsActive(server.Id)));
         };
         row.ContextFlyout = menu;
 
-        MenuFlyoutItem Item(string title, string accessKey, Func<Task> action, bool enabled = true)
+        MenuFlyoutItem Item(string title, string accessKey, Func<Task> action, bool enabled = true, string? automationName = null)
         {
             var item = new MenuFlyoutItem { Text = title, AccessKey = accessKey, IsEnabled = enabled };
-            AutomationProperties.SetName(item, title);
+            AutomationProperties.SetName(item, automationName ?? title);
             item.Click += async (_, _) => await shell.RunAsync(action);
             return item;
         }
@@ -94,27 +94,26 @@ public sealed partial class HostingPage
         var passwords = ExportToggle("Passwords", isOn: false);
         var match = ExportToggle("zPAM match settings", isOn: true);
         string edition = server.Engine == GameEdition.Cod2x ? "CoD2x" : "the original 1.3";
-        var content = new StackPanel { Spacing = 8, Children =
+        const string explanation = "Writes a folder you can copy to a Linux or Windows server. Nothing is uploaded.";
+        var rows = new List<FrameworkElement>
         {
-            Body("Writes a folder you can copy to a Linux or Windows server. Nothing is uploaded."),
-            SettingRow("server.cfg", "Name, rules, maps and limits, with a comment on every line.", Body("Included")),
-            SettingRow("Start commands", $"One for Linux, one for Windows, for {edition}.", Body("Included"))
-        } };
+            FormRow("server.cfg", Caption("Name, rules, maps and limits, with a comment on every line."), ReadyLabel("Included")),
+            FormRow("Start commands", Caption($"One for Linux, one for Windows, for {edition}."), ReadyLabel("Included"))
+        };
         if (server.Rules == HostedRules.Zpam)
-            content.Children.Add(SettingRow("zPAM match settings",
-                "The match mode and its rules. The read-me links to the zPAM download.", match));
+            rows.Add(FormRow("zPAM match settings",
+                Caption("The match mode and its rules. zPAM’s files are not copied; the read-me links the release to download."), match));
         var passwordNote = Caption("");
-        var passwordRow = new StackPanel { Spacing = 2 };
-        passwordRow.Children.Add(SettingRow("Passwords", null, passwords));
-        passwordRow.Children.Add(passwordNote);
+        rows.Add(FormRow("Passwords", passwordNote, passwords));
         passwords.Toggled += (_, _) => UpdatePasswordNote();
         UpdatePasswordNote();
-        content.Children.Add(passwordRow);
+        var content = new StackPanel { Spacing = 8, Children = { Card(GroupRows([.. rows])) } };
         if (running)
             content.Children.Add(Caption("The server keeps running; the export uses its saved settings."));
         content.Children.Add(Caption("Game files are never included."));
-        if (await Dialog($"Export “{server.Name}” for another machine", content, "Export…").ShowAsync() ==
-            ContentDialogResult.Primary)
+        var dialog = Dialog($"Export “{server.Name}” for another PC", content, "Export…")
+            .WithSymbol("FluentDocument", explanation);
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             await WriteExportAsync(server, passwords.IsOn, match.IsOn);
 
         void UpdatePasswordNote()

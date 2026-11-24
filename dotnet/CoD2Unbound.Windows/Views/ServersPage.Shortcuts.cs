@@ -7,7 +7,7 @@ public sealed partial class ServersPage
 {
     private string? revealedJumpAddress;
 
-    internal bool ShowsServerBrowser => HostingContent.Visibility != Visibility.Visible;
+    internal bool ShowsServerBrowser => HostingLayout.Visibility != Visibility.Visible;
     internal HostingPage? ActiveHosting => ShowsServerBrowser ? null : hosting;
     internal bool IsRefreshing => refreshing is not null;
     private ServerRow? ShortcutRow => ShowsServerBrowser ? FocusedRow() ?? ServerList.SelectedItem as ServerRow : null;

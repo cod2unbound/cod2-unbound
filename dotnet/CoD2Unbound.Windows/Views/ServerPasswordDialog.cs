@@ -27,10 +27,10 @@ internal sealed class ServerPasswordDialog : ContentDialog
         DefaultButton = ContentDialogButton.Primary;
         password = new PasswordBox
         {
-            Header = $"Password for {serverName}", PasswordRevealMode = PasswordRevealMode.Hidden, MaxLength = 127,
+            Style = StyleFor("CapsulePasswordBox"), PasswordRevealMode = PasswordRevealMode.Hidden, MaxLength = 127,
             Password = supplied ?? saved ?? ""
         };
-        AutomationProperties.SetName(password, (string)password.Header);
+        AutomationProperties.SetName(password, $"Password for {serverName}");
         remember = new CheckBox { Content = "Remember for this server, on this PC only", IsChecked = hadSavedPassword };
         note = Caption("");
         validation = new TextBlock { Style = StyleFor("NegativeText"), TextWrapping = TextWrapping.Wrap };
@@ -38,7 +38,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
         Content = new StackPanel
         {
             Spacing = 8,
-            Children = { Body("The people who run the server hand it out."), password, validation, remember, note }
+            Children = { password, validation, remember, note }
         };
         password.PasswordChanged += (_, _) => Update();
         remember.Checked += (_, _) => Update();

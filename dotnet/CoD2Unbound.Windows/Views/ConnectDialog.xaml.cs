@@ -52,7 +52,7 @@ public sealed partial class ConnectDialog : ContentDialog
     internal ServerAddress? Target { get; private set; }
     internal GameEdition? RequestedEdition { get; private set; }
     internal GameServer? Observation { get; private set; }
-    internal bool AddFavorite => Favorite.IsChecked == true;
+    internal bool AddFavorite => Favorite.IsOn;
 
     internal static string EditionName(GameEdition edition) => edition == GameEdition.Cod2x ? "CoD2x 1.4.6.8" : "Original 1.3";
 
@@ -67,18 +67,18 @@ public sealed partial class ConnectDialog : ContentDialog
         {
             var server = library.Cache.FirstOrDefault(item => item.Address == address);
             string name = server is null ? "Not seen in the list" : QuakeColors.Plain(server.Name);
-            string date = library.Played.TryGetValue(address, out var played) ? $"  ·  {played.ToLocalTime():dd MMM}" : "";
+            string date = library.Played.TryGetValue(address, out var played) ? $"{played.ToLocalTime():dd MMM}" : "";
+            var content = Columns(8, new GridLength(150), new GridLength(1, GridUnitType.Star), GridLength.Auto);
+            Put(content, 0, new TextBlock { Text = address, Style = StyleFor("AddressText"), TextTrimming = TextTrimming.CharacterEllipsis });
+            Put(content, 1, new TextBlock { Text = name, TextTrimming = TextTrimming.CharacterEllipsis });
+            Put(content, 2, Caption(date));
             var button = new Button
             {
                 Style = StyleFor("SubtleAction"), HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Content = new StackPanel
-                {
-                    Spacing = 2,
-                    Children = { MonoCaption(address), new TextBlock { Text = name + date, TextTrimming = TextTrimming.CharacterEllipsis } }
-                }
+                Content = content
             };
-            AutomationProperties.SetName(button, $"Use {address}, {name}{date}");
+            AutomationProperties.SetName(button, $"Use {address}, {name}{(date.Length > 0 ? ", " + date : "")}");
             button.Click += (_, _) =>
             {
                 AddressBox.Text = address;
@@ -149,7 +149,7 @@ public sealed partial class ConnectDialog : ContentDialog
 
             string locked = result.PasswordRequired ? " · needs a password" : "";
             ShowAnswer($"{QuakeColors.Plain(result.Name)} answered · {MapCatalog.DisplayName(result.Map)} · " +
-                $"{result.PlayerCount} of {result.MaxPlayers} players · {result.Ping} ms{locked}", "PositiveBrush");
+                $"{result.PlayerCount}/{result.MaxPlayers} · {result.Ping} ms{locked}", "PositiveBrush");
             if (result.PasswordRequired && !accepting)
                 PasswordInput.Focus(FocusState.Programmatic);
         }
@@ -183,6 +183,7 @@ public sealed partial class ConnectDialog : ContentDialog
         LookupLine.Visibility = IsVisible(text.Length != 0);
         Asking.Visibility = IsVisible(asking);
         Asking.IsActive = asking;
+        Answered.Visibility = IsVisible(color == "PositiveBrush" && text.Length > 0);
         Answer.Foreground = ThemeBrush(color, ActualTheme, highContrast);
         Answer.Text = text;
     }

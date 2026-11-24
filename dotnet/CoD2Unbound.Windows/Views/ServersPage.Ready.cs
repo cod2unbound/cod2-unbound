@@ -83,7 +83,7 @@ public sealed partial class ServersPage
             readyCheck is { ProfileId: not null, Overrides.IsEmpty: true } && readyChosenName is { } chosen
                 ? $"Launch with {chosen}"
                 : readyCheck?.State.Report?.Status == ConfigReadyStatus.NeedsChanges && readyCheck.Overrides.IsEmpty
-                    ? "Launch anyway" : "Launch";
+                    ? "Launch Anyway" : "Launch";
         JoinButtonLabel.Text = label;
         string? name = (ServerList.SelectedItem as ServerRow)?.Name;
         AutomationProperties.SetName(JoinButton, name is null ? label : $"{label} on {name}");
@@ -163,7 +163,7 @@ public sealed partial class ServersPage
             Background = ThemeBrush("FieldBrush", ActualTheme, contrast),
             BorderBrush = ThemeBrush(tone ?? "ControlStrokeBrush", ActualTheme, contrast),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(4),
+            CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"],
             Padding = new Thickness(10, 8, 10, 8),
             Child = panel
         };
@@ -176,13 +176,13 @@ public sealed partial class ServersPage
     private void AddNeedsChanges(StackPanel panel, ConfigReadyReport report, ConfigProfile? alternative, string chosen)
     {
         var problems = report.Details.Where(IsProblem).ToArray();
-        string changes = problems.Length == 1 ? "1 change" : $"{problems.Length} changes";
+        string changes = problems.Length == 1 ? "one change" : $"{problems.Length} changes";
         panel.Children.Add(ReadyHeading($"Your “{chosen}” loadout needs {changes} here", "AddressBrush"));
         foreach (var problem in problems)
             panel.Children.Add(Caption(RuleProblem(report, problem)));
 
         if (!report.Fixes.IsEmpty)
-            panel.Children.Add(ReadyAction("Fix for this server only", ConfirmReadyFixAsync, tooltip:
+            panel.Children.Add(ReadyAction("Fix for This Server Only", ConfirmReadyFixAsync, tooltip:
                 "Use the server’s values while you play here only. Your loadout doesn’t change."));
         if (alternative is { } profile)
             panel.Children.Add(ReadyAction($"Use “{profile.DisplayName}”", () => ChangeReadyLoadoutAsync(profile.Id), tooltip:
@@ -314,7 +314,7 @@ public sealed partial class ServersPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Fix for this server only?",
-            PrimaryButtonText = "Fix for this server only", CloseButtonText = "Cancel",
+            PrimaryButtonText = "Fix for This Server Only", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary, Content = details
         };
         if (await dialog.ShowAsync() == ContentDialogResult.Primary && ReferenceEquals(check, readyCheck) && !session.ClientIsRunning)
