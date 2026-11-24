@@ -208,12 +208,16 @@ public sealed partial class SetupPage
         var steps = Setup.Steps;
         int current = Setup.StepNumber;
         StepDots.Children.Clear();
+        bool contrast = shell.IsHighContrast;
         for (int position = 1; position <= steps.Count; position++)
         {
+            // In a contrast theme the track colour is the window's own, so steps still ahead take the theme's
+            // grey-text colour instead of vanishing.
+            string key = position == current ? "accent" : position < current ? "positive" : contrast ? "secondary" : "track";
             StepDots.Children.Add(new Border
             {
                 Width = position == current ? 26 : 14, Height = 5, CornerRadius = new CornerRadius(2.5),
-                Background = Token(position == current ? "accent" : position < current ? "positive" : "track")
+                Background = ThemeBrush(key, ActualTheme, contrast)
             });
         }
         string title = StepTitle(Setup.Step);
