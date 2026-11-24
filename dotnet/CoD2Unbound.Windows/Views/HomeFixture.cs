@@ -1,4 +1,5 @@
 using CoD2Unbound.Core;
+using Microsoft.UI.Xaml;
 
 namespace CoD2Unbound.Windows.Views;
 
@@ -22,6 +23,29 @@ internal static class HomeFixture
 
     internal static string? UpdateVersion => View == "update" ? "0.5.1" : null;
 
+    private static int arranges;
+    private static bool hooked;
+
+    /// Startup steps of Home for the picture pass (startup-timing.log), with WinUI's own resource-reference
+    /// and binding failures, so a native failure that never reaches managed code still leaves a trail.
+    internal static void Trace(string step)
+    {
+        if (!hooked && Application.Current?.DebugSettings is { } debug)
+        {
+            hooked = true;
+            debug.XamlResourceReferenceFailed += (_, args) => StartupTrace.Mark("home: resource reference failed: " + args.Message);
+            debug.BindingFailed += (_, args) => StartupTrace.Mark("home: binding failed: " + args.Message);
+        }
+        StartupTrace.Mark("home: " + step);
+    }
+
+    /// Marks every 50th layout pass of Home, which shows a layout loop in the trace.
+    internal static void CountArrange()
+    {
+        if (++arranges % 50 == 0)
+            StartupTrace.Mark($"home: {arranges} arrange passes");
+    }
+
     // The capture script writes this report into the fixture home, so Show Crash Report has a file to show.
     private static string? CrashReport => Platform.WindowsLauncherSession.ResolveHome() is { } home
         ? Path.Join(home, "crash-reports", "crash-fixture.txt") : null;
@@ -29,5 +53,9 @@ internal static class HomeFixture
     internal static GameSessionState Observe(GameSessionState real, string? lastServer) => real;
 
     internal static string? UpdateVersion => null;
+
+    internal static void Trace(string step) { }
+
+    internal static void CountArrange() { }
 #endif
 }

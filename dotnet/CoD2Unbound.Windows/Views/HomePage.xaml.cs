@@ -31,7 +31,9 @@ public sealed partial class HomePage : Page, IShellBackdrop
         this.session = session;
         model = new(session);
         previews = new(model.ReadArtAsync);
+        HomeFixture.Trace("constructing");
         InitializeComponent();
+        HomeFixture.Trace("constructed");
         PageRoot.Children.Remove(ArtLayer);
         PageRoot.Children.Remove(UpdatePill);
         loadoutMenu.Opening += OnLoadoutMenuOpening;
@@ -40,7 +42,16 @@ public sealed partial class HomePage : Page, IShellBackdrop
         // The update pill lives in the shell's title-bar slot (the Mac's sits in the toolbar): 16 from the window's
         // top, its end 18 from the caption buttons. The shell keeps its passthrough rectangle and clears the slot
         // when another page replaces Home.
-        Loaded += (_, _) => { shell.SetTitleBarContent(UpdatePill); UpdateTheme(); Arrange(); };
+        Loaded += (_, _) =>
+        {
+            HomeFixture.Trace("loaded");
+            shell.SetTitleBarContent(UpdatePill);
+            HomeFixture.Trace("pill in title bar");
+            UpdateTheme();
+            HomeFixture.Trace("theme applied");
+            Arrange();
+            HomeFixture.Trace("arranged");
+        };
     }
 
     internal async Task RefreshAsync()
@@ -88,6 +99,7 @@ public sealed partial class HomePage : Page, IShellBackdrop
 
     private void Arrange()
     {
+        HomeFixture.CountArrange();
         double width = PageRoot.ActualWidth, height = PageRoot.ActualHeight;
         if (width <= 0 || height <= 0 || XamlRoot is null)
             return;
