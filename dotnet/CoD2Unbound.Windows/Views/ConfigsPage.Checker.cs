@@ -300,7 +300,27 @@ public sealed partial class ConfigsPage
             ((TextBlock)bar.Children[1]).FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
             checks.Children.Add(new StackPanel { Spacing = 2, Children = { bar, words } });
         }
-        checkerBody.Children.Add(CheckPair(drop, CheckCard(checks), 735, rightWidth: 320));
+        const double sideBySide = 700;
+        var layout = CheckPair(drop, CheckCard(checks), sideBySide, rightWidth: 320);
+        checkerBody.Children.Add(layout);
+        layout.SizeChanged += FitDropZone;
+        drop.Loaded += (_, _) =>
+        {
+            DetailScroll.SizeChanged += FitDropZone;
+            FitDropZone(drop, null!);
+        };
+        drop.Unloaded += (_, _) => DetailScroll.SizeChanged -= FitDropZone;
+
+        void FitDropZone(object sender, SizeChangedEventArgs args)
+        {
+            bool wide = layout.ActualWidth >= sideBySide;
+            if (wide)
+                layout.ColumnDefinitions[1].Width = new GridLength(Math.Max(300, (layout.ActualWidth - layout.ColumnSpacing) / 2.3));
+            double noticeHeight = checkerReadOnly is { Visibility: Visibility.Visible } notice
+                ? notice.ActualHeight + Detail.Spacing : 0;
+            double insets = DetailColumn.Padding.Top + DetailColumn.Padding.Bottom;
+            drop.MinHeight = wide ? Math.Max(420, DetailScroll.ActualHeight - insets - noticeHeight) : 420;
+        }
     }
 
     private async void OnCheckerDrop(object sender, DragEventArgs args)

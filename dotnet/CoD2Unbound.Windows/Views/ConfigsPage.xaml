@@ -203,7 +203,7 @@
             </Grid>
         </Border>
         <ScrollViewer x:Name="DetailScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Padding="24,82,24,22">
+            <StackPanel x:Name="DetailColumn" Padding="24,82,24,22">
                 <InfoBar x:Name="Status" IsClosable="True" />
                 <InfoBar x:Name="ExportStatus" />
                 <InfoBar x:Name="RecoveryStatus" IsClosable="False" Severity="Error" />
