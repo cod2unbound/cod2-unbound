@@ -141,6 +141,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFF4EEDF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFill" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#29FFFFFF" />
@@ -182,6 +184,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FFF4EEDF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#29FFFFFF" />
@@ -223,6 +227,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#FFF4EEDF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#17FFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#29FFFFFF" />
@@ -260,6 +266,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="#FFC99A4C" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="#FFF4EEDF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#29FFFFFF" />
@@ -333,9 +341,9 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#00000000" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStroke" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStrokePointerOver" Color="#29FFFFFF" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFC99A4C" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="#FFC99A4C" />
+            <x:Double x:Key="TextControlThemeMinHeight">28</x:Double>
+            <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
             <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="#1FE2BD72" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="#FFE2BD72" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#FF141711" />
@@ -523,6 +531,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FF55622F" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FF55622F" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="#29504628" />
             <SolidColorBrush x:Key="SliderTrackFill" Color="#29504628" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#29504628" />
@@ -564,6 +574,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FF55622F" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FF55622F" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#BFFFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#29504628" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#29504628" />
@@ -605,6 +617,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FF55622F" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FF55622F" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#173C3214" />
             <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#29504628" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#29504628" />
@@ -642,6 +656,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#FF55622F" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="#FF55622F" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="#FF55622F" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#29504628" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#29504628" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#29504628" />
@@ -715,9 +731,9 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#00000000" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStroke" Color="#29504628" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStrokePointerOver" Color="#29504628" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF55622F" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FF55622F" />
             <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="#FF55622F" />
+            <x:Double x:Key="TextControlThemeMinHeight">28</x:Double>
+            <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
             <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="#1F6B4A12" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="#FF6B4A12" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="#FFF7F2E6" />
@@ -892,6 +908,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFill" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -930,6 +948,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -968,6 +988,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillPressed" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -1005,6 +1027,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -1078,9 +1102,9 @@
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStroke" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseStrokePointerOver" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <x:Double x:Key="TextControlThemeMinHeight">28</x:Double>
+            <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
             <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource SystemColorWindowColor}" />
@@ -1145,7 +1169,6 @@
     <CornerRadius x:Key="MenuItemRadius">7</CornerRadius>
     <CornerRadius x:Key="BadgeRadius">6</CornerRadius>
     <CornerRadius x:Key="KeycapRadius">6</CornerRadius>
-    <CornerRadius x:Key="CapsuleRadius">999</CornerRadius>
     <x:Double x:Key="PageSize">30</x:Double>
     <x:Double x:Key="PageLineHeight">33</x:Double>
     <Style x:Key="TypePage" TargetType="TextBlock">
@@ -1242,6 +1265,17 @@
     <x:Double x:Key="FocusOffset">2</x:Double>
     <x:Double x:Key="ButtonMediumHeight">36</x:Double>
     <x:Double x:Key="DetailRowHeight">52</x:Double>
+    <CornerRadius x:Key="ButtonSmallRadius">12</CornerRadius>
+    <CornerRadius x:Key="ButtonRegularRadius">14</CornerRadius>
+    <CornerRadius x:Key="ButtonMediumRadius">18</CornerRadius>
+    <CornerRadius x:Key="ButtonHeroRadius">27</CornerRadius>
+    <CornerRadius x:Key="FieldCapsuleRadius">18</CornerRadius>
+    <CornerRadius x:Key="CircleRadius">18</CornerRadius>
+    <CornerRadius x:Key="SegmentRadius">14</CornerRadius>
+    <CornerRadius x:Key="ChipRadius">13</CornerRadius>
+    <CornerRadius x:Key="LargeChipRadius">20</CornerRadius>
+    <CornerRadius x:Key="SwitchRadius">12</CornerRadius>
+    <CornerRadius x:Key="SegmentItemRadius">11</CornerRadius>
     <GridLength x:Key="CaptionRowHeight">32</GridLength>
     <Thickness x:Key="Stroke">1</Thickness>
     <Thickness x:Key="FocusStroke">3</Thickness>

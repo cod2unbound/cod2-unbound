@@ -240,7 +240,9 @@ def generate(source):
             keys("field", "Window", f"CheckBoxCheckBackgroundFillUnchecked{state}")
             keys("wellStroke", "WindowText", f"CheckBoxCheckBackgroundStrokeUnchecked{state}")
             keys("control", "GrayText" if disabled else "Highlight",
-                 f"ToggleSwitchFillOn{state} ToggleSwitchStrokeOn{state} RadioButtonOuterEllipseCheckedStroke{state}")
+                 f"ToggleSwitchFillOn{state} ToggleSwitchStrokeOn{state} "
+                 f"RadioButtonOuterEllipseCheckedStroke{state} RadioButtonOuterEllipseCheckedFill{state}")
+            keys("knob", "HighlightText", f"RadioButtonCheckGlyphFill{state}")
             keys("buttonHover" if state == "PointerOver" else "press" if state == "Pressed" else "track",
                  "Window", f"ToggleSwitchFillOff{state}")
             keys("track", "Window", f"SliderTrackFill{state}")
@@ -263,7 +265,9 @@ def generate(source):
                     "ListViewItemSelectionIndicatorPressedBrush"):
             brush(key, TRANSPARENT if palette else system_color("HighlightText"))
         keys("track", "WindowText", "RadioButtonOuterEllipseStroke RadioButtonOuterEllipseStrokePointerOver")
-        keys("control", "Highlight", "RadioButtonCheckGlyphFill RadioButtonCheckGlyphFillPointerOver ProgressRingForegroundThemeBrush")
+        keys("control", "Highlight", "ProgressRingForegroundThemeBrush")
+        for key, height in (("TextControlThemeMinHeight", "FieldInlineHeight"), ("ComboBoxMinHeight", "ButtonRegularHeight")):
+            resource(dictionary, "x:Double", key).text = str(BOARD_METRICS[height])
         for severity, ink in (("Informational", "accent"), ("Warning", "caution"),
                               ("Success", "positive"), ("Error", "negative")):
             brush(f"InfoBar{severity}SeverityBackgroundBrush",
@@ -292,7 +296,6 @@ def generate(source):
 
     for name, value in RADII.items():
         resource(root, "CornerRadius", name + "Radius").text = str(value)
-    resource(root, "CornerRadius", "CapsuleRadius").text = "999"
     for name, (size, weight, line) in TYPE.items():
         resource(root, "x:Double", name + "Size").text = str(size)
         resource(root, "x:Double", name + "LineHeight").text = str(line)
@@ -301,8 +304,13 @@ def generate(source):
             ET.SubElement(style, "Setter", Property=property_, Value=str(value))
     action = re.search(r"static let action: CGFloat = (\d+)", source)[1]
     row = re.search(r"detailRowHeight: CGFloat = (\d+)", COMPONENTS.read_text())[1]
-    for name, value in dict(BOARD_METRICS, ButtonMediumHeight=action, DetailRowHeight=row).items():
+    measures = dict(BOARD_METRICS, ButtonMediumHeight=action, DetailRowHeight=row)
+    for name, value in measures.items():
         resource(root, "x:Double", name).text = str(value)
+    for name in ("ButtonSmall", "ButtonRegular", "ButtonMedium", "ButtonHero", "FieldCapsule", "Circle",
+                 "Segment", "Chip", "LargeChip", "Switch"):
+        resource(root, "CornerRadius", name + "Radius").text = str(int(measures[name + "Height"]) // 2)
+    resource(root, "CornerRadius", "SegmentItemRadius").text = "11"
     resource(root, "GridLength", "CaptionRowHeight").text = str(BOARD_METRICS["CaptionHeight"])
     resource(root, "Thickness", "Stroke").text = "1"
     resource(root, "Thickness", "FocusStroke").text = str(BOARD_METRICS["FocusThickness"])
