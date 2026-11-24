@@ -63,7 +63,6 @@ public sealed partial class ConfigsPage
         var count = Caption(SetupCount(entries.Length) + (state.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : ""));
         count.VerticalAlignment = VerticalAlignment.Center;
         var refresh = new Button();
-        refresh.Click += async (_, _) => await shell.ShowProblemAsync(RefreshCatalogueAsync);
         refresh.Content = Fluent("Refresh", 20);
         refresh.Style = StyleFor("IconAction");
         AutomationProperties.SetName(refresh, "Refresh player setups");
@@ -85,6 +84,7 @@ public sealed partial class ConfigsPage
             ? ready.Result : null;
         Func<ImmutableArray<ConfigDirectoryEntry>, ImmutableArray<ConfigDirectoryEntry>>? groupFilter = null;
         bool checking = false;
+        refresh.Click += async (_, _) => await shell.ShowProblemAsync(RefreshCatalogueAsync);
         search.TextChanged += (_, args) =>
         {
             if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
