@@ -33,11 +33,14 @@ public sealed partial class HomePage : Page, IShellBackdrop
         previews = new(model.ReadArtAsync);
         InitializeComponent();
         PageRoot.Children.Remove(ArtLayer);
+        PageRoot.Children.Remove(UpdatePill);
         loadoutMenu.Opening += OnLoadoutMenuOpening;
         LoadoutChip.Flyout = loadoutMenu;
         ActualThemeChanged += (_, _) => UpdateTheme();
-        Loaded += (_, _) => { UpdateTheme(); Arrange(); };
-        Unloaded += (_, _) => shell.SetHomeCaptionPassthrough(null);
+        // The update pill lives in the shell's title-bar slot (the Mac's sits in the toolbar): 16 from the window's
+        // top, its end 18 from the caption buttons. The shell keeps its passthrough rectangle and clears the slot
+        // when another page replaces Home.
+        Loaded += (_, _) => { shell.SetTitleBarContent(UpdatePill); UpdateTheme(); Arrange(); };
     }
 
     internal async Task RefreshAsync()
@@ -116,11 +119,7 @@ public sealed partial class HomePage : Page, IShellBackdrop
         Hero.Measure(new Size(Hero.Width, double.PositiveInfinity));
         Lower.Measure(new Size(inner, double.PositiveInfinity));
         ContentLayout.Height = Math.Max(height, heroTop + Hero.DesiredSize.Height + 24 + Lower.DesiredSize.Height + 28);
-
-        // The update pill sits 16 from the window's top, its end 18 from the caption buttons' 138.
-        UpdatePill.Margin = new Thickness(0, Math.Max(8, 16 - origin.Y), 156, 0);
         FitNews();
-        ReportPillBounds();
     }
 
     /// One row of cards at every size. Recent servers listed: Jump back in takes the width its rows need

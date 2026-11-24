@@ -286,7 +286,7 @@
         <Border x:Name="UpdatePill" HorizontalAlignment="Right" VerticalAlignment="Top" Height="44"
                 CornerRadius="22" Padding="16,0,4,0" Background="{ThemeResource GlassAcrylicBrush}"
                 BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
-                Translation="0,0,32" Visibility="Collapsed" SizeChanged="OnUpdatePillMoved"
+                Margin="0,16,18,0" Translation="0,0,32" Visibility="Collapsed"
                 AutomationProperties.Name="Update">
             <Border.Shadow><ThemeShadow /></Border.Shadow>
             <StackPanel Orientation="Horizontal" Spacing="12">

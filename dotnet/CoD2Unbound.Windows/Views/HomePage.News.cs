@@ -201,10 +201,7 @@ public sealed partial class HomePage
         bool visible = !session.SetupUpdating && (ready || installing || failed);
         UpdatePill.Visibility = IsVisible(visible);
         if (!visible)
-        {
-            shell.SetHomeCaptionPassthrough(null);
             return;
-        }
         UpdateProgress.IsActive = installing;
         UpdateProgress.Visibility = IsVisible(installing);
         UpdateIcon.Visibility = IsVisible(!installing);
@@ -224,7 +221,6 @@ public sealed partial class HomePage
         UpdateDetails.Visibility = IsVisible(failed);
         UpdatePill.Padding = new Thickness(16, 0, ready ? 4 : 16, 0);
         AutomationProperties.SetName(UpdatePill, "Update: " + UpdateText.Text);
-        ReportPillBounds();
     }
 
     private async void OnUpdateAction(object sender, RoutedEventArgs args) => await shell.RunAsync(shell.InstallOfferedUpdateAsync);
@@ -234,21 +230,4 @@ public sealed partial class HomePage
 
     private async void OnUpdateNotes(object sender, RoutedEventArgs args) =>
         await shell.RunAsync(() => shell.ShowReleaseNotesAsync(session.Updates.State.AvailableVersion ?? session.Version));
-
-    /// The pill reaches into the title bar row; its rectangle takes pointer input there.
-    private void OnUpdatePillMoved(object sender, SizeChangedEventArgs args) => ReportPillBounds();
-
-    private void ReportPillBounds()
-    {
-        if (UpdatePill.Visibility != Visibility.Visible || XamlRoot is null || !IsLoaded)
-        {
-            shell.SetHomeCaptionPassthrough(null);
-            return;
-        }
-        var corner = UpdatePill.TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point(0, 0));
-        double scale = XamlRoot.RasterizationScale;
-        shell.SetHomeCaptionPassthrough(new global::Windows.Graphics.RectInt32(
-            (int)Math.Floor(corner.X * scale), (int)Math.Floor(corner.Y * scale),
-            (int)Math.Ceiling(UpdatePill.ActualWidth * scale), (int)Math.Ceiling(UpdatePill.ActualHeight * scale)));
-    }
 }

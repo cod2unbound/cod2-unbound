@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using Microsoft.UI.Input;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 
@@ -43,28 +42,6 @@ public sealed partial class MainWindow
             return;
         await NavigateAsync(LauncherPlace.UpdateSettings);
         await RunUpdateAsync(install: true);
-    }
-
-    private global::Windows.Graphics.RectInt32? homeCaptionPassthrough;
-
-    /// Home's update pill reaches into the title bar row (as the Mac's sits in its toolbar). Its rectangle,
-    /// in window pixels, takes pointer input there; other units' passthrough rectangles are kept.
-    internal void SetHomeCaptionPassthrough(global::Windows.Graphics.RectInt32? rect)
-    {
-        if (Nullable.Equals(rect, homeCaptionPassthrough))
-            return;
-        try
-        {
-            var source = InputNonClientPointerSource.GetForWindowId(AppWindow.Id);
-            // GetRegionRects answers null, not an empty array, before any rectangle is set.
-            var kept = (source.GetRegionRects(NonClientRegionKind.Passthrough) ?? [])
-                .Where(existing => homeCaptionPassthrough is not { } previous || !existing.Equals(previous)).ToList();
-            if (rect is { } next)
-                kept.Add(next);
-            source.SetRegionRects(NonClientRegionKind.Passthrough, [.. kept]);
-            homeCaptionPassthrough = rect;
-        }
-        catch (Exception error) when (error is COMException or InvalidOperationException) { }
     }
 
     [DllImport("user32.dll")]
