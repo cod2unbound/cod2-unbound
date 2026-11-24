@@ -147,7 +147,10 @@ public static class GlyphAlign
         double lineHeight = lineEm * icon.FontSize;
         double inkCentre = icon.ActualOffset.Y + (icon.ActualHeight - lineHeight) / 2 + inkEm * icon.FontSize;
         double capCentre = text.ActualOffset.Y + text.BaselineOffset - CapHalfEm * text.FontSize;
-        double move = Math.Round(capCentre - inkCentre, 2);
+        // The icon and the label are both text, which Windows draws on whole device pixels at any scale; a
+        // fractional move is lost or rounded unpredictably, so the move is a whole number of device pixels.
+        double scale = panel.XamlRoot?.RasterizationScale ?? 1;
+        double move = Math.Round((capCentre - inkCentre) * scale, MidpointRounding.AwayFromZero) / scale;
         // The behaviour owns the icon's render transform; a page that needs another transform turns it off.
         if (icon.RenderTransform is TranslateTransform translate)
         {
@@ -160,9 +163,12 @@ public static class GlyphAlign
             icon.RenderTransform = new TranslateTransform { Y = move };
         }
 #if UPDATE_FIXTURES
-        if (traced++ < 40)
+        if (traced++ < 120)
             StartupTrace.Mark($"glyph-align {++moved} U+{(int)(icon.Glyph?.FirstOrDefault() ?? ' '):X4}/{icon.FontSize}" +
-                $" '{text.Text}'/{text.FontSize} moved {move:0.00}");
+                $" '{text.Text}'/{text.FontSize} moved {move:0.00} (exact {capCentre - inkCentre:0.00}) scale {scale}" +
+                $" icon y {icon.ActualOffset.Y:0.00} h {icon.ActualHeight:0.00} text y {text.ActualOffset.Y:0.00}" +
+                $" h {text.ActualHeight:0.00} baseline {text.BaselineOffset:0.00} panel h {panel.ActualHeight:0.00}" +
+                $" at {panel.TransformToVisual(null).TransformPoint(default).Y:0.00}");
 #endif
     }
 
