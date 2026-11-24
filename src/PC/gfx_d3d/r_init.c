@@ -1285,7 +1285,10 @@ static Bool R_InitNativeHardware(void)
             hr = ((HRESULT(D3DVTCC *)(void *, UINT, int, int, int, int, DWORD *))methods[11])(
                 d3d, dx.adapterIndex, 1, 0x15, !fullscreen, samples, &qualityLevels);
             if (hr >= 0) {
+#if !(COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9)
                 dx.multiSampleQuality = qualityLevels - 1;
+#endif
+                /* Windows 1.3 uses quality index zero for the selected sample count. */
                 break;
             }
         }
@@ -1660,7 +1663,9 @@ Bool R_RecoverLostDevice(void)
 #endif
                 1, 0x15, !isFullscreen, testSamples, &qualityLevels);
             if (hr >= 0) {
+#if !(COD2_WINDOWS_NATIVE && COD2_WIN32_D3D9)
                 dx.multiSampleQuality = qualityLevels - 1;
+#endif
                 goto aa_done;
             }
             testSamples--;
