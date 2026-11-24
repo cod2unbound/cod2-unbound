@@ -18,8 +18,8 @@
              DefaultDropDownButtonStyle, native start crash 2026-11-24). -->
         <Style x:Key="RecentItem" TargetType="ListViewItem">
             <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
-            <Setter Property="Padding" Value="7,7,17,7" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Padding" Value="8,8,9,8" />
+            <Setter Property="Margin" Value="0,0,0,8" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
@@ -228,12 +228,12 @@
                         </Grid.ColumnDefinitions>
                         <Border x:Name="RecentCard" Style="{StaticResource GroupCard}" Padding="20"
                                 AutomationProperties.Name="Jump back in">
-                            <Grid RowSpacing="10">
+                            <Grid RowSpacing="8">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid Padding="0,0,0,5">
+                                <Grid>
                                     <TextBlock x:Name="RecentHeading" Text="Jump back in" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="AllRecent" Style="{StaticResource CardLink}" Click="OnRecent"
                                                      AutomationProperties.Name="All recent">
@@ -250,7 +250,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid Padding="0,0,0,5">
+                                <Grid>
                                     <TextBlock x:Name="MatchHeading" Text="Last match" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="AllMatches" Style="{StaticResource CardLink}" Click="OnAllMatches"
                                                      AutomationProperties.Name="All matches">
@@ -268,7 +268,7 @@
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <Grid Padding="0,0,0,5">
+                                <Grid>
                                     <TextBlock x:Name="NewsHeading" Text="What’s New" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="SeeAllNews" Style="{StaticResource CardLink}" Click="OnShowNews"
                                                      AutomationProperties.Name="See all">

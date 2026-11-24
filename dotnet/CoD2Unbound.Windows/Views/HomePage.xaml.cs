@@ -136,7 +136,8 @@ public sealed partial class HomePage : Page, IShellBackdrop
 
         Hero.Measure(new Size(Hero.Width, double.PositiveInfinity));
         Lower.Measure(new Size(inner, double.PositiveInfinity));
-        ContentLayout.Height = Math.Max(height, heroTop + Hero.DesiredSize.Height + 24 + Lower.DesiredSize.Height + 28);
+        // DesiredSize already holds each block's margin (heroTop above the hero, 28 under the cards).
+        ContentLayout.Height = Math.Max(height, Hero.DesiredSize.Height + 24 + Lower.DesiredSize.Height);
         FitNews();
     }
 
