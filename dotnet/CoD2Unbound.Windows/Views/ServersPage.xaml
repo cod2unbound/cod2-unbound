@@ -54,7 +54,7 @@
                                 <Border Style="{StaticResource GroupCard}">
                                     <StackPanel>
                                         <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                            <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
                                             <SelectorBar x:Name="FilterEdition" Grid.Column="1" AutomationProperties.Name="Version"
                                                          SelectionChanged="OnEditionFilterSelection">
                                                 <SelectorBarItem Text="Any" />
