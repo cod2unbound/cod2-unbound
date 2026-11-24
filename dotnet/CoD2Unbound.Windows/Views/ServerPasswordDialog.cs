@@ -17,6 +17,8 @@ internal sealed class ServerPasswordDialog : ContentDialog
 
     internal ServerPasswordDialog(string serverName, string? saved, string? supplied)
     {
+        // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
+        Style = StyleFor("LauncherSheet");
         hadSavedPassword = saved is not null;
         Title = $"“{serverName}” needs a password";
         this.WithSymbol("FluentLock", "The people who run the server hand it out.");

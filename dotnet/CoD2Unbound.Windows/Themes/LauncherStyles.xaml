@@ -65,7 +65,7 @@
          glassHighlight inside it, and for the prominent button a soft accent glow below. The native
          button keeps its input, automation peer and focus visuals; only the visual tree is the board's. -->
     <ControlTemplate x:Key="LauncherButtonTemplate" TargetType="Button">
-        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
@@ -107,7 +107,7 @@
         </Grid>
     </ControlTemplate>
     <ControlTemplate x:Key="LauncherFlatButtonTemplate" TargetType="Button">
-        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
@@ -146,7 +146,7 @@
         </Grid>
     </ControlTemplate>
     <ControlTemplate x:Key="LauncherAccentButtonTemplate" TargetType="Button">
-        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
@@ -193,7 +193,7 @@
         </Grid>
     </ControlTemplate>
     <ControlTemplate x:Key="LauncherFlatAccentButtonTemplate" TargetType="Button">
-        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />

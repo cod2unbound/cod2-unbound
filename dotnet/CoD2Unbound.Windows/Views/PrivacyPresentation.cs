@@ -228,7 +228,11 @@ internal static class PrivacyPresentation
 
     private sealed class UsagePreviewDialog : ContentDialog
     {
-        public UsagePreviewDialog() => DefaultStyleKey = typeof(ContentDialog);
+        public UsagePreviewDialog()
+        {
+            DefaultStyleKey = typeof(ContentDialog);
+            Style = StyleFor("LauncherSheet");
+        }
 
         protected override void OnApplyTemplate()
         {

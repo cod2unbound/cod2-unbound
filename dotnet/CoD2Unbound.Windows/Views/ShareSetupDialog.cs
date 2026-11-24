@@ -36,6 +36,8 @@ internal sealed class ShareSetupDialog : ContentDialog
     internal ShareSetupDialog(string loadout, ConfigShareForm form, DataTemplate omittedLine, Func<bool> readOnly,
         Func<CancellationToken, Task<ConfigShareSent?>> publish)
     {
+        // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
+        Style = StyleFor("LauncherSheet");
         this.form = form;
         this.omittedLine = omittedLine;
         this.readOnly = readOnly;

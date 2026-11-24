@@ -12,6 +12,8 @@ internal sealed class ReleaseNotesDialog : ContentDialog
     internal ReleaseNotesDialog(MainWindow shell, string version, string current, ReleaseOffer? offer,
         ImmutableArray<ReleaseNoteItem> notes, Uri link, UpdateBlock? hold, bool canInstall)
     {
+        // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
+        Style = StyleFor("LauncherSheet");
         XamlRoot = shell.DialogRoot;
         RequestedTheme = shell.DialogTheme;
         Resources["ContentDialogMaxWidth"] = 620d;

@@ -118,7 +118,7 @@
         <!-- Jump to (JumpPalette.swift, HomeJump board): a centred palette over the window, opened with Ctrl+K. -->
         <Grid x:Name="JumpLayer" Visibility="Collapsed">
             <Rectangle Fill="Transparent" Tapped="OnJumpScrimTapped" AutomationProperties.AccessibilityView="Raw" />
-            <Border x:Name="JumpPanel" Width="640" Margin="16,72,16,16" HorizontalAlignment="Center" VerticalAlignment="Top"
+            <Border x:Name="JumpPanel" Width="640" Margin="16,122,16,16" HorizontalAlignment="Center" VerticalAlignment="Top"
                     CornerRadius="{StaticResource SheetRadius}" Background="{ThemeResource GlassAcrylicBrush}"
                     BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
                     Translation="0,0,32" AutomationProperties.Name="Jump to" AutomationProperties.LandmarkType="Search">
