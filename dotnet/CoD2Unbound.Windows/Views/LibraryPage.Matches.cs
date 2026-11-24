@@ -1,9 +1,7 @@
 using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Imaging;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -21,8 +19,7 @@ public sealed partial class LibraryPage
     {
         var history = ReadMatchLibrary();
         bool haveMatches = !history.Matches.IsEmpty;
-        Retention.Visibility = IsVisible(haveMatches || history.State == MatchLibraryState.Empty);
-        DeleteSummaries.Visibility = IsVisible(haveMatches);
+        Retention.Visibility = IsVisible(haveMatches);
         DeleteSummaries.IsEnabled = history.CanDelete(session.Game.State.Running);
         SummariesOff.IsOpen = history.State == MatchLibraryState.OffWithHistory;
         MatchTable.Visibility = IsVisible(haveMatches);
@@ -41,15 +38,15 @@ public sealed partial class LibraryPage
 
         EmptyBody.Content = history.State switch
         {
-            MatchLibraryState.Off => LibraryEmpty("HeartPulse", "Match summaries are off",
+            MatchLibraryState.Off => LibraryEmpty("Match summaries are off",
                 "Turn them on to see how each match ran. They stay on this PC.",
-                LibraryAction("Turn on in Settings…", OpenMatchPrivacyAsync)),
-            MatchLibraryState.Empty => LibraryEmpty("HeartPulse", "No matches yet",
+                LibraryAction("Turn On in Settings…", OpenMatchPrivacyAsync)),
+            MatchLibraryState.Empty => LibraryEmpty("No matches yet",
                 "After each match the game notes how it ran, so Check-up can advise you. Play one and it shows up here.",
-                LibraryAction("Find a server", () => shell.NavigateAsync(LauncherPlace.Servers), accent: true)),
-            MatchLibraryState.Unavailable => LibraryEmpty("HeartPulse", "Matches unavailable",
+                LibraryAction("Find a Server", () => shell.NavigateAsync(LauncherPlace.Servers))),
+            MatchLibraryState.Unavailable => LibraryEmpty("Matches unavailable",
                 "Your match summaries couldn’t be read. Check that your CoD2 Unbound folder is readable, then try again.",
-                LibraryAction("Try again", () => { Render(); return Task.CompletedTask; })),
+                LibraryAction("Try Again", () => { Render(); return Task.CompletedTask; })),
             _ => null
         };
     }
@@ -76,7 +73,7 @@ public sealed partial class LibraryPage
                 return;
             }
             var dialog = LibraryRemovalDialog(history.DeleteTitle,
-                "Check-up loses its history and starts again from your next match. This can’t be undone.", "Delete summaries");
+                "Check-up loses its history and starts again from your next match. This can’t be undone.", "Delete Summaries");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary || session.ClientIsRunning)
                 return;
             try
@@ -93,6 +90,20 @@ public sealed partial class LibraryPage
         });
     }
 
+    private void OnConnectionLoaded(object sender, RoutedEventArgs args) => PaintConnection((StackPanel)sender);
+    private void OnConnectionChanged(FrameworkElement sender, DataContextChangedEventArgs args) => PaintConnection((StackPanel)sender);
+    private void OnConnectionThemeChanged(FrameworkElement sender, object args) => PaintConnection((StackPanel)sender);
+
+    private static void PaintConnection(StackPanel panel)
+    {
+        if (panel.DataContext is not LibraryMatchRow row)
+            return;
+        bool contrast = new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
+        var ink = ThemeBrush(row.ConnectionInk, panel.ActualTheme, contrast);
+        ((FontIcon)panel.Children[0]).Foreground = ink;
+        ((TextBlock)panel.Children[1]).Foreground = ink;
+    }
+
     private void OnMatchArtLoaded(object sender, RoutedEventArgs args) => ShowMatchArt((Image)sender);
 
     private void OnMatchArtChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ShowMatchArt((Image)sender);
@@ -100,7 +111,7 @@ public sealed partial class LibraryPage
     private void ShowMatchArt(Image image)
     {
         if (image.DataContext is LibraryMatchRow row)
-            _ = previews.FillAsync(image, row.Summary.Map);
+            _ = previews.FillAsync(image, row.Summary.Map, squareAsFourByThree: true);
         else
         {
             image.Tag = null;
@@ -125,9 +136,15 @@ internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now, in
                 : duration;
         }
     }
-    public string Ping => Summary.PingAverageMS is { } average ? $"{average:F0} ms" : "—";
-    public string PingName => Summary.PingAverageMS.HasValue ? $"Ping {Ping}" : "Ping not measured";
+    public string Ping => Summary.PingAverageMS is { } average ? $"{average:F0}" : "—";
+    public string PingName => Summary.PingAverageMS.HasValue ? $"Ping {Ping} ms" : "Ping not measured";
     public string ConnectionLabel => MatchFacts.ConnectionText(Connection);
+    internal string ConnectionInk => Connection switch
+    {
+        MatchConnection.Steady => "positive",
+        MatchConnection.Dips => "caution",
+        _ => "secondary"
+    };
     public string ConnectionGlyph => Connection switch
     {
         MatchConnection.Steady => "\uE73E",
@@ -135,6 +152,8 @@ internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now, in
         _ => "\uE946"
     };
     public string CheckupName => $"Check-up for {Title}, {Stamp}";
+
+    public override string ToString() => $"{Title}, {Stamp}, {PingName}, connection {ConnectionLabel}";
 
     internal LibraryMatchRow Reconcile(LibraryMatchRow incoming)
     {

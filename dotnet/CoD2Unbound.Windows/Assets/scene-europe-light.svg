@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100" viewBox="0 0 160 100">
+  <!-- SceneThumbnail in launcher/Artwork.swift -->
+  <defs>
+    <linearGradient id="sky" x2="0%" y2="100%">
+      <stop stop-color="#9fb0b4"/>
+      <stop offset="1" stop-color="#d8d6c8"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 0H160V100H0Z" fill="url(#sky)"/>
+  <circle cx="120" cy="50" r="9" fill="#ffffff" opacity="0.4"/>
+  <path d="M0 74H160V100H0Z" fill="#5f6b45"/>
+  <path d="M0 74 L10 66 L20 74 V72 H24 L34 62 L44 72 H50 V60 L56 52 L62 60 V72 H70 L72 50 L74 36 L76 50 L78 72 H90 L100 64 L110 72 H120 L128 66 L136 72 H160 V100 H0Z" fill="#3b4130"/>
+</svg>
