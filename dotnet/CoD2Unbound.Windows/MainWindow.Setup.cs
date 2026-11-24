@@ -57,12 +57,12 @@ public sealed partial class MainWindow
                 Content = content, DefaultButton = ContentDialogButton.Primary,
                 PrimaryButtonText = problem.Kind switch
                 {
-                    LaunchRecoveryKind.Folder => "Choose a folder…",
-                    LaunchRecoveryKind.MissingGame => "Open download page",
-                    _ => "Try again"
+                    LaunchRecoveryKind.Folder => "Choose Folder…",
+                    LaunchRecoveryKind.MissingGame => "Open Download Page",
+                    _ => "Try Again"
                 },
                 SecondaryButtonText = "Show Log", CloseButtonText = "Close"
-            };
+            }.WithSymbol("SystemWarning", tone: SheetPresentation.Tone.Negative);
             switch (await dialog.ShowAsync())
             {
                 case ContentDialogResult.Secondary:
@@ -102,6 +102,6 @@ public sealed partial class MainWindow
         {
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme,
             Title = "Game log", Content = text, CloseButtonText = "Close", DefaultButton = ContentDialogButton.Close
-        }.ShowAsync();
+        }.WithSymbol("FluentDocument").ShowAsync();
     }
 }

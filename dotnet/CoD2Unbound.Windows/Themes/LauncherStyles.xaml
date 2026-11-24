@@ -9,6 +9,7 @@
     <x:String x:Key="FluentHome">&#xF480;</x:String>
     <x:String x:Key="FluentLive">&#xF4F0;</x:String>
     <x:String x:Key="FluentVideoClip">&#xEDFF;</x:String>
+    <x:String x:Key="FluentFilmstrip">&#xEEFB;</x:String>
     <x:String x:Key="FluentStack">&#xF792;</x:String>
     <x:String x:Key="FluentSettings">&#xF6A9;</x:String>
     <x:String x:Key="FluentAdd">&#xF109;</x:String>
@@ -25,6 +26,7 @@
     <x:String x:Key="FluentChevronDown">&#xF2A2;</x:String>
     <x:String x:Key="FluentChevronUp">&#xF2B5;</x:String>
     <x:String x:Key="FluentChevronRight">&#xF2AF;</x:String>
+    <x:String x:Key="FluentChevronRight20">&#xF2B0;</x:String>
     <x:String x:Key="FluentPeopleCommunity">&#xF5B0;</x:String>
     <x:String x:Key="FluentPerson">&#xF5BD;</x:String>
     <x:String x:Key="FluentShieldCheckmark">&#xEAC8;</x:String>
@@ -44,14 +46,194 @@
     <x:String x:Key="FluentMore">&#xE824;</x:String>
     <x:String x:Key="FluentImage">&#xF489;</x:String>
     <x:String x:Key="FluentHeartPulse">&#xE701;</x:String>
+    <!-- Symbols the bundled Fluent font is not mapped for here come from the system's icon font
+         (Segoe Fluent Icons on Windows 11, Segoe MDL2 Assets on Windows 10; same code points). -->
+    <FontFamily x:Key="SystemIcons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <x:String x:Key="SystemInfo">&#xE946;</x:String>
+    <x:String x:Key="SystemSliders">&#xE9E9;</x:String>
+    <x:String x:Key="SystemKeyboard">&#xE765;</x:String>
+    <x:String x:Key="SystemEdit">&#xE70F;</x:String>
+    <x:String x:Key="SystemLink">&#xE71B;</x:String>
+    <x:String x:Key="SystemWarning">&#xE7BA;</x:String>
+    <x:String x:Key="SystemBug">&#xEBE8;</x:String>
+    <x:String x:Key="SystemPermissions">&#xE8D7;</x:String>
+    <x:String x:Key="SystemPeople">&#xE716;</x:String>
     <FontFamily x:Key="FluentFilled">ms-appx:///Assets/FluentSystemIcons-Filled.ttf#FluentSystemIcons-Filled</FontFamily>
     <x:String x:Key="FluentBookmarkFilled">&#xF1F5;</x:String>
     <x:String x:Key="FluentPlay">&#xE9A2;</x:String>
     <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
 
+    <!-- Board button anatomy (launcher.css .btn and .btn.pri): the fill, a one-pixel top hairline in
+         glassHighlight inside it, and for the prominent button a soft accent glow below. The native
+         button keeps its input, automation peer and focus visuals; only the visual tree is the board's. -->
+    <ControlTemplate x:Key="LauncherButtonTemplate" TargetType="Button">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundPointerOver}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushPointerOver}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundPointerOver}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundPressed}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushPressed}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundPressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundDisabled}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushDisabled}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundDisabled}" />
+                            <Setter Target="Highlight.Opacity" Value="0" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                    BackgroundSizing="InnerBorderEdge" />
+            <Border x:Name="Highlight" Margin="1" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="0,1,0,0"
+                    BorderBrush="{ThemeResource glassHighlight}" IsHitTestVisible="False" />
+            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+    </ControlTemplate>
+    <ControlTemplate x:Key="LauncherFlatButtonTemplate" TargetType="Button">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundPointerOver}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushPointerOver}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundPointerOver}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundPressed}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushPressed}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundPressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource ButtonBackgroundDisabled}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource ButtonBorderBrushDisabled}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource ButtonForegroundDisabled}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                    BackgroundSizing="InnerBorderEdge" />
+            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+    </ControlTemplate>
+    <ControlTemplate x:Key="LauncherAccentButtonTemplate" TargetType="Button">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundPointerOver}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPointerOver}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundPointerOver}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundPressed}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPressed}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundPressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundDisabled}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushDisabled}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundDisabled}" />
+                            <Setter Target="Highlight.Opacity" Value="0" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                    BackgroundSizing="InnerBorderEdge" />
+            <Border x:Name="Highlight" Margin="1" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="0,1,0,0"
+                    BorderBrush="#80FFFFFF" IsHitTestVisible="False" />
+            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+    </ControlTemplate>
+    <ControlTemplate x:Key="LauncherFlatAccentButtonTemplate" TargetType="Button">
+        <Grid x:Name="RootGrid" Control.IsTemplateFocusTarget="True" CornerRadius="{TemplateBinding CornerRadius}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundPointerOver}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPointerOver}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundPointerOver}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundPressed}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPressed}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundPressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundDisabled}" />
+                            <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushDisabled}" />
+                            <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundDisabled}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                    BackgroundSizing="InnerBorderEdge" />
+            <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+    </ControlTemplate>
+
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="Template" Value="{StaticResource LauncherAccentButtonTemplate}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Padding" Value="14,0" />
@@ -74,7 +256,9 @@
     <CornerRadius x:Key="ProgressBarCornerRadius">4</CornerRadius>
 
     <!-- Retain WinUI's input and automation templates. DesignTokens supplies their state brushes. -->
+    <!-- Every size has one outer height in every role (fill, glass, quiet): the border is drawn inside it. -->
     <Style x:Key="LauncherButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Template" Value="{StaticResource LauncherButtonTemplate}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -90,11 +274,13 @@
     <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
         <Setter Property="Padding" Value="18,0" />
     </Style>
     <Style x:Key="HeroButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonHeroRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonHeroHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonHeroHeight}" />
         <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
         <Setter Property="Padding" Value="28,0" />
     </Style>
@@ -122,6 +308,7 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style x:Key="InlineTextBox" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
@@ -138,6 +325,7 @@
         <Setter Property="Padding" Value="16,5" />
     </Style>
     <Style x:Key="InlinePasswordBox" TargetType="PasswordBox">
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
@@ -154,6 +342,7 @@
         <Setter Property="Padding" Value="16,5" />
     </Style>
     <Style x:Key="InlineNumberBox" TargetType="NumberBox">
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
@@ -195,6 +384,8 @@
     <Style TargetType="ComboBox">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="Padding" Value="14,0,10,0" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -203,7 +394,7 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <!-- WinUI's internal DefaultSelectorBarItemStyle cannot be resolved from app XAML. -->
-    <Style TargetType="SelectorBarItem">
+    <Style x:Key="SegmentItem" TargetType="SelectorBarItem">
         <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="Foreground" Value="{ThemeResource secondary}" />
         <Setter Property="CornerRadius" Value="{StaticResource SegmentItemRadius}" />
@@ -277,6 +468,14 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+    <Style TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
+    <!-- launcher.css .seg.lg: 36 high, 18 to each side, 13 point. -->
+    <Style x:Key="SegmentLargeItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}">
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="CornerRadius" Value="15" />
+        <Setter Property="Padding" Value="18,0" />
     </Style>
     <Style x:Key="Segmented" TargetType="SelectorBar">
         <Setter Property="IsTabStop" Value="False" />
@@ -426,13 +625,24 @@
     <Style TargetType="ProgressRing">
         <Setter Property="Foreground" Value="{ThemeResource control}" />
     </Style>
-    <Style TargetType="ListViewItem">
-        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
+    <!-- The Mac's list selection: a rounded fill with the selection stroke (Jump to rows, sidebar rows), inset
+         from the list's edges. WinUI's presenter keeps virtualization, selection and its automation peer. -->
+    <Style x:Key="LauncherListViewItem" TargetType="ListViewItem">
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
+        <Setter Property="Margin" Value="4,1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ListViewItemPresenter x:Name="Root" ContentTransitions="{TemplateBinding ContentTransitions}" Control.IsTemplateFocusTarget="True" FocusVisualMargin="{TemplateBinding FocusVisualMargin}" FocusVisualPrimaryBrush="{TemplateBinding FocusVisualPrimaryBrush}" FocusVisualPrimaryThickness="{TemplateBinding FocusVisualPrimaryThickness}" FocusVisualSecondaryBrush="{TemplateBinding FocusVisualSecondaryBrush}" FocusVisualSecondaryThickness="{TemplateBinding FocusVisualSecondaryThickness}" SelectionCheckMarkVisualEnabled="{ThemeResource ListViewItemSelectionCheckMarkVisualEnabled}" CheckBrush="{ThemeResource ListViewItemCheckBrush}" CheckBoxBrush="{ThemeResource ListViewItemCheckBoxBrush}" DragBackground="{ThemeResource ListViewItemDragBackground}" DragForeground="{ThemeResource ListViewItemDragForeground}" FocusBorderBrush="{ThemeResource ListViewItemFocusBorderBrush}" FocusSecondaryBorderBrush="{ThemeResource ListViewItemFocusSecondaryBorderBrush}" PlaceholderBackground="{ThemeResource ListViewItemPlaceholderBackground}" PointerOverBackground="{ThemeResource ListViewItemBackgroundPointerOver}" PointerOverForeground="{ThemeResource ListViewItemForegroundPointerOver}" SelectedBackground="{ThemeResource ListViewItemBackgroundSelected}" SelectedForeground="{ThemeResource ListViewItemForegroundSelected}" SelectedPointerOverBackground="{ThemeResource ListViewItemBackgroundSelectedPointerOver}" PressedBackground="{ThemeResource ListViewItemBackgroundPressed}" SelectedPressedBackground="{ThemeResource ListViewItemBackgroundSelectedPressed}" DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}" DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}" ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" ContentMargin="{TemplateBinding Padding}" CheckMode="{ThemeResource ListViewItemCheckMode}" CornerRadius="{TemplateBinding CornerRadius}" SelectedBorderBrush="{ThemeResource selectionStroke}" CheckPressedBrush="{ThemeResource ListViewItemCheckPressedBrush}" CheckDisabledBrush="{ThemeResource ListViewItemCheckDisabledBrush}" CheckBoxPointerOverBrush="{ThemeResource ListViewItemCheckBoxPointerOverBrush}" CheckBoxPressedBrush="{ThemeResource ListViewItemCheckBoxPressedBrush}" CheckBoxDisabledBrush="{ThemeResource ListViewItemCheckBoxDisabledBrush}" CheckBoxSelectedBrush="{ThemeResource ListViewItemCheckBoxSelectedBrush}" CheckBoxSelectedPointerOverBrush="{ThemeResource ListViewItemCheckBoxSelectedPointerOverBrush}" CheckBoxSelectedPressedBrush="{ThemeResource ListViewItemCheckBoxSelectedPressedBrush}" CheckBoxSelectedDisabledBrush="{ThemeResource ListViewItemCheckBoxSelectedDisabledBrush}" CheckBoxBorderBrush="{ThemeResource ListViewItemCheckBoxBorderBrush}" CheckBoxPointerOverBorderBrush="{ThemeResource ListViewItemCheckBoxPointerOverBorderBrush}" CheckBoxPressedBorderBrush="{ThemeResource ListViewItemCheckBoxPressedBorderBrush}" CheckBoxDisabledBorderBrush="{ThemeResource ListViewItemCheckBoxDisabledBorderBrush}" CheckBoxCornerRadius="{ThemeResource ListViewItemCheckBoxCornerRadius}" SelectionIndicatorCornerRadius="{ThemeResource ListViewItemSelectionIndicatorCornerRadius}" SelectionIndicatorVisualEnabled="{ThemeResource ListViewItemSelectionIndicatorVisualEnabled}" SelectionIndicatorBrush="{ThemeResource ListViewItemSelectionIndicatorBrush}" SelectionIndicatorPointerOverBrush="{ThemeResource ListViewItemSelectionIndicatorPointerOverBrush}" SelectionIndicatorPressedBrush="{ThemeResource ListViewItemSelectionIndicatorPressedBrush}" SelectionIndicatorDisabledBrush="{ThemeResource ListViewItemSelectionIndicatorDisabledBrush}" SelectedDisabledBackground="{ThemeResource ListViewItemBackgroundSelectedDisabled}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
+    <Style TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}" />
     <Style TargetType="GridViewItem">
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -449,11 +659,685 @@
         <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
     </Style>
     <Style TargetType="InfoBar" BasedOn="{StaticResource LauncherBanner}" />
+    <!-- Sheet buttons (launcher.css .sheet .btn): no hairline or glow; the default action is a flat mix of the accent. -->
+    <Style x:Key="SheetButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
+    </Style>
+    <Style x:Key="SheetAccentButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
+        <Setter Property="Template" Value="{StaticResource LauncherFlatAccentButtonTemplate}" />
+    </Style>
+    <Style x:Key="AlertButton" TargetType="Button" BasedOn="{StaticResource SheetButton}">
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="CornerRadius" Value="16" />
+    </Style>
+    <Style x:Key="AlertAccentButton" TargetType="Button" BasedOn="{StaticResource SheetAccentButton}">
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="CornerRadius" Value="16" />
+    </Style>
+    <Style x:Key="AlertDestructiveButton" TargetType="Button" BasedOn="{StaticResource AlertButton}">
+        <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
+    </Style>
     <Style x:Key="LauncherSheet" TargetType="ContentDialog">
+        <Setter Property="Foreground" Value="{ThemeResource ContentDialogForeground}" />
+        <Setter Property="Background" Value="{ThemeResource ContentDialogBackground}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContentDialogBorderBrush}" />
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="CornerRadius" Value="{StaticResource SheetRadius}" />
-        <Setter Property="PrimaryButtonStyle" Value="{StaticResource LauncherAccentButton}" />
-        <Setter Property="SecondaryButtonStyle" Value="{StaticResource LauncherButton}" />
-        <Setter Property="CloseButtonStyle" Value="{StaticResource LauncherButton}" />
+        <Setter Property="PrimaryButtonStyle" Value="{StaticResource SheetAccentButton}" />
+        <Setter Property="SecondaryButtonStyle" Value="{StaticResource SheetButton}" />
+        <Setter Property="CloseButtonStyle" Value="{StaticResource SheetButton}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentDialog">
+                        <Border x:Name="Container">
+                            <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="DialogShowingStates">
+                                                                        <VisualStateGroup.Transitions>
+                                                                            <VisualTransition To="DialogHidden">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="IsHitTestVisible">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="False" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="0.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                            <VisualTransition To="DialogShowing">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                        </VisualStateGroup.Transitions>
+                                                                        <VisualState x:Name="DialogHidden" />
+                                                                        <VisualState x:Name="DialogShowing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="BackgroundElement.TabFocusNavigation" Value="Cycle" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="DialogShowingWithoutSmokeLayer">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="LayoutRoot.Background" Value="{x:Null}" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                        <VisualStateGroup x:Name="DialogSizingStates">
+                                                                        <VisualState x:Name="DefaultDialogSizing" />
+                                                                        <VisualState x:Name="FullDialogSizing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="BackgroundElement.VerticalAlignment" Value="Stretch" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="ButtonsVisibilityStates">
+                                        <VisualState x:Name="AllVisible" />
+                                        <VisualState x:Name="NoneVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CommandSpace.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndSecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DefaultButtonStates">
+                                        <VisualState x:Name="NoDefaultButton" />
+                                        <VisualState x:Name="PrimaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource SheetAccentButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Style" Value="{StaticResource SheetAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource SheetButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Style" Value="{StaticResource SheetAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource SheetButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DialogBorderStates">
+                                        <VisualState x:Name="NoBorder" />
+                                        <VisualState x:Name="AccentColorBorder" />
+                                    </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid x:Name="LayoutRoot" Visibility="Collapsed">
+                                <!-- The Mac's scrim behind a sheet (the scrim token), not WinUI's wash. -->
+                                <Rectangle x:Name="SmokeLayerBackground" Fill="{ThemeResource scrim}" />
+                                <Border x:Name="BackgroundElement" Background="{TemplateBinding Background}" FlowDirection="{TemplateBinding FlowDirection}"
+                                        BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" BackgroundSizing="InnerBorderEdge"
+                                        CornerRadius="{TemplateBinding CornerRadius}" MinWidth="{ThemeResource ContentDialogMinWidth}"
+                                        MaxWidth="{ThemeResource ContentDialogMaxWidth}" MinHeight="{ThemeResource ContentDialogMinHeight}"
+                                        MaxHeight="{ThemeResource ContentDialogMaxHeight}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" />
+                                    </Border.RenderTransform>
+                                    <Grid x:Name="DialogSpace" Padding="22" RowSpacing="16" CornerRadius="{TemplateBinding CornerRadius}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <ScrollViewer x:Name="ContentScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                                                      ZoomMode="Disabled" IsTabStop="False">
+                                            <Grid RowSpacing="16">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+                                                <ContentControl x:Name="Title" Content="{TemplateBinding Title}" ContentTemplate="{TemplateBinding TitleTemplate}"
+                                                                FontSize="17" FontWeight="SemiBold" Foreground="{ThemeResource heading}" IsTabStop="False"
+                                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Top">
+                                                    <ContentControl.Template>
+                                                        <ControlTemplate TargetType="ContentControl">
+                                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                              TextWrapping="Wrap" MaxLines="3"
+                                                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </ControlTemplate>
+                                                    </ContentControl.Template>
+                                                </ContentControl>
+                                                <ContentPresenter x:Name="Content" Grid.Row="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                  FontSize="{StaticResource SubtitleSize}" Foreground="{TemplateBinding Foreground}" TextWrapping="Wrap" />
+                                            </Grid>
+                                        </ScrollViewer>
+                                        <!-- The Mac's action bar: Cancel, then the default action last, trailing. -->
+                                        <Grid x:Name="CommandSpace" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" XYFocusKeyboardNavigation="Enabled">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="CloseButton" IsTabStop="False" Content="{TemplateBinding CloseButtonText}" Style="{TemplateBinding CloseButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" MinWidth="72" />
+                                            <Button x:Name="SecondaryButton" Grid.Column="1" Margin="8,0,0,0" IsTabStop="False" Content="{TemplateBinding SecondaryButtonText}"
+                                                    IsEnabled="{TemplateBinding IsSecondaryButtonEnabled}" Style="{TemplateBinding SecondaryButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" MinWidth="72" />
+                                            <Button x:Name="PrimaryButton" Grid.Column="2" Margin="8,0,0,0" IsTabStop="False" Content="{TemplateBinding PrimaryButtonText}"
+                                                    IsEnabled="{TemplateBinding IsPrimaryButtonEnabled}" Style="{TemplateBinding PrimaryButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" MinWidth="72" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="LauncherAlert" TargetType="ContentDialog">
+        <Setter Property="Foreground" Value="{ThemeResource ContentDialogForeground}" />
+        <Setter Property="Background" Value="{ThemeResource ContentDialogBackground}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContentDialogBorderBrush}" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="CornerRadius" Value="{StaticResource SheetRadius}" />
+        <Setter Property="PrimaryButtonStyle" Value="{StaticResource AlertAccentButton}" />
+        <Setter Property="SecondaryButtonStyle" Value="{StaticResource AlertButton}" />
+        <Setter Property="CloseButtonStyle" Value="{StaticResource AlertButton}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentDialog">
+                        <Border x:Name="Container">
+                            <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="DialogShowingStates">
+                                                                        <VisualStateGroup.Transitions>
+                                                                            <VisualTransition To="DialogHidden">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="IsHitTestVisible">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="False" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="0.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                            <VisualTransition To="DialogShowing">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                        </VisualStateGroup.Transitions>
+                                                                        <VisualState x:Name="DialogHidden" />
+                                                                        <VisualState x:Name="DialogShowing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="BackgroundElement.TabFocusNavigation" Value="Cycle" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="DialogShowingWithoutSmokeLayer">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="LayoutRoot.Background" Value="{x:Null}" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                        <VisualStateGroup x:Name="DialogSizingStates">
+                                                                        <VisualState x:Name="DefaultDialogSizing" />
+                                                                        <VisualState x:Name="FullDialogSizing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="BackgroundElement.VerticalAlignment" Value="Stretch" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="ButtonsVisibilityStates">
+                                        <VisualState x:Name="AllVisible" />
+                                        <VisualState x:Name="NoneVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CommandSpace.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndSecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.(Grid.ColumnSpan)" Value="1" />
+                                            <Setter Target="PrimaryButton.(Grid.Row)" Value="0" />
+                                            <Setter Target="PrimaryButton.(Grid.Column)" Value="1" />
+                                            <Setter Target="PrimaryButton.(Grid.ColumnSpan)" Value="1" />
+                                            <Setter Target="PrimaryButton.Margin" Value="0" />
+                                            <Setter Target="CloseButton.(Grid.Row)" Value="0" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DefaultButtonStates">
+                                        <VisualState x:Name="NoDefaultButton" />
+                                        <VisualState x:Name="PrimaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertAccentButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Style" Value="{StaticResource AlertAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Style" Value="{StaticResource AlertAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DialogBorderStates">
+                                        <VisualState x:Name="NoBorder" />
+                                        <VisualState x:Name="AccentColorBorder" />
+                                    </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid x:Name="LayoutRoot" Visibility="Collapsed">
+                                <!-- The Mac's scrim behind a sheet (the scrim token), not WinUI's wash. -->
+                                <Rectangle x:Name="SmokeLayerBackground" Fill="{ThemeResource scrim}" />
+                                <Border x:Name="BackgroundElement" Background="{TemplateBinding Background}" FlowDirection="{TemplateBinding FlowDirection}"
+                                        BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" BackgroundSizing="InnerBorderEdge"
+                                        CornerRadius="{TemplateBinding CornerRadius}" MinWidth="{ThemeResource ContentDialogMinWidth}"
+                                        MaxWidth="{ThemeResource ContentDialogMaxWidth}" MinHeight="{ThemeResource ContentDialogMinHeight}"
+                                        MaxHeight="{ThemeResource ContentDialogMaxHeight}" Width="272" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" />
+                                    </Border.RenderTransform>
+                                    <Grid x:Name="DialogSpace" Padding="18,20,18,16" RowSpacing="16" CornerRadius="{TemplateBinding CornerRadius}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <ScrollViewer x:Name="ContentScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                                                      ZoomMode="Disabled" IsTabStop="False">
+                                            <StackPanel Spacing="8">
+                                                <!-- A single decision: the app's mark over a centred title and message (AllSheets, Alerts). -->
+                                                <Image Source="ms-appx:///Assets/mark-48.png" Width="52" Height="52" Margin="0,0,0,4"
+                                                       HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                                <ContentControl x:Name="Title" Content="{TemplateBinding Title}" ContentTemplate="{TemplateBinding TitleTemplate}"
+                                                                FontSize="{StaticResource BodySize}" FontWeight="SemiBold" Foreground="{ThemeResource heading}"
+                                                                IsTabStop="False" HorizontalAlignment="Center" HorizontalContentAlignment="Center">
+                                                    <ContentControl.Template>
+                                                        <ControlTemplate TargetType="ContentControl">
+                                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                              TextWrapping="Wrap" MaxLines="3" />
+                                                        </ControlTemplate>
+                                                    </ContentControl.Template>
+                                                </ContentControl>
+                                                <ContentPresenter x:Name="Content" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                  FontSize="{StaticResource HelpSize}" Foreground="{ThemeResource secondary}" TextWrapping="Wrap"
+                                                                  HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                        <Grid x:Name="CommandSpace" Grid.Row="1" XYFocusKeyboardNavigation="Enabled" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Button x:Name="PrimaryButton" Grid.ColumnSpan="2" IsTabStop="False" Content="{TemplateBinding PrimaryButtonText}"
+                                                    IsEnabled="{TemplateBinding IsPrimaryButtonEnabled}" Style="{TemplateBinding PrimaryButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="SecondaryButton" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0" IsTabStop="False"
+                                                    Content="{TemplateBinding SecondaryButtonText}" IsEnabled="{TemplateBinding IsSecondaryButtonEnabled}"
+                                                    Style="{TemplateBinding SecondaryButtonStyle}" ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="CloseButton" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,8,0,0" IsTabStop="False"
+                                                    Content="{TemplateBinding CloseButtonText}" Style="{TemplateBinding CloseButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="LauncherDestructiveAlert" TargetType="ContentDialog">
+        <Setter Property="Foreground" Value="{ThemeResource ContentDialogForeground}" />
+        <Setter Property="Background" Value="{ThemeResource ContentDialogBackground}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContentDialogBorderBrush}" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="CornerRadius" Value="{StaticResource SheetRadius}" />
+        <Setter Property="PrimaryButtonStyle" Value="{StaticResource AlertDestructiveButton}" />
+        <Setter Property="SecondaryButtonStyle" Value="{StaticResource AlertButton}" />
+        <Setter Property="CloseButtonStyle" Value="{StaticResource AlertButton}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentDialog">
+                        <Border x:Name="Container">
+                            <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="DialogShowingStates">
+                                                                        <VisualStateGroup.Transitions>
+                                                                            <VisualTransition To="DialogHidden">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="IsHitTestVisible">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="False" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.167" KeySpline="0,0,0,1" Value="1.05" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="0.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                            <VisualTransition To="DialogShowing">
+                                                                                <Storyboard>
+                                                                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                                                        <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                                                                    </ObjectAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.05" />
+                                                                                        <SplineDoubleKeyFrame KeyTime="0:0:0.25" KeySpline="0,0,0,1" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                                                        <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.0" />
+                                                                                        <LinearDoubleKeyFrame KeyTime="0:0:0.083" Value="1.0" />
+                                                                                    </DoubleAnimationUsingKeyFrames>
+                                                                                </Storyboard>
+                                                                            </VisualTransition>
+                                                                        </VisualStateGroup.Transitions>
+                                                                        <VisualState x:Name="DialogHidden" />
+                                                                        <VisualState x:Name="DialogShowing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="BackgroundElement.TabFocusNavigation" Value="Cycle" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="DialogShowingWithoutSmokeLayer">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="PrimaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="SecondaryButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="CloseButton.IsTabStop" Value="True" />
+                                                                                <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                                                                <Setter Target="LayoutRoot.Background" Value="{x:Null}" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                        <VisualStateGroup x:Name="DialogSizingStates">
+                                                                        <VisualState x:Name="DefaultDialogSizing" />
+                                                                        <VisualState x:Name="FullDialogSizing">
+                                                                            <VisualState.Setters>
+                                                                                <Setter Target="BackgroundElement.VerticalAlignment" Value="Stretch" />
+                                                                            </VisualState.Setters>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="ButtonsVisibilityStates">
+                                        <VisualState x:Name="AllVisible" />
+                                        <VisualState x:Name="NoneVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CommandSpace.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndSecondaryVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PrimaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAndCloseVisible">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DefaultButtonStates">
+                                        <VisualState x:Name="NoDefaultButton" />
+                                        <VisualState x:Name="PrimaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertDestructiveButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="SecondaryAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="SecondaryButton.Style" Value="{StaticResource AlertAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertDestructiveButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="CloseAsDefaultButton">
+                                            <VisualState.Setters>
+                                            <Setter Target="CloseButton.Style" Value="{StaticResource AlertAccentButton}" />
+                                            <Setter Target="PrimaryButton.Style" Value="{StaticResource AlertDestructiveButton}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DialogBorderStates">
+                                        <VisualState x:Name="NoBorder" />
+                                        <VisualState x:Name="AccentColorBorder" />
+                                    </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid x:Name="LayoutRoot" Visibility="Collapsed">
+                                <!-- The Mac's scrim behind a sheet (the scrim token), not WinUI's wash. -->
+                                <Rectangle x:Name="SmokeLayerBackground" Fill="{ThemeResource scrim}" />
+                                <Border x:Name="BackgroundElement" Background="{TemplateBinding Background}" FlowDirection="{TemplateBinding FlowDirection}"
+                                        BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" BackgroundSizing="InnerBorderEdge"
+                                        CornerRadius="{TemplateBinding CornerRadius}" MinWidth="{ThemeResource ContentDialogMinWidth}"
+                                        MaxWidth="{ThemeResource ContentDialogMaxWidth}" MinHeight="{ThemeResource ContentDialogMinHeight}"
+                                        MaxHeight="{ThemeResource ContentDialogMaxHeight}" Width="272" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="ScaleTransform" />
+                                    </Border.RenderTransform>
+                                    <Grid x:Name="DialogSpace" Padding="18,20,18,16" RowSpacing="16" CornerRadius="{TemplateBinding CornerRadius}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <ScrollViewer x:Name="ContentScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                                                      ZoomMode="Disabled" IsTabStop="False">
+                                            <StackPanel Spacing="8">
+                                                <!-- A single decision: the app's mark over a centred title and message (AllSheets, Alerts). -->
+                                                <Image Source="ms-appx:///Assets/mark-48.png" Width="52" Height="52" Margin="0,0,0,4"
+                                                       HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                                <ContentControl x:Name="Title" Content="{TemplateBinding Title}" ContentTemplate="{TemplateBinding TitleTemplate}"
+                                                                FontSize="{StaticResource BodySize}" FontWeight="SemiBold" Foreground="{ThemeResource heading}"
+                                                                IsTabStop="False" HorizontalAlignment="Center" HorizontalContentAlignment="Center">
+                                                    <ContentControl.Template>
+                                                        <ControlTemplate TargetType="ContentControl">
+                                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                              TextWrapping="Wrap" MaxLines="3" />
+                                                        </ControlTemplate>
+                                                    </ContentControl.Template>
+                                                </ContentControl>
+                                                <ContentPresenter x:Name="Content" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                  FontSize="{StaticResource HelpSize}" Foreground="{ThemeResource secondary}" TextWrapping="Wrap"
+                                                                  HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                        <Grid x:Name="CommandSpace" Grid.Row="1" XYFocusKeyboardNavigation="Enabled" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Button x:Name="PrimaryButton" Grid.ColumnSpan="2" IsTabStop="False" Content="{TemplateBinding PrimaryButtonText}"
+                                                    IsEnabled="{TemplateBinding IsPrimaryButtonEnabled}" Style="{TemplateBinding PrimaryButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="SecondaryButton" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0" IsTabStop="False"
+                                                    Content="{TemplateBinding SecondaryButtonText}" IsEnabled="{TemplateBinding IsSecondaryButtonEnabled}"
+                                                    Style="{TemplateBinding SecondaryButtonStyle}" ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="CloseButton" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,8,0,0" IsTabStop="False"
+                                                    Content="{TemplateBinding CloseButtonText}" Style="{TemplateBinding CloseButtonStyle}"
+                                                    ElementSoundMode="FocusOnly" HorizontalAlignment="Stretch" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
     <Style TargetType="ContentDialog" BasedOn="{StaticResource LauncherSheet}" />
     <Style TargetType="FlyoutPresenter">
@@ -484,6 +1368,7 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="{StaticResource ChipHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource ChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
@@ -491,6 +1376,7 @@
         <Setter Property="Padding" Value="12,0" />
     </Style>
     <Style x:Key="LargeChipButton" TargetType="Button" BasedOn="{StaticResource ChipButton}">
+        <Setter Property="Height" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -544,6 +1430,7 @@
         </Setter>
     </Style>
     <Style x:Key="PlayerPlateButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
         <Setter Property="CornerRadius" Value="{StaticResource PlateRadius}" />
         <Setter Property="Background" Value="{ThemeResource hover}" />
         <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
@@ -628,6 +1515,8 @@
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>
     <Style x:Key="ColumnHeading" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
@@ -697,12 +1586,14 @@
         <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
     </Style>
     <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="{StaticResource ButtonSmallHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonSmallRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonSmallHeight}" />
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
     </Style>
     <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <Setter Property="Height" Value="28" />
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="MinHeight" Value="28" />
@@ -727,6 +1618,7 @@
         <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="FavoriteAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
+        <Setter Property="Height" Value="32" />
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="CornerRadius" Value="{StaticResource CircleRadius}" />
@@ -744,6 +1636,10 @@
     </Style>
     <Style x:Key="Cod2xTag" TargetType="Border" BasedOn="{StaticResource EditionTag}">
         <Setter Property="BorderBrush" Value="{ThemeResource EditionStrokeBrush}" />
+    </Style>
+    <Style x:Key="SegmentedLarge" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
+        <Setter Property="MinHeight" Value="{StaticResource SegmentLargeHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SegmentLargeRadius}" />
     </Style>
     <Style x:Key="AlignedSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
         <Setter Property="HorizontalAlignment" Value="Left" />
@@ -786,6 +1682,7 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style x:Key="SetupCard" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
         <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -803,5 +1700,191 @@
     </Style>
     <Style x:Key="ReviewRow" TargetType="Border" BasedOn="{StaticResource FieldCard}">
         <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <!-- The sidebar's labelled Settings entry: a navigation row that opens the Settings window. -->
+    <!-- launcher.css .nav .count: 12, tertiary, tabular, on the fill's inner right edge. -->
+    <Style x:Key="SidebarCount" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- PcSide's pane toggle: the 17 px navigation symbol; WinUI's GlobalNav glyph at 20 has the same ink. -->
+    <Style x:Key="SidebarPaneToggle" TargetType="Button" BasedOn="{StaticResource PaneToggleButtonStyle}">
+        <Setter Property="FontSize" Value="20" />
+    </Style>
+    <!-- Sidebar symbols sit on their label's cap-height centre line, as SF Symbols do on the Mac. The icon
+         font's line box puts a glyph's ink (centred at 250 of 500 units) above the box centre; these move it
+         down to the label's cap centre. Home's ink centre is 12.5 units higher, so it moves 0.45 more. -->
+    <x:Double x:Key="SidebarGlyphNudge">1.4</x:Double>
+    <x:Double x:Key="SidebarHomeGlyphNudge">1.85</x:Double>
+    <!-- PcSide: the icon column is this minus NavigationView's 8, so glyph centres land on 13 + 12 + 9 = 34. -->
+    <x:Double x:Key="SidebarCompactLength">50</x:Double>
+    <!-- launcher.css .side-sec: 11 semibold tertiary, 16 above and 6 below, on the 25 column. The stock header
+         template draws a 14 semibold 40-high row; this template keeps the control and its automation view. -->
+    <Style x:Key="SidebarSectionHeader" TargetType="NavigationViewItemHeader">
+        <Setter Property="IsEnabled" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="NavigationViewItemHeader">
+                    <TextBlock Text="{TemplateBinding Content}" Margin="25,18,13,8" FontSize="{StaticResource LabelSize}"
+                               FontWeight="SemiBold" Foreground="{ThemeResource tertiary}" TextTrimming="CharacterEllipsis" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SidebarSettingsButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{ThemeResource text}" />
+        <Setter Property="FontSize" Value="{StaticResource BodySize}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource NavHeight}" />
+        <Setter Property="Height" Value="{StaticResource NavHeight}" />
+        <Setter Property="Margin" Value="13,0" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <!-- KeyCap (Components.swift): 12 semibold chipText on button, 6 radius, buttonStroke. -->
+    <Style x:Key="KeyCapLabel" TargetType="Border">
+        <Setter Property="MinWidth" Value="22" />
+        <Setter Property="MinHeight" Value="22" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="CornerRadius" Value="{StaticResource KeycapRadius}" />
+        <Setter Property="Background" Value="{ThemeResource button}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource buttonStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="KeyCapText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource chipText}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="GroupLabelText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource LabelSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level3" />
+    </Style>
+    <!-- Jump to's field (JumpPalette.swift): 17 point text, no box of its own; the palette is the box. -->
+    <Style x:Key="JumpField" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="Padding" Value="0,6" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsSpellCheckEnabled" Value="False" />
+        <Setter Property="IsTextPredictionEnabled" Value="False" />
+    </Style>
+    <!-- A Jump to result row: 40 high, 12 radius; the selected row takes selection and selectionStroke. -->
+    <!-- Jump to rows: real ListView items, 40 high, the list's rounded selection. Section labels are items
+         that cannot be selected, so the arrow keys pass over them. -->
+    <Style x:Key="JumpRowItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Margin" Value="8,1" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="JumpHeaderItem" TargetType="ListViewItem" BasedOn="{StaticResource JumpRowItem}">
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="12,8,12,4" />
+        <Setter Property="IsEnabled" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+    </Style>
+    <!-- The Settings window's pane bar (SettingsTabBar): a symbol over a name, 84 x 50, 12 radius; the chosen
+         pane a neutral fill with its name in the accent. -->
+    <Style x:Key="SettingsTabItem" TargetType="SelectorBarItem">
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Foreground" Value="{ThemeResource secondary}" />
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource LabelSize}" />
+        <Setter Property="Width" Value="84" />
+        <Setter Property="Height" Value="50" />
+        <Setter Property="Margin" Value="1,0" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="SelectorBarItem">
+                    <Grid x:Name="PART_ContainerRoot" CornerRadius="{TemplateBinding CornerRadius}" Background="Transparent">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CombinedStates">
+                                <VisualState x:Name="UnselectedNormal" />
+                                <VisualState x:Name="UnselectedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource hover}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="UnselectedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource press}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedNormal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource button}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource accent}" />
+                                        <Setter Target="PART_TextVisual.FontWeight" Value="SemiBold" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource accent}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource button}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource accent}" />
+                                        <Setter Target="PART_TextVisual.FontWeight" Value="SemiBold" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource accent}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource button}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource accent}" />
+                                        <Setter Target="PART_TextVisual.FontWeight" Value="SemiBold" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource accent}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DisabledStates">
+                                <VisualState x:Name="Enabled" />
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource disabledInk}" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource disabledInk}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <ContentPresenter x:Name="PART_IconVisual" Content="{TemplateBinding Icon}" Foreground="{TemplateBinding Foreground}"
+                                              Height="22" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="PART_TextVisual" Text="{TemplateBinding Text}" Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SettingsTabBar" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
 </ResourceDictionary>

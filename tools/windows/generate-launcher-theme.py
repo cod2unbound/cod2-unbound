@@ -292,6 +292,18 @@ def generate(source):
         keys("text", "ButtonText", "ExpanderForeground ExpanderHeaderForeground ExpanderChevronForeground")
         keys("heading", "HighlightText", "ExpanderChevronPointerOverForeground ExpanderChevronPressedForeground")
         brush("ContentDialogSmokeFill", BOARD_COLORS["scrim"][name == "Light"] if palette else TRANSPARENT)
+        # WinUI lays a light-dismiss wash under in-window popups (and ContentDialog) from this key,
+        # resolved with the app's theme, which read as a gray veil over a dark window. The sheet
+        # template draws the Mac's scrim itself; the wash stays clear.
+        brush("SystemControlPageBackgroundMediumAltMediumBrush", TRANSPARENT if palette else system_color("Window"))
+        # The prominent button's soft glow below it (the board's 0 10px 26px shadow in pri-glow).
+        if palette:
+            glow = resource(dictionary, "RadialGradientBrush", "prominentGlowFill")
+            glow_color = BOARD_COLORS["prominentGlow"][name == "Light"]
+            ET.SubElement(glow, "GradientStop", Offset="0", Color=glow_color)
+            ET.SubElement(glow, "GradientStop", Offset="1", Color="#00" + glow_color[-6:])
+        else:
+            brush("prominentGlowFill", TRANSPARENT)
         brush("NavigationViewExpandedPaneBackground", TRANSPARENT)
 
     for name, value in RADII.items():
@@ -308,7 +320,7 @@ def generate(source):
     for name, value in measures.items():
         resource(root, "x:Double", name).text = str(value)
     for name in ("ButtonSmall", "ButtonRegular", "ButtonMedium", "ButtonHero", "FieldCapsule", "Circle",
-                 "Segment", "Chip", "LargeChip", "Switch"):
+                 "Segment", "SegmentLarge", "Chip", "LargeChip", "Switch"):
         resource(root, "CornerRadius", name + "Radius").text = str(int(measures[name + "Height"]) // 2)
     resource(root, "CornerRadius", "SegmentItemRadius").text = "11"
     resource(root, "GridLength", "CaptionRowHeight").text = str(BOARD_METRICS["CaptionHeight"])

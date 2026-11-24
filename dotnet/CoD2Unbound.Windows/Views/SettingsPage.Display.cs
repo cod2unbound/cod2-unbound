@@ -10,7 +10,6 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class SettingsPage
 {
-    private InfoBar? displayRunning;
     private InfoBar? displaySave;
     private TextBlock? displaySaved;
 
@@ -18,13 +17,6 @@ public sealed partial class SettingsPage
     {
         var container = new StackPanel { Spacing = 12, MaxWidth = 900 };
         Fields.Children.Add(container);
-        displayRunning = new InfoBar
-        {
-            Severity = InfoBarSeverity.Informational, IsClosable = false,
-            Message = "Call of Duty 2 is running. Changes you make here apply the next time it starts."
-        };
-        container.Children.Add(displayRunning);
-        RefreshDisplayRunning(session.ClientIsRunning);
 
         var previewTitle = new TextBlock { Style = StyleFor("StencilText"), FontSize = 22, TextAlignment = TextAlignment.Center };
         var previewMode = Caption("");
@@ -87,10 +79,13 @@ public sealed partial class SettingsPage
         var modeHint = Caption("");
         AddRow("Mode", mode, modeHint);
 
-        var graphics = new ComboBox { ItemsSource = new[] { "Direct3D 9", "DirectX 7" }, MinWidth = 160,
-            SelectedIndex = (int)model.Renderer };
+        // The Mac's segmented control, with Windows' two renderers (SetDisplay board).
+        Action<int> chooseGraphics = _ => { };
+        var graphics = Tabs(["Direct3D 9", "DirectX 7"], (int)model.Renderer, index => chooseGraphics(index));
+        graphics.HorizontalAlignment = HorizontalAlignment.Right;
         AutomationProperties.SetName(graphics, "Graphics");
-        rows.Children.Add(SettingRow("Graphics", "Choose how the game draws on Windows.", graphics));
+        rows.Children.Add(SettingRow("Graphics",
+            "Direct3D 9 is how the game draws on Windows. DirectX 7 is the older way, kept in case something looks wrong.", graphics));
 
         var resolution = Body("");
         var choose = Action("Choose in Configs", shell.OpenResolutionAsync);
@@ -108,7 +103,7 @@ public sealed partial class SettingsPage
         {
             Severity = InfoBarSeverity.Error, IsClosable = false,
             Message = "Your changes couldn't be saved. Check that your CoD2 Unbound folder is writable, then try again.",
-            ActionButton = Action("Try again", async () =>
+            ActionButton = Action("Try Again", async () =>
             {
                 await ChangeAsync(Current, display: true);
                 if (Current == model.Settings.Saved && retryFocus.IsLoaded)
@@ -119,7 +114,7 @@ public sealed partial class SettingsPage
         displaySaved = Caption("Saved. Applies the next time the game starts.");
         container.Children.Add(displaySaved);
         RefreshDisplaySave(Current != model.Settings.Saved);
-        var restore = Action("Restore defaults", async () =>
+        var restore = Action("Restore Defaults", async () =>
         {
             previousDisplay = Current;
             var defaults = new GameSettings();
@@ -157,11 +152,7 @@ public sealed partial class SettingsPage
             if (mode.SelectedIndex >= 0)
                 await Save(Current with { Fullscreen = modes[mode.SelectedIndex] }, mode);
         };
-        graphics.SelectionChanged += async (_, _) =>
-        {
-            if (graphics.SelectedIndex >= 0)
-                await Save(Current with { WindowsRenderer = (WindowsRenderMode)graphics.SelectedIndex }, graphics);
-        };
+        chooseGraphics = index => _ = Save(Current with { WindowsRenderer = (WindowsRenderMode)index }, graphics);
 
         void AddRow(string label, FrameworkElement action, TextBlock detail)
         {
@@ -207,11 +198,8 @@ public sealed partial class SettingsPage
         }
     }
 
-    internal void RefreshDisplayRunning(bool running)
-    {
-        if (displayRunning is { } notice)
-            notice.IsOpen = running;
-    }
+    // While the game runs: said once, above every pane (SettingsWindow.swift notices).
+    internal void RefreshDisplayRunning(bool running) => Running.IsOpen = running;
 
     private void RefreshDisplaySave(bool failed)
     {

@@ -38,12 +38,12 @@ public sealed partial class SettingsPage
         Put(cards, 2, AboutFact("Graphics", "Direct3D 9", "DirectX 7 stays as a choice in Settings"));
         panel.Children.Add(cards);
 
-        var release = Action("Release notes", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases"));
+        var release = Action("Release Notes", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases"));
         var website = Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound"));
-        var report = Action("Report a problem…", ReportProblemFromShellAsync);
+        var report = Action("Report a Problem…", ReportProblemFromShellAsync);
         var acknowledgements = Action("Acknowledgements", ShowAcknowledgementsAsync);
         var shortcuts = Action("Show", () => KeyboardShortcutsDialog.ShowAsync(shell));
-        var update = Action("Check for updates…", () =>
+        var update = Action("Check for Updates…", () =>
         {
             Panes.SelectedItem = Panes.Items[4];
             return shell.RunUpdateAsync(install: false);
@@ -52,7 +52,7 @@ public sealed partial class SettingsPage
         {
             Buttons(release, website, report),
             Buttons(acknowledgements, update),
-            SettingRow("Help", null, Action("Open help", () => OpenAsync(MainWindow.HelpUrl))),
+            SettingRow("Help", null, Action("Open Help", () => OpenAsync(MainWindow.HelpUrl))),
             SettingRow("Keyboard shortcuts", null, shortcuts)
         } };
         panel.Children.Add(actions);
@@ -86,7 +86,7 @@ public sealed partial class SettingsPage
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Acknowledgements",
             SecondaryButtonText = "Copy all", CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close
-        };
+        }.WithSymbol("SystemPeople", "CoD2 Unbound stands on other people’s work. Select one to read its licence.");
         dialog.Resources["ContentDialogMaxWidth"] = 600d;
         dialog.Resources["ContentDialogMinWidth"] = 600d;
         var content = new StackPanel { Spacing = 10 };

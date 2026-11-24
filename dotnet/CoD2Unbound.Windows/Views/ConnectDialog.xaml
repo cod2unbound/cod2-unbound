@@ -5,7 +5,6 @@
                DefaultButton="Primary" IsPrimaryButtonEnabled="False">
     <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
-            <TextBlock Text="For a server that isn’t in the list, or one a friend sent you." Style="{StaticResource SecondaryText}" />
             <TextBox x:Name="AddressBox" Header="Server address" PlaceholderText="203.0.113.24:28960" Style="{StaticResource MonoField}"
                      AutomationProperties.Name="Server address" TextChanged="OnAddressChanged" MaxLength="1024" />
             <Grid x:Name="LookupLine" ColumnSpacing="6" Visibility="Collapsed">

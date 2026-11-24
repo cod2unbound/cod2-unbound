@@ -179,26 +179,13 @@ internal static class PrivacyPresentation
         AutomationProperties.SetName(scroll, "What is sent");
         var content = new StackPanel { Width = 560, Children = { scroll } };
 
-        var tileIcon = Fluent("Eye", 17);
-        tileIcon.Foreground = ThemeBrush("accent", shell.DialogTheme, shell.IsHighContrast);
-        var tile = new Border { Style = StyleFor("RowSymbol"), Width = 40, Height = 40, Child = tileIcon, VerticalAlignment = VerticalAlignment.Top };
-        var heading = new TextBlock { Text = "What is sent", Style = StyleFor("TypePanel") };
-        AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level1);
-        var header = Columns(12, GridLength.Auto, new(1, GridUnitType.Star));
-        Put(header, 0, tile);
-        Put(header, 1, new StackPanel
-        {
-            Spacing = 2, VerticalAlignment = VerticalAlignment.Center,
-            Children = { heading, Detail("What the launcher records, with an example event in the format the launcher sends.", 12, 17) }
-        });
-
-        // The stock command row carries Done, so Enter, Escape and the dialog's own focus order stay the system's.
+        // The shared sheet scaffold supplies the symbol tile and sentence; the stock command row carries Done,
+        // so Enter, Escape and the dialog's own focus order stay the system's.
         var dialog = new ContentDialog
         {
-            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = header, Content = content,
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "What is sent", Content = content,
             PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
-        };
-        AutomationProperties.SetName(dialog, "What is sent");
+        }.WithSymbol("FluentEye", "What the launcher records, with an example event in the format the launcher sends.");
         await dialog.ShowAsync();
     }
 

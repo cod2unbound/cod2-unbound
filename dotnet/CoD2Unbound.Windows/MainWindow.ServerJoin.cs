@@ -152,7 +152,7 @@ public sealed partial class MainWindow
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = $"“{name}” runs {version}",
             Content = new StackPanel { Spacing = 10, Children = { Body(explanation), remember } },
             PrimaryButtonText = $"Launch with {version}", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
-        };
+        }.WithSymbol("FluentGauge");
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return false;
         if (remember.IsChecked == true)
