@@ -429,8 +429,8 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
         };
         if (Setup.Steps.Contains(SetupStep.CrashReports))
             rows.Add(crash
-                ? Row("bug", "Crash reports", "Sent to the project if the game crashes · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))
-                : Row("bug", "Crash reports", "Not sent · Change in Settings › Privacy", trailing: Status(SetupStatus.Off, "Off")));
+                ? Row("warning", "Crash reports", "Sent to the project if the game crashes · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))
+                : Row("warning", "Crash reports", "Not sent · Change in Settings › Privacy", trailing: Status(SetupStatus.Off, "Off")));
         if (Setup.Steps.Contains(SetupStep.UsageData))
             rows.Add(usage
                 ? Row("people", "Usage data", "Sent to the project · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))

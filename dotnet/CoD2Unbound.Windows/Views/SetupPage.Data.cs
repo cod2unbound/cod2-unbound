@@ -71,7 +71,7 @@ public sealed partial class SetupPage
             if (dropProblem is { } dropError)
                 items.Add(Banner(SetupBannerTone.Error, "warning", dropError));
             if (steamWatch is not null)
-                items.Add(Group(Row("download", "Waiting for Steam to install Call of Duty 2",
+                items.Add(Group(Row("sync", "Waiting for Steam to install Call of Duty 2",
                     "Steam shows the download. Setup moves on by itself when all 16 game archives are there.",
                     trailing: Action("Stop Waiting", async (_, _) => await shell.RunAsync(async () =>
                     {

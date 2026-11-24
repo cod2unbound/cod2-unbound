@@ -4,8 +4,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <FontFamily x:Key="SetupKeyFont">ms-appx:///Assets/CourierPrime-Bold.ttf#Courier Prime</FontFamily>
-    <!-- Glyphs the bundled Fluent subset lacks come from the system's Fluent icon font. -->
-    <FontFamily x:Key="SetupSystemIcons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <x:Double x:Key="SetupBarHeight">56</x:Double>
     <CornerRadius x:Key="SetupBarRadius">28</CornerRadius>
 

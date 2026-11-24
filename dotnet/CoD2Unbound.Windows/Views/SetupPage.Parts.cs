@@ -19,14 +19,13 @@ internal enum SetupBannerTone { Neutral, Error }
 /// status labels, banners and the step capsules.</summary>
 public sealed partial class SetupPage
 {
-    // Bundled Fluent glyphs where the subset has them; the system's Fluent icon font for the rest.
-    private static readonly Dictionary<string, (string Glyph, bool System)> Icons = new()
+    private static readonly Dictionary<string, string> Icons = new()
     {
-        ["folder"] = ("", false), ["lock"] = ("", false), ["eye"] = ("", false),
-        ["share"] = ("", false), ["person"] = ("", false), ["check"] = ("", false),
-        ["download"] = ("", false), ["shield"] = ("", false),
-        ["key"] = ("", true), ["warning"] = ("", true), ["info"] = ("", true),
-        ["off"] = ("", true), ["bug"] = ("", true), ["people"] = ("", true)
+        ["folder"] = "Folder", ["lock"] = "LockClosed", ["eye"] = "Eye",
+        ["share"] = "Share", ["person"] = "Person", ["check"] = "CheckCircle",
+        ["download"] = "ArrowDownload", ["shield"] = "ShieldCheckmark",
+        ["key"] = "ShieldLock", ["warning"] = "Warning", ["info"] = "Info",
+        ["off"] = "Subtract", ["sync"] = "ArrowSync", ["people"] = "People"
     };
 
     internal const double PanelWidth = 660, NarrowPanelWidth = 600;
@@ -36,12 +35,7 @@ public sealed partial class SetupPage
 
     internal static FontIcon Symbol(string name, double size)
     {
-        var (glyph, system) = Icons[name];
-        var icon = new FontIcon
-        {
-            Glyph = glyph, FontSize = size,
-            FontFamily = (FontFamily)Application.Current.Resources[system ? "SetupSystemIcons" : "FluentRegular"]
-        };
+        var icon = Fluent(Icons[name], size);
         AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
         return icon;
     }
