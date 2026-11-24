@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -43,6 +44,8 @@ public sealed partial class SetupPage : Page
         this.session = session;
         this.cancelDestination = cancelDestination;
         InitializeComponent();
+        SetupMark.Shadow = new ThemeShadow();
+        SetupMark.Translation = new System.Numerics.Vector3(0, 0, 32);
         Unloaded += (_, _) => StopSteamWatch();
         Loaded += async (_, _) =>
         {
@@ -69,10 +72,12 @@ public sealed partial class SetupPage : Page
         if (XamlRoot is null || Parent is not FrameworkElement)
             return;
         var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point(0, 0));
+        // A shell notice above the page (a problem the shell reports) stays visible: then the scene
+        // starts under it instead of under the caption buttons.
+        var wanted = new Thickness(-origin.X, origin.Y <= CaptionSpace + 1.5 ? -origin.Y : 0, 0, 0);
         var margin = SetupFrame.Margin;
-        double left = origin.X + margin.Left, top = origin.Y + margin.Top;
-        if (Math.Abs(left) > 0.5 || Math.Abs(top) > 0.5)
-            SetupFrame.Margin = new Thickness(margin.Left - left, margin.Top - top, 0, 0);
+        if (Math.Abs(margin.Left - wanted.Left) > 0.5 || Math.Abs(margin.Top - wanted.Top) > 0.5)
+            SetupFrame.Margin = wanted;
     }
 
     internal async Task RefreshAsync()

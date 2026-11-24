@@ -15,7 +15,7 @@ public sealed partial class SetupPage
     private async Task PreviewAsync()
     {
         if (previewed || Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_SETUP_STATE") is not { Length: > 0 } state ||
-            Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_SETUP_ROOT") is not { Length: > 0 } root)
+            Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_SETUP_ROOT") is not { Length: > 0 } root || state == "none")
             return;
         previewed = true;
         string steam = Path.Join(root, @"Steam\steamapps\common\Call of Duty 2");
