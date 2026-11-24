@@ -1489,9 +1489,9 @@ void Com_CheckSetRecommended(void)
        renderer drops to its lowest texture detail. */
     {
         extern void Sys_ArchiveInfo(int checksum);
-        extern const dvar_t *Dvar_FindVar(const char *name);
-        const dvar_t *sum = Dvar_FindVar("sys_configSum");
-        Sys_ArchiveInfo(sum ? sum->current.integer : 0);
+        extern int Dvar_GetInt(const char *dvarName);
+        /* The profile can supply the checksum before it is registered as an int. */
+        Sys_ArchiveInfo(Dvar_GetInt("sys_configSum"));
     }
     return;
 #endif

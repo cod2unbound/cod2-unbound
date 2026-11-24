@@ -43,6 +43,15 @@ server and zPAM update checks in this mode. This applies to the native
 engine on Windows and macOS, including when their launchers host a LAN
 server. Public hosting retains the existing master and update behavior.
 
+## Native CoD2x hardware checksum
+
+[`Com_CheckSetRecommended`](../../src/PC/qcommon/common.c) reads the archived
+`sys_configSum` numerically before saving the CoD2x hardware record. At that
+point a profile can have loaded it as an unregistered string. Reading the
+integer union member directly stored bits from the string pointer as the
+checksum. A saved zero or a checksum from an Original session now survives a
+CoD2x start unchanged. CoD2x continues to skip the recommended settings table.
+
 ## Checking the record
 
 Each entry names a source file and any Linux i386 objects with a code or data
