@@ -6,7 +6,15 @@ namespace CoD2Unbound.Windows;
 public partial class App : Application
 {
     private readonly Action<MainWindow> windowCreated;
-    private MainWindow? window;
+    private Window? window;
+#if UPDATE_FIXTURES
+    private readonly ElementTheme? partsTheme;
+
+    internal App(ElementTheme partsTheme) : this(static _ => { })
+    {
+        this.partsTheme = partsTheme;
+    }
+#endif
 
     internal App(Action<MainWindow> windowCreated)
     {
@@ -28,8 +36,17 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        window = new MainWindow();
-        windowCreated(window);
+#if UPDATE_FIXTURES
+        if (partsTheme is { } theme)
+        {
+            window = new Fixtures.StylePartsWindow(theme);
+            window.Activate();
+            return;
+        }
+#endif
+        var mainWindow = new MainWindow();
+        window = mainWindow;
+        windowCreated(mainWindow);
         window.Activate();
     }
 }

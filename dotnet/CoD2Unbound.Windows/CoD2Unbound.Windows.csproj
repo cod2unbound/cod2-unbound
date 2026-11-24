@@ -39,6 +39,10 @@
   <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture' and '$(EnableLocalReportReceivers)' == 'true'">
     <AssemblyMetadata Include="CoD2Unbound.ReportingFixture" Value="true" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UpdateBuildProfile)' != 'Fixture'">
+    <Page Remove="Fixtures/StylePartsWindow.xaml" />
+    <Compile Remove="Fixtures/StylePartsWindow.xaml.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UpdateBuildProfile)' == 'Fixture'">
     <AssemblyMetadata Include="CoD2Unbound.UpdateFixture" Value="true" />
   </ItemGroup>
