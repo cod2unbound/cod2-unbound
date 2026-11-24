@@ -144,6 +144,8 @@ public sealed partial class LibraryPage
         MediaList.SelectedItem = row;
         bool demo = row.Kind == MediaKind.Demo;
         var menu = new MenuFlyout();
+        if (anchor is Button)
+            menu.Placement = FlyoutPlacementMode.BottomEdgeAlignedRight;
         Add(demo ? "Play" : "Open", () => OpenFileAsync(row), "Enter", row.CanPlay);
         Add("Show in File Explorer", () => RevealMediaAsync(row));
         menu.Items.Add(new MenuFlyoutSeparator());
