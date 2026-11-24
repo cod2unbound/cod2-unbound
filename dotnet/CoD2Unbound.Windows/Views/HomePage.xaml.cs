@@ -32,7 +32,13 @@ public sealed partial class HomePage : Page, IShellBackdrop
         model = new(session);
         previews = new(model.ReadArtAsync);
         HomeFixture.Trace("constructing");
-        InitializeComponent();
+        try { InitializeComponent(); }
+        catch (Exception error)
+        {
+            // WinUI does not raise UnhandledException for a failure inside the shell's async navigation.
+            HomeFixture.Trace("construction failed: " + error);
+            throw;
+        }
         HomeFixture.Trace("constructed");
         PageRoot.Children.Remove(ArtLayer);
         PageRoot.Children.Remove(UpdatePill);
