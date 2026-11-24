@@ -190,6 +190,7 @@ function Start-KitProcess {
         COD2X_TEST_SERVICE_URL = 'http://127.0.0.1:9'
         COD2X_TEST_UPDATER_ADDRESS = '127.0.0.1:9'
         COD2X_TEST_UPDATER_URL = 'http://127.0.0.1:9/api/updater/check'
+        COD2_FRAME_TRACE_FILE = $null
         SYSDIFF_STATEHASH = $null
         SYSDIFF_MAXFRAMES = $null
         SYSDIFF_PLAYERS = $null

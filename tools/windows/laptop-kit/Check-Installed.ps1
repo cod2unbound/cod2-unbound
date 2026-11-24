@@ -149,7 +149,10 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
     if (Test-Path -LiteralPath $screens) {
         Get-ChildItem -LiteralPath $screens -Filter 'kit-*.jpg' -File | Remove-Item
     }
-    $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    $trace = New-KitFrameTrace $Results
+    $settings = Get-KitLauncherSettings
+    $settings.COD2_FRAME_TRACE_FILE = $trace.Path
+    $run = Start-KitProcess $exe '' $LauncherHome $settings
     $game = $null
     $window = [IntPtr]::Zero
     try {
@@ -164,7 +167,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
                 Select-Object -First 1
         } 40 'the installed game process'
         $window = Get-KitGameWindow $game
-        Invoke-MapPictures $LauncherHome $Results $window $Renderer -FromLauncher
+        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace -FromLauncher
     } finally {
         if ($game -and -not $game.HasExited) {
             if ($window -ne [IntPtr]::Zero) {
@@ -176,6 +179,9 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
             }
         }
         Save-GameEvidence $LauncherHome $Results
+        $adapterLog = Join-Path $Results 'boot-console.txt'
+        if (-not (Test-Path -LiteralPath $adapterLog)) { $adapterLog = $console }
+        Save-KitFrameTrace $trace $Results $adapterLog
         Stop-KitLauncher $run $Results
         [void](Save-KitFirewall 'after-installed-client')
     }

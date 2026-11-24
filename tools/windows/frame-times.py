@@ -153,6 +153,20 @@ def analyze(values, duration, cap):
     return results
 
 
+def receipt(results, adapter):
+    target = results["target_ms"]
+    target = f"{target} ms target" if target is not None else "no cap target"
+    share = results["within_0_5ms_pct"]
+    share = f"{share:.2f}%" if share is not None else "unavailable"
+    adapter = " ".join(adapter.split()) or "unreported"
+    return (
+        f"Frame times ({results['intervals']} intervals, {target}) "
+        f"mean {results['mean_ms']:.3f} ms, within 0.5 ms {share}, "
+        f"slowest 1% mean {results['slowest_1pct_mean_ms']:.3f} ms, "
+        f"longest {results['longest_ms']:.3f} ms, adapter {adapter}"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("capture", type=Path)
@@ -161,6 +175,8 @@ def main():
     parser.add_argument("--pid", type=int, help="filter a PresentMon capture by process ID")
     parser.add_argument("--qpc-start", type=int)
     parser.add_argument("--qpc-end", type=int)
+    parser.add_argument("--receipt", action="store_true", help="write a one-line timing receipt")
+    parser.add_argument("--adapter", default="", help="adapter reported by the game")
     args = parser.parse_args()
     if args.cap < 0 or (args.qpc_start is not None and args.qpc_end is not None and args.qpc_start >= args.qpc_end):
         parser.error("cap must be nonnegative and QPC bounds must be increasing")
@@ -169,7 +185,11 @@ def main():
             values, duration, metadata = read_engine(args.capture, args.qpc_start, args.qpc_end)
         else:
             values, duration, metadata = read_presentmon(args.capture, args.qpc_start, args.qpc_end, args.pid)
-        print(json.dumps({**analyze(values, duration, args.cap), **metadata}, indent=2, allow_nan=False))
+        results = analyze(values, duration, args.cap)
+        if args.receipt:
+            print(receipt(results, args.adapter))
+        else:
+            print(json.dumps({**results, **metadata}, indent=2, allow_nan=False))
     except (OSError, ValueError) as error:
         parser.exit(1, f"{error}\n")
 

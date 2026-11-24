@@ -66,6 +66,7 @@ function Save-KitReceipt($Step, [string]$Status, [string]$Detail, [int]$Seconds)
     $Detail = (Protect-KitText $Detail) -replace '[\r\n]+',' '
     $line = "$Status - $($Step.Title)"
     if ($Detail) { $line += ". $Detail" }
+    if ($script:KitFrameLines.Count) { $line += '. ' + ($script:KitFrameLines -join ' | ') }
     $temporary = Join-Path $Results 'result.tmp'
     [ordered]@{ Id=$Step.Id; Status=$Status; Line=$line; Seconds=$Seconds } |
         ConvertTo-Json -Compress | Set-Content -LiteralPath $temporary -Encoding UTF8
@@ -78,6 +79,8 @@ function Invoke-LaptopStep($Step, [string]$Reply) {
     $Results = New-Folder (Join-Path $RunResults $Step.Id)
     $script:KitAttentionTimedOut = $false
     $script:KitExternalLookup = $null
+    $script:KitFrameLines = @()
+    $env:COD2_FRAME_TRACE_FILE = $null
     $watch = [Diagnostics.Stopwatch]::StartNew()
     if ($skip = Get-KitUpdateSkip $Step.Id) {
         Save-KitReceipt $Step 'SKIP' $skip 0

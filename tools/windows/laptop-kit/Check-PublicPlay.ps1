@@ -6,7 +6,7 @@ function New-KitPublicStartInfo([string]$Image) {
     $info = [Diagnostics.ProcessStartInfo]::new($Image)
     $info.UseShellExecute = $false
     foreach ($name in @($info.EnvironmentVariables.Keys)) {
-        if ($name -match '^(?:COD2X_TEST_|COD2_UNBOUND_TEST_|COD2_USAGE_URL$|COD2_CRASH_URL$)') {
+        if ($name -match '^(?:COD2X_TEST_|COD2_UNBOUND_TEST_|COD2_USAGE_URL$|COD2_CRASH_URL$|COD2_FRAME_TRACE_FILE$)') {
             $info.EnvironmentVariables.Remove($name)
         }
     }
@@ -121,7 +121,7 @@ function Get-KitPublicMatchTiming([string]$HomePath, [DateTimeOffset]$Since, [st
         if (-not $line) { continue }
         $record = try { $line | ConvertFrom-Json -ErrorAction Stop } catch { continue }
         if ($record.serverAddress -in $Addresses -and [DateTimeOffset]$record.endedAt -ge $Since -and $record.frameCount -gt 0) {
-            $record | Select-Object serverAddress,map,endReason,durationSeconds,frameCount,frameTimeP50MS,frameTimeP99MS,frameTimeMaxMS
+            $record | Select-Object serverAddress,map,endReason,durationSeconds,frameCount,capFPS,frameTimeP50MS,frameTimeP99MS,frameTimeMaxMS
         }
     }
 }
@@ -257,7 +257,7 @@ function Join-KitPublicRow([IntPtr]$App, $Row, [string]$Edition, [string]$Eviden
     $address
 }
 
-function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [string]$HomePath = $AppDataRoot) {
+function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [string]$HomePath = $AppDataRoot, [string]$TracePath) {
     $entry = New-RunContext "play-$Edition"
     $dump = Join-Path $HomePath ('main\kit-play-' + [guid]::NewGuid().ToString('N') + '.txt')
     $game = $null
@@ -265,6 +265,7 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
     $activeEdition = if ($Edition -eq 'original') { 'Original 1.3' } else { 'CoD2x 1.4.6.8' }
     $addresses = @()
     $since = $null
+    $trace = if ($TracePath) { New-KitFrameTrace $entry.Evidence }
     try {
         Focus-KitWindow $App
         Invoke-KitControl $App 'ServersItem'
@@ -317,10 +318,12 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
         $gameWindow = Get-KitGameWindow $game
         Start-Sleep -Seconds 2
         Watch-KitPublicConnection $gameWindow $dump '' 'CL_InitCGame:' 65 $entry.Evidence
+        if ($trace) { $trace.Start = [Diagnostics.Stopwatch]::GetTimestamp() }
         Focus-KitWindow $gameWindow
         # Wait in the initial spectator state. Do not pick a team or send chat.
         Save-KitWindow $gameWindow (Join-Path $entry.Evidence 'public-first-game.png')
         Watch-KitPublicConnection $gameWindow $dump '' '' 120 $entry.Evidence
+        if ($trace) { $trace.End = [Diagnostics.Stopwatch]::GetTimestamp() }
         if ($game.HasExited) { throw 'The game closed during the two-minute observation.' }
         $marker = 'kit_join_' + [guid]::NewGuid().ToString('N')
         Send-KitCommand $gameWindow "/toggleconsole; echo $marker"
@@ -356,6 +359,7 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
             Protect-KitText ($lines -join "`n") |
                 Set-Content -LiteralPath (Join-Path $entry.Evidence 'connection.txt') -Encoding UTF8
         }
+        $timing = @()
         if ($addresses.Count) {
             $timing = @(Get-KitPublicMatchTiming $HomePath $since $addresses)
             if ($timing.Count) {
@@ -365,6 +369,15 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
                 'The game recorded no match timing for these server addresses during the run.' |
                     Set-Content -LiteralPath (Join-Path $entry.Evidence 'match-timing.txt') -Encoding UTF8
             }
+        }
+        if ($trace) {
+            $cold = $timing | Where-Object serverAddress -eq $addresses[0] | Select-Object -First 1
+            if ($cold) { $trace.Cap = [int]$cold.capFPS }
+            if (Test-Path -LiteralPath $TracePath -PathType Leaf) {
+                try { Move-Item -LiteralPath $TracePath -Destination $trace.Path }
+                catch { $trace.Path = $TracePath }
+            }
+            Save-KitFrameTrace $trace $entry.Evidence (Join-Path $entry.Evidence 'connection.txt') $Edition
         }
     }
 }
@@ -391,6 +404,8 @@ function Invoke-KitPublicPlay {
     # WinUI and its child game use the installed Public product path.
     # Remove any test override inherited by the scheduled worker.
     $info = New-KitPublicStartInfo $exe
+    $tracePath = Join-Path $Private 'public-frame-times.bin'
+    $info.EnvironmentVariables['COD2_FRAME_TRACE_FILE'] = $tracePath
     $app = [Diagnostics.Process]::Start($info)
     try {
         $window = Get-KitLauncherWindow $app
@@ -408,7 +423,7 @@ function Invoke-KitPublicPlay {
                 Invoke-KitHwidCheck $binary $GamePath
                 Invoke-KitPublicUpdater $binary $GamePath
             }
-            Invoke-KitPublicEdition $window $app $edition
+            Invoke-KitPublicEdition $window $app $edition -TracePath $tracePath
             Invoke-KitPublicHosting $window $edition -Local
             Invoke-KitPublicHosting $window $edition
         }

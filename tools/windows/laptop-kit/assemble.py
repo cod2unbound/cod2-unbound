@@ -10,6 +10,7 @@ import tempfile
 from zipfile import ZIP_DEFLATED, ZipFile
 
 NAME = "CoD2-Unbound-Windows-Kit"
+FRAME_PYTHON_SHA256 = "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38"
 HERE = Path(__file__).resolve().parent
 
 
@@ -50,6 +51,8 @@ def copy_fixtures(args, kit):
 
 
 def assemble(args):
+    if digest(args.frame_python) != FRAME_PYTHON_SHA256:
+        raise ValueError("Expected the pinned Python 3.13.17 x64 embeddable runtime")
     with tempfile.TemporaryDirectory(prefix="kit-stage-", dir=args.output.parent) as temporary:
         kit = Path(temporary) / NAME
         # Reuse the checked, licensed-data-free evidence inputs.
@@ -72,6 +75,9 @@ def assemble(args):
             if path.suffix in {".ps1", ".md", ".cfg", ".cs", ".py", ".sh", ".applescript"}:
                 copy_file(path, kit / path.name)
         source_root = HERE.parents[2]
+        copy_file(HERE.parent / "frame-times.py", kit / "frame-times.py")
+        with ZipFile(args.frame_python) as runtime:
+            runtime.extractall(kit / "frame-analyser")
         copy_file(source_root / "tests/launcher/fixtures/core-parity/directory.json",
                   kit / "launcher-fixtures/directory.json")
         copy_file(args.probe, kit / "probes/media-probe.exe")
@@ -122,7 +128,7 @@ def assemble(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for argument in ("baseline", "release", "previous", "probe", "output"):
+    for argument in ("baseline", "release", "previous", "probe", "frame-python", "output"):
         parser.add_argument(f"--{argument}", required=True, type=Path)
     for argument in ("wine", "windows-original", "windows-cod2x"):
         parser.add_argument(f"--{argument}", type=Path)

@@ -172,6 +172,16 @@ queued step. The first receipt records OS, PowerShell and monitor DPI.
 Registry graphics preferences are read by executable path. The engine's
 Direct3D 9 adapter line comes from the ordinal that successfully initialized.
 Window evidence includes style, physical frame, monitor bounds and DPI.
+
+The kit keeps `frame-times.bin` with the client evidence and puts a line from
+`frame-times.py` in the step receipt. The sample starts after the first map
+loads, apart from timedemos, which measure playback without a cap target.
+The full-screen match sample includes the switch away and back. Public play
+records the first spectator observation in each edition and uses the cap from
+that match's engine summary. The raw trace covers the whole client process and
+is written at normal exit. The numbers and any unavailable trace are advisory.
+Assembly takes the pinned Python 3.13.17 x64 embeddable ZIP as `--frame-python`.
+The analyser runs from the kit folder without installing Python.
 Full-screen pictures use the game window at monitor size. Paired pictures
 are generated from named game and fixture images. Raw memory dumps stay
 outside results.

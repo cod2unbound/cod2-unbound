@@ -35,6 +35,13 @@ foreach ($pair in @(@($false,$false), @($true,$true))) {
     }
 }
 Assert-KitPublicPlay $true $false
+$originalTrace = $env:COD2_FRAME_TRACE_FILE
+try {
+    $env:COD2_FRAME_TRACE_FILE = 'must-not-leak.bin'
+    if ((New-KitPublicStartInfo 'cod2_win32.exe').EnvironmentVariables.ContainsKey('COD2_FRAME_TRACE_FILE')) {
+        throw 'The public menu-only engine start inherited a frame trace.'
+    }
+} finally { $env:COD2_FRAME_TRACE_FILE = $originalTrace }
 if ((Get-KitPublicAnsweredCount '1 server answered.') -ne 1 -or
     (Get-KitPublicAnsweredCount '2 servers answered. Updated just now.') -ne 2 -or
     $null -ne (Get-KitPublicAnsweredCount 'Refresh stopped. 2 servers answered.')) {
@@ -74,12 +81,13 @@ try {
     $timing = @(
         '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:00:00Z","frameCount":120}',
         '{"serverAddress":"127.0.0.1:28961","endedAt":"2026-11-23T14:05:00Z","frameCount":120}',
-        '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:05:00Z","frameCount":120,"frameTimeP50MS":24,"unrelated":"do not retain"}'
+        '{"serverAddress":"127.0.0.1:28960","endedAt":"2026-11-23T14:05:00Z","frameCount":120,"capFPS":250,"frameTimeP50MS":24,"unrelated":"do not retain"}'
     )
     $stats = New-Folder (Join-Path $main 'stats')
     $timing | Set-Content -LiteralPath (Join-Path $stats 'matches.jsonl') -Encoding ASCII
     $record = @(Get-KitPublicMatchTiming $root ([DateTimeOffset]'2026-11-23T14:01:00Z') @('127.0.0.1:28960'))
-    if ($record.Count -ne 1 -or $record[0].frameTimeP50MS -ne 24 -or $record[0].PSObject.Properties['unrelated']) {
+    if ($record.Count -ne 1 -or $record[0].frameTimeP50MS -ne 24 -or $record[0].capFPS -ne 250 -or
+        $record[0].PSObject.Properties['unrelated']) {
         throw 'Public match timing included an unrelated field or record.'
     }
 } finally { Remove-KitScratch $root }

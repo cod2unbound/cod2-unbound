@@ -168,7 +168,7 @@ function Enable-KitGameConsole([IntPtr]$Window, [string]$GameHome, [string]$Evid
     $output
 }
 
-function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer, [switch]$FromLauncher) {
+function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer, $Trace, [switch]$FromLauncher) {
     $log = Join-Path $GameHome 'main\console_mp.log'
     $boot = $log
     if ($FromLauncher) {
@@ -200,6 +200,7 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
         }
         Save-KitFrame $Window $GameHome $Evidence "kit-$map"
         if ($map -eq 'mp_toujane') {
+            Start-KitFrameSample $Trace $Window $log
             "Play clip $([KitDesktop]::Clip())" | Add-Content -LiteralPath $notes
             Send-KitCommand $Window '/toggleconsole; viewpos'
             Focus-KitWindow $Window
@@ -216,6 +217,7 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
                 'The recorded position and heading did not change after input.' | Add-Content -LiteralPath $notes
             }
             Save-KitFrame $Window $GameHome $Evidence 'kit-after-input'
+            $Trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
             if ($script:RecordKitAudio) {
                 try { Invoke-KitAudio $Window $Evidence }
                 catch { Protect-KitText $_.Exception.Message | Set-Content (Join-Path $Evidence 'audio-error.txt') }
@@ -258,7 +260,13 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
         " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set net_noudp 1 +set com_introPlayed 1 +set g_gametype dm"
     if ($DisplayMode) { $argsText += " +set r_fullscreen 1 +set r_borderless $([int]$Borderless.IsPresent) +set r_mode $DisplayMode" }
     else { $argsText += ' +set r_fullscreen 0 +set r_mode 800x600' }
-    $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder
+    $trace = $null
+    $settings = @{}
+    if (-not $DisplayMode) {
+        $trace = New-KitFrameTrace $entry.Evidence
+        $settings.COD2_FRAME_TRACE_FILE = $trace.Path
+    }
+    $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder $settings
     $window = [IntPtr]::Zero
     try {
         $window = Get-KitGameWindow $run.Process
@@ -280,7 +288,7 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
                 Invoke-KitTaskSwitch $window $homePath $entry.Evidence 'kit-fullscreen'
             }
         } else {
-            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer
+            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace
         }
     } finally {
         if (-not $run.Process.HasExited -and $window -ne [IntPtr]::Zero) {
@@ -288,6 +296,7 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
         }
         $done = Complete-KitProcess $run $entry.Evidence 12
         Save-GameEvidence $homePath $entry.Evidence
+        Save-KitFrameTrace $trace $entry.Evidence (Join-Path $homePath 'main\console_mp.log')
     }
     if ($done.TimedOut -or $done.ExitCode -ne 0) { throw 'The game did not close cleanly.' }
 }

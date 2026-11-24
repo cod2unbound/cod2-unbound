@@ -98,7 +98,10 @@ function Invoke-KitOpenDemo([string]$Edition) {
     Set-KitLauncherProfile $Edition 'dx9'
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
-    $launcher = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    $trace = New-KitFrameTrace $Results
+    $settings = Get-KitLauncherSettings
+    $settings.COD2_FRAME_TRACE_FILE = $trace.Path
+    $launcher = Start-KitProcess $exe '' $LauncherHome $settings
     $game = $null
     $window = [IntPtr]::Zero
     try {
@@ -114,11 +117,14 @@ function Invoke-KitOpenDemo([string]$Edition) {
                 (Select-String -LiteralPath $console -SimpleMatch "demos/kit-match-$Edition.dm_1" -Quiet) -and
                 (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
         } 65 'game demo playback' | Out-Null
+        Start-KitFrameSample $trace $window $console
         Focus-KitWindow $window
         Save-KitWindow $window (Join-Path $Results 'kit-shell-demo-window.png')
     } finally {
+        $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
+        Save-KitFrameTrace $trace $Results $console
         Stop-KitLauncher $launcher $Results
     }
 }
@@ -141,6 +147,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     if ($Route -eq 'connect' -and (Test-Path -LiteralPath $recording)) { Remove-Item -LiteralPath $recording }
     $port = if ($Edition -eq 'original') { 29792 } else { 29791 }
     $settings = Get-KitLauncherSettings
+    $trace = New-KitFrameTrace $Results
+    $settings.COD2_FRAME_TRACE_FILE = $trace.Path
     $launcher = $server = $second = $master = $game = $hostedProcess = $null
     $hostName = "Kit $Edition"
     $window = [IntPtr]::Zero
@@ -272,14 +280,20 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             if ($status -match '(?m)^-?\d+ +(\d+) +"[^"\r\n]+"\r?$' -and [int]$Matches[1] -lt 999) { $status }
         } 75 'a named, active player in the loopback match'
         Protect-KitText $reply | Set-Content -LiteralPath (Join-Path $Results 'player-status.txt') -Encoding UTF8
+        Wait-KitCondition {
+            (Test-Path -LiteralPath $console) -and
+                (Select-String -LiteralPath $console -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
+        } 35 'the joined client to finish loading its first map' | Out-Null
         if ($Route -in 'connect','hosting','handoff') {
-            # The server can report an active slot before the client accepts game input.
-            Wait-KitCondition {
-                (Test-Path -LiteralPath $console) -and
-                    (Select-String -LiteralPath $console -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
-            } 35 'the joined client to finish loading its first map' | Out-Null
             Enter-KitPlay $window
+        }
+        Start-KitFrameSample $trace $window $console
+        if ($Route -in 'connect','hosting','handoff') {
             Save-KitFrame $window $LauncherHome $Results 'kit-loopback-playing'
+        }
+        if ($Route -ne 'connect') {
+            Start-Sleep -Seconds 2
+            $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
         }
         if ($Route -eq 'handoff') {
             Invoke-KitSecondServer $app $game $port $secondPort $joinPassword
@@ -292,6 +306,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Test-Path -LiteralPath $recording
             } 14 'the game to begin recording the demo' | Out-Null
             Start-Sleep -Seconds 5
+            $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
             Send-KitCommand $window '/toggleconsole; stoprecord'
             Wait-KitCondition { Select-String -LiteralPath $console -SimpleMatch 'Stopped demo.' -Quiet } 12 'the demo writer to close' | Out-Null
             Copy-Item -LiteralPath $recording -Destination $Results
@@ -378,6 +393,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
     } finally {
         Stop-KitOwnedGame $game $window
         Save-GameEvidence $LauncherHome $Results
+        Save-KitFrameTrace $trace $Results $console
         if ($launcher) { Stop-KitLauncher $launcher $Results }
         if ($Route -eq 'hosting') {
             if ($hostedProcess) {
@@ -551,12 +567,13 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
         " +set com_introPlayed 1 +set cl_allowDownload 0 +connect 127.0.0.1:$port"
     $run = $null
     $window = [IntPtr]::Zero
+    $trace = New-KitFrameTrace $clientEntry.Evidence
     $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder -NoWindow
     try {
         Wait-KitCondition {
             (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
         } 45 'the exclusive match server' | Out-Null
-        $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder
+        $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder @{ COD2_FRAME_TRACE_FILE=$trace.Path }
         $window = Get-KitGameWindow $run.Process
         Wait-KitCondition { Get-KitNamedPlayer $port } 65 'Kit Player to join the exclusive match' | Out-Null
         $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
@@ -564,6 +581,7 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
             (Test-Path $log) -and (Select-String -LiteralPath $log -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
         } 35 'the joined client to finish loading' | Out-Null
         Enter-KitPlay $window
+        Start-KitFrameSample $trace $window $log
         Save-KitFrame $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
         Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
         $viewPattern = '(?m)^\( *-?\d+ +-?\d+ +-?\d+\) *: *-?\d+'
@@ -583,9 +601,11 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
         $recovery | Set-Content -LiteralPath (Join-Path $clientEntry.Evidence 'device-recovery.txt')
     } finally {
         if ($run) {
+            $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
             Stop-KitOwnedGame $run.Process $window
             Complete-KitProcess $run $clientEntry.Evidence 8 | Out-Null
             Save-GameEvidence $clientEntry.Folder $clientEntry.Evidence
+            Save-KitFrameTrace $trace $clientEntry.Evidence $log
         }
         if (-not $server.Process.HasExited) { Stop-SetupServer $admin $port }
         Complete-KitProcess $server $serverEntry.Evidence 8 | Out-Null
