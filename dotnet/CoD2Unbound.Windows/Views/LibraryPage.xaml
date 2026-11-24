@@ -1,5 +1,6 @@
 <Page x:Class="CoD2Unbound.Windows.Views.LibraryPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:views="using:CoD2Unbound.Windows.Views"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       PreviewKeyDown="OnLibraryKeyDown" SizeChanged="OnLibrarySizeChanged">
     <Page.Resources>
@@ -59,7 +60,7 @@
                 <TextBlock x:Name="SectionTitle" Style="{StaticResource PageTitle}" LineStackingStrategy="BlockLineHeight" />
                 <TextBlock x:Name="SectionDetail" Style="{StaticResource SecondaryText}" />
             </StackPanel>
-            <StackPanel x:Name="Retention" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
+            <StackPanel views:GlyphAlign.IsEnabled="True" x:Name="Retention" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
                 <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}"
                           FontSize="14" Foreground="{ThemeResource secondary}" AutomationProperties.AccessibilityView="Raw" />
                 <TextBlock x:Name="RetentionText" Style="{StaticResource SecondaryText}" FontSize="12" VerticalAlignment="Center" />
@@ -112,7 +113,7 @@
                                                Foreground="{ThemeResource heading}" VerticalAlignment="Bottom" />
                                     <TextBlock Text="ms" FontSize="12" Foreground="{ThemeResource tertiary}" VerticalAlignment="Bottom" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6"
+                                <StackPanel views:GlyphAlign.IsEnabled="True" Grid.Column="3" Orientation="Horizontal" Spacing="6"
                                             VerticalAlignment="Center" HorizontalAlignment="Right" Loaded="OnConnectionLoaded"
                                             DataContextChanged="OnConnectionChanged" ActualThemeChanged="OnConnectionThemeChanged">
                                     <FontIcon FontFamily="{StaticResource SystemIcons}" FontSize="15" Glyph="{Binding ConnectionGlyph}"
@@ -129,9 +130,8 @@
             </Grid>
 
             <Grid x:Name="ScreenshotGallery">
-                <GridView x:Name="Screenshots" Margin="0,0,-18,0" AutomationProperties.Name="Screenshots"
+                <GridView x:Name="Screenshots" AutomationProperties.Name="Screenshots"
                           SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False" VerticalAlignment="Top"
-                          DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested"
                           ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           SizeChanged="OnScreenshotGridSizeChanged">
                     <GridView.ItemContainerStyle>
@@ -151,7 +151,8 @@
                         <DataTemplate>
                             <Border CornerRadius="{StaticResource CrateRadius}" Background="{ThemeResource panel}"
                                     BorderBrush="{ThemeResource panelStroke}" BorderThickness="{StaticResource Stroke}"
-                                    AutomationProperties.Name="{Binding ScreenshotName}">
+                                    AutomationProperties.Name="{Binding ScreenshotName}"
+                                    DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested">
                                 <Grid RowDefinitions="*,Auto">
                                     <Border Background="{ThemeResource HeroBackplateBrush}">
                                         <Image Stretch="Uniform" Loaded="OnScreenshotLoaded" DataContextChanged="OnScreenshotChanged"
@@ -182,12 +183,12 @@
                     <TextBlock Grid.Column="3" Text="Size" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
-                          ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files"
-                          DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested">
+                          ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="10,10,22,10" ColumnSpacing="16" ColumnDefinitions="80,*,130,70,118"
-                                  AutomationProperties.Name="{Binding DemoName}">
+                                  AutomationProperties.Name="{Binding DemoName}"
+                                  DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested">
                                 <Border Style="{StaticResource LibraryArt}">
                                     <Image Stretch="UniformToFill" Loaded="OnDemoArtLoaded" DataContextChanged="OnDemoArtChanged"
                                            AutomationProperties.AccessibilityView="Raw" />
@@ -202,7 +203,7 @@
                                            Foreground="{ThemeResource secondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" FontSize="13" Foreground="{ThemeResource tertiary}"
                                            HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="16"
+                                <StackPanel x:Name="DemoActions" Grid.Column="4" Orientation="Horizontal" Spacing="16"
                                             HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <Button Click="OnPlayDemo" Tag="{Binding}" IsEnabled="{Binding CanPlay}"
                                             AutomationProperties.Name="{Binding PlayName}" AutomationProperties.HelpText="{Binding PlaybackHint}">

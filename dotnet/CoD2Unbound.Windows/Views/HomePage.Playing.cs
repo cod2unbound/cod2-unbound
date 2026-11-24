@@ -122,7 +122,7 @@ public sealed partial class HomePage
     }
 
     /// Launch and Find a Server for a returning player; Find a Server and Open Game Menu before the first
-    /// game; Return to Game and Close Game while it runs. The hint beside them says the key.
+    /// game; Return to Game and Quit Game while it runs. The hint beside them says the key.
     internal void RenderGameControls(GameSessionState game)
     {
         game = HomeFixture.Observe(game, session.Library.Recent.FirstOrDefault());
@@ -139,7 +139,7 @@ public sealed partial class HomePage
         if (last is not null)
             AutomationProperties.SetName(LaunchButton, "Launch on " + QuakeColors.Plain(last.Name));
         CloseGameButton.IsEnabled = !game.Quitting;
-        CloseGameLabel.Text = game.Quitting ? "Closing…" : "Close Game";
+        CloseGameLabel.Text = game.Quitting ? "Quitting…" : "Quit Game";
         AutomationProperties.SetName(CloseGameButton, game.Quitting ? "Closing…" : "Close game");
         ToolTipService.SetToolTip(CloseGameButton, CloseGameHint);
         AutomationProperties.SetHelpText(CloseGameButton, CloseGameHint);

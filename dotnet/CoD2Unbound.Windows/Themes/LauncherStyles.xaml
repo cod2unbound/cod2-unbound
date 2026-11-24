@@ -274,7 +274,7 @@
 
     <!-- Retain WinUI's input and automation templates. DesignTokens supplies their state brushes. -->
     <!-- Every size has one outer height in every role (fill, glass, quiet): the border is drawn inside it. -->
-    <Style x:Key="LauncherButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="LauncherButton" TargetType="Button">
         <Setter Property="Template" Value="{StaticResource LauncherButtonTemplate}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
@@ -335,7 +335,6 @@
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="14,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
@@ -353,7 +352,7 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
-    <Style x:Key="InlineTextBox" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+    <Style x:Key="InlineTextBox" TargetType="TextBox">
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Padding" Value="12,3" />
         <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
@@ -901,7 +900,7 @@
                                             <RowDefinition Height="*" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <ScrollViewer x:Name="ContentScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"
+                                        <ScrollViewer x:Name="ContentScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                                       ZoomMode="Disabled" IsTabStop="False">
                                             <Grid RowSpacing="16">
                                                 <Grid.RowDefinitions>
@@ -1875,7 +1874,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <!-- Sidebar symbols sit on their label's cap-height centre line (GlyphAlign.CentredNudge, set by
+    <!-- Sidebar symbols sit on their label's cap-height centre line (GlyphAlign.AlignCentered, set by
          MainWindow.PaintNavGlyphs from font metrics). -->
     <!-- The Mac's sidebar symbols draw about 22 px of ink (1.5 px strokes); Fluent's 20 px designs at 28 do the
          same. MainWindow's NavigationViewItemOnLeftIconBoxHeight is that size's line height (545/500 em, 30.52)
@@ -1944,7 +1943,7 @@
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level3" />
     </Style>
     <!-- Jump to's field (JumpPalette.swift): 17 point text, no box of its own; the palette is the box. -->
-    <Style x:Key="JumpField" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+    <Style x:Key="JumpField" TargetType="TextBox">
         <Setter Property="FontSize" Value="17" />
         <Setter Property="Padding" Value="0,6" />
         <Setter Property="BorderThickness" Value="0" />

@@ -113,7 +113,7 @@ internal sealed class PlayerNameEditor : UserControl
         if (setup)
         {
             paletteNote.Style = StyleFor("SetupDetail");
-            paletteNote.Margin = new Thickness(6, -6, 0, 0);
+            paletteNote.Margin = new Thickness(6, 0, 0, 0);
         }
         palette.Children.Add(paletteNote);
         // Setup draws the board's small capsule button; the player card keeps its link.

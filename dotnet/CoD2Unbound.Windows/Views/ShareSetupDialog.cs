@@ -139,16 +139,6 @@ internal sealed class ShareSetupDialog : ContentDialog
             await pending;
     }
 
-    protected override void OnApplyTemplate()
-    {
-        base.OnApplyTemplate();
-        if (GetTemplateChild("ContentScrollViewer") is ScrollViewer scroll)
-        {
-            scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            AutomationProperties.SetName(scroll, "Share setup details");
-        }
-    }
-
     private void ShowForm()
     {
         preview = false;
@@ -207,7 +197,7 @@ internal sealed class ShareSetupDialog : ContentDialog
                 {
                     RefreshForm();
                     if (form.Phase == ConfigSharePhase.Offline && IsPrimaryButtonEnabled)
-                        FocusPrimaryButton();
+                        name.Focus(FocusState.Programmatic);
                 }
             }
         }
@@ -274,6 +264,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         address.IsTextSelectionEnabled = true;
         address.LineHeight = 18;
         address.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        var requestLink = RequestLink(sent.Url);
         var body = new StackPanel
         {
             Spacing = 10,
@@ -281,7 +272,7 @@ internal sealed class ShareSetupDialog : ContentDialog
             {
                 new Border { Style = StyleFor("FieldCard"), Child = address },
                 Caption("To take it back, choose Stop Sharing from this loadout’s menu. No reason is asked for."),
-                RequestLink(sent.Url)
+                requestLink
             }
         };
         if (!sent.Saved)
@@ -292,14 +283,8 @@ internal sealed class ShareSetupDialog : ContentDialog
             body.Children.Add(warning);
         }
         Content = body;
-        FocusPrimaryButton();
+        requestLink.Focus(FocusState.Programmatic);
         Announce("Your setup was sent");
-    }
-
-    private void FocusPrimaryButton()
-    {
-        if (GetTemplateChild("PrimaryButton") is Button button)
-            button.Focus(FocusState.Programmatic);
     }
 
     internal static HyperlinkButton RequestLink(Uri url)

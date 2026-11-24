@@ -247,7 +247,13 @@ public sealed partial class ConfigsPage
             return data.Contains(StandardDataFormats.Text) ? CheckerText(await data.GetTextAsync(), false)
                 : throw new IOException("The clipboard has no config text to check.");
         }));
-        var loadouts = new DropDownButton { Content = "Check a loadout", IsEnabled = !model.State.Profiles.IsEmpty };
+        var loadouts = new DropDownButton
+        {
+            Content = "Check a Loadout", IsEnabled = !model.State.Profiles.IsEmpty,
+            MinHeight = (double)Application.Current.Resources["ButtonRegularHeight"],
+            CornerRadius = (CornerRadius)Application.Current.Resources["ButtonRegularRadius"]
+        };
+        AutomationProperties.SetName(loadouts, "Check a loadout");
         var menu = new MenuFlyout();
         foreach (var profile in model.State.Profiles)
         {

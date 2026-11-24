@@ -57,20 +57,22 @@ public sealed partial class LibraryPage
 
     private void OnMediaContextRequested(UIElement sender, ContextRequestedEventArgs args)
     {
-        if (FindMedia(args.OriginalSource as DependencyObject) is not { } item)
+        if (sender is not FrameworkElement { DataContext: MediaRow row } || args.Handled)
             return;
+        var anchor = MediaList.ContainerFromItem(row) as FrameworkElement ?? (FrameworkElement)sender;
         args.Handled = true;
-        ShowFileMenu(item.Row, item.Container,
-            args.TryGetPosition(item.Container, out var position) ? new FlyoutShowOptions { Position = position } : null);
+        ShowFileMenu(row, anchor,
+            args.TryGetPosition(anchor, out var position) ? new FlyoutShowOptions { Position = position } : null);
     }
 
     private async void OnMediaDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
-        if (FindMedia(args.OriginalSource as DependencyObject) is not { FromButton: false } item)
+        if (sender is not FrameworkElement { DataContext: MediaRow row } element ||
+            element.FindName("DemoActions") is FrameworkElement actions && IsInside(args.GetPosition(actions), actions))
             return;
         args.Handled = true;
-        if (item.Row.CanPlay)
-            await shell.RunAsync(() => OpenFileAsync(item.Row));
+        if (row.CanPlay)
+            await shell.RunAsync(() => OpenFileAsync(row));
     }
 
     private void OnSearchKeyDown(object sender, KeyRoutedEventArgs args)
@@ -83,27 +85,33 @@ public sealed partial class LibraryPage
     {
         if (ShowingMatches || XamlRoot is not { } root)
             return;
-        var focus = FocusManager.GetFocusedElement(root) as DependencyObject;
+        var focus = FocusManager.GetFocusedElement(root);
         if (args.Key == VirtualKey.Escape && (ClearSearch() || MediaList.SelectedItem is not null))
         {
             args.Handled = true;
             MediaList.SelectedItem = null;
             return;
         }
-        if (FindMedia(focus) is not { } item)
+        var row = focus switch
+        {
+            SelectorItem { Content: MediaRow media } => media,
+            Button { Tag: MediaRow media } => media,
+            _ => null
+        };
+        if (row is null || MediaList.ContainerFromItem(row) is not SelectorItem container)
             return;
 
-        var row = item.Row;
+        bool fromButton = focus is Button;
         bool control = KeyPressed(VirtualKey.Control);
         bool shift = KeyPressed(VirtualKey.Shift);
         bool alt = KeyPressed(VirtualKey.Menu);
         if (!control && !alt && (args.Key == VirtualKey.Application || (shift && args.Key == VirtualKey.F10)))
         {
             args.Handled = true;
-            ShowFileMenu(row, item.Container);
+            ShowFileMenu(row, container);
             return;
         }
-        if (!item.FromButton && args.Key == VirtualKey.Space && !control && !alt && !shift)
+        if (!fromButton && args.Key == VirtualKey.Space && !control && !alt && !shift)
         {
             args.Handled = true;
             return;
@@ -111,7 +119,7 @@ public sealed partial class LibraryPage
 
         Func<Task>? action = (args.Key, control, shift, alt) switch
         {
-            (VirtualKey.Enter, false, false, false) when !item.FromButton && row.CanPlay => () => OpenFileAsync(row),
+            (VirtualKey.Enter, false, false, false) when !fromButton && row.CanPlay => () => OpenFileAsync(row),
             (VirtualKey.F2, false, false, false) when row.Kind == MediaKind.Demo => () => RenameAsync(row),
             (VirtualKey.Delete, false, false, false) => () => RecycleAsync(row),
             (VirtualKey.C, true, false, false) => () => CopyMediaAsync(row),
@@ -126,18 +134,6 @@ public sealed partial class LibraryPage
 
     private static bool KeyPressed(VirtualKey key) =>
         (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
-
-    private static (MediaRow Row, SelectorItem Container, bool FromButton)? FindMedia(DependencyObject? source)
-    {
-        bool fromButton = false;
-        for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
-        {
-            fromButton |= current is Button;
-            if (current is SelectorItem { Content: MediaRow row } container)
-                return (row, container, fromButton);
-        }
-        return null;
-    }
 
     private void ShowFileMenu(MediaRow row, FrameworkElement anchor, FlyoutShowOptions? options = null)
     {
@@ -216,6 +212,7 @@ public sealed partial class LibraryPage
                 Glyph = (string)Application.Current.Resources["SystemWarning"], FontSize = 14
             }, problemLabel }
         };
+        GlyphAlign.SetIsEnabled(problem, true);
         AutomationProperties.SetLiveSetting(problemLabel, AutomationLiveSetting.Polite);
         var content = new StackPanel { Spacing = 8, Children = { name, problem } };
         var dialog = new ContentDialog

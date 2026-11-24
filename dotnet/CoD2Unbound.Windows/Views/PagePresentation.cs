@@ -14,6 +14,8 @@ internal static class PagePresentation
 {
     internal static Visibility IsVisible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     internal static Style StyleFor(string key) => (Style)Application.Current.Resources[key];
+    internal static bool IsInside(global::Windows.Foundation.Point point, FrameworkElement element) =>
+        point.X >= 0 && point.X < element.ActualWidth && point.Y >= 0 && point.Y < element.ActualHeight;
 
     internal static TextBlock Caption(string text) =>
         new() { Text = text, Style = StyleFor("SecondaryText"), FontSize = 12 };
@@ -80,33 +82,6 @@ internal static class PagePresentation
         caption.ButtonPressedBackgroundColor = contrast ? null : (ThemeBrush("press", theme, false) as SolidColorBrush)?.Color;
     }
 
-    internal static ListViewItem? ContainingListItem(DependencyObject element)
-    {
-        DependencyObject? parent = VisualTreeHelper.GetParent(element);
-        while (parent is not null && parent is not ListViewItem)
-            parent = VisualTreeHelper.GetParent(parent);
-        return (ListViewItem?)parent;
-    }
-
-    internal static void TrackSelectionPill(Border pill) =>
-        TrackListSelection(pill, selected => pill.Visibility = IsVisible(selected));
-
-    internal static void TrackListSelection(FrameworkElement content, Action<bool> apply)
-    {
-        if (ContainingListItem(content) is not { } item)
-            return;
-
-        long token = item.RegisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, (_, _) => apply(item.IsSelected));
-        content.Unloaded += Unloaded;
-        apply(item.IsSelected);
-
-        void Unloaded(object sender, RoutedEventArgs args)
-        {
-            item.UnregisterPropertyChangedCallback(ListViewItem.IsSelectedProperty, token);
-            content.Unloaded -= Unloaded;
-        }
-    }
-
     // In contrast mode the native row presenter supplies both the normal and selected ink.
     internal static void SetRowTextBrush(TextBlock text, string key, bool contrast)
     {
@@ -149,6 +124,8 @@ internal static class PagePresentation
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         foreach (var control in controls)
             panel.Children.Add(control);
+        if (controls.Any(control => control is FontIcon) && controls.Any(control => control is TextBlock))
+            GlyphAlign.SetIsEnabled(panel, true);
         return panel;
     }
 

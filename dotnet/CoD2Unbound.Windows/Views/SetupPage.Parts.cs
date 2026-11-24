@@ -148,13 +148,15 @@ public sealed partial class SetupPage
             var icon = Symbol(symbol, 11);
             icon.Foreground = Token("secondary");
             icon.VerticalAlignment = VerticalAlignment.Top;
-            icon.Margin = new Thickness(0, 3, 0, 0);
             line.Children.Add(icon);
         }
         var words = new TextBlock { Text = text, Style = StyleFor("SetupDetail") };
         line.Children.Add(words);
         if (symbol is not null)
+        {
             words.MaxWidth = panelWidth - 60;
+            GlyphAlign.SetIsEnabled(line, true);
+        }
         AutomationProperties.SetName(line, text);
         return line;
     }
@@ -173,6 +175,7 @@ public sealed partial class SetupPage
                 new TextBlock { Text = text, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = brush }
             }
         };
+        GlyphAlign.SetIsEnabled(label, true);
         AutomationProperties.SetName(label, text);
         return label;
     }
@@ -184,7 +187,6 @@ public sealed partial class SetupPage
         var icon = Symbol(symbol, 14);
         icon.Foreground = Token(tone == SetupBannerTone.Error ? "negative" : "secondary");
         icon.VerticalAlignment = VerticalAlignment.Top;
-        icon.Margin = new Thickness(0, 2, 0, 0);
         var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, LineHeight = 18.2, Foreground = Token("text") };
         foreach (var part in Regex.Split(message, @"(\S+\.iwd)"))
         {
@@ -198,6 +200,7 @@ public sealed partial class SetupPage
         var layout = Columns(10, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
         Put(layout, 0, icon);
         Put(layout, 1, words);
+        GlyphAlign.SetIsEnabled(layout, true);
         if (trailing is not null)
         {
             trailing.VerticalAlignment = VerticalAlignment.Center;

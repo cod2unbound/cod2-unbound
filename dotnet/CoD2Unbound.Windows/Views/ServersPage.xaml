@@ -1,5 +1,6 @@
 <Page x:Class="CoD2Unbound.Windows.Views.ServersPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:views="using:CoD2Unbound.Windows.Views"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid x:Name="PageLayout" SizeChanged="OnBrowserSizeChanged" RowDefinitions="76,*">
         <Viewbox x:Name="ServersContours" Stretch="Fill" IsHitTestVisible="False"
@@ -232,7 +233,7 @@
                                         <Image x:Name="RowArt" Stretch="UniformToFill" />
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
-                                        <Grid ColumnSpacing="4">
+                                        <Grid views:GlyphAlign.IsEnabled="True" ColumnSpacing="4">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />

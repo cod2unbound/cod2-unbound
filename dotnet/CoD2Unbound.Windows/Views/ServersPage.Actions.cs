@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI.Core;
@@ -190,7 +189,8 @@ public sealed partial class ServersPage
 
     private async void OnServerRowDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
-        if (sender is FrameworkElement { DataContext: ServerRow row } && !InsideButton(args.OriginalSource))
+        if (sender is Grid { DataContext: ServerRow row } grid &&
+            (grid.FindName("RowFavorite") is not Button favorite || !IsInside(args.GetPosition(favorite), favorite)))
         {
             args.Handled = true;
             await LaunchRowAsync(row);
@@ -200,8 +200,8 @@ public sealed partial class ServersPage
     private async void OnServerListKeyDown(object sender, KeyRoutedEventArgs args)
     {
         if (args.Key != VirtualKey.Enter || KeyPressed(VirtualKey.Control) || KeyPressed(VirtualKey.Shift) ||
-            KeyPressed(VirtualKey.Menu) || InsideButton(args.OriginalSource) ||
-            (RowFrom(args.OriginalSource) ?? ServerList.SelectedItem as ServerRow) is not { } row)
+            KeyPressed(VirtualKey.Menu) || FocusManager.GetFocusedElement(XamlRoot) is Button ||
+            (FocusedRow() ?? ServerList.SelectedItem as ServerRow) is not { } row)
             return;
         args.Handled = true;
         await LaunchRowAsync(row);
@@ -212,19 +212,12 @@ public sealed partial class ServersPage
 
     private ServerRow? FocusedRow() => RowFrom(FocusManager.GetFocusedElement(XamlRoot));
 
-    private static ServerRow? RowFrom(object? source) =>
-        source is DependencyObject element ? ((element as ListViewItem ?? ContainingListItem(element))?.Content as ServerRow) : null;
-
-    private static bool InsideButton(object source)
+    private static ServerRow? RowFrom(object? source) => source switch
     {
-        for (var element = source as DependencyObject; element is not null && element is not ListViewItem;
-            element = VisualTreeHelper.GetParent(element))
-        {
-            if (element is Button)
-                return true;
-        }
-        return false;
-    }
+        ListViewItem { Content: ServerRow row } => row,
+        Button { Tag: ServerRow row } => row,
+        _ => null
+    };
 
     private async void OnCopyAddress(object sender, RoutedEventArgs args)
     {

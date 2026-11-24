@@ -46,7 +46,7 @@ public sealed partial class MainWindow : Window
         // Only the symbols' placement here: their colours wait for the theme (PaintNavGlyphs).
         foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
             if (item.Icon is FontIcon glyph)
-                SetNavGlyphNudge(item, glyph);
+                GlyphAlign.WatchCentered(glyph, () => item.FontSize);
         ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
         // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
@@ -381,7 +381,7 @@ public sealed partial class MainWindow : Window
             {
                 bool chosen = ReferenceEquals(item, sender.SelectedItem);
                 item.FontWeight = chosen ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-                SetNavGlyphNudge(item, glyph);
+                GlyphAlign.AlignCentered(item.FontSize, glyph);
                 if (IsHighContrast)
                     glyph.ClearValue(IconElement.ForegroundProperty);
                 else
@@ -391,9 +391,6 @@ public sealed partial class MainWindow : Window
 
     // NavigationView centres the symbol's box and the label's line in the row; GlyphAlign works out the move
     // that puts the symbol's ink centre on the label's cap centre from the two fonts' metrics.
-    private static void SetNavGlyphNudge(NavigationViewItem item, FontIcon glyph) =>
-        glyph.RenderTransform = new TranslateTransform { Y = GlyphAlign.CentredNudge(item.FontSize, glyph) };
-
     internal void RefreshFavorites()
     {
         while (Nav.MenuItems.Count > 4)
@@ -405,10 +402,9 @@ public sealed partial class MainWindow : Window
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
             // The Mac's favourite star: the palette accent, about 21 px of ink (Fluent's star at 26), on the
-            // name's cap centre. The margin pads its line box (28.34) to the icon box's height (30.52) so the
-            // item's Viewbox draws it at 26 rather than enlarging it.
+            // name's cap centre. Reserve the same icon box as the primary rows so the Viewbox draws it at 26.
             var icon = Fluent("StarFilled", 26, filled: true);
-            icon.Margin = new Thickness(1.09);
+            icon.Height = 30.52;
             if (!IsHighContrast)
                 icon.Foreground = ThemeBrush("sidebarStar", Root.ActualTheme, false);
             string plain = QuakeColors.Plain(favorite.Name);
@@ -420,7 +416,7 @@ public sealed partial class MainWindow : Window
                 Put(content, 1, new TextBlock
                 {
                     Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SidebarCount"),
-                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, -5, 0)
+                    VerticalAlignment = VerticalAlignment.Center
                 });
             var item = new NavigationViewItem
             {
@@ -428,7 +424,7 @@ public sealed partial class MainWindow : Window
                 SelectsOnInvoked = false, Style = StyleFor("ShellNavItem")
             };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, plain);
-            SetNavGlyphNudge(item, icon);
+            GlyphAlign.WatchCentered(icon, () => item.FontSize);
             Nav.MenuItems.Add(item);
         }
     }

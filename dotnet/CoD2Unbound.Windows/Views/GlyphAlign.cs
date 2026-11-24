@@ -5,8 +5,8 @@ using Microsoft.UI.Xaml.Media;
 namespace CoD2Unbound.Windows.Views;
 
 /// <summary>
-/// Glyph and label: the one shared way a symbol sits beside a word. In a horizontal StackPanel whose children
-/// include a FontIcon and, after it, a TextBlock, the symbol's ink centre is moved onto the label's cap-height
+/// Glyph and label: the one shared way a symbol sits beside a word. In a horizontal StackPanel or a Grid whose
+/// children include a FontIcon and a TextBlock, the symbol's ink centre is moved onto the label's cap-height
 /// centre line, as SF Symbols sit on the Mac. It is worked out from font metrics and the panel's own laid-out
 /// children, for any glyph and label size at any scale, so no page tunes a symbol by hand.
 /// Where it is on:
@@ -60,12 +60,12 @@ public static class GlyphAlign
     /// The vertical move that puts a glyph's ink centre on a label's cap centre when NavigationView centres the
     /// glyph's box and the label's line box on the same line (the sidebar rows).
     /// </summary>
-    internal static double CentredNudge(double textSize, FontIcon icon)
+    internal static void AlignCentered(double textSize, FontIcon icon)
     {
         var (lineEm, inkEm) = Metrics(icon);
         double capFromCentre = (TextAscentEm - CapHalfEm - TextLineEm / 2) * textSize;
         double inkFromCentre = (inkEm - lineEm / 2) * icon.FontSize;
-        return capFromCentre - inkFromCentre;
+        Move(icon, capFromCentre - inkFromCentre);
     }
 
     private static (double LineEm, double InkCentreEm) Metrics(FontIcon icon)
@@ -82,7 +82,7 @@ public static class GlyphAlign
             return;
         switch (d)
         {
-            case StackPanel panel:
+            case Panel panel:
                 Watch(panel);
                 break;
             case ContentPresenter presenter:
@@ -96,83 +96,147 @@ public static class GlyphAlign
 
     private static void WatchContent(ContentPresenter presenter)
     {
-        if (presenter.Content is StackPanel panel)
+        if (presenter.Content is Panel panel)
             Watch(panel);
     }
 
     private static readonly DependencyProperty WatchedProperty = DependencyProperty.RegisterAttached(
         "Watched", typeof(bool), typeof(GlyphAlign), new PropertyMetadata(false));
 
-    private static void Watch(StackPanel panel)
+    private static void Watch(Panel panel)
     {
         if ((bool)panel.GetValue(WatchedProperty))
             return;
         panel.SetValue(WatchedProperty, true);
-        panel.SizeChanged += (sender, _) => Align((StackPanel)sender);
-        panel.Loaded += (sender, _) => Align((StackPanel)sender);
-        // The pair's own size changes move the centres without resizing the panel (a label that changes weight).
-        foreach (var child in panel.Children)
-            if (child is FrameworkElement element)
-                element.SizeChanged += (_, _) => Align(panel);
+        panel.SizeChanged += (_, _) => Align(panel);
+        WatchScale(panel, () => Align(panel));
+        // XAML can set the attached property before filling Children.
+        panel.Loaded += (_, _) => WatchChildren(true);
+        panel.Unloaded += (_, _) => WatchChildren(false);
         if (panel.IsLoaded)
-            Align(panel);
-    }
+            WatchChildren(true);
 
-    private static (FontIcon Icon, TextBlock Text)? Pair(StackPanel panel)
-    {
-        if (panel.Orientation != Orientation.Horizontal)
-            return null;
-        FontIcon? icon = null;
-        foreach (var child in panel.Children)
+        void WatchChildren(bool loaded)
         {
-            if (child.Visibility != Visibility.Visible)
-                continue;
-            if (icon is null && child is FontIcon found)
-                icon = found;
-            else if (icon is not null && child is TextBlock text)
-                return (icon, text);
+            foreach (var child in panel.Children.OfType<FrameworkElement>())
+                if (loaded)
+                    child.SizeChanged += ChildSizeChanged;
+                else
+                    child.SizeChanged -= ChildSizeChanged;
         }
-        return null;
+
+        void ChildSizeChanged(object sender, SizeChangedEventArgs args) => Align(panel);
     }
 
-    private static void Align(StackPanel panel)
+    private static void WatchScale(FrameworkElement element, Action align)
     {
-        if (Pair(panel) is not { } pair)
+        XamlRoot? root = null;
+        double scale = 0;
+
+        void Changed(XamlRoot sender, XamlRootChangedEventArgs args)
+        {
+            if (scale == sender.RasterizationScale)
+                return;
+            scale = sender.RasterizationScale;
+            align();
+        }
+
+        void Loaded()
+        {
+            if (!ReferenceEquals(root, element.XamlRoot))
+            {
+                if (root is not null)
+                    root.Changed -= Changed;
+                root = element.XamlRoot;
+                if (root is not null)
+                    root.Changed += Changed;
+            }
+            scale = root?.RasterizationScale ?? 1;
+            align();
+        }
+
+        element.Loaded += (_, _) => Loaded();
+        element.Unloaded += (_, _) =>
+        {
+            if (root is not null)
+                root.Changed -= Changed;
+            root = null;
+        };
+        if (element.IsLoaded)
+            Loaded();
+    }
+
+    internal static void WatchCentered(FontIcon icon, Func<double> textSize) =>
+        WatchScale(icon, () => AlignCentered(textSize(), icon));
+
+    internal static void WatchBeside(FontIcon icon, TextBlock text)
+    {
+        // This pair belongs to different app-owned controls, such as a row's ping and its favorite button.
+        // TransformToVisual includes the last move, so remove it before computing the original ink position.
+        void AlignPair()
+        {
+            if (!icon.IsLoaded || !text.IsLoaded || icon.XamlRoot != text.XamlRoot)
+                return;
+            double iconY = icon.TransformToVisual(text).TransformPoint(default).Y;
+            double previous = (icon.RenderTransform as TranslateTransform)?.Y ?? 0;
+            AlignInk(icon, text, iconY - previous, 0);
+        }
+        icon.SizeChanged += (_, _) => AlignPair();
+        icon.Unloaded += (_, _) => text.SizeChanged -= TextSizeChanged;
+        icon.Loaded += (_, _) => text.SizeChanged += TextSizeChanged;
+        if (icon.IsLoaded)
+            text.SizeChanged += TextSizeChanged;
+        WatchScale(icon, AlignPair);
+
+        void TextSizeChanged(object sender, SizeChangedEventArgs args) => AlignPair();
+    }
+
+    private static void Align(Panel panel)
+    {
+        if (panel is StackPanel { Orientation: Orientation.Vertical } ||
+            panel.Children.OfType<FontIcon>().FirstOrDefault(icon => icon.Visibility == Visibility.Visible) is not { } icon ||
+            panel.Children.OfType<TextBlock>().FirstOrDefault(text => text.Visibility == Visibility.Visible) is not { } text)
             return;
-        var (icon, text) = pair;
+        AlignInk(icon, text, icon.ActualOffset.Y, text.ActualOffset.Y);
+    }
+
+    private static void AlignInk(FontIcon icon, TextBlock text, double iconY, double textY)
+    {
         if (icon.ActualHeight <= 0 || text.ActualHeight <= 0)
             return;
         var (lineEm, inkEm) = Metrics(icon);
         // The icon draws its line box centred in its own box; the label draws its first line from its top.
         double lineHeight = lineEm * icon.FontSize;
-        double inkCentre = icon.ActualOffset.Y + (icon.ActualHeight - lineHeight) / 2 + inkEm * icon.FontSize;
-        double capCentre = text.ActualOffset.Y + text.BaselineOffset - CapHalfEm * text.FontSize;
+        double inkCentre = iconY + (icon.ActualHeight - lineHeight) / 2 + inkEm * icon.FontSize;
+        double capCentre = textY + text.BaselineOffset - CapHalfEm * text.FontSize;
+        if (!Move(icon, capCentre - inkCentre))
+            return;
+#if UPDATE_FIXTURES
+        if (traced++ < 120 && icon.Glyph is { Length: > 0 } glyph)
+            StartupTrace.Mark($"glyph-align U+{char.ConvertToUtf32(glyph, 0):X4}/{icon.FontSize}" +
+                $" '{text.Text}'/{text.FontSize} moved {((TranslateTransform)icon.RenderTransform).Y:0.00}" +
+                $" (exact {capCentre - inkCentre:0.00}) scale {icon.XamlRoot?.RasterizationScale ?? 1}" +
+                $" icon y {iconY:0.00} h {icon.ActualHeight:0.00} text y {textY:0.00}" +
+                $" h {text.ActualHeight:0.00} baseline {text.BaselineOffset:0.00}");
+#endif
+    }
+
+    private static bool Move(FontIcon icon, double offset)
+    {
         // The icon and the label are both text, which Windows draws on whole device pixels at any scale; a
         // fractional move is lost or rounded unpredictably, so the move is a whole number of device pixels.
-        double scale = panel.XamlRoot?.RasterizationScale ?? 1;
-        double move = Math.Round((capCentre - inkCentre) * scale, MidpointRounding.AwayFromZero) / scale;
-        // The behaviour owns the icon's render transform; a page that needs another transform turns it off.
+        double scale = icon.XamlRoot?.RasterizationScale ?? 1;
+        double move = Math.Round(offset * scale, MidpointRounding.AwayFromZero) / scale;
         if (icon.RenderTransform is TranslateTransform translate)
         {
             if (translate.Y == move)
-                return;
+                return false;
             translate.Y = move;
         }
         else
         {
             icon.RenderTransform = new TranslateTransform { Y = move };
         }
-#if UPDATE_FIXTURES
-        if (traced++ < 120)
-            StartupTrace.Mark($"glyph-align {++moved} U+{(int)(icon.Glyph?.FirstOrDefault() ?? ' '):X4}/{icon.FontSize}" +
-                $" '{text.Text}'/{text.FontSize} moved {move:0.00} (exact {capCentre - inkCentre:0.00}) scale {scale}" +
-                $" icon y {icon.ActualOffset.Y:0.00} h {icon.ActualHeight:0.00} text y {text.ActualOffset.Y:0.00}" +
-                $" h {text.ActualHeight:0.00} baseline {text.BaselineOffset:0.00} panel h {panel.ActualHeight:0.00}" +
-                $" at {panel.TransformToVisual(null).TransformPoint(default).Y:0.00}");
-#endif
+        return true;
     }
-
-#if UPDATE_FIXTURES
-    private static int moved;
-#endif
 }

@@ -57,7 +57,7 @@ public sealed partial class HomePage
         RecentRows.Children.Clear();
         recentButtons.Clear();
         recentItems.Clear();
-        RecentRows.Margin = model.Recent.IsEmpty ? new Thickness() : new Thickness(-8, 0, -8, 0);
+        RecentRows.Margin = model.Recent.IsEmpty ? new Thickness(8, 0, 8, 0) : new Thickness();
         if (model.Recent.IsEmpty)
         {
             RecentRows.Children.Add(CardEmpty("Nothing played yet", "Servers you join appear here, ready to rejoin.",
@@ -259,6 +259,7 @@ public sealed partial class HomePage
         }
         label.Children.Add(new TextBlock { Text = words, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             Foreground = Ink(brush), VerticalAlignment = VerticalAlignment.Center });
+        GlyphAlign.SetIsEnabled(label, true);
         return label;
     }
 

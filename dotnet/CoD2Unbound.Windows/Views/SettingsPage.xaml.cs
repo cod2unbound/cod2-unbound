@@ -171,10 +171,11 @@ public sealed partial class SettingsPage : Page
         {
             if (!session.HasClient(edition))
                 return;
-            var check = Fluent("Check", 14);
+            var label = IconLabel("Check", name, 14);
+            var check = (FontIcon)label.Children[0];
             check.Style = StyleFor("PositiveIcon");
-            versions.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6,
-                Children = { check, new TextBlock { Text = name } } });
+            label.Spacing = 6;
+            versions.Children.Add(label);
         }
     }
 

@@ -149,10 +149,9 @@ public sealed partial class HomePage : Page, IShellBackdrop
         double[] shares = stacked ? [1.22, 0.9, 0] : !model.Recent.IsEmpty ? [508, 298, 266] : [1.22, 0.9, 1];
         RecentColumn.Width = new GridLength(shares[0], GridUnitType.Star);
         MatchColumn.Width = new GridLength(shares[1], GridUnitType.Star);
+        NewsGap.Width = new GridLength(stacked ? 0 : 18);
         NewsColumn.Width = stacked ? new GridLength(0) : new GridLength(shares[2], GridUnitType.Star);
         NewsCard.Visibility = IsVisible(!stacked);
-        Cards.ColumnSpacing = 18;
-        MatchCard.Margin = stacked ? new Thickness(0, 0, -18, 0) : new Thickness();
     }
 
     // MARK: Backdrop (HeroBackdrop)

@@ -241,7 +241,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         if (row.DataContext is not ServerRow entry || row.FindName("RowName") is not TextBlock name)
             return;
         var server = entry.Server;
-        if (ContainingListItem(row) is { } item)
+        if (ServerList.ContainerFromItem(entry) is ListViewItem item)
         {
             AutomationProperties.SetName(item, entry.Label);
             if (assignMenu)
@@ -298,16 +298,23 @@ public sealed partial class ServersPage : Page, IShellBackdrop
                 });
             }
         }
-        SetFavorite((Button)row.FindName("RowFavorite")!, server);
+        SetFavorite((Button)row.FindName("RowFavorite")!, server, (TextBlock)row.FindName("RowPing")!);
         var artwork = (Image)row.FindName("RowArt")!;
         if (!Equals(artwork.Tag, server.Map))
             _ = previews.FillAsync(artwork, server.Map);
     }
 
-    private void SetFavorite(Button button, GameServer server)
+    private void SetFavorite(Button button, GameServer server, TextBlock? label = null)
     {
         bool favorite = model.IsFavorite(server.Address);
-        button.Content = Fluent(favorite ? "StarFilled" : "Star", 16, filled: favorite);
+        string symbol = favorite ? "StarFilled" : "Star";
+        if (button.Content is not FontIcon previous || previous.Glyph != (string)Application.Current.Resources["Fluent" + symbol])
+        {
+            var icon = Fluent(symbol, 16, filled: favorite);
+            button.Content = icon;
+            if (label is not null)
+                GlyphAlign.WatchBeside(icon, label);
+        }
         button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, shell.IsHighContrast);
         string action = favorite ? "Remove from favorites" : "Add to favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
