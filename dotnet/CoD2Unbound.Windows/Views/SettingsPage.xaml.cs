@@ -619,8 +619,23 @@ public sealed partial class SettingsPage : Page
         Margin = new Thickness(0, Fields.Children.Count == 0 ? 4 : 16, 0, 4)
     });
 
-    private void Row(string label, string? description = null, FrameworkElement? action = null) =>
-        Fields.Children.Add(SettingRow(label, description, action));
+    // Rows that follow one another share one rounded group with hairlines between them,
+    // as the Mac's grouped Form draws them (SettingsWin board).
+    private void Row(string label, string? description = null, FrameworkElement? action = null)
+    {
+        if (Fields.Children.Count == 0 || Fields.Children[^1] is not Border { Tag: RowGroupTag, Child: StackPanel rows })
+        {
+            rows = new StackPanel();
+            var card = PrivacyPresentation.GroupCard(rows);
+            card.Tag = RowGroupTag;
+            Fields.Children.Add(card);
+        }
+        else
+            rows.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1, Margin = new Thickness(16, 0, 16, 0) });
+        rows.Children.Add(SettingRow(label, description, action, grouped: true));
+    }
+
+    private const string RowGroupTag = "settings-row-group";
 
     // The Mac draws a short set of choices as a segmented control (SettingsWin board).
     private void Choice(string label, string? description, string[] options, int selected, Func<int, Task> change)

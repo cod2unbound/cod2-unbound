@@ -36,7 +36,7 @@
         </SelectorBar>
         <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
         <ScrollViewer x:Name="PaneScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,26">
+            <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,26" VerticalAlignment="Top">
                 <InfoBar x:Name="Running" IsClosable="False" Severity="Informational"
                          Message="Call of Duty 2 is running. Changes you make here apply the next time it starts." />
                 <InfoBar x:Name="Feedback" IsClosable="False" />
