@@ -87,6 +87,7 @@ public sealed partial class ConfigsPage
         {
             var back = SmallButton("Back to Binds", () => { chainDraft = null; RenderStudioBody(); });
             back.Content = IconLabel("ChevronLeft", "Back to Binds", 16);
+            AutomationProperties.SetName(back, "Back to Binds");
             var right = new StackPanel { Spacing = 12, Children = { back, editor } };
             workspace.Children.Add(right);
             workspace.ColumnDefinitions.Add(new ColumnDefinition());

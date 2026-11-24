@@ -40,6 +40,7 @@ public sealed partial class ConfigsPage
             RenderStudioBody();
         });
         add.Content = IconLabel("AddSmall", "New Bind", 16);
+        AutomationProperties.SetName(add, "New Bind");
         add.Style = StyleFor("QuietButton");
         add.IsEnabled = !state.ReadOnly;
         var row = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);

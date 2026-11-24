@@ -42,6 +42,7 @@ public sealed partial class ConfigsPage
         var shareHeader = saved ? null : PlayerSetupsHeading(identity);
         var back = new Button { Style = StyleFor("QuietButton"), Content = IconLabel("ChevronLeft", "Player Setups", 14),
             Visibility = Visibility.Collapsed };
+        AutomationProperties.SetName(back, "Back to Player Setups");
         Detail.Children.Add(back);
         Detail.Children.Add(shareHeader is null ? identity : shareHeader);
         var search = CatalogueSearch(saved ? savedQuery : discoverQuery);
@@ -676,6 +677,7 @@ public sealed partial class ConfigsPage
         Detail.Children.Clear();
         ResetDetailScroll();
         var back = new Button { Style = StyleFor("QuietButton"), Content = IconLabel("ChevronLeft", fromSaved ? "Saved" : "Player Setups", 14) };
+        AutomationProperties.SetName(back, fromSaved ? "Back to Saved" : "Back to Player Setups");
         back.Click += async (_, _) => await shell.ShowProblemAsync(() => ShowCatalogueAsync(fromSaved));
         Detail.Children.Add(back);
         var search = CatalogueSearch("");
