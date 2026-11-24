@@ -29,6 +29,7 @@ public sealed partial class ConfigsPage
             var state = model.Share.Status(profile.Id, model.ShareCatalogue);
             bool shared = state.Phase != ConfigShareLoadoutPhase.NotShared;
             details.Children.Clear();
+            details.Visibility = IsVisible(shared || model.Share.RecordsProblem is not null);
             if (!shared)
             {
                 if (model.Share.RecordsProblem is { } problem)

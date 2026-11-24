@@ -36,6 +36,8 @@ public sealed partial class ConfigsPage : Page
         this.model = model;
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
+        foreach (var notice in new[] { Status, ExportStatus, RecoveryStatus })
+            SpaceOpenNotice(notice);
         Loadouts.ItemsSource = loadoutRows;
         AddConfig.Flyout = MakeAddConfigMenu();
         AttachConfigShortcuts();
@@ -231,6 +233,7 @@ public sealed partial class ConfigsPage : Page
 
         displayedStudioProfile = profile.Profile.Id;
         var shareNotice = new InfoBar { IsClosable = true };
+        HideClosedNotice(shareNotice);
         shareNotice.Closed += (_, args) =>
         {
             if (args.Reason == InfoBarCloseReason.CloseButton)
@@ -331,6 +334,7 @@ public sealed partial class ConfigsPage : Page
         studioHeaderActions.Children.Add(studioHeaderExtra);
         Detail.Children.Add(CheckPair(identity, studioHeaderActions, 590, rightAuto: true));
         var readOnly = CheckNotice(InfoBarSeverity.Informational, "Read-only while playing", ConfigProfileException.ReadOnlyWhilePlaying);
+        HideClosedNotice(readOnly);
         readOnly.IsOpen = state.ReadOnly;
         Detail.Children.Add(readOnly);
         Detail.Children.Add(LoadoutShareStatus(profile.Profile, readOnly));

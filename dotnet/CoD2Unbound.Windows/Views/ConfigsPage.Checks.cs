@@ -18,6 +18,20 @@ public sealed partial class ConfigsPage
         IsOpen = true, IsClosable = false, Severity = severity, Title = title, Message = message
     };
 
+    private static void SpaceOpenNotice(InfoBar notice)
+    {
+        void Update() => notice.Margin = new Thickness(0, 0, 0, notice.IsOpen ? 14 : 0);
+        notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) => Update());
+        Update();
+    }
+
+    private static void HideClosedNotice(InfoBar notice)
+    {
+        void Update() => notice.Visibility = IsVisible(notice.IsOpen);
+        notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) => Update());
+        Update();
+    }
+
     private TextBlock CheckTone(string text, ConfigCheckupTone tone)
     {
         var label = Body(text);
