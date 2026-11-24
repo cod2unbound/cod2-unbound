@@ -24,7 +24,10 @@
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="Foreground" Value="{ThemeResource accent}" />
     </Style>
+    <!-- SetupView.swift: 30 bold (40 on Welcome). SF moves to its Display cut from 20 pt, so the title takes
+         the system font's Display optical size; Windows 10 has no Segoe UI Variable and uses Segoe UI. -->
     <Style x:Key="SetupTitle" TargetType="TextBlock" BasedOn="{StaticResource TypePage}">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="Foreground" Value="{ThemeResource inkOnArt}" />
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -33,6 +36,7 @@
     </Style>
     <Style x:Key="SetupSubtitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="{StaticResource CardSize}" />
+        <Setter Property="CharacterSpacing" Value="25" />
         <Setter Property="LineHeight" Value="21.75" />
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="Foreground" Value="{ThemeResource inkOnArt}" />
@@ -43,11 +47,11 @@
         <Setter Property="MaxWidth" Value="560" />
     </Style>
 
-    <!-- The card under each heading: the Mac's glass (in-app acrylic, or the opaque glass on Windows 10). -->
+    <!-- SetupView's content surface: acrylic or opaque fill with one panel stroke. -->
     <Style x:Key="SetupPanel" TargetType="Border">
         <Setter Property="CornerRadius" Value="{StaticResource SidebarRadius}" />
         <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
         <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
     </Style>
     <Style x:Key="SetupGlassHighlight" TargetType="Border">

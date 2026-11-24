@@ -14,7 +14,7 @@ namespace CoD2Unbound.Windows.Views;
 
 /// <summary>Setup, as the Mac's SetupView: the scene behind every step, a heading and one glass card,
 /// and the glass capsule at the bottom with Back, a capsule per shown step and the step's actions.</summary>
-public sealed partial class SetupPage : Page
+public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
 {
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
@@ -30,7 +30,6 @@ public sealed partial class SetupPage : Page
     private bool focusPending;
     private Control? focusTarget;
     private Button? previewLink;
-    private FrameworkElement? welcomeNote;
 
     private static readonly string[] ModeValues = ["borderless", "exclusive", "windowed"];
     private static readonly string[] ModeDetails =
@@ -45,11 +44,9 @@ public sealed partial class SetupPage : Page
         this.session = session;
         this.cancelDestination = cancelDestination;
         InitializeComponent();
-        SetupColumn.SizeChanged += (_, _) =>
-        {
-            if (Setup.Step == SetupStep.Welcome)
-                Layout();
-        };
+        Backdrop = new Grid { IsHitTestVisible = false, Children = { SceneArt, SceneEdge, Vignette } };
+        AutomationProperties.SetAccessibilityView(Backdrop, AccessibilityView.Raw);
+        Backdrop.SizeChanged += (_, args) => PlaceScene(args.NewSize.Height);
         SetupMark.Shadow = new ThemeShadow();
         SetupMark.Translation = new System.Numerics.Vector3(0, 0, 32);
         Unloaded += (_, _) => StopSteamWatch();
@@ -167,13 +164,28 @@ public sealed partial class SetupPage : Page
             SetupStep.Ready => "Open CoD2 Unbound",
             _ => "Continue"
         };
+        MeasureFooterActions();
         RenderDots();
     }
 
-    /// <summary>The board's geometry, in window coordinates: headings after Welcome sit 128 from the window's
-    /// top in a 900-high window and 76 in the smallest (640); Welcome's column is centred in the window's height
-    /// less 120, with the mark at 124 (84 in the smallest windows). The panel narrows from 660 to 600 below
-    /// 1200 wide.</summary>
+    private void MeasureFooterActions()
+    {
+        Button[] actions = [SetupCancel, SetupAlternate, DeclineReport, SetupNext];
+        double widest = 0;
+        foreach (var action in actions)
+        {
+            action.ClearValue(WidthProperty);
+            if (action.Visibility != Visibility.Visible)
+                continue;
+            action.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            widest = Math.Max(widest, action.DesiredSize.Width);
+        }
+        foreach (var action in actions)
+            if (action.Visibility == Visibility.Visible)
+                action.Width = widest;
+    }
+
+    /// <summary>SetupView.swift centers Welcome above the footer and pins every other step to 128 points.</summary>
     private void Layout()
     {
         double width = SetupFrame.ActualWidth, height = SetupFrame.ActualHeight;
@@ -182,31 +194,15 @@ public sealed partial class SetupPage : Page
             panelWidth = Math.Min(panelWidth, Math.Max(320, width - 48));
         SetupColumn.Width = panelWidth;
         bool welcome = Setup.Step == SetupStep.Welcome;
-        double window = height + CaptionSpace;
-        double mark = window < 760 ? 84 : 124;
-        SetupMark.Width = SetupMark.Height = mark;
-        double headingTop = Math.Clamp(76 + (window - 640) * 0.2, 76, 128);
-        if (welcome)
-        {
-            // The board centres the block from the mark to the panel (the lock line under it stays outside)
-            // in the window's height less 120; it cannot start above the shell's caption row.
-            double note = welcomeNote is { ActualHeight: > 0 } line ? line.ActualHeight + StepContent.Spacing : 0;
-            double block = Math.Max(0, SetupColumn.ActualHeight - note);
-            headingTop = Math.Max(CaptionSpace, (window - 120 - block) / 2);
-        }
-        // The page starts under the shell's caption row, so window coordinates lose CaptionSpace here.
-        var padding = new Thickness(24, headingTop - CaptionSpace, 24, 84 + 16);
+        var padding = new Thickness(24, welcome ? 16 : 128, 24, 84 + 16);
         if (SetupStage.Padding != padding)
             SetupStage.Padding = padding;
         SetupStage.MinHeight = Math.Max(0, height);
-        SetupColumn.VerticalAlignment = VerticalAlignment.Top;
-        if (height > 0)
-            PlaceScene(height);
+        SetupColumn.VerticalAlignment = welcome ? VerticalAlignment.Center : VerticalAlignment.Top;
     }
 
-    /// <summary>The shell's caption row, above the page.</summary>
-    private const double CaptionSpace = 32;
-    private const double CrateGap = 10;
+    // The default column spacing in the stock RadioButtons template.
+    private const double CrateGap = 7;
 
     private async void OnFrameSizeChanged(object sender, SizeChangedEventArgs args)
     {
@@ -230,9 +226,8 @@ public sealed partial class SetupPage : Page
         else if (crash || usage)
             rows.Add(Row("shield", "A question about sharing",
                 $"Whether to send {(crash ? "crash reports" : "usage data")}. Your choice, and it can be changed later."));
-        StepContent.Children.Add(GlassPanel(6, 12, Group([.. rows])));
+        StepContent.Children.Add(GlassPanel(6, 12, GroupRows(58, [.. rows])));
         var note = Note("Nothing leaves this PC during setup.", "lock");
-        welcomeNote = note;
         note.HorizontalAlignment = HorizontalAlignment.Center;
         note.Margin = new Thickness(0, 6, 0, 0);
         StepContent.Children.Add(note);
@@ -359,7 +354,6 @@ public sealed partial class SetupPage : Page
         // The stock RadioButtons control keeps the system's arrow keys, roving focus and selection; its items are
         // radio buttons templated as the Mac's crates, sized to share the panel's width in three columns.
         var crates = new RadioButtons { MaxColumns = ModeValues.Length, HorizontalAlignment = HorizontalAlignment.Stretch };
-        crates.Resources["RadioButtonsColumnSpacing"] = CrateGap;
         AutomationProperties.SetName(crates, modeLabel);
         for (int index = 0; index < ModeValues.Length; index++)
         {
@@ -385,12 +379,9 @@ public sealed partial class SetupPage : Page
             if (crates.SelectedIndex >= 0)
                 displayMode = ModeValues[crates.SelectedIndex];
         };
-        crates.SizeChanged += (_, args) =>
-        {
-            double width = Math.Floor((args.NewSize.Width - CrateGap * (ModeValues.Length - 1)) / ModeValues.Length);
-            foreach (var item in crates.Items.OfType<RadioButton>())
-                item.Width = Math.Max(0, width);
-        };
+        // The Mac's crates share one width and the tallest one's height (SetupView.swift: maxWidth .infinity,
+        // minHeight 84, in an HStack).
+        ShareCells(crates, ModeValues.Length, CrateGap);
         var both = Note("Both can be changed any time: the name on your player card, the display in Settings.");
         both.Margin = new Thickness(6, 0, 0, 0);
         StepContent.Children.Add(GlassPanel(16, 16, editor, new StackPanel { Spacing = 8, Children = { heading, crates } }, both));
@@ -438,8 +429,8 @@ public sealed partial class SetupPage : Page
         };
         if (Setup.Steps.Contains(SetupStep.CrashReports))
             rows.Add(crash
-                ? Row("warning", "Crash reports", "Sent to the project if the game crashes · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))
-                : Row("warning", "Crash reports", "Not sent · Change in Settings › Privacy", trailing: Status(SetupStatus.Off, "Off")));
+                ? Row("bug", "Crash reports", "Sent to the project if the game crashes · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))
+                : Row("bug", "Crash reports", "Not sent · Change in Settings › Privacy", trailing: Status(SetupStatus.Off, "Off")));
         if (Setup.Steps.Contains(SetupStep.UsageData))
             rows.Add(usage
                 ? Row("people", "Usage data", "Sent to the project · Change in Settings › Privacy", trailing: Status(SetupStatus.Ready, "On"))
@@ -469,13 +460,26 @@ public sealed partial class SetupPage : Page
         });
     }
 
-    private void UpdateContinue() => SetupNext.IsEnabled = Setup.Step switch
+    private void UpdateContinue()
     {
-        SetupStep.Data => Setup.Data.State == SetupDataState.Found,
-        SetupStep.Key => Setup.KeyReady(keyEditor?.Value ?? ""),
-        SetupStep.Personalize => nameEditor?.Valid == true,
-        _ => true
-    };
+        SetupNext.IsEnabled = Setup.Step switch
+        {
+            SetupStep.Data => Setup.Data.State == SetupDataState.Found,
+            SetupStep.Key => Setup.KeyReady(keyEditor?.Value ?? ""),
+            SetupStep.Personalize => nameEditor?.Valid == true,
+            _ => true
+        };
+        // ModelSetup.swift: the key step offers Skip for Now only while no key is kept or checks out.
+        if (Setup.Step == SetupStep.Key)
+        {
+            var skip = IsVisible(!(Setup.HasStoredKey && !Setup.ReplacingKey) && keyEditor?.Verified != true);
+            if (SetupAlternate.Visibility != skip)
+            {
+                SetupAlternate.Visibility = skip;
+                MeasureFooterActions();
+            }
+        }
+    }
 
     private async void OnSetupBack(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
     {

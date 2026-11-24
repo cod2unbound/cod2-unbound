@@ -26,7 +26,7 @@ public sealed partial class SetupPage
         ["share"] = ("", false), ["person"] = ("", false), ["check"] = ("", false),
         ["download"] = ("", false), ["shield"] = ("", false),
         ["key"] = ("", true), ["warning"] = ("", true), ["info"] = ("", true),
-        ["off"] = ("", true), ["sync"] = ("", true), ["people"] = ("", true)
+        ["off"] = ("", true), ["bug"] = ("", true), ["people"] = ("", true)
     };
 
     internal const double PanelWidth = 660, NarrowPanelWidth = 600;
@@ -46,6 +46,31 @@ public sealed partial class SetupPage
         return icon;
     }
 
+    /// <summary>Gives a stock RadioButtons list's items one width (the list's, split across its columns) and the
+    /// tallest item's height. The control arranges each item at its own desired size, so stretch alignment does
+    /// not fill a cell; each item is measured at the shared width and takes the tallest as its MinHeight, so
+    /// text scaling still grows them together. Arrow keys, roving focus and selection stay the control's.</summary>
+    private static void ShareCells(RadioButtons list, int columns, double gap, double floor = 0) =>
+        list.SizeChanged += (_, args) =>
+        {
+            var items = list.Items.OfType<RadioButton>().ToList();
+            if (items.Count == 0 || args.NewSize.Width <= 0)
+                return;
+            int across = Math.Max(1, Math.Min(columns, items.Count));
+            double width = Math.Max(0, Math.Floor((args.NewSize.Width - gap * (across - 1)) / across));
+            double tallest = floor;
+            foreach (var item in items)
+            {
+                item.Width = width;
+                item.ClearValue(FrameworkElement.MinHeightProperty);
+                item.Measure(new global::Windows.Foundation.Size(width, double.PositiveInfinity));
+                tallest = Math.Max(tallest, Math.Ceiling(item.DesiredSize.Height));
+            }
+            foreach (var item in items)
+                if (item.MinHeight != tallest)
+                    item.MinHeight = tallest;
+        };
+
     /// <summary>The card under each heading: glass at radius 22, padding as the Mac's panel() call.</summary>
     private Grid GlassPanel(double padding, double spacing, params UIElement[] children)
     {
@@ -53,15 +78,14 @@ public sealed partial class SetupPage
         foreach (var child in children)
             stack.Children.Add(child);
         var glass = new Border { Style = StyleFor("SetupPanel") };
-        var highlight = new Border { Style = StyleFor("SetupGlassHighlight"), CornerRadius = glass.CornerRadius, Margin = new Thickness(1) };
-        var panel = new Grid { Width = panelWidth, HorizontalAlignment = HorizontalAlignment.Center, Children = { glass, highlight, stack } };
+        var panel = new Grid { Width = panelWidth, HorizontalAlignment = HorizontalAlignment.Center, Children = { glass, stack } };
         glass.Shadow = new ThemeShadow();
         glass.Translation = new Vector3(0, 0, 24);
         return panel;
     }
 
     /// <summary>A well group; rows are separated by a hairline inset past the symbol tile.</summary>
-    private Border Group(double inset, params UIElement[] rows)
+    private StackPanel GroupRows(double inset, params UIElement[] rows)
     {
         var stack = new StackPanel();
         foreach (var row in rows)
@@ -70,8 +94,11 @@ public sealed partial class SetupPage
                 stack.Children.Add(new Border { Height = 1, Margin = new Thickness(inset, 0, 0, 0), Background = Token("separator") });
             stack.Children.Add(row);
         }
-        return new Border { Style = StyleFor("SetupGroup"), Child = stack };
+        return stack;
     }
+
+    private Border Group(double inset, params UIElement[] rows) =>
+        new() { Style = StyleFor("SetupGroup"), Child = GroupRows(inset, rows) };
 
     private Border Group(params UIElement[] rows) => Group(58, rows);
 
@@ -218,9 +245,9 @@ public sealed partial class SetupPage
             });
         }
         string title = StepTitle(Setup.Step);
-        AutomationProperties.SetName(StepDots, $"Step {current} of {steps.Count}, {title}");
-        AutomationProperties.SetAccessibilityView(StepDots, AccessibilityView.Content);
         StepLabel.Text = (session.ReviewingSetup ? "Setting up again · " : "") + $"Step {current} of {steps.Count}";
+        AutomationProperties.SetName(StepDots, $"{StepLabel.Text}, {title}");
+        AutomationProperties.SetAccessibilityView(StepDots, AccessibilityView.Content);
     }
 
     internal static string StepTitle(CoD2Unbound.Core.SetupStep step) => step switch
@@ -229,6 +256,14 @@ public sealed partial class SetupPage
         CoD2Unbound.Core.SetupStep.Personalize => "Make it yours", CoD2Unbound.Core.SetupStep.CrashReports => "Crash reports",
         CoD2Unbound.Core.SetupStep.UsageData => "Usage data", CoD2Unbound.Core.SetupStep.Ready => "Ready", _ => "Welcome"
     };
+
+    private readonly Image SceneArt = new() { Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Top };
+    private readonly Border SceneEdge = new() { VerticalAlignment = VerticalAlignment.Top };
+    private readonly Border Vignette = new();
+    private readonly Grid Backdrop;
+
+    /// <summary>The scene, handed to the shell's backdrop host so it fills the whole window.</summary>
+    UIElement? IShellBackdrop.ShellBackdrop => Backdrop;
 
     /// <summary>SetupBackdrop: the scene with the board's sky, edge and vignette, every colour from the tokens.</summary>
     private void RenderBackdrop()

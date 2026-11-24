@@ -71,7 +71,7 @@ public sealed partial class SetupPage
             if (dropProblem is { } dropError)
                 items.Add(Banner(SetupBannerTone.Error, "warning", dropError));
             if (steamWatch is not null)
-                items.Add(Group(Row("sync", "Waiting for Steam to install Call of Duty 2",
+                items.Add(Group(Row("download", "Waiting for Steam to install Call of Duty 2",
                     "Steam shows the download. Setup moves on by itself when all 16 game archives are there.",
                     trailing: Action("Stop Waiting", async (_, _) => await shell.RunAsync(async () =>
                     {
@@ -143,8 +143,9 @@ public sealed partial class SetupPage
         // The board's rows are 57 high with no gap between them; the stock control's own row spacing is a theme
         // resource of its template, set here.
         var list = new RadioButtons { Margin = new Thickness(16, 0, 16, 0) };
-        list.Resources["RadioButtonsRowSpacing"] = 0.0;
         AutomationProperties.SetName(list, "Game data folder");
+        // Every row spans the list and takes the tallest row's height (57 on the board).
+        ShareCells(list, 1, 0, floor: 57);
         foreach (var copy in copies)
         {
             bool selected = WindowsLauncherSession.SamePath(copy.DataPath, chosen);
@@ -164,7 +165,7 @@ public sealed partial class SetupPage
             var radio = new RadioButton
             {
                 Content = layout, HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0, MinHeight = 57
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0
             };
             AutomationProperties.SetName(radio, copy.DataPath);
             AutomationProperties.SetHelpText(radio, FoundDetail(copy.Source));
