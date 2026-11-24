@@ -74,7 +74,7 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.26100.7175]" PrivateAssets="all" />
     <ProjectReference Include="../CoD2Unbound.Core/CoD2Unbound.Core.csproj" />
     <Content Include="Assets/hero-*.svg;Assets/BigShouldersStencilDisplay-*.ttf;Assets/FluentSystemIcons-*.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Update="Assets/mark-16.png;Assets/mark-48.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="Assets/mark-16.png;Assets/mark-48.png;Assets/mark-372.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="Assets/LICENSE-FluentSystemIcons.txt;Assets/mark.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../docs/brand/wordmark.svg;../../docs/brand/wordmark-ink.svg"
              Link="Assets/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
