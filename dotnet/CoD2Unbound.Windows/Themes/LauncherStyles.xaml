@@ -49,7 +49,10 @@
     <x:String x:Key="FluentPlay">&#xE9A2;</x:String>
     <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
 
+    <!-- The accent fill runs under its 1 px elevation edge (BackgroundSizing), so a prominent action is as
+         tall on screen as a stroked glass one beside it; the stock inner sizing leaves the edge row see-through. -->
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />

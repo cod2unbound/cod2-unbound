@@ -48,6 +48,24 @@
             <Setter Property="Foreground" Value="{ThemeResource body}" />
         </Style>
         <!-- A What's New line that leads somewhere: plain text that takes the pointer. -->
+        <!-- Card headings and their links sit on one baseline (the Mac's .firstTextBaseline): both trim their
+             line box to the baseline and align to the bottom of the heading row. -->
+        <Style x:Key="CardHeading" TargetType="TextBlock" BasedOn="{StaticResource TypePanel}">
+            <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
+            <Setter Property="TextLineBounds" Value="TrimToBaseline" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
+        <Style x:Key="CardLinkText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextLineBounds" Value="TrimToBaseline" />
+        </Style>
+        <Style x:Key="CardLink" TargetType="HyperlinkButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
     </Page.Resources>
     <!-- The Mac's Home (HomeView.swift): the last map's art behind the hero, the next game's loadout and
          display, anything that needs fixing, and three cards. Geometry follows the Home board at 1440 × 900. -->
@@ -212,12 +230,12 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid>
-                                    <TextBlock Text="Jump back in" Style="{StaticResource TypePanel}"
-                                               Foreground="{ThemeResource HeadingBrush}" AutomationProperties.HeadingLevel="Level2" />
-                                    <HyperlinkButton x:Name="AllRecent" Content="All Recent" HorizontalAlignment="Right"
-                                                     VerticalAlignment="Bottom" FontSize="13" Padding="0" Click="OnRecent"
-                                                     AutomationProperties.Name="All recent" />
+                                <Grid Padding="0,0,0,5">
+                                    <TextBlock x:Name="RecentHeading" Text="Jump back in" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="AllRecent" Style="{StaticResource CardLink}" Click="OnRecent"
+                                                     AutomationProperties.Name="All recent">
+                                        <TextBlock Text="All Recent" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
                                 </Grid>
                                 <StackPanel Grid.Row="1" x:Name="RecentRows" Spacing="4" Margin="-8,0,-8,0" />
                             </Grid>
@@ -229,12 +247,12 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid>
-                                    <TextBlock Text="Last match" Style="{StaticResource TypePanel}"
-                                               Foreground="{ThemeResource HeadingBrush}" AutomationProperties.HeadingLevel="Level2" />
-                                    <HyperlinkButton x:Name="AllMatches" Content="All Matches" HorizontalAlignment="Right"
-                                                     VerticalAlignment="Bottom" FontSize="13" Padding="0" Click="OnAllMatches"
-                                                     AutomationProperties.Name="All matches" />
+                                <Grid Padding="0,0,0,5">
+                                    <TextBlock x:Name="MatchHeading" Text="Last match" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="AllMatches" Style="{StaticResource CardLink}" Click="OnAllMatches"
+                                                     AutomationProperties.Name="All matches">
+                                        <TextBlock Text="All Matches" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
                                 </Grid>
                                 <Grid Grid.Row="1" x:Name="MatchRows" />
                             </Grid>
@@ -247,12 +265,12 @@
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <Grid>
-                                    <TextBlock Text="What’s New" Style="{StaticResource TypePanel}"
-                                               Foreground="{ThemeResource HeadingBrush}" AutomationProperties.HeadingLevel="Level2" />
-                                    <HyperlinkButton x:Name="SeeAllNews" Content="See All" HorizontalAlignment="Right"
-                                                     VerticalAlignment="Bottom" FontSize="13" Padding="0" Click="OnShowNews"
-                                                     AutomationProperties.Name="See all" />
+                                <Grid Padding="0,0,0,5">
+                                    <TextBlock x:Name="NewsHeading" Text="What’s New" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
+                                    <HyperlinkButton x:Name="SeeAllNews" Style="{StaticResource CardLink}" Click="OnShowNews"
+                                                     AutomationProperties.Name="See all">
+                                        <TextBlock Text="See All" Style="{StaticResource CardLinkText}" />
+                                    </HyperlinkButton>
                                 </Grid>
                                 <StackPanel Grid.Row="1" x:Name="NewsRows" Spacing="14" Margin="0,14,0,8" />
                                 <TextBlock Grid.Row="2" x:Name="NewsChecked" FontSize="12" MaxLines="2" TextWrapping="Wrap"
