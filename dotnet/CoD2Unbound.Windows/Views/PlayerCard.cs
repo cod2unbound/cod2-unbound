@@ -48,7 +48,7 @@ internal sealed class PlayerCard : StackPanel
                 Orientation = Orientation.Horizontal, Spacing = 12,
                 Children =
                 {
-                    new TextBlock { Text = "●", VerticalAlignment = VerticalAlignment.Center },
+                    new ContentControl { Style = StyleFor("MiniDogTag"), VerticalAlignment = VerticalAlignment.Center },
                     new StackPanel { Children = { tagName, tagGame } }
                 }
             }
@@ -116,7 +116,7 @@ internal sealed class PlayerCard : StackPanel
                 $"Saves to your {active.DisplayName} loadout as you type.";
             bool stored = session.Setup.HasStoredKey;
             keyStatus.Text = stored ? "Verified · Stored only on this PC." : "Not entered · Needed to join most servers.";
-            changeKey.Content = stored ? "Replace…" : "Enter key…";
+            changeKey.Content = stored ? "Replace…" : "Enter Key…";
             RenderTag();
             UpdateRunning(session.ClientIsRunning);
         }

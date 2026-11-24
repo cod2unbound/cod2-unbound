@@ -4,7 +4,6 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
 using CoD2Unbound.Windows.ViewModels;
 using static CoD2Unbound.Windows.Views.PagePresentation;
-using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.System;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -23,6 +22,7 @@ public sealed partial class MainWindow : Window
     private readonly bool useCustomTitleBar;
     private bool busy;
     private bool loaded;
+    private bool? wideSidebar;
     private double sizedAtScale;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer gameWatcher;
     private GameSessionState? lastGame;
@@ -42,12 +42,6 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
-        bool windows11 = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
-        if (windows11 && MicaController.IsSupported())
-        {
-            SystemBackdrop = new MicaBackdrop();
-            SolidFrame.Visibility = Visibility.Collapsed;
-        }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
         useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();
@@ -55,19 +49,11 @@ public sealed partial class MainWindow : Window
         {
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(WindowBar);
-            WindowBar.IconSource = new BitmapIconSource
-            {
-                UriSource = new Uri(Path.Combine(assets, "mark-16.png")),
-                ShowAsMonochrome = false
-            };
-            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         }
         else
         {
-            WindowBar.Content = null;
-            WindowBar.Visibility = Visibility.Collapsed;
-            ClientJumpBar.Content = JumpHost;
-            ClientJumpBar.Visibility = Visibility.Visible;
+            CaptionRow.Height = new GridLength(0);
         }
         windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
         windowTheme.Changed += OnSystemThemeChanged;
@@ -104,7 +90,7 @@ public sealed partial class MainWindow : Window
         ResizeForDisplay(startup: true);
         session.Reports.Facts.Window = WinRT.Interop.WindowNative.GetWindowHandle(this);
         sessionEnd = new(session.Reports.Facts.Window, EndWindowsSession);
-        UpdateCaptionColors();
+        UpdateShellTheme();
         CompositionTarget.Rendered += OnFirstRendered;
     }
 
@@ -152,26 +138,20 @@ public sealed partial class MainWindow : Window
         UpdatePaneMode(args.NewSize.Width);
     }
 
-    private void OnJumpHostSizeChanged(object sender, SizeChangedEventArgs args)
-    {
-        if (!useCustomTitleBar)
-            return;
-        // The native title and caption buttons reserve different widths on each side.
-        double hostLeft = JumpHost.TransformToVisual(WindowBar).TransformPoint(default).X;
-        double hostWidth = args.NewSize.Width;
-        double availableOffset = Math.Max(0, (hostWidth - JumpField.Width) / 2);
-        double centerOffset = WindowBar.ActualWidth / 2 - hostLeft - hostWidth / 2;
-        double offset = Math.Clamp(centerOffset, -availableOffset, availableOffset);
-        JumpField.Margin = new Thickness(Math.Max(0, 2 * offset), 0, Math.Max(0, -2 * offset), 0);
-    }
-
     private void OnAppThemeChanged(FrameworkElement sender, object args) =>
-        DispatcherQueue.TryEnqueue(UpdateCaptionColors);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            UpdateShellTheme();
+            if (initialized)
+                _ = RefreshPlayerAsync();
+        });
 
     private void OnSystemThemeChanged(ThemeSettings sender, object args) =>
         DispatcherQueue.TryEnqueue(() =>
         {
-            UpdateCaptionColors();
+            UpdateShellTheme();
+            if (initialized)
+                _ = RefreshPlayerAsync();
             if (ContentFrame.Content is HomePage home)
                 home.UpdateTheme();
             else if (ContentFrame.Content is ServersPage servers)
@@ -187,31 +167,54 @@ public sealed partial class MainWindow : Window
     internal ElementTheme DialogTheme => Root.RequestedTheme;
     internal XamlRoot DialogRoot => Root.XamlRoot;
 
-    private void UpdateCaptionColors()
+    private void UpdateShellTheme()
     {
+        var theme = Root.ActualTheme;
+        var contrast = windowTheme.HighContrast;
+        BrandWordmark.Source = new Microsoft.UI.Xaml.Media.Imaging.SvgImageSource(
+            new Uri(theme == ElementTheme.Light ? "ms-appx:///Assets/wordmark-ink.svg" : "ms-appx:///Assets/wordmark.svg"));
+        BrandWordmark.Visibility = IsVisible(!contrast);
+        ContrastWordmark.Visibility = IsVisible(contrast);
+
+
         // Windows 10 supports caption button colors when content extends into the title bar.
         if (!useCustomTitleBar)
             return;
-        var foreground = windowTheme.HighContrast ? null : (WindowBar.Foreground as SolidColorBrush)?.Color;
+        var foreground = contrast ? null : (ThemeBrush("text", theme, false) as SolidColorBrush)?.Color;
         var caption = AppWindow.TitleBar;
         caption.ButtonForegroundColor = foreground;
         caption.ButtonHoverForegroundColor = foreground;
         caption.ButtonPressedForegroundColor = foreground;
         caption.ButtonInactiveForegroundColor = foreground;
+        caption.ButtonBackgroundColor = contrast ? null : Microsoft.UI.Colors.Transparent;
+        caption.ButtonInactiveBackgroundColor = caption.ButtonBackgroundColor;
+        caption.ButtonHoverBackgroundColor = contrast ? null : (ThemeBrush("hover", theme, false) as SolidColorBrush)?.Color;
+        caption.ButtonPressedBackgroundColor = contrast ? null : (ThemeBrush("press", theme, false) as SolidColorBrush)?.Color;
     }
 
     private void UpdatePaneMode(double width)
     {
-        var mode = width >= 1200 ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftCompact;
-        if (Nav.PaneDisplayMode == mode)
+        // Keep the four navigation targets reachable at every supported width.
+        if (width <= 0 || !Nav.IsPaneVisible)
             return;
-        Nav.PaneDisplayMode = mode;
-        Nav.IsPaneOpen = mode == NavigationViewPaneDisplayMode.Left;
+
+        bool wide = width >= 1200;
+        if (wideSidebar != wide)
+        {
+            wideSidebar = wide;
+            Nav.PaneDisplayMode = wide ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftCompact;
+            Nav.IsPaneOpen = wide;
+        }
     }
 
     private void OnPaneChanged(NavigationView sender, object args)
     {
-        PlayerPlate.Visibility = IsVisible(Nav.IsPaneOpen && !session.SetupActive);
+        bool showPane = Nav.IsPaneVisible;
+        SidebarGlass.Visibility = IsVisible(showPane);
+        Nav.Margin = showPane ? new Thickness(10, 10, 0, 10) : new Thickness(0);
+        SidebarGlass.Width = Nav.IsPaneOpen ? Nav.OpenPaneLength : Nav.CompactPaneLength;
+        BrandHeader.Visibility = IsVisible(showPane && Nav.IsPaneOpen);
+        PlayerPlate.Visibility = IsVisible(showPane && Nav.IsPaneOpen && !session.SetupActive);
         RefreshFavorites();
     }
 
@@ -246,7 +249,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnNavigation(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (args.IsSettingsInvoked)
+        if (ReferenceEquals(args.InvokedItemContainer, SettingsItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
         else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
@@ -285,15 +288,10 @@ public sealed partial class MainWindow : Window
         JumpHost.Visibility = Nav.IsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
         if (Nav.IsPaneVisible)
         {
-            if (Nav.SettingsItem is NavigationViewItem settings)
-            {
-                settings.AccessKey = "T";
-                settings.HighContrastAdjustment = ElementHighContrastAdjustment.None;
-            }
             UpdatePaneMode(Root.ActualWidth);
             await RefreshPlayerAsync();
-            OnPaneChanged(Nav, EventArgs.Empty);
         }
+        OnPaneChanged(Nav, EventArgs.Empty);
         if (place is LauncherPlace.Home or LauncherPlace.Servers or LauncherPlace.Library or LauncherPlace.Configs)
             session.Opened(place switch
             {
@@ -342,7 +340,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            Nav.SelectedItem = Nav.SettingsItem;
+            Nav.SelectedItem = SettingsItem;
             ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings,
                 openUpdates: place == LauncherPlace.UpdateSettings);
         }
@@ -399,11 +397,24 @@ public sealed partial class MainWindow : Window
             var icon = Fluent("StarFilled", 16, filled: true);
             if (!IsHighContrast)
                 icon.Foreground = ThemeBrush("FavoriteBrush", Root.ActualTheme, false);
-            Nav.MenuItems.Add(new NavigationViewItem
+            string plain = QuakeColors.Plain(favorite.Name);
+            string shortName = plain.Split('|', 2)[0].Trim();
+            var title = new TextBlock { Text = shortName, TextTrimming = TextTrimming.CharacterEllipsis };
+            var content = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+            content.Children.Add(title);
+            if (favorite.MaxPlayers > 0)
+                Put(content, 1, new TextBlock
+                {
+                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SetupFactLabel"),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            var item = new NavigationViewItem
             {
-                Content = QuakeColors.Plain(favorite.Name), Tag = favorite.Address,
-                Icon = icon, SelectsOnInvoked = false, HighContrastAdjustment = ElementHighContrastAdjustment.None
-            });
+                Content = content, Tag = favorite.Address, Icon = icon,
+                SelectsOnInvoked = false, Style = StyleFor("ShellNavItem")
+            };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, plain);
+            Nav.MenuItems.Add(item);
         }
     }
 

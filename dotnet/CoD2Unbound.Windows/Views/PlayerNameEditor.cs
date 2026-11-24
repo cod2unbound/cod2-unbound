@@ -42,6 +42,7 @@ internal sealed class PlayerNameEditor : UserControl
     internal PlayerNameEditor(MainWindow shell)
     {
         this.shell = shell;
+        input.Style = StyleFor("CapsuleTextBox");
         var layout = new StackPanel { Spacing = 8 };
         Content = layout;
         AutomationProperties.SetName(input, "Name other players see");
@@ -80,12 +81,12 @@ internal sealed class PlayerNameEditor : UserControl
         }
         palette.Children.Add(swatches);
         palette.Children.Add(Caption("Colour codes ^0 to ^9 colour the letters after them."));
-        var toggle = new HyperlinkButton { Content = "Add colours…", Padding = new Thickness(0) };
+        var toggle = new HyperlinkButton { Content = "Add Colours…", Padding = new Thickness(0) };
         toggle.Click += (_, _) =>
         {
             bool open = palette.Visibility == Visibility.Collapsed;
             palette.Visibility = IsVisible(open);
-            toggle.Content = open ? "Hide colours" : "Add colours…";
+            toggle.Content = open ? "Hide Colours" : "Add Colours…";
         };
 
         var line = Columns(8, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
