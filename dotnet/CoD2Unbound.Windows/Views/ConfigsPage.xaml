@@ -41,8 +41,24 @@
                 </StackPanel>
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="StudioHistoryRow">
+            <Grid ColumnSpacing="16" Padding="0,10" AutomationProperties.Name="{Binding AccessibleName}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource StudioMonogramTile}" VerticalAlignment="Top">
+                    <TextBlock Text="{Binding Initial}" Style="{StaticResource LoadoutInitial}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryText}" />
+                    <TextBlock Text="{Binding Stamp}" Style="{StaticResource MonoCaption}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
         <DataTemplate x:Key="CheckerLine">
-            <Border Padding="8,4" Loaded="OnCheckerLineLoaded" DataContextChanged="OnCheckerLineContextChanged"
+            <Border Padding="8,2" MinHeight="26" Loaded="OnCheckerLineLoaded" DataContextChanged="OnCheckerLineContextChanged"
                     ActualThemeChanged="OnCheckerLineThemeChanged" AutomationProperties.Name="{Binding AccessibleName}">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>

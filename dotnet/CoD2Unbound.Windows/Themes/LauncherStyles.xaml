@@ -1728,6 +1728,10 @@
         <Setter Property="Margin" Value="0,0,0,4" />
         <Setter Property="Padding" Value="10,0" />
     </Style>
+    <Style x:Key="StudioCodeRow" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
     <Style x:Key="StudioColumnAction" TargetType="Button" BasedOn="{StaticResource SidebarAction}">
         <Setter Property="Height" Value="48" />
         <Setter Property="Padding" Value="10,0" />

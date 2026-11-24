@@ -49,7 +49,7 @@ public sealed partial class ConfigsPage
         var tuneLabel = CheckStrong("Tune for");
         tuneLabel.VerticalAlignment = VerticalAlignment.Center;
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { tuneLabel, tune } };
-        var body = new StackPanel { Spacing = 12 };
+        var body = new StackPanel { Spacing = 16 };
         var mode = model.Dialect == ConfigDialect.Cod2x ? ConfigCatalogMode.Cod2x : ConfigCatalogMode.Stock;
         int request = 0;
         tune.SelectionChanged += async (_, _) =>
@@ -61,7 +61,8 @@ public sealed partial class ConfigsPage
             await DrawAsync(showProgress: false);
         };
         body.Loaded += ReadOnLoad;
-        studioBody.Children.Add(header);
+        if (studioHeaderExtra is not null)
+            studioHeaderExtra.Content = header;
         studioBody.Children.Add(body);
 
         async void ReadOnLoad(object sender, RoutedEventArgs args)
@@ -183,7 +184,7 @@ public sealed partial class ConfigsPage
                         words.Children.Add(CheckNotice(InfoBarSeverity.Error, "Couldn't read your match summaries", problem));
                     else if (match.Shown is not { } shown)
                     {
-                        words.Children.Add(CheckStrong(model.MatchSummariesEnabled ? "No matches recorded yet" : "Match summaries are off"));
+                        words.Children.Add(CheckStrong(model.MatchSummariesEnabled ? "No matches recorded yet" : "Get advice from your own games"));
                         if (model.MatchSummariesEnabled)
                             words.Children.Add(Caption("After your next match, the game saves a short summary on this PC and Check-up shows it here."));
                         else
@@ -343,7 +344,7 @@ public sealed partial class ConfigsPage
                         }
                     }
                     foreach (string limit in report.Limitations)
-                        body.Children.Add(Caption(limit));
+                        body.Children.Add(Caption(CheckTimingCopy(limit)));
                     body.Children.Add(Caption("Locked settings are never suggested."));
                     body.Children.Add(CheckupLink("Every change can be undone in History", () =>
                     {
@@ -426,7 +427,7 @@ public sealed partial class ConfigsPage
         for (int index = 0; index < gauges.Length; index++)
         {
             var gauge = gauges[index];
-            var value = new TextBlock { Text = gauge.Value, Style = StyleFor("SectionTitle"), TextWrapping = TextWrapping.Wrap };
+            var value = new TextBlock { Text = CheckTimingCopy(gauge.Value), Style = StyleFor("SectionTitle"), TextWrapping = TextWrapping.Wrap };
             var content = new StackPanel { Spacing = 6, Children =
             {
                 CheckStrong(gauge.Area.ToString()), value, CheckTone(gauge.Status, gauge.Tone), Caption(CheckTimingCopy(gauge.Detail))
@@ -436,7 +437,7 @@ public sealed partial class ConfigsPage
                 var detail = Caption(CheckTimingCopy(figures));
                 bool expanded = checkupDetails.Contains(gauge.Area);
                 detail.Visibility = IsVisible(expanded);
-                var show = new HyperlinkButton { Content = expanded ? "Hide details" : "Show details" };
+                var show = new HyperlinkButton { Content = expanded ? "Hide Details" : "Show Details" };
                 void NameLink() => AutomationProperties.SetName(show, $"{show.Content} for {gauge.Area}");
                 NameLink();
                 show.Click += (_, _) =>
@@ -445,18 +446,20 @@ public sealed partial class ConfigsPage
                     if (!open)
                         checkupDetails.Remove(gauge.Area);
                     detail.Visibility = IsVisible(open);
-                    show.Content = open ? "Hide details" : "Show details";
+                    show.Content = open ? "Hide Details" : "Show Details";
                     NameLink();
                 };
                 content.Children.Add(show);
                 content.Children.Add(detail);
             }
-            Put(layout, index, CheckCard(content));
+            var card = CheckCard(content);
+            card.MinHeight = 132;
+            Put(layout, index, card);
         }
 
         layout.SizeChanged += (_, args) =>
         {
-            int columns = args.NewSize.Width < 735 ? 2 : 4;
+            int columns = Math.Clamp((int)((args.NewSize.Width + 12) / 202), 1, gauges.Length);
             for (int index = 0; index < layout.ColumnDefinitions.Count; index++)
             {
                 layout.ColumnDefinitions[index].Width = index < columns ? new GridLength(1, GridUnitType.Star) : new GridLength(0);

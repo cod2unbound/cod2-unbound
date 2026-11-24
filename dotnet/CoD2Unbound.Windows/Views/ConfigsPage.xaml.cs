@@ -321,6 +321,8 @@ public sealed partial class ConfigsPage : Page
         bindModes.Style = StyleFor("SegmentedLarge");
         AutomationProperties.SetName(bindModes, "Show binds as");
         studioHeaderActions.Children.Add(bindModes);
+        studioHeaderExtra = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center };
+        studioHeaderActions.Children.Add(studioHeaderExtra);
         Detail.Children.Add(CheckPair(identity, studioHeaderActions, 590, rightAuto: true));
         var readOnly = CheckNotice(InfoBarSeverity.Informational, "Read-only while playing", ConfigProfileException.ReadOnlyWhilePlaying);
         readOnly.IsOpen = state.ReadOnly;
@@ -393,11 +395,15 @@ public sealed partial class ConfigsPage : Page
     {
         studioFind = null;
         settingSearch = null;
+        if (studioHeaderExtra is not null)
+            studioHeaderExtra.Content = null;
         studioBody.Children.Clear();
         UpdateStudioHeader();
         var state = model.State;
         if (state.Current is not { } profile)
             return;
+        if (studioHeaderExtra is not null)
+            studioHeaderExtra.Visibility = IsVisible(studioTab is 2 or 3);
         switch (studioTab)
         {
             case 0: ShowSettings(state, profile); break;

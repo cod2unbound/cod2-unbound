@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -17,6 +18,7 @@ public sealed partial class ConfigsPage
     private string? historyRestored;
     private Button? historySnapshotButton;
     private Border? historySnapshotTarget;
+    private readonly ObservableCollection<StudioHistoryRow> studioHistoryRows = [];
 
     private void AddStudioSnapshotCommand(Panel actions, ConfigProfileRead profile)
     {
@@ -66,12 +68,21 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(filters, "Show changes from");
         var filterLabel = CheckStrong("Show changes from");
         filterLabel.VerticalAlignment = VerticalAlignment.Center;
-        studioBody.Children.Add(new StackPanel
-        {
-            Orientation = Orientation.Horizontal, Spacing = 8, Children = { filterLabel, filters }
-        });
-        var area = new StackPanel();
-        studioBody.Children.Add(area);
+        if (studioHeaderExtra is not null)
+            studioHeaderExtra.Content = Buttons(filterLabel, filters);
+        var timeline = new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 594,
+            ItemsSource = studioHistoryRows, ItemTemplate = (DataTemplate)Resources["StudioHistoryRow"],
+            ItemContainerStyle = StyleFor("StudioColumnItem"), TabNavigation = KeyboardNavigationMode.Once };
+        AutomationProperties.SetName(timeline, "Snapshots");
+        var empty = Caption("");
+        int keep = ConfigProfileStore.HistoryRetention;
+        var retention = Caption($"CoD2 Unbound keeps the last {keep} snapshots of each loadout. This one has {state.History.Length} of {keep}. Older ones are removed on their own.");
+        var timelineArea = new StackPanel { Spacing = 10, Children = { timeline, empty, retention } };
+        var compare = new StackPanel();
+        var inspector = CheckCard(compare);
+        inspector.MinHeight = 320;
+        studioBody.Children.Add(CheckPair(timelineArea, inspector, 755, rightWidth: 372));
+        bool drawing = false;
         filters.SelectionChanged += (_, _) =>
         {
             if (filters.SelectedIndex < 0)
@@ -79,70 +90,47 @@ public sealed partial class ConfigsPage
             historyFilter = (ConfigHistoryFilter)filters.SelectedIndex;
             Draw();
         };
+        timeline.SelectionChanged += (_, _) => { if (!drawing) Compare(); };
         Draw();
 
         void Draw()
         {
-            area.Children.Clear();
+            drawing = true;
             var entries = state.History.Where(entry => historyFilter.Includes(entry.Source)).ToArray();
-            if (!entries.Any(entry => entry.Id == historySelection))
-                historySelection = historyRestored = null;
-            var timeline = new ListView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 540,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch, TabNavigation = KeyboardNavigationMode.Once };
-            AutomationProperties.SetName(timeline, "Snapshots");
-            timeline.Items.Add(HistoryRow("Check", $"How {profile.Profile.DisplayName} is set up now",
+            var now = new StudioHistoryRow(null, "Now", $"How {profile.Profile.DisplayName} is set up now",
                 profile.Profile.IsActive ? "Everything the next game will use." : "Everything the game uses when you choose this loadout.",
-                "Now", state.History.FirstOrDefault()?.Date));
-            foreach (var entry in entries)
+                "Now", state.History.FirstOrDefault()?.Date);
+            var rows = entries.Select(entry =>
             {
                 var changes = HistoryChanges(entry.Before, entry.After);
                 string detail = entry.Summary == "Saved a snapshot" ? "A point to come back to." : ConfigDiff.Sentence(changes);
-                var (icon, source) = HistorySource(entry.Source);
-                timeline.Items.Add(HistoryRow(icon, HistoryTitle(entry), detail, source, entry.Date));
-            }
-            var timelineArea = new StackPanel { Spacing = 8, Children = { timeline } };
-            if (entries.Length == 0)
-                timelineArea.Children.Add(Caption(historyFilter == ConfigHistoryFilter.All
-                    ? "No snapshots yet. Every change you save here adds one."
-                    : $"No snapshots from {historyFilters[(int)historyFilter].ToLowerInvariant()} yet."));
-            int keep = ConfigProfileStore.HistoryRetention;
-            timelineArea.Children.Add(Caption($"CoD2 Unbound keeps the last {keep} snapshots of each loadout. This one has {state.History.Length} of {keep}. Older ones are removed on their own."));
-
-            var compare = new StackPanel();
-            area.Children.Add(CheckPair(timelineArea, CheckCard(compare), 755));
-            timeline.SelectedIndex = Array.FindIndex(entries, entry => entry.Id == historySelection) + 1;
-            timeline.SelectionChanged += (_, _) => Compare();
+                return new StudioHistoryRow(entry, entry.Id, HistoryTitle(entry), detail, HistorySource(entry.Source), entry.Date);
+            }).Prepend(now).ToArray();
+            studioHistoryRows.Reconcile(rows, row => row.Id);
+            timeline.SelectedItem = studioHistoryRows.FirstOrDefault(row => row.Entry?.Id == historySelection) ?? studioHistoryRows[0];
+            empty.Visibility = IsVisible(entries.Length == 0);
+            empty.Text = historyFilter == ConfigHistoryFilter.All ? "No snapshots yet. Every change you save here adds one." :
+                $"No snapshots from {historyFilters[(int)historyFilter].ToLowerInvariant()} yet.";
+            drawing = false;
             Compare();
+        }
 
-            void Compare()
-            {
-                int index = timeline.SelectedIndex - 1;
-                var entry = index < 0 ? null : entries[index];
-                historySelection = entry?.Id;
-                compare.Children.Clear();
-                compare.Children.Add(entry is null
-                    ? new StackPanel { Spacing = 8, Children =
-                    {
-                        new TextBlock { Text = "This is now", Style = StyleFor("EmptyHeading") },
-                        Caption("Pick an earlier snapshot to see what has changed since then, or to go back to it.")
-                    } }
-                    : HistoryComparison(state, profile, entry));
-            }
+        void Compare()
+        {
+            var entry = (timeline.SelectedItem as StudioHistoryRow)?.Entry;
+            historySelection = entry?.Id;
+            compare.Children.Clear();
+            compare.Children.Add(entry is null
+                ? EmptyState("History", "This is now", "Pick an earlier snapshot to see what has changed since then, or to go back to it.")
+                : HistoryComparison(state, profile, entry));
         }
     }
 
-    private static ListViewItem HistoryRow(string icon, string title, string detail, string source, DateTimeOffset? date)
+    private sealed record StudioHistoryRow(ConfigHistoryEntry? Entry, string Id, string Title, string Detail, string Source, DateTimeOffset? Date)
     {
-        var facts = new StackPanel { Spacing = 4, Children =
-        {
-            CheckStrong(title), Caption(detail), MonoCaption(date is { } value ? $"{source} · {HistoryDate(value)}" : source)
-        } };
-        var row = Columns(12, GridLength.Auto, new GridLength(1, GridUnitType.Star));
-        Put(row, 0, Fluent(icon, 18));
-        Put(row, 1, facts);
-        var item = new ListViewItem { Content = row, HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        AutomationProperties.SetName(item, $"{title}. {detail} {source}. {(date is { } time ? HistoryDate(time) : "")}");
-        return item;
+        public string Stamp => Date is { } time ? $"{Source} · {HistoryDate(time)}" : Source;
+        public string Initial => Source[..1];
+        public string AccessibleName => $"{Title}. {Detail} {Stamp}";
     }
 
     private FrameworkElement HistoryComparison(ConfigStudioState state, ConfigProfileRead profile, ConfigHistoryEntry entry)
@@ -162,10 +150,10 @@ public sealed partial class ConfigsPage
             compare.Children.Add(CheckNotice(InfoBarSeverity.Success, "Restored", "Your previous state is saved as a snapshot."));
         compare.Children.Add(Caption("Restoring saves how things are now as a new snapshot first, so you can always come back."));
 
-        var restore = Action("Restore this snapshot", () => RestoreSnapshotAsync(profile, entry, ConfigSnapshotRevision.After));
+        var restore = Action("Restore This Snapshot", () => RestoreSnapshotAsync(profile, entry, ConfigSnapshotRevision.After));
         restore.Style = StyleFor("LauncherAccentButton");
         restore.IsEnabled = CanEdit && !entry.After.Matches(profile.Version);
-        var more = new Button { Content = Fluent("More", 16), IsEnabled = CanEdit };
+        var more = new Button { Style = StyleFor("IconAction"), Content = Fluent("More", 16), IsEnabled = CanEdit };
         AutomationProperties.SetName(more, "More actions for this snapshot");
         var menu = new MenuFlyout();
         bool earlier = ConfigHistoryFilters.HasEarlierRevision(entry, state.History);
@@ -224,13 +212,13 @@ public sealed partial class ConfigsPage
         _ => entry.Summary
     };
 
-    private static (string Icon, string Source) HistorySource(ConfigHistorySource source) => source switch
+    private static string HistorySource(ConfigHistorySource source) => source switch
     {
-        ConfigHistorySource.GameSession => ("Play", "Game session"),
-        ConfigHistorySource.Checkup => ("HeartPulse", "Check-up"),
-        ConfigHistorySource.Import => ("ArrowDownload", "Import"),
-        ConfigHistorySource.Migration => ("Folder", "Migration"),
-        ConfigHistorySource.Restore => ("Refresh", "You · restored"),
-        _ => ("Person", "You")
+        ConfigHistorySource.GameSession => "Game session",
+        ConfigHistorySource.Checkup => "Check-up",
+        ConfigHistorySource.Import => "Import",
+        ConfigHistorySource.Migration => "Migration",
+        ConfigHistorySource.Restore => "You · restored",
+        _ => "You"
     };
 }

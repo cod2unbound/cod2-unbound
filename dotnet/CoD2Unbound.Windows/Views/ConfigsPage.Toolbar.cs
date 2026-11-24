@@ -12,6 +12,7 @@ public sealed partial class ConfigsPage
     private TextBlock? studioChangedCount;
     private Button? studioNext;
     private SelectorBar? bindModes;
+    private ContentPresenter? studioHeaderExtra;
 
     private void PositionConfigToolbar()
     {
