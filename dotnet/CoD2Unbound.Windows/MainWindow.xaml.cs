@@ -42,6 +42,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
+        InitializeTitleBarContent();
         ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
         // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })

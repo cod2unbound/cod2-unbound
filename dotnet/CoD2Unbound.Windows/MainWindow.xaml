@@ -126,6 +126,11 @@
              buttons sit over it at the top right. Nothing pressable lives in it. -->
         <Grid x:Name="WindowBar" Height="{StaticResource CaptionHeight}" VerticalAlignment="Top" Background="Transparent" />
 
+        <!-- Title-bar content (ShellTitleBar.cs): interactive pieces a page places in the caption band, such as
+             Home's update pill. The host itself takes no input; the shell keeps a passthrough region over each
+             visible child, and the host stays 138 px clear of the caption buttons. -->
+        <Grid x:Name="TitleBarContent" VerticalAlignment="Top" Margin="0,0,138,0" />
+
         <!-- Jump to (JumpPalette.swift, HomeJump board): a light-dismiss popup centred over the window, opened
              with Ctrl+K, holding a real TextBox and a real ListView. A click outside closes it, as on the Mac. -->
         <Popup x:Name="JumpPopup" IsLightDismissEnabled="True" LightDismissOverlayMode="Off">
