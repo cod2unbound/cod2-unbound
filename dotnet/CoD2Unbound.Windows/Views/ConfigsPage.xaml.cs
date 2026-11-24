@@ -7,6 +7,7 @@ using CoD2Unbound.Windows.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
@@ -16,7 +17,7 @@ public sealed partial class ConfigsPage : Page
 {
     private readonly MainWindow shell;
     private readonly ConfigsViewModel model;
-    private readonly StackPanel studioBody = new() { Spacing = 8 };
+    private readonly StackPanel studioBody = new() { Spacing = 14 };
     private bool syncing;
     private int studioTab;
     private bool expert;
@@ -40,61 +41,36 @@ public sealed partial class ConfigsPage : Page
         model.SettingSaveChanged += OnSettingSaveChanged;
         SizeChanged += (_, args) =>
         {
-            bool wide = args.NewSize.Width >= 1100;
+            PositionConfigToolbar();
+            bool wide = args.NewSize.Width >= 1022; // 20 + 252 + 48 + 200 + 22 + 480
             if (wideGroupRail == wide)
                 return;
             wideGroupRail = wide;
             if (studioTab == 0 && studioBody.Parent is not null)
                 RenderStudioBody();
         };
+        Loaded += (_, _) =>
+        {
+            PositionConfigToolbar();
+            shell.SetTitleBarContent(configToolbar);
+        };
         RenderLoadouts();
         ShowStudio();
     }
 
-    internal void UpdateContrast()
+    private void OnLoadoutContainerChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        foreach (var item in Loadouts.Items)
-            if (Loadouts.ContainerFromItem(item) is ListViewItem { ContentTemplateRoot: Grid row })
-                ApplyLoadoutRowTheme(row);
-    }
-
-    private void OnSelectionPillLoaded(object sender, RoutedEventArgs args) => TrackSelectionPill((Border)sender);
-
-    private void OnLoadoutRowLoaded(object sender, RoutedEventArgs args)
-    {
-        var row = (Grid)sender;
-        ApplyLoadoutRowTheme(row);
-        AttachLoadoutMenu(row);
-        TrackListSelection(row, _ => ApplyLoadoutRowTheme(row));
-    }
-
-    private void OnLoadoutRowThemeChanged(FrameworkElement sender, object args) => ApplyLoadoutRowTheme((Grid)sender);
-
-    private void ApplyLoadoutRowTheme(Grid row)
-    {
-        if (row.FindName("LoadoutTile") is not Border tile)
-            return;
-        bool contrast = shell.IsHighContrast;
-        var initial = (TextBlock)tile.Child;
-        if (contrast)
+        if (args.InRecycleQueue)
         {
-            bool selected = ContainingListItem(row)?.IsSelected == true;
-            var ink = ThemeBrush(selected ? "TextOnAccentFillColorPrimaryBrush" : "HeadingBrush", ActualTheme, true);
-            tile.Background = ThemeBrush(selected ? "AccentFillColorDefaultBrush" : "PanelBrush", ActualTheme, true);
-            tile.BorderBrush = initial.Foreground = ink;
+            args.ItemContainer.ContextFlyout = null;
+            args.ItemContainer.ClearValue(AutomationProperties.NameProperty);
         }
-        else
+        else if (args.Item is LoadoutRow row)
         {
-            tile.ClearValue(Border.BackgroundProperty);
-            tile.ClearValue(Border.BorderBrushProperty);
-            initial.ClearValue(TextBlock.ForegroundProperty);
+            args.ItemContainer.ContextFlyout = LoadoutMenu(row.Profile, includeNew: false);
+            AutomationProperties.SetName(args.ItemContainer, row.Name);
+            AutomationProperties.SetHelpText(args.ItemContainer, row.Status);
         }
-        SetRowTextBrush((TextBlock)row.FindName("LoadoutStatus")!, "CaptionBrush", contrast);
-        var check = (FontIcon)row.FindName("LoadoutCheck")!;
-        if (contrast)
-            check.ClearValue(IconElement.ForegroundProperty);
-        else
-            check.Foreground = ThemeBrush("PositiveBrush", ActualTheme, false);
     }
 
     internal void OpenCheckup() => OpenCheckupForMatch(null);
@@ -118,7 +94,8 @@ public sealed partial class ConfigsPage : Page
         var state = model.State;
         Loadouts.IsEnabled = state.Draft is null;
         syncing = true;
-        loadoutRows.Reconcile(state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray(), row => row.Profile.Id);
+        loadoutRows.Reconcile(state.Profiles.Select(profile => new LoadoutRow(profile, state.Current is { } current && current.Profile.Id == profile.Id
+            ? LoadoutProvenance(current.Metadata.Origin) : null)).ToArray(), row => row.Profile.Id);
         var selected = DiscoverPlaces.SelectedItem is null
             ? loadoutRows.FirstOrDefault(row => row.Profile.Id == (state.Current?.Profile.Id ?? state.ReadProblem?.ProfileId)) : null;
         if (!ReferenceEquals(Loadouts.SelectedItem, selected))
@@ -137,6 +114,7 @@ public sealed partial class ConfigsPage : Page
         {
             model.Studio.Focus(loadout.Profile.Id);
             ShowStudio();
+            RenderLoadouts();
             return Task.CompletedTask;
         });
     }
@@ -217,12 +195,21 @@ public sealed partial class ConfigsPage : Page
 
         ExportStatus.Visibility = Visibility.Visible;
         Detail.Children.Clear();
+        configToolbar.Children.Clear();
         studioBody.Children.Clear();
         studioBody.Visibility = Visibility.Visible;
         refreshSharing = null;
         if (state.Current is not { } profile)
         {
             displayedStudioProfile = null;
+            if (state.Profiles.IsEmpty && state.ReadProblem is null)
+            {
+                var empty = EmptyState("Stack", "No loadouts",
+                    "Your current game settings become your first loadout, Main, the first time CoD2 Unbound prepares a game. You can also start a new one.");
+                empty.Children.Add(Action("New Loadout…", CreateFromShellAsync));
+                Detail.Children.Add(empty);
+                return;
+            }
             Detail.Children.Add(Heading(state.Profiles.FirstOrDefault(item => item.Id == state.ReadProblem?.ProfileId)?.DisplayName ?? "My loadouts"));
             if (studioTab == 2 && state.ReadProblem is { } problem)
                 Detail.Children.Add(CheckNotice(InfoBarSeverity.Error, "Check-up isn't available", problem.Message));
@@ -246,55 +233,90 @@ public sealed partial class ConfigsPage : Page
         {
             studioTab = index;
             model.Opened(pages[index]);
-            if (studioModes is not null)
-                studioModes.Visibility = IsVisible(index == 0);
-            UpdateHistorySnapshotButton();
+            UpdateStudioHeader();
             RenderStudioBody();
+            ResetDetailScroll();
         });
         AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
-        AddStudioTabs(tabs, profile);
-        var title = new StackPanel { Spacing = 2, Children = { Heading(profile.Profile.DisplayName) } };
-        var subtitle = new List<string>();
-        if (profile.Profile.Id.Equals("main", StringComparison.OrdinalIgnoreCase))
-            subtitle.Add("Your everyday setup");
+        ShowConfigStudioToolbar(tabs, profile);
+        var title = Heading(profile.Profile.DisplayName);
+        title.FontSize = 30;
+        title.TextWrapping = TextWrapping.NoWrap;
+        title.TextTrimming = TextTrimming.CharacterEllipsis;
+        studioNext = null;
+        var subtitle = LoadoutProvenance(profile.Metadata.Origin);
         if (state.History.FirstOrDefault() is { } edit)
-            subtitle.Add($"Edited {edit.Date.LocalDateTime:d}");
-        if (subtitle.Count != 0)
-            title.Children.Add(Caption(string.Join(" · ", subtitle)));
-
-        var right = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right };
+        {
+            var date = edit.Date.LocalDateTime;
+            var verb = state.History.Length == 1 ? "Added" : "Edited";
+            subtitle += $" · {verb} {date:d MMM} at {date:HH:mm}";
+        }
+        var identity = new StackPanel { Spacing = 4, Margin = new Thickness(4, 0, 0, 0), VerticalAlignment = VerticalAlignment.Bottom,
+            Children = { title, Body(subtitle) } };
+        var studioHeaderActions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, VerticalAlignment = VerticalAlignment.Bottom };
+        studioChangedCount = Caption("");
+        studioHeaderActions.Children.Add(studioChangedCount);
         if (profile.Profile.IsActive)
         {
             var badge = IconLabel("Check", "In use for your next game", 14);
-            badge.HorizontalAlignment = HorizontalAlignment.Right;
-            var icon = (FontIcon)badge.Children[0];
-            var label = (TextBlock)badge.Children[1];
-            icon.Style = StyleFor("PositiveIcon");
-            label.Style = StyleFor("PositiveCaption");
-            right.Children.Add(badge);
+            ((FontIcon)badge.Children[0]).Style = StyleFor("PositiveIcon");
+            ((TextBlock)badge.Children[1]).Style = StyleFor("PositiveCaption");
+            studioHeaderActions.Children.Add(badge);
+        }
+        else
+        {
+            studioNext = Action("Use for Next Game", () => UseNextAsync(profile.Profile));
+            studioNext.IsEnabled = CanEdit;
+            studioHeaderActions.Children.Add(studioNext);
         }
         studioModes = Tabs(["Guided", "Expert"], expert ? 1 : 0, index =>
         {
             expert = index == 1;
             query = "";
+            UpdateStudioHeader();
             RenderStudioBody();
         });
-        studioModes.Margin = new Thickness(0);
-        studioModes.HorizontalAlignment = HorizontalAlignment.Right;
-        studioModes.Visibility = IsVisible(studioTab == 0);
-        right.Children.Add(studioModes);
-        var header = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(header, 0, title);
-        Put(header, 1, right);
-        Detail.Children.Add(header);
-        var readOnlyNotice = Caption(ConfigProfileException.ReadOnlyWhilePlaying);
-        Detail.Children.Add(readOnlyNotice);
-        Detail.Children.Add(LoadoutShareActions(profile.Profile, readOnlyNotice, shareNotice));
+        studioModes.Style = StyleFor("SegmentedLarge");
+        AutomationProperties.SetName(studioModes, "Detail level");
+        studioHeaderActions.Children.Add(studioModes);
+        Detail.Children.Add(CheckPair(identity, studioHeaderActions, 590, rightAuto: true));
+        var readOnly = CheckNotice(InfoBarSeverity.Informational, "Read-only while playing", ConfigProfileException.ReadOnlyWhilePlaying);
+        readOnly.IsOpen = state.ReadOnly;
+        Detail.Children.Add(readOnly);
+        Detail.Children.Add(LoadoutShareStatus(profile.Profile, readOnly));
+        UpdateStudioHeader();
         if (studioBody.Parent is Panel old)
             old.Children.Remove(studioBody);
         Detail.Children.Add(studioBody);
         RenderStudioBody();
     }
+
+    private void UpdateStudioHeader()
+    {
+        if (studioModes is not null)
+            studioModes.Visibility = IsVisible(studioTab == 0);
+        if (studioChangedCount is not null)
+        {
+            studioChangedCount.Visibility = IsVisible(studioTab == 0 && expert);
+            if (studioChangedCount.Visibility == Visibility.Visible)
+            {
+                int count = model.Model.Expert("", ConfigExpertFilter.Changed, "", model.State.Current?.Document, model.State.Current?.Metadata)
+                    .SelectMany(section => section.Rows).Count(spec => !IsHiddenFromExpert(spec));
+                studioChangedCount.Text = $"{count} changed from the game’s defaults";
+            }
+        }
+        if (studioNext is not null)
+            studioNext.IsEnabled = CanEdit && model.State.ReadProblem is null;
+        UpdateHistorySnapshotButton();
+    }
+
+    private static string LoadoutProvenance(ConfigOrigin origin) => origin.Kind switch
+    {
+        ConfigOriginKind.Migration => "Your earlier launcher settings",
+        ConfigOriginKind.Copied => origin.Source is { } source ? $"Copied from {source}" : "A copy",
+        ConfigOriginKind.Imported => origin.Credit is { } credit ? $"Imported from {credit}" : "Imported",
+        _ => "Made in CoD2 Unbound"
+    };
 
     private async Task DeleteAsync(ConfigProfile profile)
     {
@@ -323,7 +345,7 @@ public sealed partial class ConfigsPage : Page
     {
         studioFind = null;
         studioBody.Children.Clear();
-        UpdateHistorySnapshotButton();
+        UpdateStudioHeader();
         var state = model.State;
         if (state.Current is not { } profile)
             return;
@@ -342,7 +364,7 @@ public sealed partial class ConfigsPage : Page
             return;
         var groups = model.Catalog.Groups;
         category ??= groups.FirstOrDefault(group => model.Model.Guided(group.Id).Any(spec => spec.Name == "sensitivity"))?.Id ?? groups[0].Id;
-        var fields = new StackPanel { Spacing = 4 };
+        var fields = new StackPanel { Spacing = 14 };
         var filter = ConfigExpertFilter.Group;
         var groupChoice = new ComboBox { Header = "Group", ItemsSource = groups, DisplayMemberPath = "Title",
             SelectedItem = groups.FirstOrDefault(group => group.Id == category) };
@@ -378,25 +400,32 @@ public sealed partial class ConfigsPage : Page
         }
         if (wideGroupRail)
         {
-            var rail = new ListView
-            {
-                ItemsSource = groups, DisplayMemberPath = "Title", SelectionMode = ListViewSelectionMode.Single,
-                ItemContainerStyle = StyleFor("SidebarItem"), SelectedItem = groups.FirstOrDefault(group => group.Id == category)
-            };
+            var rail = new ListView { SelectionMode = ListViewSelectionMode.Single, TabNavigation = KeyboardNavigationMode.Once };
             AutomationProperties.SetName(rail, "Groups");
+            foreach (var group in groups)
+            {
+                var row = new ListViewItem
+                {
+                    Style = StyleFor("SidebarItem"), Content = IconLabel(GroupIcon(group.Id), group.Title, 18), Tag = group.Id
+                };
+                AutomationProperties.SetName(row, group.Title);
+                rail.Items.Add(row);
+                if (group.Id == category)
+                    rail.SelectedItem = row;
+            }
             rail.SelectionChanged += (_, _) =>
             {
-                if (rail.SelectedItem is ConfigCatalogGroup group)
-                    SelectGroup(group.Id);
+                if (rail.SelectedItem is ListViewItem { Tag: string group })
+                    SelectGroup(group);
             };
-            var columns = Columns(12, new GridLength(200), new GridLength(1, GridUnitType.Star));
+            var columns = Columns(22, new GridLength(200), new GridLength(1, GridUnitType.Star));
             Put(columns, 0, rail);
             Put(columns, 1, fields);
             studioBody.Children.Add(columns);
         }
         else
             studioBody.Children.Add(fields);
-        studioBody.Children.Add(Caption("Changes save to this loadout as you make them. Undo anytime from History."));
+
         RenderRows();
 
         void SelectGroup(string group)
@@ -430,13 +459,14 @@ public sealed partial class ConfigsPage : Page
             var groupTitle = groups.First(item => item.Id == group).Title;
             var groupHeader = new StackPanel { Spacing = 2 };
             groupHeader.Children.Add(new TextBlock { Text = groupTitle, Style = StyleFor("SectionTitle") });
-            if (!expert && specs.Any(spec => spec.Name == "sensitivity"))
-                groupHeader.Children.Add(Caption("How the game responds to your mouse or touchpad."));
+            if (!expert)
+                groupHeader.Children.Add(Body(GroupBlurb(group)));
             if (!expert)
             {
                 int total = model.Model.Expert(group, ConfigExpertFilter.Group, "", profile.Document, profile.Metadata)
                     .Sum(section => section.Rows.Count(spec => !IsHiddenFromExpert(spec)));
-                var link = new HyperlinkButton { Content = $"Show all {total} in Expert ›", VerticalAlignment = VerticalAlignment.Top };
+                var link = new Button { Style = StyleFor("QuietButton"), Content = $"Show All {total} in Expert", VerticalAlignment = VerticalAlignment.Bottom };
+                AutomationProperties.SetName(link, $"Show all {total} {groupTitle} settings in Expert");
                 link.Click += (_, _) =>
                 {
                     if (studioModes is not null)
@@ -464,16 +494,35 @@ public sealed partial class ConfigsPage : Page
             {
                 if (rows.Children.Count > 0)
                     rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                rows.Children.Add(Setting(state, profile.Profile.Id, spec));
                 if (spec.Name == "sensitivity")
                 {
-                    rows.Children.Add(MouseDpiRow(state, profile));
                     rows.Children.Add(new Border { Height = 1, Style = StyleFor("CardDivider") });
+                    rows.Children.Add(MouseDpiRow(state, profile));
                 }
-                rows.Children.Add(Setting(state, profile.Profile.Id, spec));
             }
-            fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = rows });
+            fields.Children.Add(new Border { Style = StyleFor("StudioSettingsGroup"), Child = rows });
+            fields.Children.Add(Caption("Changes save to this loadout as you make them. Undo anytime from History."));
         }
     }
+
+    private static string GroupIcon(string id) => id switch
+    {
+        "aim" => "Search", "net" => "Live", "vis" => "Eye", "hud" => "Desktop",
+        "audio" => "Live", "gfx" => "Image", "frame" => "Gauge", _ => "More"
+    };
+
+    private static string GroupBlurb(string id) => id switch
+    {
+        "aim" => "How the game responds to your mouse or trackpad.",
+        "net" => "How often you and the server talk.",
+        "vis" => "How bright and clear the picture is.",
+        "hud" => "What stays on screen while you play.",
+        "audio" => "How loud the game is.",
+        "gfx" => "How the world looks.",
+        "frame" => "How smoothly the game runs, and how high and far you can jump.",
+        _ => "Your name, and what the game may download."
+    };
 
     private Border Setting(ConfigStudioState state, string profileId, ConfigSettingSpec spec)
     {
@@ -585,6 +634,7 @@ public sealed partial class ConfigsPage : Page
         int place = DiscoverPlaces.SelectedIndex;
         if (syncing || place < 0)
             return;
+        configToolbar.Children.Clear();
         RecoveryStatus.IsOpen = false;
         ExportStatus.Visibility = Visibility.Collapsed;
         await shell.RunAsync(() => place == 2 ? ShowCheckerAsync() : ShowCatalogueAsync(place == 1));
@@ -657,10 +707,10 @@ public sealed partial class ConfigsPage : Page
 }
 
 
-internal sealed record LoadoutRow(ConfigProfile Profile)
+internal sealed record LoadoutRow(ConfigProfile Profile, string? Provenance)
 {
     public string Name => Profile.DisplayName;
     public string Initial => StringInfo.GetNextTextElement(Name).ToUpper(CultureInfo.CurrentCulture);
-    public string Status => Profile.IsActive ? "In use" : "Ready to use";
+    public string Status => Profile.IsActive ? "In use" : Provenance ?? "Ready to use";
     public Visibility Checkmark => IsVisible(Profile.IsActive);
 }

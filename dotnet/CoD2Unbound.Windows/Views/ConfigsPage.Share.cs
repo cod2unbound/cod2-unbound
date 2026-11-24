@@ -12,56 +12,22 @@ public sealed partial class ConfigsPage
 
     internal void UpdateSharingAvailability() => refreshSharing?.Invoke();
 
-    private FrameworkElement LoadoutShareActions(ConfigProfile profile, TextBlock readOnlyNotice, InfoBar shareNotice)
+    private FrameworkElement LoadoutShareStatus(ConfigProfile profile, InfoBar readOnlyNotice)
     {
-        var next = Command("Use for next game", () => UseNextAsync(profile));
-        var rename = Command("Rename…", () => RenameAsync(profile));
-        var duplicate = Command("Duplicate", () => DuplicateAsync(profile), "Copy");
-        var share = new AppBarButton { AccessKey = "S" };
-        var delete = Command("Delete loadout…", () => DeleteAsync(profile));
-        var export = Command("Export…", () => ExportAsync(profile), "ArrowDownload");
-        var reveal = Command("Show in File Explorer", () => RevealLoadoutAsync(profile), "Folder");
-        var row = new CommandBar { DefaultLabelPosition = CommandBarDefaultLabelPosition.Right,
-            HorizontalAlignment = HorizontalAlignment.Left, Background = null };
-        AutomationProperties.SetName(row, "Loadout actions");
         var details = new StackPanel { Spacing = 4 };
-        var panel = new StackPanel { Spacing = 8, Children = { row, details } };
-        bool? compact = null;
-        Adapt(XamlRoot?.Size.Width is > 0 and < 1120);
-        panel.SizeChanged += (_, args) => Adapt(args.NewSize.Width < 685);
-        share.Click += async (_, _) => await shell.RunAsync(ChangeAndRenderAsync);
-        refreshSharing = UpdateEnabled;
-        RenderState();
-        return panel;
-
-        void Adapt(bool narrow)
+        refreshSharing = () =>
         {
-            if (narrow == compact)
-                return;
-            compact = narrow;
-            row.PrimaryCommands.Clear();
-            row.SecondaryCommands.Clear();
-            foreach (var command in narrow ? new[] { next, rename } : new[] { next, rename, duplicate, share, delete })
-                row.PrimaryCommands.Add(command);
-            foreach (var command in narrow ? new[] { duplicate, share, export, reveal, delete } : new[] { export, reveal })
-                row.SecondaryCommands.Add(command);
-            NameShareCommand();
-        }
-
-        void NameShareCommand() => AutomationProperties.SetAutomationId(share,
-            (model.Share.CanStop(profile.Id) ? "StopSharing" : "ShareSetup") + (compact == true ? "InMore" : ""));
+            readOnlyNotice.IsOpen = model.State.ReadOnly;
+            UpdateStudioHeader();
+            RenderState();
+        };
+        refreshSharing();
+        return details;
 
         void RenderState()
         {
             var state = model.Share.Status(profile.Id, model.ShareCatalogue);
             bool shared = state.Phase != ConfigShareLoadoutPhase.NotShared;
-            string action = shared ? "Stop sharing…" : "Share setup…";
-            share.Label = action;
-            share.Icon = Fluent("Share", 16);
-            UpdateEnabled();
-            AutomationProperties.SetName(share, action);
-            NameShareCommand();
-
             details.Children.Clear();
             if (!shared)
             {
@@ -110,22 +76,6 @@ public sealed partial class ConfigsPage
             }
         }
 
-        void UpdateEnabled()
-        {
-            var studio = model.State;
-            readOnlyNotice.Visibility = IsVisible(studio.ReadOnly);
-            bool writable = CanEdit && studio.ReadProblem is null;
-            next.IsEnabled = writable && !profile.IsActive;
-            rename.IsEnabled = duplicate.IsEnabled = writable;
-            delete.IsEnabled = writable && ConfigStudioModel.DeleteBlock(studio, profile.Id) is null;
-            share.IsEnabled = model.Share.CanStop(profile.Id) || model.Share.CanShare(profile.Id, !writable);
-        }
-
-        async Task ChangeAndRenderAsync()
-        {
-            await ChangeSharingAsync(profile, shareNotice, RenderState);
-            RenderState();
-        }
     }
 
     private async Task ChangeSharingAsync(ConfigProfile profile, InfoBar? noticeBar = null, Action? onPending = null)

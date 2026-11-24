@@ -76,7 +76,7 @@ public sealed partial class MainWindow
         JumpPanel.MaxHeight = Math.Max(200, Root.ActualHeight - 138);
     }
 
-    private async void OpenJumpTo()
+    internal async void OpenJumpTo()
     {
         if (!jumpEnabled || !initialized)
             return;

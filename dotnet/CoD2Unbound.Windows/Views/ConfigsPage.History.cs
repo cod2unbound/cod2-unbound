@@ -18,9 +18,9 @@ public sealed partial class ConfigsPage
     private Button? historySnapshotButton;
     private Border? historySnapshotTarget;
 
-    private void AddStudioTabs(SelectorBar tabs, ConfigProfileRead profile)
+    private void AddStudioSnapshotCommand(Panel actions, ConfigProfileRead profile)
     {
-        var snapshot = Action("Save a snapshot now", async () =>
+        var snapshot = Action("Save a Snapshot Now", async () =>
         {
             if (!CanEdit || model.State.Current is not { } current || current.Profile.Id != profile.Profile.Id)
                 return;
@@ -29,14 +29,15 @@ public sealed partial class ConfigsPage
             historySnapshotButton?.Focus(FocusState.Programmatic);
             Announce("Saved a snapshot.");
         });
-        snapshot.Content = IconLabel("Bookmark", "Save a snapshot now", 16);
+        snapshot.Style = StyleFor("ToolbarPill");
+        snapshot.Content = IconLabel("History", "Save a Snapshot Now", 18);
         AutomationProperties.SetName(snapshot, "Save a snapshot now");
         snapshot.HorizontalAlignment = HorizontalAlignment.Right;
         historySnapshotButton = snapshot;
         var target = new Border { Child = snapshot, Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent),
             HorizontalAlignment = HorizontalAlignment.Right };
         historySnapshotTarget = target;
-        Detail.Children.Add(CheckPair(tabs, target, 565, rightAuto: true));
+        actions.Children.Add(target);
         UpdateHistorySnapshotButton();
     }
 

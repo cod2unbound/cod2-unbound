@@ -272,6 +272,20 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
+    <Style x:Key="ToolbarPill" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="44" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+    <Style x:Key="ToolbarSurface" TargetType="Border">
+        <Setter Property="Height" Value="44" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+    </Style>
     <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
@@ -1700,6 +1714,27 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style x:Key="StudioColumnItem" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style x:Key="StudioColumnAction" TargetType="Button" BasedOn="{StaticResource SidebarAction}">
+        <Setter Property="Height" Value="48" />
+        <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style x:Key="StudioMonogramTile" TargetType="Border" BasedOn="{StaticResource InitialTile}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style x:Key="StudioSettingsGroup" TargetType="Border" BasedOn="{StaticResource FieldCard}">
+        <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
+        <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="ReviewRow" TargetType="Border" BasedOn="{StaticResource FieldCard}">
         <Setter Property="Padding" Value="12,8" />

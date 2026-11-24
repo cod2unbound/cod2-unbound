@@ -121,31 +121,33 @@ public sealed partial class ConfigsPage
         return Task.CompletedTask;
     }
 
-    private void AttachLoadoutMenu(Grid row)
+    private MenuFlyout LoadoutMenu(ConfigProfile profile, bool includeNew)
     {
-        if (ContainingListItem(row) is not { } container)
-            return;
         var menu = new MenuFlyout();
         menu.Opening += (_, _) =>
         {
             menu.Items.Clear();
-            if (container.Content is not LoadoutRow item)
-                return;
-            var profile = item.Profile;
             bool shared = model.Share.CanStop(profile.Id);
-            menu.Items.Add(MenuItem("Use for next game", () => UseNextAsync(profile), CanEdit && !profile.IsActive));
+            bool write = CanEdit && model.State.ReadProblem is null;
+            if (includeNew)
+                menu.Items.Add(MenuItem("New Loadout…", CreateFromShellAsync, CanEdit));
+            menu.Items.Add(MenuItem("Use for Next Game", () => UseNextAsync(profile), write && !profile.IsActive));
             menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(MenuItem("Duplicate", () => DuplicateAsync(profile), CanEdit, "Ctrl+Shift+D", "Copy"));
-            menu.Items.Add(MenuItem("Rename…", () => RenameAsync(profile), CanEdit, "F2"));
+            menu.Items.Add(MenuItem(includeNew ? $"Duplicate “{profile.DisplayName}”" : "Duplicate",
+                () => DuplicateAsync(profile), write, "Ctrl+Shift+D", "Copy"));
+            menu.Items.Add(MenuItem(includeNew ? $"Rename “{profile.DisplayName}”…" : "Rename…",
+                () => RenameAsync(profile), write, "F2"));
             menu.Items.Add(MenuItem("Export…", () => ExportAsync(profile), shortcut: "Ctrl+Shift+E"));
-            menu.Items.Add(MenuItem(shared ? "Stop sharing…" : "Share setup…", () => ChangeSharingAsync(profile),
-                shared || model.Share.CanShare(profile.Id, !CanEdit), glyph: "Share"));
+            var share = MenuItem(shared ? "Stop Sharing…" : "Share Setup…", () => ChangeSharingAsync(profile),
+                shared || model.Share.CanShare(profile.Id, !write), glyph: "Share");
+            AutomationProperties.SetAutomationId(share, shared ? "StopSharingInMore" : "ShareSetupInMore");
+            menu.Items.Add(share);
             menu.Items.Add(MenuItem("Show in File Explorer", () => RevealLoadoutAsync(profile)));
             menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(MenuItem("Delete loadout…", () => DeleteAsync(profile),
-                CanEdit && ConfigStudioModel.DeleteBlock(model.State, profile.Id) is null, "Delete"));
+            menu.Items.Add(MenuItem(includeNew ? $"Delete “{profile.DisplayName}”…" : "Delete Loadout…", () => DeleteAsync(profile),
+                write && ConfigStudioModel.DeleteBlock(model.State, profile.Id) is null, "Delete"));
         };
-        container.ContextFlyout = menu;
+        return menu;
     }
 
     private MenuFlyoutItem MenuItem(string label, Func<Task> action, bool enabled = true, string? shortcut = null, string? glyph = null)
@@ -158,16 +160,6 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(item, label);
         item.Click += async (_, _) => await shell.RunAsync(action);
         return item;
-    }
-
-    private AppBarButton Command(string label, Func<Task> run, string? glyph = null)
-    {
-        var button = new AppBarButton { Label = label };
-        if (glyph is not null)
-            button.Icon = Fluent(glyph, 16);
-        AutomationProperties.SetName(button, label);
-        button.Click += async (_, _) => await shell.RunAsync(run);
-        return button;
     }
 
     private void AddShortcut(VirtualKey key, VirtualKeyModifiers modifiers, Func<Task> call,
