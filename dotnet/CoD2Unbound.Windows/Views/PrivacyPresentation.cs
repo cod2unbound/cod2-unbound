@@ -1,3 +1,4 @@
+using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;

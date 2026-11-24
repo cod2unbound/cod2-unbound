@@ -1,7 +1,8 @@
 <Page x:Class="CoD2Unbound.Windows.Views.ConfigsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:core="using:CoD2Unbound.Core">
+      xmlns:core="using:CoD2Unbound.Core"
+      xmlns:views="using:CoD2Unbound.Windows.Views">
     <Page.Resources>
         <DataTemplate x:Key="InstalledProfileHeader">
             <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="10,8,0,4" />
@@ -115,7 +116,7 @@
                             <ListViewItem AccessKey="P" AutomationProperties.Name="Player Setups" Style="{StaticResource StudioColumnItem}">
                                 <Grid>
                                     <Border Style="{StaticResource StudioMonogramTile}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPeopleCommunity}"
                                                   Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
                                         <TextBlock Text="Player Setups" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -129,7 +130,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource StudioMonogramTile}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentBookmark}"
                                                   Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
                                         <TextBlock Text="Saved" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -140,7 +141,7 @@
                             <ListViewItem AutomationProperties.Name="Check a config" Style="{StaticResource StudioColumnItem}">
                                 <Grid>
                                     <Border Style="{StaticResource StudioMonogramTile}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentShieldCheckmark}"
                                                   Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
                                         <TextBlock Text="Check a Config" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -179,7 +180,7 @@
                                 Style="{StaticResource StudioColumnAction}">
                             <Grid>
                                 <Border Style="{StaticResource StudioMonogramTile}" />
-                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAddSmall}" Width="30" FontSize="16" />
                                     <TextBlock Text="New Loadout" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
@@ -188,7 +189,7 @@
                         <Button x:Name="AddConfig" AccessKey="I" AutomationProperties.Name="Add a config" Style="{StaticResource StudioColumnAction}">
                             <Grid>
                                 <Border Style="{StaticResource StudioMonogramTile}" />
-                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" Width="30" FontSize="18" />
                                     <TextBlock Text="Add a Config" FontWeight="SemiBold" VerticalAlignment="Center" />
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
