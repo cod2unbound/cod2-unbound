@@ -181,7 +181,7 @@
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
                                 <NavigationViewItem Content="Library" Style="{StaticResource ShellNavItem}">
-                                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentVideoClip}" FontSize="18" /></NavigationViewItem.Icon>
+                                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
                                 <NavigationViewItem Content="Configs" Style="{StaticResource ShellNavItem}">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18" /></NavigationViewItem.Icon>
