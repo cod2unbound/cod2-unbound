@@ -32,7 +32,7 @@
                      verticals by construction: fills and the plate at SidebarInset (13 from the panel's edge,
                      both sides), glyph centres at 34 (the icon column is SidebarCompactLength - 8 = 42 wide),
                      labels at 55 (no presenter margin after the icon column). -->
-                <Thickness x:Key="NavigationViewPaneContentGridMargin">0,13,0,0</Thickness>
+                <Thickness x:Key="NavigationViewPaneContentGridMargin">-1,13,-1,0</Thickness>
                 <Thickness x:Key="NavigationViewButtonHolderGridMargin">2,14,0,4</Thickness>
                 <Thickness x:Key="NavigationViewItemButtonMargin">13,2</Thickness>
                 <x:Double x:Key="NavigationViewItemOnLeftMinHeight">38</x:Double>
