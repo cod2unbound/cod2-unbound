@@ -27,15 +27,27 @@ public sealed partial class SettingsPage : Page
     private string? advancedProblem;
     private int lastPane = -1;
 
-    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, bool openGameData = false, bool openUpdates = false)
+    internal const string GameDataPane = "Game Data", UpdatesPane = "Updates";
+
+    /// The chosen pane's name; the Settings window takes it as its title, as the Mac's does.
+    internal event Action<string>? PaneChanged;
+    internal string PaneTitle => (Panes.SelectedItem ?? Panes.Items[0]).Text;
+    internal event Action? ContentResized;
+    internal double HeaderHeight => Panes.ActualHeight + Panes.Margin.Top + Panes.Margin.Bottom + 1;
+    internal double PaneContentHeight => PaneBody.ActualHeight;
+
+    internal SettingsPage(MainWindow shell, WindowsLauncherSession session, string? openPane = null)
     {
         this.shell = shell;
         this.session = session;
         model = new(session);
         InitializeComponent();
+        PaneBody.SizeChanged += (_, _) => ContentResized?.Invoke();
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
-        var initial = Panes.Items[openUpdates ? 4 : openGameData ? 2 : Current.LastSettingsPane];
+        RefreshDisplayRunning(session.ClientIsRunning);
+        var initial = Panes.Items.FirstOrDefault(item => item.Text == openPane)
+            ?? Panes.Items[Math.Clamp(Current.LastSettingsPane, 0, Panes.Items.Count - 1)];
         Panes.SelectedItem = initial;
         Loaded += (_, _) =>
         {
@@ -51,6 +63,7 @@ public sealed partial class SettingsPage : Page
         Feedback.IsOpen = false;
         PaneScroll.ChangeView(null, 0, null);
         Render();
+        PaneChanged?.Invoke(PaneTitle);
         int pane = Panes.Items.IndexOf(Panes.SelectedItem);
         if (pane >= 0 && Current.LastSettingsPane != pane)
             await ChangeAsync(Current with { LastSettingsPane = pane }, display: pane == 1);
@@ -87,7 +100,7 @@ public sealed partial class SettingsPage : Page
         Switch("Minimize CoD2 Unbound while the game is running", "It comes back when you close the game.",
             Current.HideWhilePlaying, value => ChangeAsync(Current with { HideWhilePlaying = value }));
         Group("Launcher");
-        Choice("Appearance", null, ["Use system setting", "Light", "Dark"], (int)Current.Appearance,
+        Choice("Appearance", null, ["Match System", "Light", "Dark"], (int)Current.Appearance,
             async value => await ChangeAsync(Current with { Appearance = (LauncherAppearance)value }));
         Switch("Refresh the server list when Servers opens", "Off, nothing is contacted until you press Refresh.",
             Current.RefreshServersOnOpen, value => ChangeAsync(Current with { RefreshServersOnOpen = value }));
@@ -121,7 +134,7 @@ public sealed partial class SettingsPage : Page
         var dataActions = Buttons(reveal, choose);
         if (model.HasPendingData)
         {
-            var use = Action("Use this folder", async () =>
+            var use = Action("Use This Folder", async () =>
             {
                 await model.SaveDataAsync();
                 session.Record(new(UsageKind.SettingChanged, (int)UsageSetting.GameDataFolder));
@@ -149,7 +162,7 @@ public sealed partial class SettingsPage : Page
         AddEdition(GameEdition.Original, "Original 1.3");
         if (versions.Children.Count > 0)
             Row("Game versions installed", null, versions);
-        var setupAgain = Action("Set up again…", ConfirmSetupAgainAsync);
+        var setupAgain = Action("Set Up Again…", ConfirmSetupAgainAsync);
         setupAgain.IsEnabled = !session.ClientIsRunning && !session.SetupUpdating;
         Row("Set up again", "Walks through game data and CD key once more. Your loadouts, demos and screenshots stay. You can cancel at any step.",
             setupAgain);
@@ -216,7 +229,7 @@ public sealed partial class SettingsPage : Page
                 number.VerticalAlignment = VerticalAlignment.Center;
                 AutomationProperties.SetName(number, "Install number " + full);
                 ToolTipService.SetToolTip(number, full);
-                var reset = Action("Reset number", async () => { await session.ResetUsageAsync(); Render(); });
+                var reset = Action("Reset Number", async () => { await session.ResetUsageAsync(); Render(); });
                 reset.Style = StyleFor("SubtleAction");
                 reset.AccessKey = "R";
                 AutomationProperties.SetName(reset, "Reset number");
@@ -227,13 +240,13 @@ public sealed partial class SettingsPage : Page
         Group("On this PC");
         Switch("Match summaries", "Notes on how each match ran, so Check-up can advise you. Kept on this PC, the last 200 matches.", Current.MatchSummariesEnabled,
             value => ChangeAsync(Current with { MatchSummariesEnabled = value }));
-        var delete = Action("Delete summaries…", async () =>
+        var delete = Action("Delete Summaries…", async () =>
         {
             int count = session.ReadMatches().Length;
             if (session.ClientIsRunning || count == 0 ||
                 !await ConfirmAsync("Delete match summaries?",
                     count == 1 ? "Delete the one match summary on this PC?" : $"Delete all {count} match summaries on this PC?",
-                    "Delete summaries"))
+                    "Delete Summaries"))
                 return;
             if (session.ClientIsRunning)
                 return;
@@ -335,7 +348,7 @@ public sealed partial class SettingsPage : Page
         {
             title = "Couldn’t check for updates";
             message = state.Message;
-            AddAction("Try again");
+            AddAction("Try Again");
         }
         else if (state.Issue == UpdateIssue.Refused)
         {
@@ -354,19 +367,19 @@ public sealed partial class SettingsPage : Page
             title = "The update didn’t finish.";
             message = session.InstallNeedsRepair ? "Run Setup again to repair CoD2 Unbound." :
                 $"{current} is still installed and works.";
-            AddAction("Try again");
+            AddAction("Try Again");
             AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.Interrupted)
         {
             message = "The download stopped before it finished.";
-            AddAction("Try again", install: true);
+            AddAction("Try Again", install: true);
         }
         else if (state.Issue == UpdateIssue.Unexpected)
         {
             title = state.Offer is null ? installed : available;
             message = state.Message ?? "The update could not be completed.";
-            AddAction("Try again", install: state.Offer is not null);
+            AddAction("Try Again", install: state.Offer is not null);
             if (state.Offer is not null)
                 AddDownloadPage();
         }
@@ -378,7 +391,7 @@ public sealed partial class SettingsPage : Page
                     title = installed;
                     message = "Checking for updates…";
                     showProgress = true;
-                    AddAction("Check now", enabled: false);
+                    AddAction("Check Now", enabled: false);
                     break;
                 case UpdatePhase.Downloading:
                     message = DownloadMessage(state);
@@ -396,12 +409,12 @@ public sealed partial class SettingsPage : Page
                         ? "Close Call of Duty 2 to install it. The update waits until then."
                         : $"Downloaded, {Megabytes(state.Offer!.Archive.Size)} MB. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
+                    AddAction("Install and Relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
                     break;
                 case UpdatePhase.Offered:
                     message = state.Message ?? $"You have {current}. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and relaunch", install: true, primary: true);
+                    AddAction("Install and Relaunch", install: true, primary: true);
                     break;
                 case UpdatePhase.Installed:
                     title = $"CoD2 Unbound is now {current}.";
@@ -411,7 +424,7 @@ public sealed partial class SettingsPage : Page
                 default:
                     title = state.WasChecked || checkedAt is not null ? $"CoD2 Unbound {current} is up to date" : installed;
                     message = checkedAt;
-                    AddAction("Check now");
+                    AddAction("Check Now");
                     break;
             }
         }
@@ -452,7 +465,7 @@ public sealed partial class SettingsPage : Page
         void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
         void AddDownloadPage() => AddLink("Open download page", state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage);
         void AddWhatsNew(string release) =>
-            actions.Children.Add(Action("What’s new", () => shell.ShowReleaseNotesAsync(release)));
+            actions.Children.Add(Action("What’s New", () => shell.ShowReleaseNotesAsync(release)));
     }
 
     private static string? LastChecked(DateTimeOffset? time)
@@ -532,7 +545,7 @@ public sealed partial class SettingsPage : Page
         Group("Logs and reset");
         var logs = Action("Show in File Explorer", () => OpenAsync(session.LogsPath));
         logs.IsEnabled = Directory.Exists(session.LogsPath);
-        var copyLog = Action("Copy last game log", async () =>
+        var copyLog = Action("Copy Last Game Log", async () =>
         {
             if (await session.ReadLatestLogAsync() is { } log)
             {
@@ -544,17 +557,17 @@ public sealed partial class SettingsPage : Page
         });
         copyLog.IsEnabled = logs.IsEnabled;
         Row("Logs", "Game logs stay on this PC.", Buttons(logs, copyLog));
-        var warnings = Action("Reset warnings", async () =>
+        var warnings = Action("Reset Warnings", async () =>
         {
             await ChangeAsync(Current with { DismissedWarnings = [] });
             Render();
         });
         warnings.IsEnabled = !Current.DismissedWarnings.IsEmpty;
         Row("Warnings", null, warnings);
-        Row("Launcher settings", null, Action("Reset settings…", async () =>
+        Row("Launcher settings", null, Action("Reset Settings…", async () =>
         {
             if (!await ConfirmAsync("Reset launcher settings?",
-                "Restore the original settings and keep your loadouts, demos, screenshots and CD key.", "Reset settings"))
+                "Restore the original settings and keep your loadouts, demos, screenshots and CD key.", "Reset Settings"))
                 return;
             advancedDraft = advancedProblem = null;
             previousDisplay = null;
@@ -606,18 +619,30 @@ public sealed partial class SettingsPage : Page
         Margin = new Thickness(0, Fields.Children.Count == 0 ? 4 : 16, 0, 4)
     });
 
-    private void Row(string label, string? description = null, FrameworkElement? action = null) =>
-        Fields.Children.Add(SettingRow(label, description, action));
+    // Rows that follow one another share one rounded group with hairlines between them,
+    // as the Mac's grouped Form draws them (SettingsWin board).
+    private void Row(string label, string? description = null, FrameworkElement? action = null)
+    {
+        if (Fields.Children.Count == 0 || Fields.Children[^1] is not Border { Tag: RowGroupTag, Child: StackPanel rows })
+        {
+            rows = new StackPanel();
+            var card = PrivacyPresentation.GroupCard(rows);
+            card.Tag = RowGroupTag;
+            Fields.Children.Add(card);
+        }
+        else
+            rows.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1, Margin = new Thickness(16, 0, 16, 0) });
+        rows.Children.Add(SettingRow(label, description, action, grouped: true));
+    }
 
+    private const string RowGroupTag = "settings-row-group";
+
+    // The Mac draws a short set of choices as a segmented control (SettingsWin board).
     private void Choice(string label, string? description, string[] options, int selected, Func<int, Task> change)
     {
-        var choice = new ComboBox { ItemsSource = options, SelectedIndex = selected, MinWidth = 180 };
+        var choice = Tabs(options, selected, index => _ = change(index));
+        choice.HorizontalAlignment = HorizontalAlignment.Right;
         AutomationProperties.SetName(choice, label);
-        choice.SelectionChanged += async (_, _) =>
-        {
-            if (choice.SelectedIndex >= 0)
-                await change(choice.SelectedIndex);
-        };
         Row(label, description, choice);
     }
 
@@ -655,6 +680,7 @@ public sealed partial class SettingsPage : Page
         CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
     };
 
+    // A single decision is the Mac's alert, not a sheet (AllSheets, Alerts).
     private async Task<bool> ConfirmAsync(string title, string message, string primary) =>
-        await Dialog(title, Caption(message), primary).ShowAsync() == ContentDialogResult.Primary;
+        await Dialog(title, Caption(message), primary).AsAlert().ShowAsync() == ContentDialogResult.Primary;
 }

@@ -78,6 +78,13 @@
             <SolidColorBrush x:Key="prominentEdge" Color="#8CFFECBE" />
             <SolidColorBrush x:Key="prominentGlow" Color="#57C4984C" />
             <SolidColorBrush x:Key="systemSheet" Color="#282727" />
+            <SolidColorBrush x:Key="sidebarLabel" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="sidebarGlyph" Color="#D3AE60" />
+            <SolidColorBrush x:Key="sidebarGlyphSelected" Color="#E1BD6F" />
+            <SolidColorBrush x:Key="sidebarStar" Color="#D3BF7E" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#3AFFFFFF" />
+            <SolidColorBrush x:Key="sidebarQuiet" Color="#D8FFFFFF" />
+            <SolidColorBrush x:Key="sidebarSelection" Color="#22FFFFFF" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#BFE2BD72" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="#00000000" />
@@ -389,6 +396,11 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#8C000000" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="#00000000" />
+            <RadialGradientBrush x:Key="prominentGlowFill">
+                <GradientStop Offset="0" Color="#57C4984C" />
+                <GradientStop Offset="1" Color="#00C4984C" />
+            </RadialGradientBrush>
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
@@ -468,6 +480,13 @@
             <SolidColorBrush x:Key="prominentEdge" Color="#4DFFFFFF" />
             <SolidColorBrush x:Key="prominentGlow" Color="#4746522A" />
             <SolidColorBrush x:Key="systemSheet" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="sidebarLabel" Color="#000000" />
+            <SolidColorBrush x:Key="sidebarGlyph" Color="#818D4E" />
+            <SolidColorBrush x:Key="sidebarGlyphSelected" Color="#768244" />
+            <SolidColorBrush x:Key="sidebarStar" Color="#5F4C1F" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#54000000" />
+            <SolidColorBrush x:Key="sidebarQuiet" Color="#D8000000" />
+            <SolidColorBrush x:Key="sidebarSelection" Color="#18000000" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#BF6B4A12" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="#00000000" />
@@ -779,6 +798,11 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#613C321E" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="#00000000" />
+            <RadialGradientBrush x:Key="prominentGlowFill">
+                <GradientStop Offset="0" Color="#4746522A" />
+                <GradientStop Offset="1" Color="#0046522A" />
+            </RadialGradientBrush>
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
@@ -858,6 +882,13 @@
             <SolidColorBrush x:Key="prominentEdge" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="prominentGlow" Color="#00000000" />
             <SolidColorBrush x:Key="systemSheet" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="sidebarLabel" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="sidebarGlyph" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="sidebarGlyphSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="sidebarStar" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="sidebarQuiet" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="sidebarSelection" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#00000000" />
             <SolidColorBrush x:Key="FrameContrastBrush" Color="{ThemeResource SystemColorWindowColor}" />
@@ -1150,6 +1181,8 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#00000000" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="prominentGlowFill" Color="#00000000" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
@@ -1163,6 +1196,7 @@
     <CornerRadius x:Key="MenuRadius">14</CornerRadius>
     <CornerRadius x:Key="PlateRadius">14</CornerRadius>
     <CornerRadius x:Key="NavItemRadius">12</CornerRadius>
+    <CornerRadius x:Key="SidebarRowRadius">10</CornerRadius>
     <CornerRadius x:Key="WellRadius">12</CornerRadius>
     <CornerRadius x:Key="IconTileRadius">8</CornerRadius>
     <CornerRadius x:Key="InlineFieldRadius">7</CornerRadius>
@@ -1258,6 +1292,8 @@
     <x:Double x:Key="SidebarWidth">232</x:Double>
     <x:Double x:Key="SidebarInset">10</x:Double>
     <x:Double x:Key="NavHeight">38</x:Double>
+    <x:Double x:Key="SidebarRowHeight">40</x:Double>
+    <x:Double x:Key="SidebarFooterRowHeight">36</x:Double>
     <x:Double x:Key="CaptionHeight">32</x:Double>
     <x:Double x:Key="GlassShadowBlur">48</x:Double>
     <x:Double x:Key="GlassShadowOffset">18</x:Double>
@@ -1272,6 +1308,7 @@
     <CornerRadius x:Key="FieldCapsuleRadius">18</CornerRadius>
     <CornerRadius x:Key="CircleRadius">18</CornerRadius>
     <CornerRadius x:Key="SegmentRadius">14</CornerRadius>
+    <CornerRadius x:Key="SegmentLargeRadius">18</CornerRadius>
     <CornerRadius x:Key="ChipRadius">13</CornerRadius>
     <CornerRadius x:Key="LargeChipRadius">20</CornerRadius>
     <CornerRadius x:Key="SwitchRadius">12</CornerRadius>

@@ -1,0 +1,19 @@
+<Window x:Class="CoD2Unbound.Windows.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings">
+    <!-- The Mac's Settings window (SettingsWindow.swift, SettingsWin board): 900 wide, the pane's name as the
+         title, the labelled pane bar under it. The system's caption buttons sit at the top right. -->
+    <Grid x:Name="SettingsRoot" Background="{ThemeResource GroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="{StaticResource CaptionRowHeight}" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid x:Name="SettingsCaption" Background="Transparent">
+            <TextBlock x:Name="CaptionTitle" Text="Settings" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="{StaticResource SubtitleSize}" FontWeight="SemiBold" Foreground="{ThemeResource text}"
+                       AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+        <Frame x:Name="SettingsFrame" Grid.Row="1" IsTabStop="False" />
+    </Grid>
+</Window>

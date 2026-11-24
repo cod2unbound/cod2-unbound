@@ -1,4 +1,5 @@
 #if UPDATE_FIXTURES
+using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -34,16 +35,19 @@ public sealed partial class StylePartsWindow : Window
             XamlRoot = PartsRoot.XamlRoot, RequestedTheme = PartsRoot.RequestedTheme,
             Title = "Rename “Main”", PrimaryButtonText = "Rename", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary,
-            Content = new StackPanel
-            {
-                Spacing = 12,
-                Children =
-                {
-                    Body("Each loadout is its own Call of Duty 2 player profile."),
-                    new TextBox { Text = "Main", Style = StyleFor("CapsuleTextBox") }
-                }
-            }
-        };
+            Content = new TextBox { Text = "Main", Style = StyleFor("CapsuleTextBox") }
+        }.WithSymbol("SystemEdit", "Each loadout is its own Call of Duty 2 player profile.");
+        await dialog.ShowAsync();
+    }
+
+    private async void OpenAlert(object sender, RoutedEventArgs args)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = PartsRoot.XamlRoot, RequestedTheme = PartsRoot.RequestedTheme,
+            Title = "Remove “Desert Fox SD” from Favorites?", Content = Body("It stays in the server list and in Recent."),
+            PrimaryButtonText = "Remove", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
+        }.AsAlert();
         await dialog.ShowAsync();
     }
 }

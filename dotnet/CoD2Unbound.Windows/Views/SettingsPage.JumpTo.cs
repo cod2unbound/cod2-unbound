@@ -10,7 +10,7 @@ public sealed partial class SettingsPage
         ("General", ["Game version", "Minimize CoD2 Unbound while the game is running", "Appearance",
             "Refresh the server list when Servers opens", "Loadout"]),
         ("Display", ["Monitor", "Mode", "Graphics", "Resolution", "Restore defaults"]),
-        ("Game data", ["Game data folder", "CD key", "Loadouts, demos and screenshots", "Game versions installed", "Set up again"]),
+        ("Game Data", ["Game data folder", "CD key", "Loadouts, demos and screenshots", "Game versions installed", "Set up again"]),
         ("Privacy", [PrivacyPresentation.CrashSwitch, PrivacyPresentation.Cod2xSwitch, PrivacyPresentation.UsageSwitch,
             "Install number", "Match summaries", "Saved match summaries"]),
         ("Updates", ["Check for updates automatically", "Check now", "What’s new", "Install and relaunch"]),
@@ -23,9 +23,12 @@ public sealed partial class SettingsPage
 
     internal void OpenJumpPane(string name)
     {
-        if (Panes.Items.FirstOrDefault(item => item.Text == name) is { } pane)
+        if (Panes.Items.FirstOrDefault(item => string.Equals(item.Text, name, StringComparison.OrdinalIgnoreCase)) is { } pane)
             Panes.SelectedItem = pane;
     }
+
+    internal void StepPane(int offset) =>
+        Panes.SelectedItem = Panes.Items[(Panes.Items.IndexOf(Panes.SelectedItem) + offset + Panes.Items.Count) % Panes.Items.Count];
 
     internal Task ReportProblemFromShellAsync() =>
         shell.ShowProblemReportAsync();

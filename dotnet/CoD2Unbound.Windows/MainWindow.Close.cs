@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
+using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Controls;
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -96,7 +97,7 @@ public sealed partial class MainWindow
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = title, Content = Body(message),
             PrimaryButtonText = primary, SecondaryButtonText = secondary, CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary
-        };
+        }.AsAlert();
         return await dialog.ShowAsync();
     }
 

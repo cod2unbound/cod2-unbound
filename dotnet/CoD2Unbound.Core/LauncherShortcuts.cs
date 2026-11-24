@@ -29,6 +29,7 @@ public static class LauncherShortcuts
         new(ShellCommand.Configs, "Configs", ["Ctrl+4"]),
         new(ShellCommand.Settings, "Settings", ["Ctrl+,"]),
         new(ShellCommand.Jump, "Jump to…", ["Ctrl+K"]),
+        new(ShellCommand.ShortcutHelp, "Keyboard shortcuts", ["Ctrl+/"]),
         new(ShellCommand.Find, "Find", ["Ctrl+F"]),
         new(ShellCommand.RefreshServers, "Refresh servers", ["Ctrl+R", "F5"]),
         new(ShellCommand.Connect, "Connect to an address", ["Ctrl+L"]),

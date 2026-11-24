@@ -10,11 +10,14 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
 {
     private KeyboardShortcutsDialog(MainWindow shell)
     {
+        // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
+        Style = StyleFor("LauncherSheet");
         XamlRoot = shell.DialogRoot;
         RequestedTheme = shell.DialogTheme;
         Resources["ContentDialogMaxWidth"] = 720d;
         Width = 720;
         Title = "Keyboard shortcuts";
+        this.WithSymbol("SystemKeyboard", "Every shortcut, in one place: Windows has no menu bar.");
         PrimaryButtonText = "Done";
         DefaultButton = ContentDialogButton.Primary;
 
@@ -28,7 +31,6 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
             Spacing = 12,
             Children =
             {
-                Body("Every shortcut is listed here, and every command also has a button in the window. Press Alt to see the access keys on the page."),
                 new ScrollViewer { MaxHeight = 460, Content = columns, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
             }
         };
@@ -48,8 +50,8 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
             if (shortcut.Keys.Length > 0)
                 Put(line, 1, new Border
                 {
-                    Style = StyleFor("FieldCard"), Padding = new Thickness(6, 2, 6, 2),
-                    Child = new TextBlock { Text = shortcut.Keys, Style = StyleFor("MonoCaption") }
+                    Style = StyleFor("KeyCapLabel"),
+                    Child = new TextBlock { Text = shortcut.Keys, Style = StyleFor("KeyCapText") }
                 });
             AutomationProperties.SetName(line, shortcut.Keys.Length == 0 ? shortcut.Title : $"{shortcut.Title}, {shortcut.Keys}");
             column.Children.Add(line);

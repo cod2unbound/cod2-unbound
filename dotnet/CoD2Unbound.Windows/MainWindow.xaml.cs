@@ -22,7 +22,6 @@ public sealed partial class MainWindow : Window
     private readonly bool useCustomTitleBar;
     private bool busy;
     private bool loaded;
-    private bool? wideSidebar;
     private double sizedAtScale;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer gameWatcher;
     private GameSessionState? lastGame;
@@ -43,6 +42,16 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
+        InitializeTitleBarContent();
+        // Only the symbols' placement here: their colours wait for the theme (PaintNavGlyphs).
+        foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
+            if (item.Icon is FontIcon glyph)
+                SetNavGlyphNudge(item, glyph);
+        ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
+        // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
+        foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
+            notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
+                ShellNotices.Padding = new Thickness(16, Problem.IsOpen || ReportCopied.IsOpen || ReportWarning.IsOpen ? 40 : 0, 16, 0));
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
         useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();
@@ -54,7 +63,7 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            CaptionRow.Height = new GridLength(0);
+            WindowBar.Visibility = Visibility.Collapsed;
         }
         windowTheme = ThemeSettings.CreateForWindowId(AppWindow.Id);
         windowTheme.Changed += OnSystemThemeChanged;
@@ -67,6 +76,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += OnClosing;
         Closed += (_, _) =>
         {
+            settingsWindow?.Close();
             CompositionTarget.Rendered -= OnFirstRendered;
 #if UPDATE_FIXTURES
             CompositionTarget.Rendered -= OnFirstContentRendered;
@@ -137,13 +147,14 @@ public sealed partial class MainWindow : Window
     private void OnSizeChanged(object sender, SizeChangedEventArgs args)
     {
         ResizeForDisplay();
-        UpdatePaneMode(args.NewSize.Width);
     }
 
     private void OnAppThemeChanged(FrameworkElement sender, object args) =>
         DispatcherQueue.TryEnqueue(() =>
         {
             UpdateShellTheme();
+            PaintNavGlyphs();
+            RefreshFavorites();
             if (initialized)
                 _ = RefreshPlayerAsync();
         });
@@ -160,14 +171,14 @@ public sealed partial class MainWindow : Window
                 servers.UpdateContrast();
             else if (ContentFrame.Content is ConfigsPage configs)
                 configs.UpdateContrast();
-            else if (ContentFrame.Content is SettingsPage settings)
-                settings.UpdateContrast();
+            settingsWindow?.Page.UpdateContrast();
         });
 
     internal ConfigSetupOrder SetupOrder { get; set; }
     internal bool IsHighContrast => windowTheme.HighContrast;
     internal ElementTheme DialogTheme => Root.RequestedTheme;
-    internal XamlRoot DialogRoot => Root.XamlRoot;
+    // A sheet opens on the window the person is using: the Settings window while it is in front.
+    internal XamlRoot DialogRoot => settingsWindow is { IsInFront: true } settings ? settings.DialogRoot : Root.XamlRoot;
 
     private void UpdateShellTheme()
     {
@@ -182,31 +193,26 @@ public sealed partial class MainWindow : Window
             ApplyCaptionTheme(AppWindow.TitleBar, theme, contrast);
     }
 
-    private void UpdatePaneMode(double width)
-    {
-        // Keep the four navigation targets reachable at every supported width.
-        if (width <= 0 || !Nav.IsPaneVisible)
-            return;
-
-        bool wide = width >= 1200;
-        if (wideSidebar != wide)
-        {
-            wideSidebar = wide;
-            Nav.PaneDisplayMode = wide ? NavigationViewPaneDisplayMode.Left : NavigationViewPaneDisplayMode.LeftCompact;
-            Nav.IsPaneOpen = wide;
-        }
-    }
-
+    // The Mac keeps its sidebar at every window width (1100 x 700 is the smallest window); only its own
+    // toggle collapses it. The pane is therefore always the expanded Left pane unless the person closes it.
     private void OnPaneChanged(NavigationView sender, object args)
     {
         bool showPane = Nav.IsPaneVisible;
         SidebarGlass.Visibility = IsVisible(showPane);
-        Nav.Margin = showPane ? new Thickness(10, 10, 0, 10) : new Thickness(0);
-        SidebarGlass.Width = Nav.IsPaneOpen ? Nav.OpenPaneLength : Nav.CompactPaneLength;
+        Nav.Margin = showPane ? new Thickness(10, 0, 0, 0) : new Thickness(0);
+        double paneWidth = Nav.IsPaneOpen ? Nav.OpenPaneLength : Nav.CompactPaneLength;
+        SidebarGlass.Width = paneWidth;
+        // The drag strip starts where the sidebar ends, so the sidebar's own controls stay pressable.
+        WindowBar.Margin = new Thickness(showPane ? 10 + paneWidth : 0, 0, 0, 0);
         BrandHeader.Visibility = IsVisible(showPane && Nav.IsPaneOpen);
         PlayerPlate.Visibility = IsVisible(showPane && Nav.IsPaneOpen && !session.SetupActive);
+        SettingsLabel.Visibility = FooterRule.Visibility = IsVisible(Nav.IsPaneOpen);
+        SettingsItem.HorizontalContentAlignment = Nav.IsPaneOpen ? HorizontalAlignment.Left : HorizontalAlignment.Center;
         RefreshFavorites();
     }
+
+    // WinRules: the smallest window is 1100 x 700.
+    private const int MinimumWidth = 1100, MinimumHeight = 700;
 
     private void ResizeForDisplay(bool startup = false)
     {
@@ -214,13 +220,13 @@ public sealed partial class MainWindow : Window
         if (AppWindow.Presenter is not OverlappedPresenter presenter || (!startup && sizedAtScale == scale))
             return;
         sizedAtScale = scale;
-        presenter.PreferredMinimumWidth = Pixels(1024);
-        presenter.PreferredMinimumHeight = Pixels(640);
+        presenter.PreferredMinimumWidth = Pixels(MinimumWidth);
+        presenter.PreferredMinimumHeight = Pixels(MinimumHeight);
         if (startup)
         {
             var work = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
-            int width = Math.Max(Pixels(1024), Math.Min(Pixels(1440), work.Width));
-            int height = Math.Max(Pixels(640), Math.Min(Pixels(900), work.Height));
+            int width = Math.Max(Pixels(MinimumWidth), Math.Min(Pixels(1440), work.Width));
+            int height = Math.Max(Pixels(MinimumHeight), Math.Min(Pixels(900), work.Height));
             AppWindow.MoveAndResize(new RectInt32(work.X + Math.Max(0, (work.Width - width) / 2),
                 work.Y + Math.Max(0, (work.Height - height) / 2), width, height));
         }
@@ -239,9 +245,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnNavigation(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (ReferenceEquals(args.InvokedItemContainer, SettingsItem))
-            await RunAsync(() => NavigateAsync(LauncherPlace.Settings));
-        else if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
+        if (ReferenceEquals(args.InvokedItemContainer, HomeItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Home));
         else if (ReferenceEquals(args.InvokedItemContainer, ServersItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Servers));
@@ -274,13 +278,23 @@ public sealed partial class MainWindow : Window
         bool refreshServers = true, LauncherPlace cancelSetupTo = LauncherPlace.GameDataSettings)
     {
         CloseJumpTo(restoreFocus: false);
-        Nav.IsPaneVisible = JumpBox.IsEnabled = !session.SetupActive && place != LauncherPlace.Setup;
-        JumpHost.Visibility = Nav.IsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
-        if (Nav.IsPaneVisible)
+        if (place is LauncherPlace.Settings or LauncherPlace.GameDataSettings or LauncherPlace.UpdateSettings)
         {
-            UpdatePaneMode(Root.ActualWidth);
-            await RefreshPlayerAsync();
+            // Settings is its own window, as on the Mac. The launcher window stays where it is, except
+            // when it was showing Setup (cancelled Setup returns to Home behind the Settings window).
+            if (ContentFrame.Content is SetupPage || ContentFrame.Content is null)
+                await NavigateAsync(LauncherPlace.Home);
+            OpenSettingsWindow(place switch
+            {
+                LauncherPlace.GameDataSettings => SettingsPage.GameDataPane,
+                LauncherPlace.UpdateSettings => SettingsPage.UpdatesPane,
+                _ => null
+            });
+            return;
         }
+        Nav.IsPaneVisible = jumpEnabled = !session.SetupActive && place != LauncherPlace.Setup;
+        if (Nav.IsPaneVisible)
+            await RefreshPlayerAsync();
         OnPaneChanged(Nav, EventArgs.Empty);
         if (place is LauncherPlace.Home or LauncherPlace.Servers or LauncherPlace.Library or LauncherPlace.Configs)
             session.Opened(place switch
@@ -315,7 +329,7 @@ public sealed partial class MainWindow : Window
             Nav.SelectedItem = LibraryItem;
             ContentFrame.Content = new LibraryPage(this, session);
         }
-        else if (place == LauncherPlace.Configs)
+        else
         {
             nint owner = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var model = await Task.Run(async () =>
@@ -326,12 +340,6 @@ public sealed partial class MainWindow : Window
             });
             Nav.SelectedItem = ConfigsItem;
             ContentFrame.Content = new ConfigsPage(this, model);
-        }
-        else
-        {
-            Nav.SelectedItem = SettingsItem;
-            ContentFrame.Content = new SettingsPage(this, session, openGameData: place == LauncherPlace.GameDataSettings,
-                openUpdates: place == LauncherPlace.UpdateSettings);
         }
         object? content = ContentFrame.Content;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
@@ -363,19 +371,48 @@ public sealed partial class MainWindow : Window
             servers.RefreshActiveLoadout();
     }
 
+    // The Mac sidebar: every page row's symbol is in the accent (the chosen one a little stronger, as vibrancy
+    // draws it) and the chosen row's label is semibold. In a contrast theme the symbols follow the row's text.
+    private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args) => PaintNavGlyphs();
+
+    private void PaintNavGlyphs()
+    {
+        var sender = Nav;
+        foreach (var item in sender.MenuItems.OfType<NavigationViewItem>())
+            if (item.Icon is FontIcon glyph && item.Tag is null)
+            {
+                bool chosen = ReferenceEquals(item, sender.SelectedItem);
+                item.FontWeight = chosen ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+                SetNavGlyphNudge(item, glyph);
+                if (IsHighContrast)
+                    glyph.ClearValue(IconElement.ForegroundProperty);
+                else
+                    glyph.Foreground = ThemeBrush(chosen ? "sidebarGlyphSelected" : "sidebarGlyph", Root.ActualTheme, false);
+            }
+    }
+
+    // NavigationView centres the symbol's box and the label's line in the row; GlyphAlign works out the move
+    // that puts the symbol's ink centre on the label's cap centre from the two fonts' metrics.
+    private static void SetNavGlyphNudge(NavigationViewItem item, FontIcon glyph) =>
+        glyph.RenderTransform = new TranslateTransform { Y = GlyphAlign.CentredNudge(item.FontSize, glyph) };
+
     internal void RefreshFavorites()
     {
         while (Nav.MenuItems.Count > 4)
             Nav.MenuItems.RemoveAt(Nav.MenuItems.Count - 1);
         if (!Nav.IsPaneOpen || session.Library.Favorites.Count == 0)
             return;
-        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites" });
+        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites", Style = StyleFor("SidebarSectionHeader") });
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
-            var icon = Fluent("StarFilled", 16, filled: true);
+            // The Mac's favourite star: the palette accent, about 21 px of ink (Fluent's star at 26), on the
+            // name's cap centre. The margin pads its line box (28.34) to the icon box's height (30.52) so the
+            // item's Viewbox draws it at 26 rather than enlarging it.
+            var icon = Fluent("StarFilled", 26, filled: true);
+            icon.Margin = new Thickness(1.09);
             if (!IsHighContrast)
-                icon.Foreground = ThemeBrush("FavoriteBrush", Root.ActualTheme, false);
+                icon.Foreground = ThemeBrush("sidebarStar", Root.ActualTheme, false);
             string plain = QuakeColors.Plain(favorite.Name);
             string shortName = plain.Split('|', 2)[0].Trim();
             var title = new TextBlock { Text = shortName, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -384,8 +421,8 @@ public sealed partial class MainWindow : Window
             if (favorite.MaxPlayers > 0)
                 Put(content, 1, new TextBlock
                 {
-                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SetupFactLabel"),
-                    VerticalAlignment = VerticalAlignment.Center
+                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SidebarCount"),
+                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, -5, 0)
                 });
             var item = new NavigationViewItem
             {
@@ -393,6 +430,7 @@ public sealed partial class MainWindow : Window
                 SelectsOnInvoked = false, Style = StyleFor("ShellNavItem")
             };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, plain);
+            SetNavGlyphNudge(item, icon);
             Nav.MenuItems.Add(item);
         }
     }
@@ -463,9 +501,8 @@ public sealed partial class MainWindow : Window
 
     private void RefreshUpdateViews(LauncherUpdateState state)
     {
-        if (ContentFrame.Content is SettingsPage settings)
-            settings.RefreshUpdates(state);
-        else if (ContentFrame.Content is HomePage home)
+        settingsWindow?.Page.RefreshUpdates(state);
+        if (ContentFrame.Content is HomePage home)
             home.RefreshUpdate(state);
     }
 
@@ -508,12 +545,16 @@ public sealed partial class MainWindow : Window
         finally { updateRequest = null; }
     }
 
-    internal void ApplyAppearance(LauncherAppearance appearance) => Root.RequestedTheme = appearance switch
+    internal void ApplyAppearance(LauncherAppearance appearance)
     {
-        LauncherAppearance.Light => ElementTheme.Light,
-        LauncherAppearance.Dark => ElementTheme.Dark,
-        _ => ElementTheme.Default
-    };
+        Root.RequestedTheme = appearance switch
+        {
+            LauncherAppearance.Light => ElementTheme.Light,
+            LauncherAppearance.Dark => ElementTheme.Dark,
+            _ => ElementTheme.Default
+        };
+        settingsWindow?.ApplyTheme(Root.RequestedTheme);
+    }
 
     internal bool IsBusy => busy;
     internal void ClearProblem() => Problem.IsOpen = false;
