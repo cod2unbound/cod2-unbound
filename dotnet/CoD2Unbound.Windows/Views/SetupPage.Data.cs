@@ -12,6 +12,8 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
+/// <summary>Game data (the Mac's dataPanel; boards WinSetup 2): nothing found, found by itself, two copies,
+/// a wrong folder, an unfinished Steam download, waiting for Steam and Steam missing.</summary>
 public sealed partial class SetupPage
 {
     private CancellationTokenSource? steamWatch;
@@ -19,6 +21,7 @@ public sealed partial class SetupPage
     private bool steamUnavailable;
     private bool showCopyChoices = true;
     private string? dropProblem;
+    private bool dropTargeted;
 
     private void RenderData()
     {
@@ -27,111 +30,100 @@ public sealed partial class SetupPage
         if (steamCopy is { } installed && !copies.Any(copy => WindowsLauncherSession.SamePath(copy.DataPath, installed.DataPath)))
             copies = copies.Insert(0, installed);
         bool found = data.State == SetupDataState.Found;
-        if (found || data.Path.Length > 0)
+        Grid panel;
+        dropZone = null;
+        if (data.State is SetupDataState.Damaged or SetupDataState.UnfinishedSteam && data.Path.Length > 0)
         {
-            if (found && copies.Length > 1 && showCopyChoices &&
-                copies.Any(copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path)))
+            bool unfinished = data.State == SetupDataState.UnfinishedSteam;
+            var choose = FolderButton("Choose Folder…");
+            var items = new List<UIElement>
             {
-                var options = new RadioButtons { Header = $"{copies.Length} copies found. Choose the one to use." };
-                AutomationProperties.SetName(options, "Game data folder");
-                foreach (var copy in copies)
-                    options.Items.Add(RadioChoice(copy.DataPath, FoundDetail(copy.Source)));
-                options.SelectedIndex = Array.FindIndex(copies.ToArray(), copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path));
-                options.SelectionChanged += (_, _) =>
-                {
-                    if (options.SelectedIndex < 0 || shell.IsBusy)
-                        return;
-                    Setup.ChooseData(copies[options.SelectedIndex].DataPath);
-                    UpdateContinue();
-                    if (Setup.Data.State != SetupDataState.Found)
-                        _ = shell.RunAsync(RefreshAsync);
-                };
-                StepContent.Children.Add(DataCard(options, FolderButton("Choose a different folder…")));
-            }
-            else
-            {
-                var source = copies.FirstOrDefault(copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path))?.Source ?? GameInstallSource.Chosen;
-                StepContent.Children.Add(DataCard(
-                    ChoiceContent(found ? "Game data found" : data.Path,
-                        found ? data.Path + "\n" + FoundDetail(source) : $"{data.Survey.Found} of 16 game archives found"),
-                    FolderButton("Choose a different folder…")));
-            }
-            if (data.Problem is { } problem)
-                StepContent.Children.Add(new InfoBar { IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Error, Message = problem });
-            if (found)
-                StepContent.Children.Add(Caption("Configs, demos and screenshots go in your CoD2 Unbound folder."));
-            else if (copies.Length > 0)
-            {
-                var useFound = new Button { Content = "Use a found copy" };
-                useFound.Click += async (_, _) => await shell.RunAsync(async () =>
-                {
-                    showCopyChoices = true;
-                    Setup.ChooseData(copies[0].DataPath);
-                    await RefreshAsync();
-                });
-                StepContent.Children.Add(useFound);
-            }
-            return;
+                Group(Row("folder", data.Path, unfinished ? "An unfinished Steam download" : $"{data.Survey.Found} of 16 game archives found",
+                    trailing: choose, mono: true, negative: true)),
+                Banner(SetupBannerTone.Error, "warning", (data.Problem ?? SetupSession.SteamUnfinishedMessage).Replace("main/", @"main\", StringComparison.Ordinal))
+            };
+            if (unfinished)
+                items.Add(Cornered(Action("Finish in Steam", async (_, _) =>
+                    await shell.ShowProblemAsync(() => OpenAsync("steam://install/2630")))));
+            panel = GlassPanel(6, 12, [.. items]);
+            focusTarget = choose;
         }
-
-        if (steamUnavailable)
+        else if (found && copies.Length > 1 && showCopyChoices &&
+            copies.Any(copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path)))
         {
-            var getSteam = new Button { Content = "Get Steam" };
-            getSteam.Click += async (_, _) => await shell.ShowProblemAsync(() => OpenAsync("https://store.steampowered.com/about/"));
-            StepContent.Children.Add(new InfoBar
-            {
-                IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Warning, ActionButton = getSteam,
-                Message = "Steam isn’t installed on this PC. Install Steam, sign in, then choose Install with Steam again."
-            });
+            panel = GlassPanel(6, 12, CopyChoices(copies, data.Path), Cornered(FolderButton("Choose a Different Folder…")));
+            focusTarget = SetupNext;
         }
-        StepContent.Children.Add(DropZone());
-        if (dropProblem is { } dropError)
-            StepContent.Children.Add(new InfoBar { IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Error, Message = dropError });
-        if (steamWatch is null)
+        else if (found)
         {
-            var sources = new StackPanel();
-            sources.Children.Add(DataSourceRow("Steam", "In Steam, right-click the game, then Manage › Browse local files."));
-            sources.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            sources.Children.Add(DataSourceRow("Disc or other store", @"Usually C:\Program Files (x86)\Activision\Call of Duty 2."));
-            sources.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            sources.Children.Add(DataSourceRow("Mac 1.3", "Copy the Call of Duty 2 folder from the Mac to this PC."));
-            StepContent.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = sources });
-            var install = new Button { Content = "Install with Steam" };
-            install.Click += OnInstallWithSteam;
-            var steam = Columns(12, GridLength.Auto, new(1, GridUnitType.Star), GridLength.Auto);
-            Put(steam, 0, Fluent("ArrowDownload", 20));
-            Put(steam, 1, ChoiceContent("Own it on Steam, but not installed?",
-                "Steam installs it. CoD2 Unbound finds the files when Steam finishes."));
-            Put(steam, 2, install);
-            StepContent.Children.Add(DataCard(steam));
+            var source = copies.FirstOrDefault(copy => WindowsLauncherSession.SamePath(copy.DataPath, data.Path))?.Source ?? GameInstallSource.Chosen;
+            var used = Note("Used where it is. Nothing is copied or changed. Configs, demos and screenshots get their own folder.");
+            used.Padding = new Thickness(16, 12, 16, 12);
+            used.MinHeight = 44;
+            panel = GlassPanel(6, 12,
+                Group(16, Row("folder", data.Path, FoundDetail(source), mono: true, status: Status(SetupStatus.Ready, "Game data found")), used),
+                Cornered(FolderButton("Choose a Different Folder…")));
+            focusTarget = SetupNext;
         }
         else
         {
-            var stop = new Button { Content = "Stop waiting" };
-            stop.Click += async (_, _) => await shell.RunAsync(async () =>
+            var items = new List<UIElement> { DropZone() };
+            if (dropProblem is { } dropError)
+                items.Add(Banner(SetupBannerTone.Error, "warning", dropError));
+            if (steamWatch is not null)
+                items.Add(Group(Row("sync", "Waiting for Steam to install Call of Duty 2",
+                    "Steam shows the download. Setup moves on by itself when all 16 game archives are there.",
+                    trailing: Action("Stop Waiting", async (_, _) => await shell.RunAsync(async () =>
+                    {
+                        StopSteamWatch();
+                        await RefreshAsync();
+                    })))));
+            else
             {
-                StopSteamWatch();
-                await RefreshAsync();
-            });
-            var ring = new ProgressRing { IsActive = true, Width = 24, Height = 24, VerticalAlignment = VerticalAlignment.Center };
-            AutomationProperties.SetName(ring, "Waiting for Steam");
-            var waiting = Columns(8, GridLength.Auto, new(1, GridUnitType.Star));
-            Put(waiting, 0, ring);
-            Put(waiting, 1, ChoiceContent("Waiting for Steam to install Call of Duty 2",
-                "Steam shows the download. Setup continues when all 16 game archives are present."));
-            StepContent.Children.Add(DataCard(waiting, stop));
+                items.Add(Group(16,
+                    SourceRow("Steam", "Right-click the game, then Manage › Browse Local Files."),
+                    SourceRow("Disc or other store", @"Usually C:\Program Files (x86)\Activision\Call of Duty 2."),
+                    SourceRow("Mac 1.3", "Copy the Call of Duty 2 folder from the Mac to this PC.")));
+                if (steamUnavailable)
+                    items.Add(Banner(SetupBannerTone.Error, "warning",
+                        "Steam isn’t installed on this PC. Install Steam, sign in, then choose Install with Steam again.",
+                        Action("Get Steam", async (_, _) => await shell.ShowProblemAsync(() => OpenAsync("https://store.steampowered.com/about/")))));
+                else
+                    items.Add(Group(Row("download", "Own it on Steam, but not installed anywhere?",
+                        "Steam installs it, about 3.7 GB. CoD2 Unbound finds the files when Steam finishes.",
+                        trailing: Action("Install with Steam", OnInstallWithSteam))));
+            }
+            panel = GlassPanel(6, 12, [.. items]);
         }
+        AcceptFolders(panel);
+        StepContent.Children.Add(panel);
     }
 
-    private static Grid DataSourceRow(string label, string detail)
+    /// <summary>A button in the panel's corner sits two in from the group's edge (the Mac's cornered()).</summary>
+    private static Border Cornered(FrameworkElement content)
+    {
+        content.HorizontalAlignment = HorizontalAlignment.Left;
+        return new Border { Padding = new Thickness(2), Child = content };
+    }
+
+    private Grid SourceRow(string label, string detail)
     {
         var row = Columns(12, new GridLength(150), new(1, GridUnitType.Star));
-        row.Padding = new Thickness(12, 16, 12, 16);
-        var title = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
-        var description = Caption(detail);
-        description.VerticalAlignment = VerticalAlignment.Center;
+        row.Padding = new Thickness(16, 0, 16, 0);
+        row.MinHeight = 44;
+        var title = new TextBlock
+        {
+            Text = label, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Token("text"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var description = new TextBlock
+        {
+            Text = detail, FontSize = 13, Foreground = Token("secondary"), TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 6, 0, 6)
+        };
         Put(row, 0, title);
         Put(row, 1, description);
+        AutomationProperties.SetName(row, $"{label}: {detail}");
         return row;
     }
 
@@ -140,68 +132,135 @@ public sealed partial class SetupPage
         GameInstallSource.Steam => "From Steam · ",
         GameInstallSource.Disc => "From a disc install · ",
         _ => ""
-    }) + "Version 1.3 · 16 of 16 game archives";
+    }) + "All 16 game archives · Version 1.3";
 
-    private static Border DataCard(params UIElement[] children)
+    /// <summary>Two (or more) complete copies: a radio list in a group; the chosen one says Found.</summary>
+    private StackPanel CopyChoices(System.Collections.Immutable.ImmutableArray<GameInstallation> copies, string chosen)
     {
-        var panel = new StackPanel { Spacing = 12 };
-        foreach (var child in children)
-            panel.Children.Add(child);
-        return new Border { Style = StyleFor("FieldCard"), Child = panel };
+        string count = copies.Length switch { 2 => "Two", 3 => "Three", 4 => "Four", _ => copies.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+        var intro = new TextBlock { Text = $"{count} copies found. Choose the one to use.", Style = StyleFor("SetupDetail"), Margin = new Thickness(10, 6, 0, 0) };
+        var rows = new List<UIElement>();
+        var radios = new List<RadioButton>();
+        foreach (var copy in copies)
+        {
+            bool selected = WindowsLauncherSession.SamePath(copy.DataPath, chosen);
+            var text = new StackPanel
+            {
+                Spacing = 3,
+                Children =
+                {
+                    new TextBlock { Text = copy.DataPath, Style = StyleFor("SetupMonoTitle") },
+                    new TextBlock { Text = FoundDetail(copy.Source), Style = StyleFor("SetupDetail") }
+                }
+            };
+            var layout = Columns(12, new(1, GridUnitType.Star), GridLength.Auto);
+            Put(layout, 0, text);
+            if (selected)
+                Put(layout, 1, Status(SetupStatus.Ready, "Found"));
+            var radio = new RadioButton
+            {
+                GroupName = "SetupGameCopy", IsChecked = selected, Content = layout, HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(8, 0, 0, 0), MinWidth = 0
+            };
+            AutomationProperties.SetName(radio, copy.DataPath);
+            AutomationProperties.SetHelpText(radio, FoundDetail(copy.Source));
+            string path = copy.DataPath;
+            radio.Checked += async (_, _) =>
+            {
+                if (shell.IsBusy || WindowsLauncherSession.SamePath(Setup.Data.Path, path))
+                    return;
+                Setup.ChooseData(path);
+                await shell.RunAsync(RefreshAsync);
+            };
+            radios.Add(radio);
+            rows.Add(new Border { Padding = new Thickness(16, 8, 16, 8), MinHeight = 56, Child = radio });
+        }
+        var group = Group(16, [.. rows]);
+        AutomationProperties.SetName(group, "Game data folder");
+        return new StackPanel { Spacing = 10, Children = { intro, group } };
     }
 
     private Button FolderButton(string label)
     {
-        var button = new Button { Content = label };
-        button.Click += async (_, _) => await shell.RunAsync(async () =>
+        var button = Action(label, async (_, _) => await shell.RunAsync(async () =>
         {
             if (await shell.PickFolderAsync() is { } path)
                 await ChooseDataAsync(path);
-        });
+        }));
         return button;
     }
 
+    private (TextBlock Title, Border Fill, Rectangle Edge, Button Choose)? dropZone;
+
+    /// <summary>The well with a dashed edge; dragging a folder over the card turns the edge to the accent.</summary>
     private Grid DropZone()
     {
-        const string prompt = "Drag your Call of Duty 2 folder here";
-        var title = new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center };
-        var choose = FolderButton("Choose a folder…");
-        choose.HorizontalAlignment = HorizontalAlignment.Center;
-        var hint = Caption("It’s the folder that contains “main”. Windows or Mac 1.3 data both work.");
-        hint.TextAlignment = TextAlignment.Center;
-        var card = DataCard(Fluent("Folder", 24), title, hint, choose);
-        card.Padding = new Thickness(20, 22, 20, 22);
-        card.BorderThickness = new Thickness(0);
-        card.CornerRadius = new CornerRadius(8);
-        var outline = new Rectangle
+        var icon = Symbol("folder", 34);
+        icon.Foreground = Token("accent");
+        icon.HorizontalAlignment = HorizontalAlignment.Center;
+        var title = new TextBlock
         {
-            RadiusX = 8, RadiusY = 8, StrokeThickness = 1, IsHitTestVisible = false,
-            StrokeDashArray = new DoubleCollection { 2, 2 },
-            Stroke = ThemeBrush("PanelStrokeBrush", ActualTheme, shell.IsHighContrast)
+            FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Token("text"),
+            TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap
         };
-        var zone = new Grid { Children = { card, outline } };
-        zone.AllowDrop = true;
-        zone.ActualThemeChanged += (_, _) => Reset();
-        zone.DragOver += (_, args) =>
+        var hint = new TextBlock
+        {
+            Text = "It’s the folder that contains “main”. Steam, disc or Mac 1.3 data all work.", Style = StyleFor("SetupDetail"),
+            TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center
+        };
+        var choose = FolderButton("Choose Folder…");
+        choose.HorizontalAlignment = HorizontalAlignment.Center;
+        choose.Style = StyleFor("SetupAction");
+        choose.Margin = new Thickness(0, 6, 0, 0);
+        focusTarget = choose;
+        var content = new StackPanel { Spacing = 10, Padding = new Thickness(20, 28, 20, 28), Children = { icon, title, hint, choose } };
+        var fill = new Border { CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"] };
+        var edge = new Rectangle { RadiusX = 16, RadiusY = 16, IsHitTestVisible = false };
+        var zone = new Grid { Children = { fill, edge, content } };
+        AutomationProperties.SetName(zone, "Drop zone for your Call of Duty 2 folder");
+        dropZone = (title, fill, edge, choose);
+        ShowDropTarget(dropTargeted);
+        return zone;
+    }
+
+    /// <summary>Draws the drop zone as idle or as a folder is held over the card; nothing is rebuilt, so the
+    /// drag keeps its target.</summary>
+    private void ShowDropTarget(bool targeted)
+    {
+        dropTargeted = targeted;
+        if (dropZone is not { } zone)
+            return;
+        zone.Title.Text = targeted ? "Drop to use this folder" : "Drag your Call of Duty 2 folder here";
+        zone.Fill.Background = Token(targeted ? "selection" : "well");
+        zone.Edge.Stroke = Token(targeted ? "accent" : "wellStroke");
+        zone.Edge.StrokeThickness = targeted ? 2 : 1;
+        zone.Edge.StrokeDashArray = targeted ? null : new DoubleCollection { 6, 4 };
+        zone.Choose.Visibility = IsVisible(!targeted);
+    }
+
+    /// <summary>A folder dropped anywhere on the card is used, as on the Mac (dropZone()).</summary>
+    private void AcceptFolders(FrameworkElement card)
+    {
+        card.AllowDrop = true;
+        card.DragOver += (_, args) =>
         {
             bool accepts = args.DataView.Contains(StandardDataFormats.StorageItems) && !shell.IsBusy;
             args.AcceptedOperation = accepts ? DataPackageOperation.Copy : DataPackageOperation.None;
             if (accepts)
             {
-                outline.Stroke = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast);
-                title.Text = "Drop to use this folder";
-                args.DragUIOverride.Caption = title.Text;
+                args.DragUIOverride.Caption = "Drop to use this folder";
+                ShowDropTarget(true);
             }
             args.Handled = true;
         };
-        zone.DragLeave += (_, _) => Reset();
-        zone.Drop += async (_, args) =>
+        card.DragLeave += (_, _) => ShowDropTarget(false);
+        card.Drop += async (_, args) =>
         {
             var deferral = args.GetDeferral();
             try
             {
                 args.Handled = true;
-                Reset();
+                ShowDropTarget(false);
                 await shell.RunAsync(async () =>
                 {
                     if (args.DataView.Contains(StandardDataFormats.StorageItems) &&
@@ -217,13 +276,6 @@ public sealed partial class SetupPage
             }
             finally { deferral.Complete(); }
         };
-        return zone;
-
-        void Reset()
-        {
-            outline.Stroke = ThemeBrush("PanelStrokeBrush", ActualTheme, shell.IsHighContrast);
-            title.Text = prompt;
-        }
     }
 
     private async Task ChooseDataAsync(string path)
@@ -234,6 +286,7 @@ public sealed partial class SetupPage
         steamUnavailable = false;
         if (Setup.ChooseData(path, picked: true).State == SetupDataState.Damaged)
             session.ShowError(UsageProblem.GameData);
+        focusPending = true;
         await RefreshAsync();
     }
 

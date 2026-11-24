@@ -5,47 +5,54 @@
         <KeyboardAccelerator Key="Enter" Invoked="OnDefaultAction" />
         <KeyboardAccelerator Key="Escape" Invoked="OnCancelAction" />
     </Page.KeyboardAccelerators>
-    <Grid x:Name="SetupFrame" SizeChanged="OnFrameSizeChanged" Background="{ThemeResource GroundBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <ScrollViewer x:Name="SetupScroll" Padding="24,28,24,24">
-            <StackPanel x:Name="SetupColumn" MaxWidth="680" HorizontalAlignment="Center" Spacing="16">
-                <TextBlock x:Name="SetupCaption" Style="{StaticResource SecondaryText}" />
-                <TextBlock x:Name="SetupTitle" Style="{StaticResource PageTitle}" TextWrapping="Wrap"
-                           AutomationProperties.HeadingLevel="Level1" />
-                <TextBlock x:Name="SetupDescription" Style="{StaticResource SecondaryText}" />
-                <StackPanel x:Name="StepContent" Spacing="12" />
-            </StackPanel>
-        </ScrollViewer>
-        <Border Grid.Row="1" Padding="24,16" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource PanelStrokeBrush}"
-                Background="{ThemeResource PanelBrush}">
-            <Grid x:Name="FooterColumn" MaxWidth="680" HorizontalAlignment="Center" ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <ProgressBar x:Name="StepProgress" Maximum="7" Width="84" Height="8">
-                        <ProgressBar.Template>
-                            <ControlTemplate TargetType="ProgressBar">
-                                <Border Background="Transparent" />
-                            </ControlTemplate>
-                        </ProgressBar.Template>
-                    </ProgressBar>
-                    <StackPanel x:Name="Pips" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                                IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
-                </Grid>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B" />
-                    <Button x:Name="SetupAlternate" Click="OnAlternate" />
-                    <Button x:Name="SetupFind" Content="Find a server" Click="OnFindServer" />
-                    <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t send" AccessKey="N" />
-                    <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
-                            Style="{StaticResource LauncherAccentButton}" />
+    <!-- The page reaches under the caption buttons, as the Mac's setup fills its window (SetupBackdrop). -->
+    <Grid x:Name="SetupFrame" SizeChanged="OnFrameSizeChanged">
+        <Grid x:Name="Backdrop" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
+            <Image x:Name="SceneArt" Stretch="UniformToFill" VerticalAlignment="Top" />
+            <Border x:Name="SceneEdge" VerticalAlignment="Top" />
+            <Border x:Name="Vignette" />
+        </Grid>
+        <ScrollViewer x:Name="SetupScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      AutomationProperties.Name="Setup">
+            <Grid x:Name="SetupStage" Padding="24,0,24,0">
+                <StackPanel x:Name="SetupColumn" HorizontalAlignment="Center" Spacing="12">
+                    <Image x:Name="SetupMark" Source="ms-appx:///Assets/mark-372.png" Width="124" Height="124"
+                           HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock x:Name="SetupEyebrow" Style="{StaticResource SetupEyebrow}" />
+                    <TextBlock x:Name="SetupTitle" Style="{StaticResource SetupTitle}" />
+                    <TextBlock x:Name="SetupDescription" Style="{StaticResource SetupSubtitle}" />
+                    <StackPanel x:Name="StepContent" Spacing="12" Margin="0,14,0,0" HorizontalAlignment="Center" />
                 </StackPanel>
             </Grid>
-        </Border>
+        </ScrollViewer>
+        <Grid x:Name="SetupBar" MaxWidth="860" Height="{StaticResource SetupBarHeight}" VerticalAlignment="Bottom"
+              Margin="24,0,24,22">
+            <Border x:Name="SetupBarGlass" Style="{StaticResource SetupBar}" Margin="0" Padding="0" />
+            <Border Style="{StaticResource SetupGlassHighlight}" CornerRadius="{StaticResource SetupBarRadius}" Margin="1" />
+            <Grid Margin="10,0">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B"
+                            Style="{StaticResource SetupAction}" VerticalAlignment="Center" />
+                    <StackPanel x:Name="StepDots" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0"
+                                VerticalAlignment="Center" />
+                    <TextBlock x:Name="StepLabel" Grid.Column="2" Style="{StaticResource SetupStepLabel}" Margin="8,0,0,0"
+                               AutomationProperties.AccessibilityView="Raw" />
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:Name="SetupCancel" Content="Cancel" Click="OnCancelSetup" Style="{StaticResource SetupAction}" />
+                        <Button x:Name="SetupAlternate" Click="OnAlternate" Style="{StaticResource SetupAction}" />
+                        <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t Send" AccessKey="N"
+                                Style="{StaticResource SetupAction}" />
+                        <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
+                                Style="{StaticResource SetupPrimary}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
     </Grid>
 </Page>
