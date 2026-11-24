@@ -50,14 +50,484 @@
     <x:String x:Key="FluentStarFilled">&#xF718;</x:String>
 
     <Style x:Key="LauncherAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
         <Setter Property="HighContrastAdjustment" Value="None" />
     </Style>
+
+    <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="ControlContentThemeFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <CornerRadius x:Key="OverlayCornerRadius">20</CornerRadius>
+    <CornerRadius x:Key="ComboBoxItemCornerRadius">7</CornerRadius>
+    <CornerRadius x:Key="ComboBoxHiglightBorderCornerRadius">14</CornerRadius>
+    <CornerRadius x:Key="InfoBarActionButtonCornerRadius">999</CornerRadius>
+    <x:Double x:Key="ProgressBarTrackHeight">8</x:Double>
+    <CornerRadius x:Key="ProgressBarTrackCornerRadius">4</CornerRadius>
+    <CornerRadius x:Key="ProgressBarCornerRadius">4</CornerRadius>
+
+    <!-- Retain WinUI's input and automation templates. DesignTokens supplies their state brushes. -->
+    <Style x:Key="LauncherButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
+    <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="Padding" Value="18,0" />
+    </Style>
+    <Style x:Key="HeroButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
+        <Setter Property="MinHeight" Value="{StaticResource ButtonHeroHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
+        <Setter Property="Padding" Value="28,0" />
+    </Style>
+    <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+        <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
+        <Setter Property="Padding" Value="6,0" />
+    </Style>
+    <Style TargetType="HyperlinkButton">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style x:Key="InlineTextBox" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}" />
+    <Style x:Key="CapsuleTextBox" TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
+        <Setter Property="Padding" Value="16,5" />
+    </Style>
+    <Style x:Key="InlinePasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource DefaultPasswordBoxStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="PasswordBox" BasedOn="{StaticResource InlinePasswordBox}" />
+    <Style x:Key="CapsulePasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource InlinePasswordBox}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
+        <Setter Property="Padding" Value="16,5" />
+    </Style>
+    <Style x:Key="InlineNumberBox" TargetType="NumberBox">
+        <Setter Property="CornerRadius" Value="{StaticResource InlineFieldRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldInlineHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}" />
+    <Style x:Key="CapsuleNumberBox" TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
+        <Setter Property="Padding" Value="16,5" />
+    </Style>
+    <Style x:Key="SearchField" TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource FieldCapsuleHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="ComboBox">
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="Padding" Value="14,0,10,0" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="SelectorBarItem" BasedOn="{StaticResource DefaultSelectorBarItemStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource secondary}" />
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="22" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="SelectorBarItem">
+                    <Grid x:Name="PART_ContainerRoot" CornerRadius="{TemplateBinding CornerRadius}"
+                          Background="Transparent" MinHeight="{TemplateBinding MinHeight}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CombinedStates">
+                                <VisualState x:Name="UnselectedNormal" />
+                                <VisualState x:Name="UnselectedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource SelectorBarItemBackgroundPointerOver}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundPointerOver}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="UnselectedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource SelectorBarItemBackgroundPressed}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundPressed}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedNormal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource SelectorBarItemBackgroundSelected}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource SelectorBarItemBackgroundSelectedPointerOver}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ContainerRoot.Background" Value="{ThemeResource SelectorBarItemBackgroundSelectedPressed}" />
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource SelectorBarItemForegroundSelected}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DisabledStates">
+                                <VisualState x:Name="Enabled" />
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_TextVisual.Foreground" Value="{ThemeResource disabledInk}" />
+                                        <Setter Target="PART_IconVisual.Foreground" Value="{ThemeResource disabledInk}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter Content="{TemplateBinding Child}" />
+                        <StackPanel Orientation="Horizontal" Margin="{TemplateBinding Padding}" VerticalAlignment="Center">
+                            <ContentPresenter x:Name="PART_IconVisual" Content="{TemplateBinding Icon}" Foreground="{TemplateBinding Foreground}" />
+                            <TextBlock x:Name="PART_TextVisual" Text="{TemplateBinding Text}" Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" />
+                        </StackPanel>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="Segmented" TargetType="SelectorBar" BasedOn="{StaticResource DefaultSelectorBarStyle}">
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="Background" Value="{ThemeResource well}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="MinHeight" Value="{StaticResource SegmentHeight}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="SelectorBar">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <ItemsView x:Name="PART_ItemsView" ItemsSource="{TemplateBinding Items}"
+                                   TabNavigation="{TemplateBinding TabNavigation}" Padding="{TemplateBinding Padding}"
+                                   MaxWidth="{TemplateBinding MaxWidth}" MaxHeight="{TemplateBinding MaxHeight}">
+                            <ItemsView.Layout><StackLayout Orientation="Horizontal" /></ItemsView.Layout>
+                        </ItemsView>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="SelectorBar" BasedOn="{StaticResource Segmented}" />
+    <Style TargetType="ToggleSwitch" BasedOn="{StaticResource DefaultToggleSwitchStyle}">
+        <Setter Property="OnContent" Value="" />
+        <Setter Property="OffContent" Value="" />
+        <Setter Property="MinWidth" Value="{StaticResource SwitchWidth}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleSwitch">
+                    <StackPanel>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="OuterBorder.Fill" Value="{ThemeResource ToggleSwitchFillOffPointerOver}" />
+                                        <Setter Target="SwitchKnobBounds.Fill" Value="{ThemeResource ToggleSwitchFillOnPointerOver}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="OuterBorder.Fill" Value="{ThemeResource ToggleSwitchFillOffPressed}" />
+                                        <Setter Target="SwitchKnobBounds.Fill" Value="{ThemeResource ToggleSwitchFillOnPressed}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="OuterBorder.Fill" Value="{ThemeResource ToggleSwitchFillOffDisabled}" />
+                                        <Setter Target="SwitchKnobBounds.Fill" Value="{ThemeResource ToggleSwitchFillOnDisabled}" />
+                                        <Setter Target="KnobFace.Fill" Value="{ThemeResource disabledInk}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="ToggleStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition x:Name="OffToOnTransition" From="Off" To="On">
+                                        <Storyboard><RepositionThemeAnimation TargetName="SwitchKnob"
+                                            FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobOffToOnOffset}" /></Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition x:Name="OnToOffTransition" From="On" To="Off">
+                                        <Storyboard><RepositionThemeAnimation TargetName="SwitchKnob"
+                                            FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobOnToOffOffset}" /></Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition x:Name="DraggingToOnTransition" From="Dragging" To="On">
+                                        <Storyboard><RepositionThemeAnimation TargetName="SwitchKnob"
+                                            FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobCurrentToOnOffset}" /></Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition x:Name="DraggingToOffTransition" From="Dragging" To="Off">
+                                        <Storyboard><RepositionThemeAnimation TargetName="SwitchKnob"
+                                            FromHorizontalOffset="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.KnobCurrentToOffOffset}" /></Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition x:Name="OnToDraggingTransition" From="On" To="Dragging" />
+                                </VisualStateGroup.Transitions>
+                                <VisualState x:Name="Dragging" />
+                                <VisualState x:Name="Off" />
+                                <VisualState x:Name="On">
+                                    <VisualState.Setters>
+                                        <Setter Target="KnobTranslateTransform.X" Value="{StaticResource SwitchTravel}" />
+                                        <Setter Target="SwitchKnobBounds.Opacity" Value="1" />
+                                        <Setter Target="OuterBorder.Opacity" Value="0" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="HeaderContentPresenter" Content="{TemplateBinding Header}"
+                                          ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                        <Grid Width="{StaticResource SwitchWidth}" Height="{StaticResource SwitchHeight}"
+                              HorizontalAlignment="Left" x:Name="SwitchAreaGrid" Control.IsTemplateFocusTarget="True"
+                              CornerRadius="{StaticResource CapsuleRadius}">
+                            <Rectangle x:Name="OuterBorder" RadiusX="12" RadiusY="12" Fill="{ThemeResource ToggleSwitchFillOff}"
+                                       Stroke="{ThemeResource ToggleSwitchStrokeOff}" StrokeThickness="1" />
+                            <Rectangle x:Name="SwitchKnobBounds" RadiusX="12" RadiusY="12" Opacity="0"
+                                       Fill="{ThemeResource ToggleSwitchFillOn}" />
+                            <Grid x:Name="SwitchKnob" Width="{StaticResource SwitchHeight}" HorizontalAlignment="Left">
+                                <Grid.RenderTransform><TranslateTransform x:Name="KnobTranslateTransform" /></Grid.RenderTransform>
+                                <Ellipse x:Name="KnobFace" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
+                                         Fill="{ThemeResource ToggleSwitchKnobFillOff}" />
+                            </Grid>
+                            <Thumb x:Name="SwitchThumb" AutomationProperties.AccessibilityView="Raw">
+                                <Thumb.Template><ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent" /></ControlTemplate></Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="RadioButton" BasedOn="{StaticResource DefaultRadioButtonStyle}">
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="Slider">
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="ProgressBar">
+        <Setter Property="Foreground" Value="{ThemeResource ProgressFillBrush}" />
+        <Setter Property="Background" Value="{ThemeResource track}" />
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+        <Setter Property="MinHeight" Value="{StaticResource ProgressTrackHeight}" />
+    </Style>
+    <Style TargetType="ProgressRing">
+        <Setter Property="Foreground" Value="{ThemeResource control}" />
+    </Style>
+    <Style TargetType="ListViewItem">
+        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="GridViewItem">
+        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style TargetType="Expander" BasedOn="{StaticResource DefaultExpanderStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+    </Style>
+    <Style x:Key="LauncherBanner" TargetType="InfoBar">
+        <Setter Property="CornerRadius" Value="{StaticResource BannerRadius}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
+    </Style>
+    <Style TargetType="InfoBar" BasedOn="{StaticResource LauncherBanner}" />
+    <Style x:Key="LauncherSheet" TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource SheetRadius}" />
+        <Setter Property="PrimaryButtonStyle" Value="{StaticResource LauncherAccentButton}" />
+        <Setter Property="SecondaryButtonStyle" Value="{StaticResource LauncherButton}" />
+        <Setter Property="CloseButtonStyle" Value="{StaticResource LauncherButton}" />
+    </Style>
+    <Style TargetType="ContentDialog" BasedOn="{StaticResource LauncherSheet}" />
+    <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource PopoverRadius}" />
+        <Setter Property="Padding" Value="{StaticResource GroupPadding}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource glassStroke}" />
+        <Setter Property="Background" Value="{ThemeResource FlyoutPresenterBackground}" />
+    </Style>
+    <Style TargetType="MenuFlyoutPresenter" BasedOn="{StaticResource DefaultMenuFlyoutPresenterStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource MenuRadius}" />
+        <Setter Property="Padding" Value="5" />
+    </Style>
+    <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+    </Style>
+    <Style TargetType="MenuFlyoutSubItem" BasedOn="{StaticResource DefaultMenuFlyoutSubItemStyle}">
+        <Setter Property="CornerRadius" Value="{StaticResource MenuItemRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+    </Style>
+    <Style x:Key="CrateItem" TargetType="GridViewItem">
+        <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="MinHeight" Value="70" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="MinHeight" Value="{StaticResource ChipHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Padding" Value="12,0" />
+    </Style>
+    <Style x:Key="LargeChipButton" TargetType="Button" BasedOn="{StaticResource ChipButton}">
+        <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
+        <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+    <Style x:Key="GroupCard" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
+        <Setter Property="Background" Value="{ThemeResource panel}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+    </Style>
+    <Style x:Key="FormRow" TargetType="Grid">
+        <Setter Property="MinHeight" Value="{StaticResource DetailRowHeight}" />
+        <Setter Property="Padding" Value="{StaticResource RowPadding}" />
+        <Setter Property="ColumnSpacing" Value="14" />
+    </Style>
+    <Style x:Key="RowSymbol" TargetType="Border">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
+        <Setter Property="Background" Value="{ThemeResource selection}" />
+    </Style>
+    <Style x:Key="ShellNavItem" TargetType="NavigationViewItem">
+        <Setter Property="HighContrastAdjustment" Value="None" />
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
+        <Setter Property="FontSize" Value="{StaticResource BodySize}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource NavHeight}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="{StaticResource FocusStroke}" />
+        <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
+    </Style>
+    <Style x:Key="MiniDogTag" TargetType="ContentControl">
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Width="26" Height="33">
+                        <Canvas Width="30" Height="38">
+                            <Rectangle Canvas.Left="2" Canvas.Top="4" Width="26" Height="32" RadiusX="7" RadiusY="7"
+                                       Fill="{ThemeResource tagPlate}" />
+                            <Ellipse Canvas.Left="12.4" Canvas.Top="7.4" Width="5.2" Height="5.2" Fill="{ThemeResource tagEyelet}" />
+                            <Rectangle Canvas.Left="7" Canvas.Top="18" Width="16" Height="2.4" RadiusX="1.2" RadiusY="1.2" Fill="{ThemeResource tagStamp}" />
+                            <Rectangle Canvas.Left="7" Canvas.Top="23" Width="11" Height="2.4" RadiusX="1.2" RadiusY="1.2" Fill="{ThemeResource tagStamp}" />
+                            <Rectangle Canvas.Left="7" Canvas.Top="28" Width="14" Height="2.4" RadiusX="1.2" RadiusY="1.2" Fill="{ThemeResource tagStamp}" />
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="PlayerPlateButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource PlateRadius}" />
+        <Setter Property="Background" Value="{ThemeResource hover}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
+        <Setter Property="Padding" Value="10,10,12,10" />
+    </Style>
+
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
-    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter">
+    <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
         <Setter Property="Padding" Value="16" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="CornerRadius" Value="{StaticResource PopoverRadius}" />
         <Setter Property="IsTabStop" Value="True" />
     </Style>
     <Style x:Key="SolidCrashFlyoutPresenter" TargetType="FlyoutPresenter"
@@ -95,25 +565,24 @@
         <Setter Property="Foreground" Value="{ThemeResource AddressBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="MonoField" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+    <Style x:Key="MonoField" TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}">
         <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+    <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource TypePage}">
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level1" />
     </Style>
-    <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+    <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource TypeSection}">
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
-    <Style x:Key="CardTitle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
-        <Setter Property="FontSize" Value="18" />
+    <Style x:Key="CardTitle" TargetType="TextBlock" BasedOn="{StaticResource TypeCard}">
         <Setter Property="Foreground" Value="{ThemeResource HeadingBrush}" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
-    <Style x:Key="SecondaryText" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+    <Style x:Key="SecondaryText" TargetType="TextBlock" BasedOn="{StaticResource TypeSubtitle}">
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
@@ -127,10 +596,10 @@
     <Style x:Key="NegativeText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>
-    <Style x:Key="NegativeButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="NegativeButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>
-    <Style x:Key="ColumnHeading" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="ColumnHeading" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Foreground" Value="{ThemeResource CaptionBrush}" />
@@ -138,14 +607,12 @@
         <Setter Property="Padding" Value="0,0,8,0" />
     </Style>
     <Style x:Key="Eyebrow" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="CharacterSpacing" Value="200" />
+        <Setter Property="FontSize" Value="{StaticResource EyebrowSize}" />
+        <Setter Property="LineHeight" Value="{StaticResource EyebrowLineHeight}" />
+        <Setter Property="CharacterSpacing" Value="320" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="HeroEyebrow" TargetType="TextBlock" BasedOn="{StaticResource Eyebrow}">
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="CharacterSpacing" Value="340" />
-    </Style>
+    <Style x:Key="HeroEyebrow" TargetType="TextBlock" BasedOn="{StaticResource Eyebrow}" />
     <Style x:Key="EmptyIcon" TargetType="FontIcon">
         <Setter Property="FontSize" Value="32" />
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
@@ -174,10 +641,10 @@
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="16,0,12,0" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
-    <Style x:Key="SidebarAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+    <Style x:Key="SidebarAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="Height" Value="40" />
         <Setter Property="Padding" Value="16,0,12,0" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -190,7 +657,7 @@
         <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
     </Style>
     <Style x:Key="LoadoutInitial" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
         <Setter Property="FontSize" Value="16" />
@@ -199,71 +666,73 @@
     </Style>
     <Style x:Key="MediaTile" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
     </Style>
-    <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-        <Setter Property="MinHeight" Value="28" />
-        <Setter Property="Padding" Value="10,3" />
+    <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="MinHeight" Value="{StaticResource ButtonSmallHeight}" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
     </Style>
-    <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+    <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="MinHeight" Value="28" />
         <Setter Property="Padding" Value="8,3" />
     </Style>
-    <Style x:Key="SubtleLinkAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+    <Style x:Key="SubtleLinkAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
     </Style>
-    <Style x:Key="SubtleAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}" />
+    <Style x:Key="SubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}" />
     <Style x:Key="SetupFactLabel" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
     </Style>
-    <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+    <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Width" Value="32" />
-        <Setter Property="Height" Value="32" />
+        <Setter Property="Width" Value="{StaticResource CircleHeight}" />
+        <Setter Property="Height" Value="{StaticResource CircleHeight}" />
         <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="FavoriteAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
     </Style>
-    <Style x:Key="SettingsNote" TargetType="InfoBar">
+    <Style x:Key="SettingsNote" TargetType="InfoBar" BasedOn="{StaticResource LauncherBanner}">
+        <Setter Property="CornerRadius" Value="{StaticResource BannerRadius}" />
         <Setter Property="Background" Value="{ThemeResource SettingsNoteBackground}" />
     </Style>
     <Style x:Key="EditionTag" TargetType="Border">
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource BadgeRadius}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
-        <Setter Property="MinHeight" Value="20" />
-        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="MinHeight" Value="{StaticResource BadgeHeight}" />
+        <Setter Property="Padding" Value="7,0" />
     </Style>
     <Style x:Key="Cod2xTag" TargetType="Border" BasedOn="{StaticResource EditionTag}">
         <Setter Property="BorderBrush" Value="{ThemeResource EditionStrokeBrush}" />
     </Style>
-    <Style x:Key="AlignedSelector" TargetType="SelectorBar">
-        <Setter Property="Margin" Value="-12,0,0,0" />
+    <Style x:Key="AlignedSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
+        <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
     <Style x:Key="Keycap" TargetType="Button" BasedOn="{StaticResource SmallAction}">
         <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="MinWidth" Value="56" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource KeycapRadius}" />
         <Setter Property="Background" Value="{ThemeResource ControlFillBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeBrush}" />
     </Style>
-    <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+    <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
     </Style>
     <Style x:Key="SetupHeroScrim" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource SetupHeroScrimBrush}" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
     </Style>
     <Style x:Key="SetupArtName" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
         <Setter Property="FontSize" Value="46" />
@@ -286,7 +755,8 @@
         <Setter Property="BorderBrush" Value="{ThemeResource HeroAccentBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <Style x:Key="SetupCard" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Style x:Key="SetupCard" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Top" />
@@ -298,7 +768,7 @@
         <Setter Property="Background" Value="{ThemeResource FieldBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource SeparatorBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="Padding" Value="16" />
     </Style>
     <Style x:Key="ReviewRow" TargetType="Border" BasedOn="{StaticResource FieldCard}">
