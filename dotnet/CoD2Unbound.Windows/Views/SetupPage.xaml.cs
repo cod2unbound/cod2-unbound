@@ -81,6 +81,8 @@ public sealed partial class SetupPage : Page
         SetupMark.Visibility = IsVisible(welcome);
         string eyebrow = welcome ? "Reporting for duty" : StepTitle(step);
         SetupEyebrow.Text = eyebrow.ToUpperInvariant();
+        // The board's Welcome eyebrow keeps 14 more under it before the larger title.
+        SetupEyebrow.Margin = new Thickness(0, 0, 0, welcome ? 14 : 0);
         AutomationProperties.SetName(SetupEyebrow, eyebrow);
         SetupEyebrow.Margin = new Thickness(0, welcome ? 14 : 0, 0, 0);
         SetupTitle.FontSize = welcome ? 40 : 30;
@@ -238,7 +240,7 @@ public sealed partial class SetupPage : Page
             }));
             var keep = Note("Continue keeps this key. You never have to type it again to move on.");
             keep.Margin = new Thickness(18, 0, 0, 8);
-            StepContent.Children.Add(GlassPanel(6, 12,
+            StepContent.Children.Add(GlassPanel(16, 12,
                 Group(Row("key", "A CD key is already stored on this PC", "•••• •••• •••• •••• " + (ending ?? "••••"),
                     trailing: replace, status: Status(SetupStatus.Ready, "Verified"))),
                 keep));
@@ -289,7 +291,7 @@ public sealed partial class SetupPage : Page
         var stored = Note("Stored only on this PC, in the game’s own settings. Sent only to game servers when you join, as the original game does.", "lock");
         stored.Margin = new Thickness(8, 0, 8, 0);
         items.Add(stored);
-        StepContent.Children.Add(GlassPanel(22, 12, [.. items]));
+        StepContent.Children.Add(GlassPanel(16, 12, [.. items]));
         RenderKeyFeedback();
         focusTarget = null;
         if (focusPending)
@@ -398,7 +400,7 @@ public sealed partial class SetupPage : Page
         string[] symbols = ["eye", "lock", "share"];
         var rows = PrivacyPresentation.QuestionRows(crash)
             .Select((row, index) => (UIElement)Row(symbols[index], row.Title, row.Detail)).ToArray();
-        StepContent.Children.Add(GlassPanel(6, 10, Group(rows), foot));
+        StepContent.Children.Add(GlassPanel(16, 12, Group(rows), foot));
         // Neither answer is the default: nothing takes the focus and Enter presses neither.
         focusTarget = null;
     }
