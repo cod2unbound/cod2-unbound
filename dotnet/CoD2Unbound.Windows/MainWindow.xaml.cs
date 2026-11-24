@@ -43,7 +43,10 @@ public sealed partial class MainWindow : Window
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
         InitializeTitleBarContent();
-        PaintNavGlyphs();
+        // Only the symbols' placement here: their colours wait for the theme (PaintNavGlyphs).
+        foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
+            if (item.Icon is FontIcon glyph)
+                SetNavGlyphNudge(item, glyph);
         ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
         // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
