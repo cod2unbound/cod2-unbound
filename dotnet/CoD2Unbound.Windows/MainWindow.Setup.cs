@@ -62,7 +62,7 @@ public sealed partial class MainWindow
                     _ => "Try again"
                 },
                 SecondaryButtonText = "Show Log", CloseButtonText = "Close"
-            };
+            }.WithSymbol("SystemWarning", tone: SheetPresentation.Tone.Negative);
             switch (await dialog.ShowAsync())
             {
                 case ContentDialogResult.Secondary:
@@ -102,6 +102,6 @@ public sealed partial class MainWindow
         {
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme,
             Title = "Game log", Content = text, CloseButtonText = "Close", DefaultButton = ContentDialogButton.Close
-        }.ShowAsync();
+        }.WithSymbol("FluentDocument").ShowAsync();
     }
 }

@@ -151,7 +151,7 @@ internal sealed class ShareSetupDialog : ContentDialog
     private void ShowForm()
     {
         preview = false;
-        Title = shareTitle;
+        SheetPresentation.SetSheetTitle(this, "FluentShare", shareTitle);
         Content = main;
         SecondaryButtonText = "";
         CloseButtonText = "Cancel";
@@ -213,7 +213,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         if (form.Prepared is not { } prepared)
             return;
         preview = true;
-        Title = "What is sent";
+        SheetPresentation.SetSheetTitle(this, "FluentEye", "What is sent");
         PrimaryButtonText = "Back";
         IsPrimaryButtonEnabled = true;
         CloseButtonText = "";
@@ -254,7 +254,7 @@ internal sealed class ShareSetupDialog : ContentDialog
 
     private void ShowSent(ConfigShareSent sent)
     {
-        Title = "Your setup was sent";
+        SheetPresentation.SetSheetTitle(this, "FluentCheckCircle", "Your setup was sent", tone: SheetPresentation.Tone.Positive);
         PrimaryButtonText = form.Action;
         IsPrimaryButtonEnabled = true;
         CloseButtonText = "";

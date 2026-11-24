@@ -19,6 +19,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
     {
         hadSavedPassword = saved is not null;
         Title = $"“{serverName}” needs a password";
+        this.WithSymbol("FluentLock", "The people who run the server hand it out.");
         PrimaryButtonText = "Launch";
         CloseButtonText = "Cancel";
         DefaultButton = ContentDialogButton.Primary;

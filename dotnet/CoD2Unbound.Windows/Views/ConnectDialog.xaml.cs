@@ -24,6 +24,7 @@ public sealed partial class ConnectDialog : ContentDialog
         openedLink = link;
         this.highContrast = highContrast;
         InitializeComponent();
+        this.WithSymbol("SystemLink", "For a server that isn’t in the list, or one a friend sent you.");
         if (link is not null)
         {
             AddressBox.Text = link.Target.Address;

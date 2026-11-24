@@ -86,7 +86,7 @@ public sealed partial class SettingsPage
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "Acknowledgements",
             SecondaryButtonText = "Copy all", CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close
-        };
+        }.WithSymbol("SystemPeople", "CoD2 Unbound stands on other people’s work. Select one to read its licence.");
         dialog.Resources["ContentDialogMaxWidth"] = 600d;
         dialog.Resources["ContentDialogMinWidth"] = 600d;
         var content = new StackPanel { Spacing = 10 };

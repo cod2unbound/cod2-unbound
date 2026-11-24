@@ -667,6 +667,7 @@ public sealed partial class SettingsPage : Page
         CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
     };
 
+    // A single decision is the Mac's alert, not a sheet (AllSheets, Alerts).
     private async Task<bool> ConfirmAsync(string title, string message, string primary) =>
-        await Dialog(title, Caption(message), primary).ShowAsync() == ContentDialogResult.Primary;
+        await Dialog(title, Caption(message), primary).AsAlert().ShowAsync() == ContentDialogResult.Primary;
 }

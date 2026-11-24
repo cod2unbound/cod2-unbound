@@ -15,6 +15,7 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
         Resources["ContentDialogMaxWidth"] = 720d;
         Width = 720;
         Title = "Keyboard shortcuts";
+        this.WithSymbol("SystemKeyboard", "Every shortcut, in one place: Windows has no menu bar.");
         PrimaryButtonText = "Done";
         DefaultButton = ContentDialogButton.Primary;
 
@@ -28,7 +29,6 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
             Spacing = 12,
             Children =
             {
-                Body("Every shortcut is listed here, and every command also has a button in the window. Press Alt to see the access keys on the page."),
                 new ScrollViewer { MaxHeight = 460, Content = columns, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
             }
         };

@@ -17,6 +17,7 @@ internal sealed class ProblemReportDialog : ContentDialog
     {
         DefaultStyleKey = typeof(ContentDialog);
         Title = "Report a problem";
+        this.WithSymbol("SystemWarning", "Opens a new issue on GitHub in your browser, filled in with the details below. You can edit everything before you post it.");
         Style = StyleFor("LauncherSheet");
         PrimaryButtonText = "Open GitHub";
         CloseButtonText = "Cancel";
@@ -36,7 +37,6 @@ internal sealed class ProblemReportDialog : ContentDialog
         game = new CheckBox { Content = "Include the last game log", IsEnabled = hasGame, IsChecked = false };
         server = new CheckBox { Content = "Include the last server log", IsEnabled = hasServer, IsChecked = false };
         var content = new StackPanel { Spacing = 12 };
-        content.Children.Add(Body("Opens a new issue on GitHub in your browser, filled in with the details below. You can edit everything before you post it."));
         content.Children.Add(details);
         content.Children.Add(LogChoice(game, hasGame ? "Copied to the clipboard for you to paste. It can contain server names." :
             "There's no game log yet. The game writes one when it crashes or freezes."));
