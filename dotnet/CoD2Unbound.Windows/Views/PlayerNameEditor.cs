@@ -116,9 +116,10 @@ internal sealed class PlayerNameEditor : UserControl
             paletteNote.Margin = new Thickness(6, -6, 0, 0);
         }
         palette.Children.Add(paletteNote);
-        var toggle = new HyperlinkButton { Content = "Add Colours…", Padding = new Thickness(0) };
-        if (setup)
-            toggle.FontSize = 12;
+        // Setup draws the board's small capsule button; the player card keeps its link.
+        Microsoft.UI.Xaml.Controls.Primitives.ButtonBase toggle = setup
+            ? new Button { Content = "Add Colours…" }
+            : new HyperlinkButton { Content = "Add Colours…", Padding = new Thickness(0) };
         toggle.Click += (_, _) => Toggle(palette.Visibility == Visibility.Collapsed);
         openColours = () => Toggle(true);
 

@@ -84,7 +84,6 @@ public sealed partial class SetupPage : Page
         // The board's Welcome eyebrow keeps 14 more under it before the larger title.
         SetupEyebrow.Margin = new Thickness(0, 0, 0, welcome ? 14 : 0);
         AutomationProperties.SetName(SetupEyebrow, eyebrow);
-        SetupEyebrow.Margin = new Thickness(0, welcome ? 14 : 0, 0, 0);
         SetupTitle.FontSize = welcome ? 40 : 30;
         SetupTitle.LineHeight = welcome ? 46 : 36;
         (SetupTitle.Text, SetupDescription.Text) = step switch
