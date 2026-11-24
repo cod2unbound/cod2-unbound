@@ -21,7 +21,7 @@
                     <TextBlock x:Name="SetupEyebrow" Style="{StaticResource SetupEyebrow}" />
                     <TextBlock x:Name="SetupTitle" Style="{StaticResource SetupTitle}" />
                     <TextBlock x:Name="SetupDescription" Style="{StaticResource SetupSubtitle}" />
-                    <StackPanel x:Name="StepContent" Spacing="12" Margin="0,14,0,0" HorizontalAlignment="Center" />
+                    <StackPanel x:Name="StepContent" Spacing="12" Margin="0,13,0,0" HorizontalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </ScrollViewer>
@@ -29,8 +29,8 @@
               Margin="24,0,24,22">
             <Border x:Name="SetupBarGlass" Style="{StaticResource SetupBar}" Margin="0" Padding="0" />
             <Border Style="{StaticResource SetupGlassHighlight}" CornerRadius="{StaticResource SetupBarRadius}" Margin="1" />
-            <Grid Margin="10,0">
-                <Grid ColumnSpacing="8">
+            <Grid Margin="11,0">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -39,11 +39,11 @@
                     </Grid.ColumnDefinitions>
                     <Button x:Name="SetupBack" Content="Back" Click="OnSetupBack" AccessKey="B"
                             Style="{StaticResource SetupAction}" VerticalAlignment="Center" />
-                    <StackPanel x:Name="StepDots" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0"
+                    <StackPanel x:Name="StepDots" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="18,0,0,0"
                                 VerticalAlignment="Center" />
                     <TextBlock x:Name="StepLabel" Grid.Column="2" Style="{StaticResource SetupStepLabel}" Margin="8,0,0,0"
                                AutomationProperties.AccessibilityView="Raw" />
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0" VerticalAlignment="Center">
                         <Button x:Name="SetupCancel" Content="Cancel" Click="OnCancelSetup" Style="{StaticResource SetupAction}" />
                         <Button x:Name="SetupAlternate" Click="OnAlternate" Style="{StaticResource SetupAction}" />
                         <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t Send" AccessKey="N"

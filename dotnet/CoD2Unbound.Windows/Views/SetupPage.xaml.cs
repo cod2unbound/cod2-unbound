@@ -138,6 +138,8 @@ public sealed partial class SetupPage : Page
         var step = Setup.Step;
         bool question = step is SetupStep.CrashReports or SetupStep.UsageData;
         SetupBack.Visibility = IsVisible(step != SetupStep.Welcome);
+        // The board: the first capsule sits 10 in from the bar's edge on Welcome, 18 after Back elsewhere.
+        StepDots.Margin = new Thickness(step == SetupStep.Welcome ? 10 : 18, 0, 0, 0);
         SetupCancel.Visibility = IsVisible(Setup.CanCancel);
         string? alternate = step switch
         {
@@ -159,8 +161,10 @@ public sealed partial class SetupPage : Page
         RenderDots();
     }
 
-    /// <summary>Headings after Welcome sit 128 from the window's top; Welcome is centred above the bar.
-    /// The panel narrows from 660 to 600 in the smallest windows.</summary>
+    /// <summary>The board's geometry, in window coordinates: headings after Welcome sit 128 from the window's
+    /// top in a 900-high window and 76 in the smallest (640); Welcome's column is centred in the window's height
+    /// less 120, with the mark at 124 (84 in the smallest windows). The panel narrows from 660 to 600 below
+    /// 1200 wide.</summary>
     private void Layout()
     {
         double width = SetupFrame.ActualWidth, height = SetupFrame.ActualHeight;
@@ -169,8 +173,14 @@ public sealed partial class SetupPage : Page
             panelWidth = Math.Min(panelWidth, Math.Max(320, width - 48));
         SetupColumn.Width = panelWidth;
         bool welcome = Setup.Step == SetupStep.Welcome;
-        // Headings sit 128 from the window's top on the Mac; the page starts under the shell's caption row.
-        SetupStage.Padding = new Thickness(24, welcome ? 16 : 128 - CaptionSpace, 24, 84 + 16);
+        double window = height + CaptionSpace;
+        double mark = window < 760 ? 84 : 124;
+        SetupMark.Width = SetupMark.Height = mark;
+        double headingTop = Math.Clamp(76 + (window - 640) * 0.2, 76, 128);
+        // The page starts under the shell's caption row, so window coordinates lose CaptionSpace here.
+        SetupStage.Padding = welcome
+            ? new Thickness(24, 0, 24, 120 + CaptionSpace)
+            : new Thickness(24, headingTop - CaptionSpace, 24, 84 + 16);
         SetupStage.MinHeight = Math.Max(0, height);
         SetupColumn.VerticalAlignment = welcome ? VerticalAlignment.Center : VerticalAlignment.Top;
         if (height > 0)
