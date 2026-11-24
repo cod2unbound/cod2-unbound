@@ -390,6 +390,11 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#8C000000" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="#00000000" />
+            <RadialGradientBrush x:Key="prominentGlowFill">
+                <GradientStop Offset="0" Color="#57C4984C" />
+                <GradientStop Offset="1" Color="#00C4984C" />
+            </RadialGradientBrush>
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
@@ -781,6 +786,11 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#613C321E" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="#00000000" />
+            <RadialGradientBrush x:Key="prominentGlowFill">
+                <GradientStop Offset="0" Color="#4746522A" />
+                <GradientStop Offset="1" Color="#0046522A" />
+            </RadialGradientBrush>
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
@@ -1153,6 +1163,8 @@
             <SolidColorBrush x:Key="ExpanderChevronPointerOverForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ExpanderChevronPressedForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#00000000" />
+            <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="prominentGlowFill" Color="#00000000" />
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
@@ -1275,6 +1287,7 @@
     <CornerRadius x:Key="FieldCapsuleRadius">18</CornerRadius>
     <CornerRadius x:Key="CircleRadius">18</CornerRadius>
     <CornerRadius x:Key="SegmentRadius">14</CornerRadius>
+    <CornerRadius x:Key="SegmentLargeRadius">18</CornerRadius>
     <CornerRadius x:Key="ChipRadius">13</CornerRadius>
     <CornerRadius x:Key="LargeChipRadius">20</CornerRadius>
     <CornerRadius x:Key="SwitchRadius">12</CornerRadius>

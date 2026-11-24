@@ -82,7 +82,7 @@ internal sealed class CdKeyEditor : StackPanel
             IsPrimaryButtonEnabled = false,
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary
-        };
+        }.WithSymbol("SystemPermissions");
         editor.Edited += () => dialog.IsPrimaryButtonEnabled = editor.Verified;
         dialog.Opened += (_, _) => editor.FocusInput();
         try { return await dialog.ShowAsync() == ContentDialogResult.Primary && await save(editor.Value); }

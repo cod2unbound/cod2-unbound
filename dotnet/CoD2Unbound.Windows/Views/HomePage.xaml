@@ -70,11 +70,11 @@
     <!-- The Mac's Home (HomeView.swift): the last map's art behind the hero, the next game's loadout and
          display, anything that needs fixing, and three cards. Geometry follows the Home board at 1440 × 900. -->
     <Grid x:Name="PageRoot" SizeChanged="OnLayoutChanged">
-        <!-- The art is composed in window coordinates (as on the Mac), so this page shows its slice of it. -->
-        <Grid x:Name="ArtLayer" VerticalAlignment="Top" IsHitTestVisible="False"
-              AutomationProperties.AccessibilityView="Raw">
-            <Grid x:Name="ArtCanvas" HorizontalAlignment="Left" VerticalAlignment="Top" Height="620">
-                <Border x:Name="PanelPalette" Background="{ThemeResource GroundBrush}" />
+        <!-- The art fills the whole window behind the sidebar, as the board draws it: the page hands this layer
+             to the shell's backdrop host (IShellBackdrop) and removes it from its own tree. -->
+        <Grid x:Name="ArtLayer" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
+            <Border x:Name="PanelPalette" Background="{ThemeResource GroundBrush}" />
+            <Grid x:Name="ArtCanvas" VerticalAlignment="Top" Height="620">
                 <Image x:Name="HeroArt" Stretch="UniformToFill" />
                 <Rectangle x:Name="HeroScrim" />
                 <Rectangle x:Name="HeroVignette" />

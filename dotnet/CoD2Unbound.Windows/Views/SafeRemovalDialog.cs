@@ -16,7 +16,7 @@ internal sealed class SafeRemovalDialog : ContentDialog
         Content = body;
         PrimaryButtonText = action;
         CloseButtonText = "Cancel";
-        PrimaryButtonStyle = StyleFor("NegativeButton");
+        this.AsAlert(destructive: true);
         DefaultButton = ContentDialogButton.None;
         IsPrimaryButtonEnabled = false;
         Opened += (_, _) =>

@@ -110,14 +110,21 @@ public sealed partial class HomePage
     /// What's New in full: every release and news line, newest first, then what comes next.
     private async void OnShowNews(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>
     {
-        var rows = new StackPanel { Padding = new Thickness(16, 0, 16, 0) };
+        // The rows are a stock ListView (list semantics and arrow keys); each row's Open button acts, so the
+        // items themselves do not click and show no hover fill.
+        var rows = new ListView
+        {
+            SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = false, Padding = new Thickness(16, 0, 16, 0)
+        };
+        rows.Resources["ListViewItemBackgroundPointerOver"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        rows.Resources["ListViewItemBackgroundPressed"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        AutomationProperties.SetName(rows, "What’s New");
         NewsDispatch? selected = null;
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = "What’s New",
-            PrimaryButtonText = "Release Notes", CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close,
-            CloseButtonStyle = StyleFor("LauncherAccentButton"), PrimaryButtonStyle = StyleFor("LauncherButton")
-        };
+            PrimaryButtonText = "Release Notes", CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close
+        }.WithSymbol("mark");
         dialog.Resources["ContentDialogMaxWidth"] = 620d;
         int index = 0;
         foreach (var item in model.AllNews)
@@ -129,9 +136,7 @@ public sealed partial class HomePage
                 line.BorderBrush = Ink("SeparatorBrush");
                 line.BorderThickness = new Thickness(0, 1, 0, 0);
             }
-            var text = NewsLine(item, null, null);
-            AutomationProperties.SetName(text, Spoken(item));
-            Put(line, 0, text);
+            Put(line, 0, NewsLine(item, null, null));
             if (item.Destination != NewsDestination.None)
             {
                 var open = new Button { Content = OpenTitle(item), VerticalAlignment = VerticalAlignment.Center };
@@ -140,16 +145,25 @@ public sealed partial class HomePage
                 open.Click += (_, _) => { selected = dispatch; dialog.Hide(); };
                 Put(line, 1, open);
             }
-            rows.Children.Add(line);
+            var entry = new ListViewItem
+            {
+                Content = line, Padding = new Thickness(0), MinHeight = 0, HorizontalContentAlignment = HorizontalAlignment.Stretch
+            };
+            AutomationProperties.SetName(entry, Spoken(item));
+            rows.Items.Add(entry);
         }
-        if (rows.Children.Count == 0)
-            rows.Children.Add(new TextBlock { Text = "Nothing yet.", Style = StyleFor("SecondaryText"), Margin = new Thickness(0, 12, 0, 12) });
+        if (rows.Items.Count == 0)
+            rows.Items.Add(new ListViewItem
+            {
+                Content = new TextBlock { Text = "Nothing yet.", Style = StyleFor("SecondaryText"), Margin = new Thickness(0, 12, 0, 12) }
+            });
         var well = new Border
         {
             Background = Ink("well"), BorderBrush = Ink("wellStroke"), BorderThickness = new Thickness(1),
             CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"],
-            Child = new ScrollViewer { MaxHeight = 380, Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
+            Child = rows
         };
+        rows.MaxHeight = 380;
         dialog.Content = new StackPanel
         {
             Spacing = 14,

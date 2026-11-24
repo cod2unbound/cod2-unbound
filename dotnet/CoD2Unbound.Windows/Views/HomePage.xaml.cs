@@ -15,14 +15,13 @@ namespace CoD2Unbound.Windows.Views;
 
 /// The Mac's Home (HomeView.swift) on Windows: the hero over the last map's art, the next game's loadout and
 /// display chips, anything that needs fixing, and the three cards. Sizes are the Home board's at 1440 × 900.
-public sealed partial class HomePage : Page
+public sealed partial class HomePage : Page, IShellBackdrop
 {
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
     private readonly HomeViewModel model;
     private readonly MapPreviews previews;
     private (double Low, double High)? artworkLuminance;
-    private Point origin;
     private bool stacked;
     private double cardHeight = 276;
 
@@ -33,12 +32,12 @@ public sealed partial class HomePage : Page
         model = new(session);
         previews = new(model.ReadArtAsync);
         InitializeComponent();
+        PageRoot.Children.Remove(ArtLayer);
         loadoutMenu.Opening += OnLoadoutMenuOpening;
         LoadoutChip.Flyout = loadoutMenu;
         ActualThemeChanged += (_, _) => UpdateTheme();
         Loaded += (_, _) => { UpdateTheme(); Arrange(); };
         Unloaded += (_, _) => shell.SetHomeCaptionPassthrough(null);
-        LayoutUpdated += (_, _) => TrackOrigin();
     }
 
     internal async Task RefreshAsync()
@@ -79,27 +78,20 @@ public sealed partial class HomePage : Page
 
     // MARK: Layout (HomeView.body)
 
-    /// The page's place in the window. The Mac lays Home out in window coordinates: the hero 300 from the
-    /// window's left edge, 138 from its top, and the art from the window's corner.
-    private void TrackOrigin()
-    {
-        if (XamlRoot is null || !IsLoaded)
-            return;
-        var point = TransformToVisual(null).TransformPoint(new Point(0, 0));
-        ReportPillBounds();
-        if (Math.Abs(point.X - origin.X) < 0.5 && Math.Abs(point.Y - origin.Y) < 0.5)
-            return;
-        origin = point;
-        Arrange();
-    }
+    /// The art layer the shell shows behind the whole window while Home is the page.
+    UIElement? IShellBackdrop.ShellBackdrop => ArtLayer;
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args) => Arrange();
 
     private void Arrange()
     {
         double width = PageRoot.ActualWidth, height = PageRoot.ActualHeight;
-        if (width <= 0 || height <= 0)
+        if (width <= 0 || height <= 0 || XamlRoot is null)
             return;
+        // The page fills the window to its right and bottom edges beside the sidebar, so its corner in the
+        // window follows from the sizes alone. The Mac lays Home out from the window's corner: the hero 300
+        // from its left edge and 138 from its top.
+        var origin = new Point(Math.Max(0, XamlRoot.Size.Width - width), Math.Max(0, XamlRoot.Size.Height - height));
         // The Mac measures from the window's top and bottom; the shell's frame may stop short of the bottom edge.
         double windowHeight = Math.Max(height + origin.Y, XamlRoot?.Size.Height ?? 0);
         double lead = Math.Max(32, 300 - origin.X);
@@ -125,14 +117,8 @@ public sealed partial class HomePage : Page
         Lower.Measure(new Size(inner, double.PositiveInfinity));
         ContentLayout.Height = Math.Max(height, heroTop + Hero.DesiredSize.Height + 24 + Lower.DesiredSize.Height + 28);
 
-        ArtLayer.Height = Math.Max(0, 620 - origin.Y);
-        ArtLayer.Clip = new RectangleGeometry { Rect = new Rect(0, 0, width, ArtLayer.Height) };
-        ArtCanvas.Width = width + origin.X;
-        ArtCanvas.Margin = new Thickness(-origin.X, -origin.Y, 0, 0);
-
         // The update pill sits 16 from the window's top, its end 18 from the caption buttons' 138.
-        double rightGap = Math.Max(0, (XamlRoot?.Size.Width ?? width + origin.X) - origin.X - width);
-        UpdatePill.Margin = new Thickness(0, Math.Max(8, 16 - origin.Y), Math.Max(18, 156 - rightGap), 0);
+        UpdatePill.Margin = new Thickness(0, Math.Max(8, 16 - origin.Y), 156, 0);
         FitNews();
         ReportPillBounds();
     }
@@ -161,6 +147,7 @@ public sealed partial class HomePage : Page
             HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
         }
         RenderArtScrim();
+        shell.RefreshBackdrop();
     }
 
     /// The scrims that keep the hero's text legible. Over a loading screen they are sized for the dimmest
@@ -234,5 +221,6 @@ public sealed partial class HomePage : Page
         artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0.01, 1);
         HeroArt.Source = MapBitmap(art);
         RenderArtScrim();
+        shell.RefreshBackdrop();
     }
 }

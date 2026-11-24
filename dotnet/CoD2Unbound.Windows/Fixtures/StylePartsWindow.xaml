@@ -51,6 +51,10 @@
                             <SelectorBarItem Text="Guided" IsSelected="True" />
                             <SelectorBarItem Text="Expert" />
                         </SelectorBar>
+                        <SelectorBar Style="{StaticResource SegmentedLarge}" AutomationProperties.Name="Large segmented">
+                            <SelectorBarItem Text="Guided" IsSelected="True" Style="{StaticResource SegmentLargeItem}" />
+                            <SelectorBarItem Text="Expert" Style="{StaticResource SegmentLargeItem}" />
+                        </SelectorBar>
                         <ComboBox SelectedIndex="0" AutomationProperties.Name="Edition">
                             <ComboBoxItem Content="CoD2x 1.4.6.8" />
                             <ComboBoxItem Content="Original 1.3" />
@@ -191,23 +195,27 @@
                                 </NavigationViewItem>
                             </NavigationView.MenuItems>
                             <NavigationView.PaneFooter>
-                                <Button Style="{StaticResource PlayerPlateButton}" Margin="12,6,12,8"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                        AutomationProperties.Name="Open your player card">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <ContentControl Style="{StaticResource MiniDogTag}" />
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Sgt. Morrow" FontWeight="SemiBold" />
-                                            <TextBlock Text="Main loadout" Style="{StaticResource TypeLabel}" Foreground="{ThemeResource secondary}" />
+                                <StackPanel>
+                                    <Button Style="{StaticResource SidebarSettingsButton}" AutomationProperties.Name="Sample settings entry">
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18" />
+                                            <TextBlock Text="Settings" VerticalAlignment="Center" />
                                         </StackPanel>
-                                    </StackPanel>
-                                </Button>
+                                    </Button>
+                                    <Border Height="1" Margin="16,6,16,0" Background="{ThemeResource separator}" />
+                                    <Button Style="{StaticResource PlayerPlateButton}" Margin="12,8,12,8"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                            AutomationProperties.Name="Open your player card">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <ContentControl Style="{StaticResource MiniDogTag}" />
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Sgt. Morrow" FontWeight="SemiBold" />
+                                                <TextBlock Text="Main loadout" Style="{StaticResource TypeLabel}" Foreground="{ThemeResource secondary}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </NavigationView.PaneFooter>
-                            <NavigationView.FooterMenuItems>
-                                <NavigationViewItem Content="Settings" Style="{StaticResource ShellNavItem}">
-                                    <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18" /></NavigationViewItem.Icon>
-                                </NavigationViewItem>
-                            </NavigationView.FooterMenuItems>
                         </NavigationView>
                     </Border>
                 </StackPanel>
@@ -216,6 +224,7 @@
                     <TextBlock Text="Sheets, popovers and menus" Style="{StaticResource SectionTitle}" />
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Content="Open Sheet" Click="OpenSheet" />
+                        <Button Content="Open Alert" Click="OpenAlert" />
                         <Button Content="Open Popover">
                             <Button.Flyout>
                                 <Flyout><TextBlock Text="Each loadout is its own Call of Duty 2 player profile." /></Flyout>

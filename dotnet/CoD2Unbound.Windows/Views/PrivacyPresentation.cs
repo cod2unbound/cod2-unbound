@@ -190,7 +190,7 @@ internal static class PrivacyPresentation
         {
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme,
             Title = "What is sent", Content = content, PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
-        };
+        }.WithSymbol("FluentEye");
         // ContentDialog chooses focusable content ahead of its default button.
         dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
@@ -228,7 +228,11 @@ internal static class PrivacyPresentation
 
     private sealed class UsagePreviewDialog : ContentDialog
     {
-        public UsagePreviewDialog() => DefaultStyleKey = typeof(ContentDialog);
+        public UsagePreviewDialog()
+        {
+            DefaultStyleKey = typeof(ContentDialog);
+            Style = StyleFor("LauncherSheet");
+        }
 
         protected override void OnApplyTemplate()
         {
