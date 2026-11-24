@@ -55,28 +55,12 @@ internal static class PrivacyPresentation
         ("Never", "Your name, your PC’s name or serial numbers, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.")
     ];
 
-    internal static Border Question(bool crash)
-    {
-        var rows = new StackPanel();
-        string[] icons = ["Eye", "LockClosed", "Share"];
-        var words = crash ? CrashRows : UsageRows;
-        for (int i = 0; i < words.Length; i++)
-        {
-            var (title, detail) = words[i];
-            var row = Columns(12, new(20), new(1, GridUnitType.Star));
-            var icon = Fluent(icons[i], 20);
-            icon.Style = StyleFor("PrivacyQuestionIcon");
-            icon.VerticalAlignment = VerticalAlignment.Top;
-            Put(row, 0, icon);
-            Put(row, 1, new StackPanel { Spacing = 2, Children = { Heading(title), Detail(detail, 13, 19) } });
-            AddRow(rows, row);
-        }
-        return GroupCard(rows);
-    }
+    internal static (string Title, string Detail)[] QuestionRows(bool crash) =>
+        [.. (crash ? CrashRows : UsageRows).Select(row => (row.Item1, row.Item2))];
 
     internal static Button PreviewButton(bool crash, string key, MainWindow shell, WindowsReports reports)
     {
-        var button = new Button { Style = StyleFor("SubtleLinkAction"), Content = "See what’s sent…", AccessKey = key };
+        var button = new Button { Style = StyleFor("SubtleLinkAction"), Content = "See What’s Sent…", AccessKey = key };
         AutomationProperties.SetName(button, crash ? "See what’s sent in a crash report" : "See what’s sent in usage data");
         ToolTipService.SetToolTip(button, crash ? "What a crash report holds" : "What usage data holds, with an example event");
         if (crash)
@@ -139,12 +123,12 @@ internal static class PrivacyPresentation
         };
     }
 
+    /// <summary>The usage preview as the Mac's sheet: a symbol tile and title, a list that scrolls, and Done in
+    /// the dialog's own command row.</summary>
     private static async Task ShowUsageAsync(MainWindow shell, WindowsReports reports)
     {
         if (await reports.Usage.PreviewAsync() is not { } payload)
             return;
-        var content = new StackPanel { Spacing = 14 };
-        content.Children.Add(Body("What the launcher records, with an example event in the format the launcher sends."));
         var groups = new StackPanel();
         foreach (var (title, detail) in UsagePreviewRows)
         {
@@ -153,10 +137,11 @@ internal static class PrivacyPresentation
             Put(row, 1, Detail(detail, 12, 17));
             AddRow(groups, row);
         }
-        content.Children.Add(GroupCard(groups));
+        var list = new StackPanel { Spacing = 14 };
+        list.Children.Add(new Border { Style = StyleFor("SetupGroup"), Child = groups });
 
         var copyLabel = new TextBlock { Text = "Copy" };
-        var copy = new Button { Style = StyleFor("SmallSubtleAction"), AccessKey = "C", IsTabStop = false,
+        var copy = new Button { Style = StyleFor("SmallSubtleAction"), AccessKey = "C",
             Content = Buttons(Fluent("Copy", 14), copyLabel) };
         AutomationProperties.SetName(copy, "Copy the example event");
         copy.Click += (_, _) =>
@@ -174,30 +159,33 @@ internal static class PrivacyPresentation
         exampleTitle.VerticalAlignment = VerticalAlignment.Center;
         Put(caption, 0, exampleTitle);
         Put(caption, 1, copy);
-        content.Children.Add(caption);
+        list.Children.Add(caption);
         var sample = MonoCaption(payload);
         sample.TextWrapping = TextWrapping.Wrap;
         sample.LineHeight = 18;
         sample.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        sample.IsTextSelectionEnabled = true;
         AutomationProperties.SetName(sample, "The exact text of one event");
-        content.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(12), Child = sample });
-        content.Children.Add(Caption("The install number is made at random on this PC. It links your sessions together and is forgotten on this PC when you turn usage data off. The example leaves out the server’s name and address."));
-        var privacyNotice = new HyperlinkButton { Content = "Read the full privacy notice",
-            NavigateUri = new Uri("https://cod2unbound.com/privacy"), IsTabStop = false };
-        content.Children.Add(privacyNotice);
+        list.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(12), Child = sample });
+        list.Children.Add(Caption("The install number is made at random on this PC. It links your sessions together and is forgotten on this PC when you turn usage data off. The example leaves out the server’s name and address."));
+        list.Children.Add(new HyperlinkButton { Content = "Read the full privacy notice",
+            NavigateUri = new Uri("https://cod2unbound.com/privacy") });
 
-        var dialog = new UsagePreviewDialog
+        var scroll = new ScrollViewer
         {
-            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme,
-            Title = "What is sent", Content = content, PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
-        }.WithSymbol("FluentEye");
-        // ContentDialog chooses focusable content ahead of its default button.
-        dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(0, 0, 12, 0),
+            MaxHeight = Math.Max(220, (shell.DialogRoot?.Size.Height ?? 900) - 300)
+        };
+        AutomationProperties.SetName(scroll, "What is sent");
+        var content = new StackPanel { Width = 560, Children = { scroll } };
+
+        // The shared sheet scaffold supplies the symbol tile and sentence; the stock command row carries Done,
+        // so Enter, Escape and the dialog's own focus order stay the system's.
+        var dialog = new ContentDialog
         {
-            copy.IsTabStop = true;
-            sample.IsTextSelectionEnabled = true;
-            privacyNotice.IsTabStop = true;
-        });
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "What is sent", Content = content,
+            PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
+        }.WithSymbol("FluentEye", "What the launcher records, with an example event in the format the launcher sends.");
         await dialog.ShowAsync();
     }
 
@@ -225,25 +213,6 @@ internal static class PrivacyPresentation
         Text = text, Style = StyleFor("SecondaryText"), FontSize = size, LineHeight = lineHeight,
         LineStackingStrategy = LineStackingStrategy.BlockLineHeight
     };
-
-    private sealed class UsagePreviewDialog : ContentDialog
-    {
-        public UsagePreviewDialog()
-        {
-            DefaultStyleKey = typeof(ContentDialog);
-            Style = StyleFor("LauncherSheet");
-        }
-
-        protected override void OnApplyTemplate()
-        {
-            base.OnApplyTemplate();
-            if (GetTemplateChild("ContentScrollViewer") is ScrollViewer scroll)
-            {
-                scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-                AutomationProperties.SetName(scroll, "What is sent");
-            }
-        }
-    }
 
     private static TextBlock Heading(string title) => new()
     {

@@ -53,6 +53,12 @@
     <x:String x:Key="FluentMore">&#xE824;</x:String>
     <x:String x:Key="FluentImage">&#xF489;</x:String>
     <x:String x:Key="FluentHeartPulse">&#xE701;</x:String>
+    <x:String x:Key="FluentShieldLock">&#xEAD0;</x:String>
+    <x:String x:Key="FluentWarning">&#xF869;</x:String>
+    <x:String x:Key="FluentInfo">&#xF4A3;</x:String>
+    <x:String x:Key="FluentSubtract">&#xEBD0;</x:String>
+    <x:String x:Key="FluentArrowSync">&#xF190;</x:String>
+    <x:String x:Key="FluentPeople">&#xF5A8;</x:String>
     <!-- Symbols the bundled Fluent font is not mapped for here come from the system's icon font
          (Segoe Fluent Icons on Windows 11, Segoe MDL2 Assets on Windows 10; same code points). -->
     <FontFamily x:Key="SystemIcons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>

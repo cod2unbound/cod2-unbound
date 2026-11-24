@@ -9,6 +9,7 @@
                 <controls:XamlControlsResources />
                 <ResourceDictionary Source="Themes/DesignTokens.xaml" />
                 <ResourceDictionary Source="Themes/LauncherStyles.xaml" />
+                <ResourceDictionary Source="Themes/SetupStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

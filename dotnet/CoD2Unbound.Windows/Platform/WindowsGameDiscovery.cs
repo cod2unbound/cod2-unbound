@@ -72,6 +72,30 @@ internal sealed class WindowsGameDiscovery(WindowsEngineInventory inventory) : I
         }
     }
 
+    /// <summary>A Steam download that didn't finish: the folder is the one Steam's manifest for app 2630
+    /// installs into, and its library holds the manifest, but the game archives are not all there yet.</summary>
+    internal static bool SteamDownloadUnfinished(string folder)
+    {
+        try
+        {
+            string full = Path.GetFullPath(folder).TrimEnd('\\', '/');
+            var common = Path.GetDirectoryName(full);
+            var steamapps = common is null ? null : Path.GetDirectoryName(common);
+            var library = steamapps is null ? null : Path.GetDirectoryName(steamapps);
+            if (library is null || !string.Equals(Path.GetFileName(common), "common", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(Path.GetFileName(steamapps), "steamapps", StringComparison.OrdinalIgnoreCase))
+                return false;
+            string manifest = ReadSteamFile(library, "steamapps/appmanifest_2630.acf", 64 * 1024);
+            return string.Equals(SetupDiscovery.SteamInstallDirectory(manifest), Path.GetFileName(full), StringComparison.OrdinalIgnoreCase) &&
+                !GameArchives.Survey(new WindowsFiles(), full).IsComplete;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or
+            NotSupportedException or RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
     internal static bool SteamInstalled() => SteamRoots().Any(root => File.Exists(Path.Join(root, "steam.exe")));
 
     private static IEnumerable<string> SteamRoots()
