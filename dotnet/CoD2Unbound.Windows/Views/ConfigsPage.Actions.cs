@@ -26,15 +26,20 @@ public sealed partial class ConfigsPage
         if (!CanEdit)
             return;
         var source = model.State.Current;
-        var name = new TextBox { Header = "Loadout name", MaxLength = 80, PlaceholderText = "Name, for example Scrim" };
-        var start = new ComboBox { Header = "Start from", SelectedIndex = -1, HorizontalAlignment = HorizontalAlignment.Stretch };
-        start.Items.Add("The game's defaults");
+        var name = new TextBox { Header = "Loadout name", MaxLength = 80, PlaceholderText = "Name, for example Scrim",
+            Style = StyleFor("CapsuleTextBox") };
+        var start = new ComboBox { SelectedIndex = -1 };
+        AutomationProperties.SetName(start, "Start from");
+        start.Items.Add("The game’s defaults");
         if (source is not null)
             start.Items.Add($"A copy of {source.Profile.DisplayName}");
         start.SelectedIndex = 0;
         var problem = Caption("");
-        var content = new StackPanel { MinWidth = 300, Spacing = 8, Children = { name, problem, start } };
-        var dialog = Dialog("New loadout", content, "Create loadout");
+        var content = new StackPanel { MinWidth = 336, Spacing = 12, Children =
+            { name, BindCard(SettingRow("Start from", null, start, grouped: true)), problem } };
+        var dialog = Dialog("New loadout", content, "Create Loadout");
+        SheetPresentation.SetSheetTitle(dialog, "FluentAdd", "New loadout",
+            "A loadout is its own Call of Duty 2 player profile. It isn’t used for your next game until you choose it.");
         name.TextChanged += (_, _) => Validate();
         TrackGameState(dialog, Validate);
         dialog.Opened += (_, _) => name.Focus(FocusState.Programmatic);
@@ -55,7 +60,8 @@ public sealed partial class ConfigsPage
     private async Task RenameAsync(ConfigProfile profile)
     {
         var current = model.Studio.ReadProfile(profile.Id);
-        if (await AskNameAsync("Rename loadout", "Rename", current.Profile.DisplayName, current.Profile.Id) is not { } name)
+        if (await AskNameAsync($"Rename “{current.Profile.DisplayName}”", "Rename", current.Profile.DisplayName, current.Profile.Id,
+            $"The new name shows in CoD2 Unbound. The game’s own profile menu keeps showing the folder name, {current.Profile.Id}.") is not { } name)
             return;
         model.Studio.Focus(profile.Id);
         model.Rename(current, name);

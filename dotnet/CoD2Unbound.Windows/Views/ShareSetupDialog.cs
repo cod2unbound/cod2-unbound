@@ -11,8 +11,7 @@ namespace CoD2Unbound.Windows.Views;
 
 internal sealed class ShareSetupDialog : ContentDialog
 {
-    private const string Intro = "It joins Player Setups, the public list in Configs that every CoD2 Unbound player can browse. A person looks at each setup before it is listed.";
-    private const string PreviewIntro = "This text, the name you type, the game and app versions, and the count of left-out lines with their reasons. Nothing else leaves your PC.";
+    private readonly string appVersion;
     private readonly ConfigShareForm form;
     private readonly Func<bool> readOnly;
     private readonly Func<CancellationToken, Task<ConfigShareSent?>> publish;
@@ -33,11 +32,12 @@ internal sealed class ShareSetupDialog : ContentDialog
     private bool preview;
     private string previewCopy = "";
 
-    internal ShareSetupDialog(string loadout, ConfigShareForm form, DataTemplate omittedLine, Func<bool> readOnly,
+    internal ShareSetupDialog(string loadout, string appVersion, ConfigShareForm form, DataTemplate omittedLine, Func<bool> readOnly,
         Func<CancellationToken, Task<ConfigShareSent?>> publish)
     {
         // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
         Style = StyleFor("LauncherSheet");
+        this.appVersion = appVersion;
         this.form = form;
         this.omittedLine = omittedLine;
         this.readOnly = readOnly;
@@ -52,6 +52,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         AutomationProperties.SetAutomationId(name, "ShareCreditName");
         AutomationProperties.SetLiveSetting(nameProblem, AutomationLiveSetting.Polite);
         AutomationProperties.SetName(sending, "Sending setup");
+        name.Style = StyleFor("CapsuleTextBox");
         name.Text = form.Name;
         name.TextChanged += (_, _) =>
         {
@@ -59,7 +60,7 @@ internal sealed class ShareSetupDialog : ContentDialog
             RefreshName();
         };
 
-        see = new Button { Content = "See what’s sent…", Style = StyleFor("SubtleLinkAction"), AccessKey = "W" };
+        see = new Button { Content = "See What’s Sent…", Style = StyleFor("SubtleLinkAction"), AccessKey = "W" };
         AutomationProperties.SetName(see, "See what’s sent when sharing a setup");
         AutomationProperties.SetAutomationId(see, "SharePreview");
         see.Click += (_, _) => ShowPreview();
@@ -67,15 +68,16 @@ internal sealed class ShareSetupDialog : ContentDialog
         factCard = PrivacyPresentation.GroupCard(facts);
         if (form.Prepared is { } prepared)
         {
-            Fact("Document", "What is sent", $"{Count(prepared.Settings, "setting", "settings")} and {Count(prepared.Binds, "key bind", "key binds")} from this loadout, the name above, the game and app versions, and how many lines were left out and why.");
-            Fact("LockClosed", "What is left out", $"Your name in the game, chat lines, passwords, server addresses and file paths: {Count(prepared.LeftOut.Length, "line", "lines")} here. A config never holds your CD key.");
-            Fact("PeopleCommunity", "Where it goes", "To cod2unbound.com, which posts it publicly on GitHub as a request for review. Anyone can copy what is public, and you can take it back at any time.");
+            var (sent, leftOut) = PrivacyPresentation.ShareFacts(prepared);
+            Fact("Document", "What is sent", sent);
+            Fact("LockClosed", "What is left out", leftOut);
+            Fact("PeopleCommunity", "Where it goes", PrivacyPresentation.ShareDestination);
         }
         fields.Children.Add(name);
         fields.Children.Add(nameProblem);
         fields.Children.Add(factCard);
         fields.Children.Add(see);
-        main = new StackPanel { Spacing = 8, Children = { Body(Intro), fields, sending, notice } };
+        main = new StackPanel { Spacing = 12, Children = { fields, sending, notice } };
 
         Opened += (_, _) => name.Focus(FocusState.Programmatic);
         Closing += (_, args) =>
@@ -118,17 +120,14 @@ internal sealed class ShareSetupDialog : ContentDialog
         {
             if (facts.Children.Count != 0)
                 facts.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            var row = Columns(10, GridLength.Auto, new GridLength(1, GridUnitType.Star));
-            row.Padding = new Thickness(10, 6, 10, 6);
-            var symbol = Fluent(icon, 18);
-            symbol.VerticalAlignment = VerticalAlignment.Top;
+            var headingRow = IconLabel(icon, heading, 18);
+            var symbol = (FontIcon)headingRow.Children[0];
+            symbol.Style = StyleFor("PrivacyQuestionIcon");
             AutomationProperties.SetAccessibilityView(symbol, AccessibilityView.Raw);
-            Put(row, 0, symbol);
-            Put(row, 1, new StackPanel
-            {
-                Spacing = 2,
-                Children = { new TextBlock { Text = heading, Style = StyleFor("BodyStrongTextBlockStyle") }, Caption(detail) }
-            });
+            ((TextBlock)headingRow.Children[1]).FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+            var words = Caption(detail);
+            words.Margin = new Thickness(26, 0, 0, 0);
+            var row = new StackPanel { Spacing = 3, Padding = new Thickness(16, 11, 16, 11), Children = { headingRow, words } };
             facts.Children.Add(row);
         }
     }
@@ -153,7 +152,7 @@ internal sealed class ShareSetupDialog : ContentDialog
     private void ShowForm()
     {
         preview = false;
-        SheetPresentation.SetSheetTitle(this, "FluentShare", shareTitle);
+        SheetPresentation.SetSheetTitle(this, "FluentShare", shareTitle, PrivacyPresentation.ShareIntro);
         Content = main;
         SecondaryButtonText = "";
         CloseButtonText = "Cancel";
@@ -172,11 +171,11 @@ internal sealed class ShareSetupDialog : ContentDialog
     {
         bool busy = form.Phase == ConfigSharePhase.Sending;
         name.IsEnabled = see.IsEnabled = !busy;
-        fields.Opacity = busy ? 0.6 : 1;
+        factCard.Opacity = busy ? 0.45 : 1;
         factCard.Visibility = see.Visibility = IsVisible(form.ShowDetails);
         sending.Visibility = IsVisible(busy);
         sending.IsIndeterminate = busy;
-        PrimaryButtonText = form.Action;
+        PrimaryButtonText = form.Phase == ConfigSharePhase.Offline ? "Try Again" : form.Action;
         RefreshName();
         var problem = form.CanSend && readOnly()
             ? new ConfigShareNotice(ConfigShareNoticeLevel.Info, "", "Sharing is off while Call of Duty 2 is running.")
@@ -215,13 +214,13 @@ internal sealed class ShareSetupDialog : ContentDialog
         if (form.Prepared is not { } prepared)
             return;
         preview = true;
-        SheetPresentation.SetSheetTitle(this, "FluentEye", "What is sent");
-        PrimaryButtonText = "Back";
+        SheetPresentation.SetSheetTitle(this, "FluentDocument", "What is sent", PrivacyPresentation.SharePreviewIntro(appVersion));
+        PrimaryButtonText = "Done";
         IsPrimaryButtonEnabled = true;
         CloseButtonText = "";
         var sentLines = new TextBox
         {
-            IsReadOnly = true, AcceptsReturn = true, Height = 224, TextWrapping = TextWrapping.Wrap,
+            IsReadOnly = true, AcceptsReturn = true, Height = 248, TextWrapping = TextWrapping.Wrap,
             Style = StyleFor("MonoField"), Text = prepared.Text
         };
         ScrollViewer.SetVerticalScrollBarVisibility(sentLines, ScrollBarVisibility.Auto);
@@ -234,12 +233,12 @@ internal sealed class ShareSetupDialog : ContentDialog
         AutomationProperties.SetName(list, "Lines left out and their reasons");
         var omitted = new Border
         {
-            Style = StyleFor("FieldCard"), Padding = new Thickness(8), Height = 224,
+            Style = StyleFor("FieldCard"), Padding = new Thickness(8), Height = 248,
             Child = prepared.LeftOut.IsEmpty ? Caption("Nothing was left out of this loadout.") : list
         };
-        var tabs = Tabs([$"Sent · {prepared.Lines}", $"Left out · {prepared.LeftOut.Length}"], 0, Fill);
+        var tabs = Tabs([$"Sent · {prepared.Lines}", $"Left Out · {prepared.LeftOut.Length}"], 0, Fill);
         AutomationProperties.SetName(tabs, "Lines to show");
-        Content = new StackPanel { Spacing = 10, Children = { Body(PreviewIntro), tabs, sentLines, omitted } };
+        Content = new StackPanel { Spacing = 10, Children = { tabs, sentLines, omitted } };
         Fill(0);
         tabs.Focus(FocusState.Programmatic);
 
@@ -256,15 +255,16 @@ internal sealed class ShareSetupDialog : ContentDialog
 
     private void ShowSent(ConfigShareSent sent)
     {
-        SheetPresentation.SetSheetTitle(this, "FluentCheckCircle", "Your setup was sent", tone: SheetPresentation.Tone.Positive);
+        SheetPresentation.SetSheetTitle(this, "FluentCheckCircle", "Your setup was sent",
+            $"It shows up in Player Setups under the name {sent.Name} once a person has looked at it, usually within a few days. There is nothing more for you to do.",
+            SheetPresentation.Tone.Positive);
         PrimaryButtonText = form.Action;
         IsPrimaryButtonEnabled = true;
         CloseButtonText = "";
-        var icon = Fluent("CheckCircle", 30);
-        icon.Style = StyleFor("PositiveIcon");
-        icon.HorizontalAlignment = HorizontalAlignment.Left;
-        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
-        var address = MonoCaption(sent.Url.AbsoluteUri);
+        string url = sent.Url.AbsoluteUri;
+        string shortAddress = url[(url.IndexOf("://", StringComparison.Ordinal) + 3)..];
+        var address = MonoCaption(shortAddress);
+        AutomationProperties.SetName(address, $"Request address: {shortAddress}");
         address.TextWrapping = TextWrapping.Wrap;
         address.IsTextSelectionEnabled = true;
         address.LineHeight = 18;
@@ -274,10 +274,8 @@ internal sealed class ShareSetupDialog : ContentDialog
             Spacing = 10,
             Children =
             {
-                icon,
-                Body($"It shows up in Player Setups under the name {sent.Name} once a person has looked at it, usually within a few days. There is nothing more for you to do."),
                 new Border { Style = StyleFor("FieldCard"), Child = address },
-                Caption("To take it back, choose Stop sharing on this loadout. No reason is asked for."),
+                Caption("To take it back, choose Stop Sharing from this loadout’s menu. No reason is asked for."),
                 RequestLink(sent.Url)
             }
         };
@@ -301,7 +299,7 @@ internal sealed class ShareSetupDialog : ContentDialog
 
     internal static HyperlinkButton RequestLink(Uri url)
     {
-        var link = new HyperlinkButton { Content = "View request", NavigateUri = url, Padding = new Thickness(0, 4, 0, 4) };
+        var link = new HyperlinkButton { Content = "View Request", NavigateUri = url, Padding = new Thickness(0, 4, 0, 4) };
         AutomationProperties.SetName(link, "View request");
         return link;
     }
@@ -310,5 +308,4 @@ internal sealed class ShareSetupDialog : ContentDialog
         FrameworkElementAutomationPeer.CreatePeerForElement(this)?.RaiseNotificationEvent(
             AutomationNotificationKind.ActionCompleted, AutomationNotificationProcessing.MostRecent, message, "ShareSetup");
 
-    private static string Count(int count, string singular, string plural) => $"{count} {(count == 1 ? singular : plural)}";
 }

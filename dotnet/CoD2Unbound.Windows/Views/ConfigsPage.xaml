@@ -194,16 +194,6 @@
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
                                 </StackPanel>
                             </Grid>
-                            <Button.Flyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem Text="From a File…" KeyboardAcceleratorTextOverride="Ctrl+O" Click="OnPickConfig" />
-                                    <MenuFlyoutItem Text="From a Link or GitHub…" Click="OnImportLink" />
-                                    <MenuFlyoutItem Text="From This PC’s Server (localhost)…" Click="OnImportLocalhost" />
-                                    <MenuFlyoutItem Text="From Your Call of Duty 2 Install…" Click="OnImportInstall" />
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="Paste Config" KeyboardAcceleratorTextOverride="Ctrl+Shift+V" Click="OnPasteConfig" />
-                                </MenuFlyout>
-                            </Button.Flyout>
                         </Button>
                     </StackPanel>
                 </ScrollViewer>

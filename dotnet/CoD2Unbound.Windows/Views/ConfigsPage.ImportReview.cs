@@ -17,10 +17,12 @@ public sealed partial class ConfigsPage
             return;
         using var cancellation = new CancellationTokenSource();
         var progress = new StackPanel { Spacing = 8, Children = { Progress("Reading and checking every line…") } };
-        var modal = Dialog(catalogueId is null ? "Review this config" : $"Review {initialName}'s setup", progress, "");
+        string title = catalogueId is null ? "Review this config" : $"Review {initialName}’s setup";
+        var modal = Dialog(title, progress, "");
+        SheetPresentation.SetSheetTitle(modal, "FluentArrowDownload", title);
         modal.CloseButtonText = "Close";
         modal.DefaultButton = ContentDialogButton.Close;
-        modal.Resources["ContentDialogMaxWidth"] = 920d;
+        modal.Resources["ContentDialogMaxWidth"] = 1000d;
 
         ConfigImportReceipt? receipt = null;
         bool created = false;
@@ -140,14 +142,15 @@ public sealed partial class ConfigsPage
             header.Children.Add(attribution);
 
             var into = new ComboBox { Header = "Into", HorizontalAlignment = HorizontalAlignment.Stretch };
-            into.Items.Add($"New loadout \"{initialName}\"");
+            AutomationProperties.SetName(into, "Into");
+            into.Items.Add($"New loadout “{initialName}”");
             if (!newOnly)
                 foreach (var profile in profiles)
                     into.Items.Add(profile.DisplayName);
             into.SelectedIndex = 0;
             var intoNote = Caption("");
             var mode = new ComboBox { Header = "How to import", HorizontalAlignment = HorizontalAlignment.Stretch,
-                ItemsSource = new[] { "Review", "Import everything" }, SelectedIndex = 0 };
+                ItemsSource = new[] { "Review", "Import Everything" }, SelectedIndex = 0 };
             var choices = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
             Put(choices, 0, into);
             Put(choices, 1, mode);
@@ -155,7 +158,8 @@ public sealed partial class ConfigsPage
             header.Children.Add(intoNote);
 
             var summary = Caption("");
-            var detailsLink = new HyperlinkButton { Content = "Show details", Padding = new Thickness(0, 2, 0, 2) };
+            var detailsLink = new HyperlinkButton { Content = "Show Details", Padding = new Thickness(0, 2, 0, 2) };
+            AutomationProperties.SetName(detailsLink, "Show details");
             var summaryRow = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
             summary.VerticalAlignment = VerticalAlignment.Center;
             Put(summaryRow, 0, summary);
@@ -195,12 +199,12 @@ public sealed partial class ConfigsPage
             Put(riskHeader, 1, riskCaption);
             var counters = new List<(TextBlock Text, ConfigImportRow[] Rows)>();
             bool details = false, narrow = false, confirming = false, changing = false, blockedTarget = false, applying = false;
-            string title = modal.Title.ToString()!;
 
             detailsLink.Click += (_, _) =>
             {
                 details = !details;
-                detailsLink.Content = details ? "Hide details" : "Show details";
+                detailsLink.Content = details ? "Hide Details" : "Show Details";
+                AutomationProperties.SetName(detailsLink, details ? "Hide details" : "Show details");
                 Fill();
             };
             into.SelectionChanged += (_, _) => SetTarget();
@@ -272,8 +276,8 @@ public sealed partial class ConfigsPage
 
             void Layout()
             {
-                bool compact = root.Size.Width <= 1024;
-                double width = Math.Max(280, Math.Min(920, root.Size.Width - 48) - 48);
+                bool compact = root.Size.Width <= 1120;
+                double width = Math.Max(280, Math.Min(1000, root.Size.Width - 48) - 48);
                 content.Width = confirmation.Width = width;
                 scroll.MaxHeight = Math.Max(132, root.Size.Height - (compact ? 320 : 328));
                 confirmScroll.MaxHeight = Math.Max(132, root.Size.Height - 200);
@@ -290,7 +294,7 @@ public sealed partial class ConfigsPage
                     old.Children.Remove(error);
                 if (!content.Children.Contains(error))
                     content.Children.Add(error);
-                modal.Title = title;
+                SheetPresentation.SetSheetTitle(modal, "FluentArrowDownload", title);
                 modal.Content = content;
                 modal.CloseButtonText = "Cancel";
                 modal.DefaultButton = ContentDialogButton.Primary;

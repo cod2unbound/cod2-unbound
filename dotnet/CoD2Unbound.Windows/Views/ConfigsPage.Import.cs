@@ -11,16 +11,22 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class ConfigsPage
 {
+    private MenuFlyout MakeAddConfigMenu()
+    {
+        var menu = new MenuFlyout();
+        menu.Items.Add(MenuItem("From a File…", PickConfigAsync, shortcut: "Ctrl+O"));
+        menu.Items.Add(MenuItem("From a Link or GitHub…", () => PickLinkAsync(localhost: false)));
+        menu.Items.Add(MenuItem("From This PC’s Server (localhost)…", () => PickLinkAsync(localhost: true)));
+        menu.Items.Add(MenuItem("From Your Call of Duty 2 Install…", () => PickInstalledProfileAsync()));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(MenuItem("Paste Config", PasteConfigAsync, shortcut: "Ctrl+Shift+V"));
+        return menu;
+    }
+
     private const string LinkProblem =
         "Use an https:// link, a GitHub file or gist, or http://localhost for a server on this PC. Links with passwords in them aren't accepted.";
 
     private sealed record ImportSource(string Label, string Detail, string Icon, string? Credit = null, string? Scope = null);
-
-    private async void OnPickConfig(object sender, RoutedEventArgs args) => await shell.RunAsync(PickConfigAsync);
-    private async void OnPasteConfig(object sender, RoutedEventArgs args) => await shell.RunAsync(PasteConfigAsync);
-    private async void OnImportLink(object sender, RoutedEventArgs args) => await shell.RunAsync(() => PickLinkAsync(false));
-    private async void OnImportLocalhost(object sender, RoutedEventArgs args) => await shell.RunAsync(() => PickLinkAsync(true));
-    private async void OnImportInstall(object sender, RoutedEventArgs args) => await shell.RunAsync(() => PickInstalledProfileAsync());
 
     internal async Task PickConfigAsync()
     {

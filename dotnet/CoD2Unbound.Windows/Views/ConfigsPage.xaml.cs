@@ -37,6 +37,7 @@ public sealed partial class ConfigsPage : Page
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
         Loadouts.ItemsSource = loadoutRows;
+        AddConfig.Flyout = MakeAddConfigMenu();
         AttachConfigShortcuts();
         AttachImportDrop();
         model.SettingSaveChanged += OnSettingSaveChanged;
@@ -54,9 +55,10 @@ public sealed partial class ConfigsPage : Page
         {
             PositionConfigToolbar();
             shell.SetTitleBarContent(configToolbar);
+            if (Detail.Children.Count == 0 && DiscoverPlaces.SelectedItem is null)
+                DiscoverPlaces.SelectedIndex = 0;
         };
         RenderLoadouts();
-        ShowStudio();
     }
 
     private void OnLoadoutContainerChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -124,17 +126,20 @@ public sealed partial class ConfigsPage : Page
         });
     }
 
-    private async Task<string?> AskNameAsync(string title, string action, string initial, string? except = null)
+    private async Task<string?> AskNameAsync(string title, string action, string initial, string? except = null, string? message = null)
     {
-        var name = new TextBox { Header = "Name", Text = initial, MaxLength = 80 };
+        var name = new TextBox { Header = except is null ? "Name" : "Loadout name", Text = initial, MaxLength = 80, Style = StyleFor("CapsuleTextBox") };
         var problem = Caption("");
         var content = new StackPanel { Spacing = 8 };
         content.Children.Add(name);
         content.Children.Add(problem);
         var dialog = Dialog(title, content, action);
+        if (message is not null)
+            SheetPresentation.SetSheetTitle(dialog, "FluentDocument", title, message);
         void Validate()
         {
-            problem.Text = model.NameProblem(name.Text, except) ?? "";
+            problem.Text = model.NameProblem(name.Text, except) ??
+                (except is not null && name.Text.Trim() == initial ? "Type a new name." : "");
             dialog.IsPrimaryButtonEnabled = problem.Text.Length == 0;
         }
         Validate();
@@ -372,7 +377,7 @@ public sealed partial class ConfigsPage : Page
     {
         var dialog = new SafeRemovalDialog($"Delete the loadout “{profile.DisplayName}”?",
             "Its settings, binds and history go with it. Your other loadouts aren’t affected. You can put it back from the Recycle Bin.",
-            "Delete loadout")
+            "Delete Loadout")
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };
@@ -764,7 +769,7 @@ public sealed partial class ConfigsPage : Page
         int place = DiscoverPlaces.SelectedIndex;
         if (syncing || place < 0)
             return;
-        await shell.RunAsync(async () =>
+        await shell.ShowProblemAsync(async () =>
         {
             if (!await ConfirmLeaveTextAsync())
             {

@@ -25,6 +25,18 @@ internal static class PrivacyPresentation
     internal const string Never = "Your name, your CD key, server names and addresses, chat, what is in your configs, file paths, or anything you type.";
     internal const string NumberDetail = "Made at random on this PC, it links your usage data from one session to the next. Reset starts a new one; turning usage data off forgets it.";
 
+    internal const string ShareIntro = "It joins Player Setups, the public list in Configs that every CoD2 Unbound player can browse. A person looks at each setup before it is listed.";
+    internal const string ShareDestination = "To cod2unbound.com, which posts it as a public request on GitHub. Anyone can copy what is public, and you can take it back at any time.";
+
+    internal static string SharePreviewIntro(string appVersion) =>
+        $"This text, the name you type, the game version, the app’s version, {ConfigShare.AppVersion(appVersion)}, and the count of left-out lines with their reasons. Nothing else leaves your PC.";
+
+    internal static (string Sent, string LeftOut) ShareFacts(ConfigSharePrepared setup) =>
+        ($"{Count(setup.Settings, "setting", "settings")} and {Count(setup.Binds, "key bind", "key binds")} from this loadout, the name above, the game and app versions, and how many lines were left out and why.",
+        $"Your name in the game, chat lines, passwords, server addresses and file paths: {Count(setup.LeftOut.Length, "line", "lines")} here. A config never holds your CD key.");
+
+    private static string Count(int value, string one, string many) => $"{value} {(value == 1 ? one : many)}";
+
     private static readonly (string, string)[] CrashRows =
     [
         ("What a report holds", "What failed and when, which game version crashed, the app’s version, your Windows version, your PC’s model and the report the game wrote when it stopped."),

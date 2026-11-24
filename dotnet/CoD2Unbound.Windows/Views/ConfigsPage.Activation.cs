@@ -6,8 +6,10 @@ public sealed partial class ConfigsPage
 {
     internal async Task OpenSetupLinkAsync(string id)
     {
+        syncing = true;
         DiscoverPlaces.SelectedIndex = 0;
         Loadouts.SelectedItem = null;
+        syncing = false;
         discoverQuery = "";
         discoverGroup = null;
         catalogueDpi = model.DpiFor(model.Studio.ReadActive());

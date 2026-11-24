@@ -91,7 +91,9 @@ public sealed partial class ConfigsPage
 
         var confirmation = Dialog($"Stop sharing “{profile.DisplayName}”?",
             Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
-            "Stop sharing");
+            "Stop Sharing");
+        confirmation.AsAlert(destructive: true);
+        confirmation.DefaultButton = ContentDialogButton.Close;
         if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
             return;
         if (noticeBar is not null)
@@ -111,9 +113,9 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private FrameworkElement PlayerSetupsHeading(TextBlock title)
+    private Grid PlayerSetupsHeading(FrameworkElement title)
     {
-        var action = new Button { Content = IconLabel("Share", "Share your setup…", 16), AccessKey = "S" };
+        var action = new Button { Content = IconLabel("Share", "Share Your Setup…", 16), AccessKey = "S" };
         AutomationProperties.SetName(action, "Share your setup");
         AutomationProperties.SetAutomationId(action, "ShareYourSetup");
         var profiles = model.State.Profiles;
@@ -168,7 +170,7 @@ public sealed partial class ConfigsPage
         if (!model.Share.CanShare(profile.Id, model.Studio.IsReadOnly))
             return;
         var form = await model.PrepareShareAsync(profile);
-        var dialog = new ShareSetupDialog(profile.DisplayName, form, (DataTemplate)Resources["ShareLeftOutLine"], () => model.Studio.IsReadOnly,
+        var dialog = new ShareSetupDialog(profile.DisplayName, model.AppVersion, form, (DataTemplate)Resources["ShareLeftOutLine"], () => model.Studio.IsReadOnly,
             token => model.Share.PublishAsync(profile.Id, form, model.Dialect, model.AppVersion, model.Studio.IsReadOnly, token))
         {
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme

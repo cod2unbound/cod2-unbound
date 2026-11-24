@@ -27,6 +27,7 @@ public sealed partial class ConfigsPage
     private async Task ShowCatalogueAsync(bool saved, bool retry = false)
     {
         refreshSharing = null;
+        int expectedPlace = saved ? 1 : 0;
         if (!retry)
             model.Opened(saved ? UsagePage.Saved : UsagePage.Setups);
         Status.IsOpen = false;
@@ -34,61 +35,89 @@ public sealed partial class ConfigsPage
         Detail.Children.Clear();
         ResetDetailScroll();
         var title = Heading(saved ? "Saved" : "Player Setups");
-        Detail.Children.Add(saved ? title : PlayerSetupsHeading(title));
-        var status = Caption("Loading player setups…");
-        Detail.Children.Add(status);
+        title.FontSize = 30;
+        var subtitle = Caption("");
+        subtitle.Visibility = Visibility.Collapsed;
+        var identity = new StackPanel { Spacing = 4, Children = { title, subtitle } };
+        var shareHeader = saved ? null : PlayerSetupsHeading(identity);
+        var back = new Button { Style = StyleFor("QuietButton"), Content = IconLabel("ChevronLeft", "Player Setups", 14),
+            Visibility = Visibility.Collapsed };
+        Detail.Children.Add(back);
+        Detail.Children.Add(shareHeader is null ? identity : shareHeader);
+        var search = CatalogueSearch(saved ? savedQuery : discoverQuery);
+        var count = Caption("Getting the catalogue…");
+        count.VerticalAlignment = VerticalAlignment.Center;
+        count.TextWrapping = TextWrapping.NoWrap;
+        count.TextTrimming = TextTrimming.CharacterEllipsis;
+        var refresh = new Button { Content = Fluent("Refresh", 20), Style = StyleFor("IconAction"), IsEnabled = false };
+        AutomationProperties.SetName(refresh, "Refresh player setups");
+        ToolTipService.SetToolTip(refresh, "Refresh player setups");
+        var counts = Buttons(count, refresh);
+        var statusPill = new Border { Style = StyleFor("ToolbarSurface"), Padding = new Thickness(14, 0, 4, 0),
+            Child = counts };
+        ShowCatalogueToolbar(search, statusPill);
+
+        var results = new StackPanel { Spacing = 20 };
+        var loading = new StackPanel { Spacing = 20 };
+        loading.Children.Add(Progress("Getting the catalogue…"));
+        var skeleton = CheckCard(new Grid());
+        skeleton.Height = 230;
+        AutomationProperties.SetAccessibilityView(skeleton, AccessibilityView.Raw);
+        loading.Children.Add(skeleton);
+        Detail.Children.Add(loading);
+        Detail.Children.Add(results);
         await model.Discover.LoadAsync(retry);
+        if (DiscoverPlaces.SelectedIndex != expectedPlace || !Detail.Children.Contains(results))
+            return;
         model.RememberVerifiedCatalogue();
         UpdateSavedCount();
-        Detail.Children.Remove(status);
+        Detail.Children.Remove(loading);
+        refresh.IsEnabled = true;
         if (model.Discover.State.Snapshot is null)
         {
+            var unavailable = model.Discover.State;
             model.Error(UsageProblem.Directory);
-            AddCatalogueStatus("Player Setups is unavailable", "Check your connection and try again.");
+            count.Text = "Catalogue unavailable";
+            bool retryable = unavailable.Phase != ConfigDiscoverPhase.Unavailable;
+            refresh.IsEnabled = retryable;
+            refresh.Click += async (_, _) => await shell.ShowProblemAsync(() => ShowCatalogueAsync(saved, retry: true));
+            var stateCard = EmptyState("PeopleCommunity",
+                retryable ? "The catalogue couldn’t be reached" : "No player setups in this build",
+                "Player setups come from the catalogue on GitHub. Your own loadouts, Add a Config and Check a Config still work.");
+            if (retryable)
+                stateCard.Children.Add(Action("Try Again", () => ShowCatalogueAsync(saved, retry: true)));
+            results.Children.Add(stateCard);
+            AddCataloguePromos(results);
+            AddCatalogueFooter(results);
             return;
         }
 
         var state = model.Discover.State;
         catalogueDpi = model.DpiFor(model.Studio.ReadActive());
         var entries = saved ? state.Saved.Select(item => item.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray() : model.Discover.Entries;
-        var search = new AutoSuggestBox
-        {
-            PlaceholderText = "Search players, teams or styles", Text = saved ? savedQuery : discoverQuery,
-            AccessKey = "F", QueryIcon = Fluent("Search", 20)
-        };
-        catalogueFind = search;
-        AutomationProperties.SetName(search, search.PlaceholderText);
-        var tools = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-        Put(tools, 0, search);
-        var count = Caption(SetupCount(entries.Length) + (state.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : ""));
-        count.VerticalAlignment = VerticalAlignment.Center;
-        var refresh = new Button();
-        refresh.Content = Fluent("Refresh", 20);
-        refresh.Style = StyleFor("IconAction");
-        AutomationProperties.SetName(refresh, "Refresh player setups");
-        ToolTipService.SetToolTip(refresh, "Refresh player setups");
-        var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
-            HorizontalAlignment = HorizontalAlignment.Left, Children = { count, refresh } };
-        Put(tools, 1, counts);
-        MoveBelowWhenNarrow(tools, counts, 560);
-        Detail.Children.Add(tools);
-
-        const string savedNotice = "Showing saved catalogue results. Refresh to check for updates.";
-        var refreshStatus = Caption(savedNotice);
-        refreshStatus.Visibility = IsVisible(state.Problem is not null);
-        Detail.Children.Add(refreshStatus);
-
-        var results = new StackPanel { Spacing = 14 };
-        Detail.Children.Add(results);
+        count.Text = CatalogueCount(entries.Length, state.Fetched);
+        var refreshStatus = CheckNotice(InfoBarSeverity.Informational, "", "");
+        var retryAction = new Button { Content = "Try Again" };
+        refreshStatus.ActionButton = retryAction;
+        refreshStatus.Visibility = IsVisible(!saved && state.Problem is not null);
+        refreshStatus.Message = OfflineNotice(state.Fetched);
+        Detail.Children.Insert(2, refreshStatus);
         ConfigDirectoryPopularity? figures = model.Discover.Popularity is { IsCompletedSuccessfully: true } ready
             ? ready.Result : null;
         Func<ImmutableArray<ConfigDirectoryEntry>, ImmutableArray<ConfigDirectoryEntry>>? groupFilter = null;
         bool checking = false;
+        back.Click += (_, _) =>
+        {
+            discoverGroup = null;
+            discoverQuery = "";
+            search.Text = "";
+            Fill();
+            ResetDetailScroll();
+        };
         refresh.Click += async (_, _) => await shell.ShowProblemAsync(RefreshCatalogueAsync);
+        retryAction.Click += async (_, _) => await shell.ShowProblemAsync(RefreshCatalogueAsync);
         search.TextChanged += (_, args) =>
         {
-            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
-                return;
             if (saved)
                 savedQuery = search.Text;
             else
@@ -121,7 +150,8 @@ public sealed partial class ConfigsPage
                 return;
             checking = true;
             string previousCount = count.Text;
-            count.Text = "Checking for updated player setups…";
+            count.Text = "Checking…";
+            refresh.IsEnabled = retryAction.IsEnabled = false;
             try
             {
                 await model.Discover.LoadAsync(retry: true);
@@ -136,7 +166,8 @@ public sealed partial class ConfigsPage
                     refreshStatus.Visibility = Visibility.Visible;
                     return;
                 }
-                refreshStatus.Visibility = IsVisible(next.Problem is not null);
+                refreshStatus.Visibility = IsVisible(!saved && next.Problem is not null);
+                refreshStatus.Message = OfflineNotice(next.Fetched);
                 if (next.Snapshot.Index.Revision != state.Snapshot?.Index.Revision)
                 {
                     entries = saved ? next.Saved.Select(item => item.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray()
@@ -147,14 +178,15 @@ public sealed partial class ConfigsPage
                     state = next;
                     Fill();
                 }
-                count.Text = SetupCount(entries.Length) + (next.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : "");
+                count.Text = CatalogueCount(entries.Length, next.Fetched);
                 if (!saved && discoverGroup is not null && model.Discover.Popularity is { } pending)
                     _ = ShowFiguresAsync(pending);
             }
             finally
             {
                 checking = false;
-                if (count.Text == "Checking for updated player setups…")
+                refresh.IsEnabled = retryAction.IsEnabled = true;
+                if (count.Text == "Checking…")
                     count.Text = previousCount;
             }
         }
@@ -163,16 +195,34 @@ public sealed partial class ConfigsPage
         {
             results.Children.Clear();
             string query = search.Text.Trim();
+            bool browsing = !saved && (discoverGroup is not null || query.Length != 0);
+            back.Visibility = IsVisible(browsing);
+            if (shareHeader?.Children[1] is FrameworkElement share)
+                share.Visibility = IsVisible(!browsing);
+            subtitle.Visibility = IsVisible(browsing || saved && !entries.IsEmpty);
+            if (saved)
+                subtitle.Text = SetupCount(entries.Length);
+            else if (!browsing)
+                title.Text = "Player Setups";
+
             if (!saved && discoverGroup is { } group)
             {
-                var back = new HyperlinkButton { Content = "‹ Player Setups" };
-                back.Click += (_, _) => { discoverGroup = null; Fill(); };
-                results.Children.Add(back);
-                var caption = Caption("");
+                title.Text = group;
+                var caption = subtitle;
                 caption.VerticalAlignment = VerticalAlignment.Bottom;
                 caption.TextWrapping = TextWrapping.Wrap;
                 var gridHeading = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
-                Put(gridHeading, 0, new StackPanel { Spacing = 4, Children = { PanelHeading(group), caption } });
+                var filterChoices = ConfigDiscover.StyleShelves(entries, CultureInfo.CurrentCulture);
+                var filters = filterChoices.Select(shelf => shelf.Filter).Prepend(ConfigSetupFilter.All).ToArray();
+                if (filters.Length > 1)
+                {
+                    string[] names = filters.Select(StyleName).ToArray();
+                    int selected = Math.Max(0, Array.IndexOf(names, group));
+                    Put(gridHeading, 0, Tabs(names, selected, index =>
+                        OpenGroup(names[index], current => ConfigDiscover.Setups(current, filters[index], "", CultureInfo.CurrentCulture))));
+                }
+                else
+                    Put(gridHeading, 0, new Border());
                 results.Children.Add(gridHeading);
                 var cards = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
                 results.Children.Add(cards);
@@ -181,7 +231,7 @@ public sealed partial class ConfigsPage
                 if (orders.Length > 1)
                 {
                     var sort = new ComboBox { MinWidth = 152 };
-                    var label = new TextBlock { Text = "Sort by", VerticalAlignment = VerticalAlignment.Center };
+                    var label = new TextBlock { Text = "Order", VerticalAlignment = VerticalAlignment.Center };
                     AutomationProperties.SetLabeledBy(sort, label);
                     ToolTipService.SetToolTip(sort, "Sort the setups");
                     sort.ItemsSource = orders.Select(value => value switch
@@ -224,18 +274,32 @@ public sealed partial class ConfigsPage
                     return count is null ? $"As published by {entry.Provenance.PublishedBy}"
                         : $"{(order == ConfigSetupOrder.MostImported ? "Imported" : "Viewed")} {count} times in the last {figures!.Period}";
                 }
+                AddCatalogueFooter(results);
                 return;
             }
 
             if (saved || query.Length > 0)
             {
                 var matching = ConfigDiscover.Setups(entries, ConfigSetupFilter.All, query, CultureInfo.CurrentCulture);
+                if (!saved)
+                {
+                    title.Text = "Results";
+                    subtitle.Text = matching.IsEmpty ? $"None of {SetupCount(entries.Length)}" :
+                        $"{matching.Length} of {SetupCount(entries.Length)} {(matching.Length == 1 ? "matches" : "match")} “{query}”";
+                }
                 if (!matching.IsEmpty)
                     results.Children.Add(SetupGrid(matching, saved));
                 else
-                    results.Children.Add(EmptyState(query.Length > 0 ? "Search" : "Bookmark",
-                        saved && entries.IsEmpty ? "No saved player setups" : "No matching player setups",
-                        saved && entries.IsEmpty ? "Setups you save for later appear here." : "Try another search."));
+                {
+                    var empty = EmptyState(query.Length > 0 ? "Search" : "Bookmark",
+                        saved && entries.IsEmpty ? "Nothing saved yet" : $"No setup matches “{query}”",
+                        saved && entries.IsEmpty ? "Setups you save for later appear here." :
+                            $"Try a team, an era or where it was published. Search looks through {SetupCount(entries.Length)}.");
+                    empty.Children.Add(query.Length > 0
+                        ? SmallButton("Clear Search", () => search.Text = "")
+                        : SmallButton("Browse Player Setups", () => DiscoverPlaces.SelectedIndex = 0));
+                    results.Children.Add(empty);
+                }
                 if (saved && query.Length == 0)
                     foreach (var missing in state.Saved.Where(item => item.Entry is null))
                         results.Children.Add(SettingRow("Unavailable setup", null,
@@ -244,6 +308,8 @@ public sealed partial class ConfigsPage
                                 await model.Discover.SetSavedAsync(missing.Id, false);
                                 await ShowCatalogueAsync(saved: true);
                             })));
+                if (!saved)
+                    AddCatalogueFooter(results);
                 return;
             }
 
@@ -254,14 +320,14 @@ public sealed partial class ConfigsPage
             var shelves = ConfigDiscover.StyleShelves(entries, CultureInfo.CurrentCulture);
             foreach (var shelf in shelves)
             {
-                string heading = shelf.Filter switch { ConfigSetupFilter.Classic => "Classic era", ConfigSetupFilter.Cod2x => "CoD2x era", _ => "Modern" };
+                string heading = StyleName(shelf.Filter);
                 string note = shelf.Filter switch
                 {
                     ConfigSetupFilter.Classic => "From the game’s first years, around 2005 to 2008.",
                     ConfigSetupFilter.Cod2x => "Made for CoD2x.",
                     _ => "From the game’s later years."
                 };
-                results.Children.Add(ShelfHeading(heading, note, $"See all {shelf.Total}",
+                results.Children.Add(ShelfHeading(heading, note, $"See All {shelf.Total}",
                     () => OpenGroup(heading, current => ConfigDiscover.Setups(current, shelf.Filter, "", CultureInfo.CurrentCulture))));
                 results.Children.Add(SetupShelf(shelf.Entries, saved));
             }
@@ -269,7 +335,7 @@ public sealed partial class ConfigsPage
             var teams = ConfigDiscover.Teams(entries, CultureInfo.CurrentCulture);
             if (!teams.IsEmpty)
             {
-                results.Children.Add(ShelfHeading("Teams", "Browse setups by team"));
+                results.Children.Add(ShelfHeading("Teams", "Every setup published under a team’s name."));
                 var teamCards = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal };
                 teamCards.SizeChanged += (_, args) =>
                 {
@@ -301,10 +367,12 @@ public sealed partial class ConfigsPage
                 }
 
             if (!entries.IsEmpty)
-                results.Children.Add(ShelfHeading("All setups", SetupCount(entries.Length), "See all", () =>
+                results.Children.Add(ShelfHeading("All setups", SetupCount(entries.Length), "See All", () =>
                     OpenGroup("All setups", current => current)));
             else
-                results.Children.Add(EmptyState("Search", "No player setups yet", "Check back later."));
+                results.Children.Add(EmptyState("Search", "No setups yet", "The catalogue doesn’t list any player setups yet. You can still bring in a config of your own."));
+            AddCataloguePromos(results);
+            AddCatalogueFooter(results);
         }
 
         void OpenGroup(string label, Func<ImmutableArray<ConfigDirectoryEntry>, ImmutableArray<ConfigDirectoryEntry>> filter)
@@ -317,11 +385,83 @@ public sealed partial class ConfigsPage
             ResetDetailScroll();
         }
 
-        void AddCatalogueStatus(string heading, string detail)
+    }
+
+    private static string StyleName(ConfigSetupFilter style) => style switch
+    {
+        ConfigSetupFilter.Classic => "Classic era",
+        ConfigSetupFilter.Cod2x => "CoD2x era",
+        ConfigSetupFilter.Modern => "Modern",
+        _ => "All setups"
+    };
+
+    private static string CatalogueCount(int count, DateTimeOffset? date) => SetupCount(count) +
+        (date is { } fetched ? $" · updated {CatalogueDate(fetched)}" : "");
+
+    private static string OfflineNotice(DateTimeOffset? date) => "Couldn’t reach the catalogue just now. Showing the copy saved" +
+        (date is { } saved ? $" on {saved.LocalDateTime:d MMMM}." : " on this PC.");
+
+    private AutoSuggestBox CatalogueSearch(string query)
+    {
+        var search = new AutoSuggestBox
         {
-            var retryButton = Action("Try again", () => ShowCatalogueAsync(saved, retry: true));
-            Detail.Children.Add(SettingRow(heading, detail, retryButton));
+            PlaceholderText = "Search players, teams or styles", Text = query,
+            AccessKey = "F", QueryIcon = Fluent("Search", 20), VerticalAlignment = VerticalAlignment.Center
+        };
+        AutomationProperties.SetName(search, search.PlaceholderText);
+        catalogueFind = search;
+        return search;
+    }
+
+    private void ShowCatalogueToolbar(AutoSuggestBox search, FrameworkElement? status)
+    {
+        configToolbar.Children.Clear();
+        var tools = Buttons(search);
+        tools.HorizontalAlignment = HorizontalAlignment.Right;
+        if (status is not null)
+            tools.Children.Add(status);
+        SizeChangedEventHandler resize = (_, _) => Fit();
+        configToolbar.SizeChanged += resize;
+        tools.Unloaded += (_, _) => configToolbar.SizeChanged -= resize;
+        Fit();
+        Put(configToolbar, 1, tools);
+
+        void Fit()
+        {
+            double available = configToolbar.ActualWidth;
+            search.Width = Math.Clamp(available - (status is null ? 0 : 228), 160, 280);
+            if (status is Border { Child: StackPanel row } && row.Children[0] is TextBlock count)
+                count.MaxWidth = available < 540 ? 106 : 168;
         }
+    }
+
+    private void AddCataloguePromos(Panel parent)
+    {
+        var addButton = new Button { Content = "Add a Config", IsEnabled = CanEdit };
+        addButton.Flyout = MakeAddConfigMenu();
+        var checkButton = SmallButton("Check a Config", () => DiscoverPlaces.SelectedIndex = 2);
+        var add = Promo("ArrowDownload", "Your own config", "Bring the config you already play with",
+            "From a file, a link, your Call of Duty 2 install or the clipboard. You review every line before it becomes a loadout.", addButton);
+        var check = Promo("ShieldCheckmark", "Before a match", "Check a config against a server’s rules",
+            "See which lines the rules would refuse and fix them, without adding anything to your loadouts.", checkButton);
+        parent.Children.Add(CheckPair(add, check, 700));
+
+        static Border Promo(string icon, string eyebrow, string title, string description, Button action)
+        {
+            var words = new StackPanel { Spacing = 8, Children =
+                { IconLabel(icon, eyebrow, 18), PanelHeading(title), Body(description), action } };
+            var card = CheckCard(words);
+            card.VerticalAlignment = VerticalAlignment.Stretch;
+            return card;
+        }
+    }
+
+    private static void AddCatalogueFooter(Panel parent)
+    {
+        parent.Children.Add(Caption("Setups are collected from public pages and credited to where they were published. Passwords and personal details are removed."));
+        parent.Children.Add(Buttons(
+            new HyperlinkButton { Content = "Catalogue on GitHub", NavigateUri = ConfigDirectory.RepositoryUrl },
+            new HyperlinkButton { Content = "Ask to remove or correct a setup", NavigateUri = ConfigDirectory.RemovalUrl }));
     }
 
     private Grid FeaturedHero(ImmutableArray<ConfigDirectoryEntry> entries)
@@ -535,12 +675,25 @@ public sealed partial class ConfigsPage
         Status.IsOpen = false;
         Detail.Children.Clear();
         ResetDetailScroll();
-        var back = new HyperlinkButton { Content = fromSaved ? "‹ Saved" : "‹ Player Setups" };
-        back.Click += async (_, _) => await shell.RunAsync(() => ShowCatalogueAsync(fromSaved));
+        var back = new Button { Style = StyleFor("QuietButton"), Content = IconLabel("ChevronLeft", fromSaved ? "Saved" : "Player Setups", 14) };
+        back.Click += async (_, _) => await shell.ShowProblemAsync(() => ShowCatalogueAsync(fromSaved));
         Detail.Children.Add(back);
+        var search = CatalogueSearch("");
+        search.QuerySubmitted += async (_, _) =>
+        {
+            if (fromSaved)
+                savedQuery = search.Text;
+            else
+            {
+                discoverQuery = search.Text;
+                discoverGroup = null;
+            }
+            await shell.ShowProblemAsync(() => ShowCatalogueAsync(fromSaved));
+        };
+        ShowCatalogueToolbar(search, null);
 
         double? setupDistance = null;
-        var attempt = Action("Try this setup", () => ReviewSetupAsync(newOnly: true));
+        var attempt = Action("Try This Setup", () => ReviewSetupAsync(newOnly: true));
         attempt.Style = StyleFor("LauncherAccentButton");
         var import = Action("Import…", () => ReviewSetupAsync(newOnly: false));
         import.Style = StyleFor("SubtleAction");
@@ -588,7 +741,7 @@ public sealed partial class ConfigsPage
         void RenderNotable(double? dpi)
         {
             notable.Children.Clear();
-            notable.Children.Add(PanelHeading("Notable settings"));
+            notable.Children.Add(PanelHeading("Notable settings, explained"));
             if (setupDistance is { } distance && dpi is { } mouseDpi)
                 AddFact("Mouse speed", $"{distance:F1} cm", $"Mouse travel for one full turn at {mouseDpi:G} DPI.");
             if (!string.IsNullOrWhiteSpace(entry.Facts?.Resolution))
