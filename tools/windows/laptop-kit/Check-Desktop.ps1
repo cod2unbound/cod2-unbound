@@ -67,7 +67,8 @@ function Invoke-KitFirewallWarmup {
     $port = 29789
     $exe = Get-Binary 'original' -Server -Root $InstallRoot
     $password = [guid]::NewGuid().ToString('N')
-    $arguments = (Get-EngineArgs $entry.Folder $GamePath -Address '0.0.0.0' -Port $port) +
+    $bindAddress = if ($env:COD2_KIT_ONLINE -eq '1') { '127.0.0.1' } else { '0.0.0.0' }
+    $arguments = (Get-EngineArgs $entry.Folder $GamePath -Address $bindAddress -Port $port) +
         " +set dedicated 1 +set rcon_password $password +map mp_toujane"
     $run = Start-KitProcess $exe $arguments $entry.Folder -NoWindow
     try {
