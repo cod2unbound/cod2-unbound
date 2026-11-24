@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
@@ -17,6 +19,8 @@ public sealed partial class LibraryPage : Page
     private readonly WindowsMediaFiles files;
     private readonly MediaLibrary library;
     private readonly MapPreviews previews;
+    private readonly ObservableCollection<MediaRow> screenshots = [];
+    private readonly ObservableCollection<MediaRow> filesInView = [];
     private bool ready;
 
     internal LibraryPage(MainWindow shell, WindowsLauncherSession session)
@@ -27,6 +31,9 @@ public sealed partial class LibraryPage : Page
         library = new(files);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        Screenshots.ItemsSource = screenshots;
+        Files.ItemsSource = filesInView;
+        Matches.ItemsSource = matchesInView;
         Sections.SelectedItem = MatchesSection;
         Retention.Text = $"Kept on this PC · the last {MatchSummaries.RecordLimit} matches";
         ready = true;
@@ -93,6 +100,7 @@ public sealed partial class LibraryPage : Page
         MatchTable.Visibility = Retention.Visibility = DeleteSummaries.Visibility = Visibility.Collapsed;
         SummariesOff.IsOpen = false;
         ListViewBase list = kind == MediaKind.Screenshot ? Screenshots : Files;
+        var view = kind == MediaKind.Screenshot ? screenshots : filesInView;
         string? selected = (list.SelectedItem as MediaRow) is { } row && row.Kind == kind ? row.Name : null;
         MediaRow[] rows;
         try
@@ -109,8 +117,7 @@ public sealed partial class LibraryPage : Page
                 LibraryAction("Try again", () => { Render(); return Task.CompletedTask; }));
             return;
         }
-        Screenshots.ItemsSource = kind == MediaKind.Screenshot ? rows : null;
-        Files.ItemsSource = kind == MediaKind.Screenshot ? null : rows;
+        view.Reconcile(rows, item => (item.Kind, item.Name), (row, incoming) => row.Reconcile(incoming));
         Files.IsItemClickEnabled = kind == MediaKind.Config;
         Screenshots.Visibility = ScreenshotHelp.Visibility = IsVisible(rows.Length > 0 && kind == MediaKind.Screenshot);
         FileTable.Visibility = IsVisible(rows.Length > 0 && kind != MediaKind.Screenshot);
@@ -122,7 +129,11 @@ public sealed partial class LibraryPage : Page
         MapHeader.Visibility = IsVisible(kind == MediaKind.Demo);
         Empty.Visibility = IsVisible(rows.Length == 0);
         if (selected is not null)
-            list.SelectedItem = rows.FirstOrDefault(item => item.Name == selected);
+        {
+            var target = view.FirstOrDefault(item => item.Name == selected);
+            if (!ReferenceEquals(list.SelectedItem, target))
+                list.SelectedItem = target;
+        }
         if (rows.Length > 0)
             return;
 
@@ -268,9 +279,13 @@ public sealed partial class LibraryPage : Page
 
 }
 
-internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts, bool CanPlay = true)
+internal sealed class MediaRow(MediaKind kind, MediaFile file, MediaFacts facts, bool canPlay) : INotifyPropertyChanged
 {
     internal const string PlayBlocked = "Close the game before playing a demo.";
+    internal MediaKind Kind { get; } = kind;
+    internal MediaFile File { get; } = file;
+    internal MediaFacts Facts { get; } = facts;
+    public bool CanPlay { get; private set; } = canPlay;
     public string Name => File.Name;
     public string ScreenshotTitle => Facts.Map is { } map ? MapCatalog.DisplayName(map) : Name;
     public string PlayName => $"Play {Name}";
@@ -283,4 +298,19 @@ internal sealed record MediaRow(MediaKind Kind, MediaFile File, MediaFacts Facts
     public Visibility Demo => IsVisible(Kind == MediaKind.Demo);
     public Visibility Config => IsVisible(Kind == MediaKind.Config);
     public override string ToString() => Name;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal MediaRow Reconcile(MediaRow incoming)
+    {
+        if (File != incoming.File || Facts != incoming.Facts)
+            return incoming;
+        if (CanPlay != incoming.CanPlay)
+        {
+            CanPlay = incoming.CanPlay;
+            PropertyChanged?.Invoke(this, new(nameof(CanPlay)));
+            PropertyChanged?.Invoke(this, new(nameof(PlaybackHint)));
+        }
+        return this;
+    }
 }

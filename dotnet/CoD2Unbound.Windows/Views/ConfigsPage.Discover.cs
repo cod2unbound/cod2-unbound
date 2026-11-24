@@ -51,13 +51,6 @@ public sealed partial class ConfigsPage
         var state = model.Discover.State;
         catalogueDpi = model.DpiFor(model.Studio.ReadActive());
         var entries = saved ? state.Saved.Select(item => item.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray() : model.Discover.Entries;
-        if (retry && !saved)
-        {
-            featuredIndex = 0;
-            discoverGroup = null;
-            shelfDistances.Clear();
-        }
-
         var search = new AutoSuggestBox
         {
             PlaceholderText = "Search players, teams or styles", Text = saved ? savedQuery : discoverQuery,
@@ -69,7 +62,8 @@ public sealed partial class ConfigsPage
         Put(tools, 0, search);
         var count = Caption(SetupCount(entries.Length) + (state.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : ""));
         count.VerticalAlignment = VerticalAlignment.Center;
-        var refresh = Action("Refresh player setups", () => ShowCatalogueAsync(saved, retry: true));
+        var refresh = new Button();
+        refresh.Click += async (_, _) => await shell.ShowProblemAsync(RefreshCatalogueAsync);
         refresh.Content = Fluent("Refresh", 20);
         refresh.Style = StyleFor("IconAction");
         AutomationProperties.SetName(refresh, "Refresh player setups");
@@ -80,13 +74,17 @@ public sealed partial class ConfigsPage
         MoveBelowWhenNarrow(tools, counts, 560);
         Detail.Children.Add(tools);
 
-        if (state.Problem is not null)
-            Detail.Children.Add(Caption("Showing saved catalogue results. Refresh to check for updates."));
+        const string savedNotice = "Showing saved catalogue results. Refresh to check for updates.";
+        var refreshStatus = Caption(savedNotice);
+        refreshStatus.Visibility = IsVisible(state.Problem is not null);
+        Detail.Children.Add(refreshStatus);
 
         var results = new StackPanel { Spacing = 14 };
         Detail.Children.Add(results);
         ConfigDirectoryPopularity? figures = model.Discover.Popularity is { IsCompletedSuccessfully: true } ready
             ? ready.Result : null;
+        Func<ImmutableArray<ConfigDirectoryEntry>, ImmutableArray<ConfigDirectoryEntry>>? groupFilter = null;
+        bool checking = false;
         search.TextChanged += (_, args) =>
         {
             if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
@@ -106,9 +104,59 @@ public sealed partial class ConfigsPage
 
         async Task ShowFiguresAsync(Task<ConfigDirectoryPopularity?> pending)
         {
-            figures = await pending;
-            if (figures is not null && Detail.Children.Contains(results) && discoverGroup is not null)
+            var latest = await pending;
+            if (!ReferenceEquals(model.Discover.Popularity, pending))
+                return;
+            bool changed = latest?.PeriodDays != figures?.PeriodDays ||
+                (latest is not null && figures is not null &&
+                    groupEntries.Any(entry => latest.Setups.GetValueOrDefault(entry.Id) != figures.Setups.GetValueOrDefault(entry.Id)));
+            figures = latest;
+            if (changed && Detail.Children.Contains(results) && discoverGroup is not null)
                 Fill();
+        }
+
+        async Task RefreshCatalogueAsync()
+        {
+            if (checking)
+                return;
+            checking = true;
+            string previousCount = count.Text;
+            count.Text = "Checking for updated player setups…";
+            try
+            {
+                await model.Discover.LoadAsync(retry: true);
+                model.RememberVerifiedCatalogue();
+                if (!IsLoaded || !Detail.Children.Contains(results))
+                    return;
+                UpdateSavedCount();
+                var next = model.Discover.State;
+                if (next.Snapshot is null)
+                {
+                    model.Error(UsageProblem.Directory);
+                    refreshStatus.Visibility = Visibility.Visible;
+                    return;
+                }
+                refreshStatus.Visibility = IsVisible(next.Problem is not null);
+                if (next.Snapshot.Index.Revision != state.Snapshot?.Index.Revision)
+                {
+                    entries = saved ? next.Saved.Select(item => item.Entry).OfType<ConfigDirectoryEntry>().ToImmutableArray()
+                        : next.Snapshot.Index.Entries;
+                    if (discoverGroup is not null && groupFilter is not null)
+                        groupEntries = groupFilter(entries);
+                    shelfDistances.Clear();
+                    state = next;
+                    Fill();
+                }
+                count.Text = SetupCount(entries.Length) + (next.Fetched is { } date ? $" · updated {CatalogueDate(date)}" : "");
+                if (!saved && discoverGroup is not null && model.Discover.Popularity is { } pending)
+                    _ = ShowFiguresAsync(pending);
+            }
+            finally
+            {
+                checking = false;
+                if (count.Text == "Checking for updated player setups…")
+                    count.Text = previousCount;
+            }
         }
 
         void Fill()
@@ -213,8 +261,8 @@ public sealed partial class ConfigsPage
                     ConfigSetupFilter.Cod2x => "Made for CoD2x.",
                     _ => "From the game’s later years."
                 };
-                var matching = ConfigDiscover.Setups(entries, shelf.Filter, "", CultureInfo.CurrentCulture);
-                results.Children.Add(ShelfHeading(heading, note, $"See all {shelf.Total}", () => OpenGroup(heading, matching)));
+                results.Children.Add(ShelfHeading(heading, note, $"See all {shelf.Total}",
+                    () => OpenGroup(heading, current => ConfigDiscover.Setups(current, shelf.Filter, "", CultureInfo.CurrentCulture))));
                 results.Children.Add(SetupShelf(shelf.Entries, saved));
             }
 
@@ -231,7 +279,6 @@ public sealed partial class ConfigsPage
                 };
                 foreach (var team in teams)
                 {
-                    var matching = entries.Where(entry => entry.Team == team.Name).ToImmutableArray();
                     var contents = Columns(6, new GridLength(1, GridUnitType.Star), GridLength.Auto);
                     Put(contents, 0, new TextBlock { Text = team.Name, TextTrimming = TextTrimming.CharacterEllipsis });
                     Put(contents, 1, new TextBlock { Text = $"· {team.Count}" });
@@ -239,7 +286,7 @@ public sealed partial class ConfigsPage
                         HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
                     AutomationProperties.SetName(button, $"{team.Name} · {team.Count}");
                     ToolTipService.SetToolTip(button, team.Name);
-                    button.Click += (_, _) => OpenGroup(team.Name, matching);
+                    button.Click += (_, _) => OpenGroup(team.Name, current => [.. current.Where(entry => entry.Team == team.Name)]);
                     teamCards.Children.Add(button);
                 }
                 results.Children.Add(teamCards);
@@ -249,21 +296,22 @@ public sealed partial class ConfigsPage
                 foreach (var era in ConfigDiscover.EraShelves(entries))
                 {
                     results.Children.Add(ShelfHeading(era.Era, SetupCount(era.Entries.Length), $"See all {era.Entries.Length}",
-                        () => OpenGroup(era.Era, era.Entries)));
+                        () => OpenGroup(era.Era, current => [.. current.Where(entry => entry.Era == era.Era)])));
                     results.Children.Add(SetupShelf(era.Entries.Take(10), saved));
                 }
 
             if (!entries.IsEmpty)
                 results.Children.Add(ShelfHeading("All setups", SetupCount(entries.Length), "See all", () =>
-                    OpenGroup("All setups", entries)));
+                    OpenGroup("All setups", current => current)));
             else
                 results.Children.Add(EmptyState("Search", "No player setups yet", "Check back later."));
         }
 
-        void OpenGroup(string label, ImmutableArray<ConfigDirectoryEntry> matching)
+        void OpenGroup(string label, Func<ImmutableArray<ConfigDirectoryEntry>, ImmutableArray<ConfigDirectoryEntry>> filter)
         {
             discoverGroup = label;
-            var ids = matching.Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
+            groupFilter = filter;
+            var ids = filter(entries).Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
             groupEntries = [.. entries.Where(entry => ids.Contains(entry.Id))];
             Fill();
             ResetDetailScroll();

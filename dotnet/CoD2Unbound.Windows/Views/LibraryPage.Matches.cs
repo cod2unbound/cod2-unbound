@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -10,6 +11,7 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class LibraryPage
 {
+    private readonly ObservableCollection<LibraryMatchRow> matchesInView = [];
     private bool ShowingMatches => ReferenceEquals(Sections.SelectedItem, MatchesSection);
 
     private MatchLibrary ReadMatchLibrary() =>
@@ -26,7 +28,16 @@ public sealed partial class LibraryPage
         MatchTable.Visibility = IsVisible(haveMatches);
         Empty.Visibility = IsVisible(!haveMatches);
         var now = DateTimeOffset.UtcNow;
-        Matches.ItemsSource = history.Matches.Select(match => new LibraryMatchRow(match, now)).ToArray();
+        var occurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+        var next = new LibraryMatchRow[history.Matches.Length];
+        for (int index = next.Length - 1; index >= 0; index--)
+        {
+            var match = history.Matches[index];
+            int ordinal = occurrences.GetValueOrDefault(match.EndedAt);
+            occurrences[match.EndedAt] = ordinal + 1;
+            next[index] = new(match, now, ordinal);
+        }
+        matchesInView.Reconcile(next, row => row.Key, (row, incoming) => row.Reconcile(incoming));
 
         EmptyBody.Content = history.State switch
         {
@@ -98,23 +109,24 @@ public sealed partial class LibraryPage
     }
 }
 
-internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now)
+internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now, int ordinal)
 {
-    private MatchConnection Connection => MatchFacts.Connection(match.PacketsReceived > 0 ? 1 : 0, match.PacketLossPercent);
-    public MatchSummary Summary => match;
-    public string Title => $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}";
+    private MatchConnection Connection => MatchFacts.Connection(Summary.PacketsReceived > 0 ? 1 : 0, Summary.PacketLossPercent);
+    internal (string EndedAt, int Ordinal) Key { get; } = (match.EndedAt, ordinal);
+    public MatchSummary Summary { get; private set; } = match;
+    public string Title => $"{MapCatalog.DisplayName(Summary.Map)} · {GameModes.Long(Summary.Mode)}";
     public string Stamp
     {
         get
         {
-            string duration = MatchFacts.Duration(match.DurationSeconds).ToUpperInvariant();
-            return MatchFacts.Date(match.EndedAt) is { } date
+            string duration = MatchFacts.Duration(Summary.DurationSeconds).ToUpperInvariant();
+            return MatchFacts.Date(Summary.EndedAt) is { } date
                 ? MatchFacts.Played(date, now, TimeZoneInfo.Local, includeTime: true) + " · " + duration
                 : duration;
         }
     }
-    public string Ping => match.PingAverageMS is { } average ? $"{average:F0} ms" : "—";
-    public string PingName => match.PingAverageMS.HasValue ? $"Ping {Ping}" : "Ping not measured";
+    public string Ping => Summary.PingAverageMS is { } average ? $"{average:F0} ms" : "—";
+    public string PingName => Summary.PingAverageMS.HasValue ? $"Ping {Ping}" : "Ping not measured";
     public string ConnectionLabel => MatchFacts.ConnectionText(Connection);
     public string ConnectionGlyph => Connection switch
     {
@@ -123,4 +135,13 @@ internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now)
         _ => "\uE946"
     };
     public string CheckupName => $"Check-up for {Title}, {Stamp}";
+
+    internal LibraryMatchRow Reconcile(LibraryMatchRow incoming)
+    {
+        if (Summary.Map != incoming.Summary.Map || Title != incoming.Title || Stamp != incoming.Stamp ||
+            PingName != incoming.PingName || Connection != incoming.Connection)
+            return incoming;
+        Summary = incoming.Summary;
+        return this;
+    }
 }

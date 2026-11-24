@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
@@ -16,7 +16,7 @@ public sealed partial class HostingPage : Page
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
     private readonly WindowsHosting hosting;
-    private ImmutableArray<HostedServer> hosts = [];
+    private readonly ObservableCollection<HostedServer> hosts = [];
     private bool syncing;
     private HostedPhase? shownPhase;
     private TextBlock? phaseText;
@@ -32,6 +32,7 @@ public sealed partial class HostingPage : Page
         this.exportStatus = exportStatus;
         hosting = session.Hosting;
         InitializeComponent();
+        Servers.ItemsSource = hosts;
         exportButton.Click += async (_, _) => await shell.RunAsync(ExportSelectedAsync);
         exportStatus.Closed += (_, _) =>
         {
@@ -39,7 +40,13 @@ public sealed partial class HostingPage : Page
             exportStatus.ActionButton = null;
             exportStatus.Visibility = Visibility.Collapsed;
         };
-        Unloaded += (_, _) => EndForm();
+        Unloaded += (_, _) =>
+        {
+            if (form is not null)
+                shownPhase = null;
+            EndForm();
+        };
+        Loaded += async (_, _) => await shell.ShowProblemAsync(UpdateRunStateAsync);
     }
 
     private HostedServer? Selected => Servers.SelectedItem as HostedServer;
@@ -48,12 +55,14 @@ public sealed partial class HostingPage : Page
     internal async Task RefreshAsync(string? id = null)
     {
         id ??= Selected?.Id;
-        hosts = await hosting.ReadAsync();
+        var next = await hosting.ReadAsync();
         syncing = true;
-        Servers.ItemsSource = hosts;
-        Servers.SelectedItem = hosts.FirstOrDefault(item => item.Id == id) ?? hosts.FirstOrDefault();
+        hosts.Reconcile(next, item => item.Id);
+        var target = hosts.FirstOrDefault(item => item.Id == id) ?? hosts.FirstOrDefault();
+        if (!ReferenceEquals(Selected, target))
+            Servers.SelectedItem = target;
         syncing = false;
-        Sidebar.Visibility = IsVisible(!hosts.IsEmpty);
+        Sidebar.Visibility = IsVisible(hosts.Count != 0);
         await ShowServerAsync();
     }
 

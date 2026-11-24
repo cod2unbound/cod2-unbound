@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
@@ -25,6 +26,7 @@ public sealed partial class ConfigsPage : Page
     private string? displayedStudioProfile;
     private string query = "";
     private (string Id, ConfigProfileTrashHandle Handle)? removed;
+    private readonly ObservableCollection<LoadoutRow> loadoutRows = [];
 
     internal ConfigsPage(MainWindow shell, ConfigsViewModel model)
     {
@@ -32,6 +34,7 @@ public sealed partial class ConfigsPage : Page
         this.model = model;
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
+        Loadouts.ItemsSource = loadoutRows;
         AttachConfigShortcuts();
         AttachImportDrop();
         model.SettingSaveChanged += OnSettingSaveChanged;
@@ -115,10 +118,11 @@ public sealed partial class ConfigsPage : Page
         var state = model.State;
         Loadouts.IsEnabled = state.Draft is null;
         syncing = true;
-        var rows = state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray();
-        Loadouts.ItemsSource = rows;
-        Loadouts.SelectedItem = DiscoverPlaces.SelectedItem is null
-            ? rows.FirstOrDefault(row => row.Profile.Id == (state.Current?.Profile.Id ?? state.ReadProblem?.ProfileId)) : null;
+        loadoutRows.Reconcile(state.Profiles.Select(profile => new LoadoutRow(profile)).ToArray(), row => row.Profile.Id);
+        var selected = DiscoverPlaces.SelectedItem is null
+            ? loadoutRows.FirstOrDefault(row => row.Profile.Id == (state.Current?.Profile.Id ?? state.ReadProblem?.ProfileId)) : null;
+        if (!ReferenceEquals(Loadouts.SelectedItem, selected))
+            Loadouts.SelectedItem = selected;
         syncing = false;
         NewLoadout.IsEnabled = AddConfig.IsEnabled = !state.ReadOnly && state.Draft is null;
         if (lastImport is not null && Status.ActionButton is Button { Tag: "UndoImport" } undo)
