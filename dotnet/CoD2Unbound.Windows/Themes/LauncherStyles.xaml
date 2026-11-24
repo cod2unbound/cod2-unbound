@@ -6,12 +6,10 @@
     <FontFamily x:Key="StencilBold">ms-appx:///Assets/BigShouldersStencilDisplay-Bold.ttf#Big Shoulders Stencil Display</FontFamily>
     <FontFamily x:Key="CourierPrime">ms-appx:///Assets/CourierPrime-Regular.ttf#Courier Prime</FontFamily>
 
-    <!-- Glyph and label (Views/GlyphAlign.cs): in any horizontal StackPanel holding a FontIcon and then a
-         TextBlock, the symbol's ink centre sits on the label's cap-height centre, from font metrics. Compose a
-         symbol beside a word only this way (or with PagePresentation.IconLabel); never nudge one by hand. -->
-    <Style TargetType="StackPanel">
-        <Setter Property="views:GlyphAlign.IsEnabled" Value="True" />
-    </Style>
+    <!-- Glyph and label (Views/GlyphAlign.cs): a button's content StackPanel of a FontIcon then a TextBlock
+         has the symbol's ink centre on the label's cap-height centre, from font metrics; every shared button
+         template's presenter turns it on. Outside a button, use PagePresentation.IconLabel or set
+         views:GlyphAlign.IsEnabled="True" on the panel. Never nudge a symbol by hand. -->
 
     <!-- Fluent UI System Icons from Microsoft, 6c2c9075cf89 (MIT). -->
     <FontFamily x:Key="FluentRegular">ms-appx:///Assets/FluentSystemIcons-Regular.ttf#FluentSystemIcons-Regular</FontFamily>
@@ -110,6 +108,7 @@
             <Border x:Name="Highlight" Margin="1" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="0,1,0,0"
                     BorderBrush="{ThemeResource glassHighlight}" IsHitTestVisible="False" />
             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              views:GlyphAlign.IsEnabled="True"
                               ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
                               Foreground="{TemplateBinding Foreground}"
                               HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -149,6 +148,7 @@
                     BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
                     BackgroundSizing="InnerBorderEdge" />
             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              views:GlyphAlign.IsEnabled="True"
                               ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
                               Foreground="{TemplateBinding Foreground}"
                               HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -191,6 +191,7 @@
             <Border x:Name="Highlight" Margin="1" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="0,1,0,0"
                     BorderBrush="#80FFFFFF" IsHitTestVisible="False" />
             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              views:GlyphAlign.IsEnabled="True"
                               ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
                               Foreground="{TemplateBinding Foreground}"
                               HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -230,6 +231,7 @@
                     BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
                     BackgroundSizing="OuterBorderEdge" />
             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              views:GlyphAlign.IsEnabled="True"
                               ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}"
                               Foreground="{TemplateBinding Foreground}"
                               HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
