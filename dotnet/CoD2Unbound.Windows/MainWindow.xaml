@@ -7,6 +7,9 @@
     <Grid x:Name="Root" Background="{ThemeResource FrameContrastBrush}"
           Loaded="OnLoaded" SizeChanged="OnSizeChanged">
         <Border Background="{ThemeResource GroundBrush}" IsHitTestVisible="False" />
+        <!-- Backdrop host (PcHome, pc.css .win): one window surface. A page's art fills the whole window,
+             under the sidebar glass and the caption buttons; pages hand it over through IShellBackdrop. -->
+        <Border x:Name="BackdropHost" IsHitTestVisible="False" />
 
         <Border x:Name="SidebarGlass" HorizontalAlignment="Left"
                 Width="{StaticResource SidebarWidth}" Margin="{StaticResource SidebarMargin}"
@@ -20,29 +23,37 @@
 
         <NavigationView x:Name="Nav" Margin="10,0,0,0" PaneDisplayMode="Left" IsPaneOpen="True"
                         Background="Transparent" OpenPaneLength="{StaticResource SidebarWidth}"
-                        CompactPaneLength="48" IsBackButtonVisible="Collapsed" IsPaneVisible="False"
+                        CompactPaneLength="{StaticResource SidebarCompactLength}" IsBackButtonVisible="Collapsed" IsPaneVisible="False"
                         IsTitleBarAutoPaddingEnabled="False" AlwaysShowHeader="False"
                         IsSettingsVisible="False"
                         ItemInvoked="OnNavigation" PaneOpened="OnPaneChanged" PaneClosed="OnPaneChanged">
             <NavigationView.Resources>
-                <!-- The pane sits inside the inset glass: 10 above and below it, as the Mac sidebar does. -->
-                <Thickness x:Key="NavigationViewPaneContentGridMargin">-1,13,-1,10</Thickness>
-                <Thickness x:Key="NavigationViewButtonHolderGridMargin">0,14,0,4</Thickness>
+                <!-- PcSide / launcher.css .side: the pane sits inside the inset glass. Every row lines up on three
+                     verticals by construction: fills and the plate at SidebarInset (13 from the panel's edge,
+                     both sides), glyph centres at 34 (the icon column is SidebarCompactLength - 8 = 42 wide),
+                     labels at 55 (no presenter margin after the icon column). -->
+                <Thickness x:Key="NavigationViewPaneContentGridMargin">0,13,0,0</Thickness>
+                <Thickness x:Key="NavigationViewButtonHolderGridMargin">2,14,0,4</Thickness>
+                <Thickness x:Key="NavigationViewItemButtonMargin">13,2</Thickness>
+                <x:Double x:Key="NavigationViewItemOnLeftMinHeight">38</x:Double>
+                <x:Double x:Key="NavigationViewItemOnLeftIconBoxHeight">18</x:Double>
+                <Thickness x:Key="NavigationViewItemContentPresenterMargin">0,-1,-2,-1</Thickness>
                 <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
                 <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
                 <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
             </NavigationView.Resources>
-            <NavigationView.PaneHeader>
-                <StackPanel x:Name="BrandHeader" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+            <NavigationView.PaneCustomContent>
+                <!-- The board's second header row: the mark (36) on the fills' column + 10, the wordmark beside it. -->
+                <StackPanel x:Name="BrandHeader" Orientation="Horizontal" Spacing="10" Margin="23,11,0,20"
                             AutomationProperties.Name="CoD2 Unbound">
-                    <Image Source="ms-appx:///Assets/mark-48.png" Width="29" Height="29"
+                    <Image Source="ms-appx:///Assets/mark-48.png" Width="36" Height="36"
                            AutomationProperties.AccessibilityView="Raw" />
                     <Image x:Name="BrandWordmark" Width="110" Height="16"
                            AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock x:Name="ContrastWordmark" Text="CoD2 Unbound" Style="{StaticResource TypeLabel}"
                                VerticalAlignment="Center" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
                 </StackPanel>
-            </NavigationView.PaneHeader>
+            </NavigationView.PaneCustomContent>
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="HomeItem" Content="Home" AccessKey="H" Style="{StaticResource ShellNavItem}">
                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="18" /></NavigationViewItem.Icon>
@@ -69,8 +80,8 @@
                         <TextBlock x:Name="SettingsLabel" Text="Settings" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Border x:Name="FooterRule" Height="1" Margin="16,6,16,0" Background="{ThemeResource separator}" />
-                <Button x:Name="PlayerPlate" Margin="12,8,12,0" HorizontalAlignment="Stretch"
+                <Border x:Name="FooterRule" Height="1" Margin="21,10,21,12" Background="{ThemeResource separator}" />
+                <Button x:Name="PlayerPlate" Margin="13,0,13,19" HorizontalAlignment="Stretch"
                         Style="{StaticResource PlayerPlateButton}"
                         HorizontalContentAlignment="Stretch" Visibility="Collapsed"
                         AutomationProperties.Name="Open your player card" AccessKey="P">
@@ -95,7 +106,7 @@
                 </StackPanel>
             </NavigationView.PaneFooter>
 
-            <Border Background="{ThemeResource GroundBrush}">
+            <Border Background="Transparent">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -115,10 +126,10 @@
              buttons sit over it at the top right. Nothing pressable lives in it. -->
         <Grid x:Name="WindowBar" Height="{StaticResource CaptionHeight}" VerticalAlignment="Top" Background="Transparent" />
 
-        <!-- Jump to (JumpPalette.swift, HomeJump board): a centred palette over the window, opened with Ctrl+K. -->
-        <Grid x:Name="JumpLayer" Visibility="Collapsed">
-            <Rectangle Fill="Transparent" Tapped="OnJumpScrimTapped" AutomationProperties.AccessibilityView="Raw" />
-            <Border x:Name="JumpPanel" Width="640" Margin="16,122,16,16" HorizontalAlignment="Center" VerticalAlignment="Top"
+        <!-- Jump to (JumpPalette.swift, HomeJump board): a light-dismiss popup centred over the window, opened
+             with Ctrl+K, holding a real TextBox and a real ListView. A click outside closes it, as on the Mac. -->
+        <Popup x:Name="JumpPopup" IsLightDismissEnabled="True" LightDismissOverlayMode="Off">
+            <Border x:Name="JumpPanel" Width="640"
                     CornerRadius="{StaticResource SheetRadius}" Background="{ThemeResource GlassAcrylicBrush}"
                     BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
                     Translation="0,0,32" AutomationProperties.Name="Jump to" AutomationProperties.LandmarkType="Search">
@@ -156,11 +167,15 @@
                         </Border>
                     </Grid>
                     <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
-                    <ScrollViewer x:Name="JumpScroll" Grid.Row="2" MaxHeight="380" VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled" IsTabStop="False">
-                        <StackPanel x:Name="JumpRows" Padding="8" Spacing="2"
-                                    AutomationProperties.Name="Results" />
-                    </ScrollViewer>
+                    <ListView x:Name="JumpList" Grid.Row="2" MaxHeight="380" Padding="0,8" SelectionMode="Single"
+                              IsItemClickEnabled="True" ItemClick="OnJumpItemClick" SelectionChanged="OnJumpSelectionChanged"
+                              ItemContainerStyle="{StaticResource JumpRowItem}" IsTabStop="False"
+                              AutomationProperties.Name="Results">
+                        <ListView.Resources>
+                            <!-- Section labels are disabled items so the arrow keys skip them; keep them at full ink. -->
+                            <x:Double x:Key="ListViewItemDisabledThemeOpacity">1</x:Double>
+                        </ListView.Resources>
+                    </ListView>
                     <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="20,18" TextWrapping="Wrap" Visibility="Collapsed"
                                FontSize="{StaticResource SubtitleSize}" Foreground="{ThemeResource secondary}" />
                     <Grid Grid.Row="3" Padding="14,0" BorderBrush="{ThemeResource separator}" BorderThickness="0,1,0,0"
@@ -169,6 +184,6 @@
                     </Grid>
                 </Grid>
             </Border>
-        </Grid>
+        </Popup>
     </Grid>
 </Window>

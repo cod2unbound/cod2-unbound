@@ -162,7 +162,6 @@
                             <Setter Target="Fill.Background" Value="{ThemeResource AccentButtonBackgroundPressed}" />
                             <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushPressed}" />
                             <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundPressed}" />
-                            <Setter Target="Glow.Opacity" Value="0.7" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="Disabled">
@@ -171,14 +170,10 @@
                             <Setter Target="Fill.BorderBrush" Value="{ThemeResource AccentButtonBorderBrushDisabled}" />
                             <Setter Target="Presenter.Foreground" Value="{ThemeResource AccentButtonForegroundDisabled}" />
                             <Setter Target="Highlight.Opacity" Value="0" />
-                            <Setter Target="Glow.Opacity" Value="0" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <!-- The board's glow below a prominent button: 0 10px 26px in pri-glow. -->
-            <Rectangle x:Name="Glow" Margin="4,10,4,-16" RadiusX="24" RadiusY="24" IsHitTestVisible="False"
-                       Fill="{ThemeResource prominentGlowFill}" />
             <Border x:Name="Fill" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
                     BackgroundSizing="InnerBorderEdge" />
@@ -236,6 +231,7 @@
         <Setter Property="Template" Value="{StaticResource LauncherAccentButtonTemplate}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonRegularHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonRegularHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Padding" Value="14,0" />
@@ -258,6 +254,7 @@
     <CornerRadius x:Key="ProgressBarCornerRadius">4</CornerRadius>
 
     <!-- Retain WinUI's input and automation templates. DesignTokens supplies their state brushes. -->
+    <!-- Every size has one outer height in every role (fill, glass, quiet): the border is drawn inside it. -->
     <Style x:Key="LauncherButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="Template" Value="{StaticResource LauncherButtonTemplate}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonRegularRadius}" />
@@ -275,11 +272,13 @@
     <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
         <Setter Property="Padding" Value="18,0" />
     </Style>
     <Style x:Key="HeroButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
         <Setter Property="CornerRadius" Value="{StaticResource ButtonHeroRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonHeroHeight}" />
+        <Setter Property="Height" Value="{StaticResource ButtonHeroHeight}" />
         <Setter Property="FontSize" Value="{StaticResource PanelSize}" />
         <Setter Property="Padding" Value="28,0" />
     </Style>
@@ -626,7 +625,7 @@
     </Style>
     <!-- The Mac's list selection: a rounded fill with the selection stroke (Jump to rows, sidebar rows), inset
          from the list's edges. WinUI's presenter keeps virtualization, selection and its automation peer. -->
-    <Style TargetType="ListViewItem">
+    <Style x:Key="LauncherListViewItem" TargetType="ListViewItem">
         <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
         <Setter Property="Margin" Value="4,1" />
         <Setter Property="Template">
@@ -641,6 +640,7 @@
         <Setter Property="FocusVisualSecondaryThickness" Value="0" />
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
+    <Style TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}" />
     <Style TargetType="GridViewItem">
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource FocusVisualPrimaryBrush}" />
@@ -665,10 +665,12 @@
         <Setter Property="Template" Value="{StaticResource LauncherFlatAccentButtonTemplate}" />
     </Style>
     <Style x:Key="AlertButton" TargetType="Button" BasedOn="{StaticResource SheetButton}">
+        <Setter Property="Height" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="CornerRadius" Value="16" />
     </Style>
     <Style x:Key="AlertAccentButton" TargetType="Button" BasedOn="{StaticResource SheetAccentButton}">
+        <Setter Property="Height" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="CornerRadius" Value="16" />
     </Style>
@@ -1364,6 +1366,7 @@
         <Setter Property="FocusVisualMargin" Value="{StaticResource FocusMargin}" />
     </Style>
     <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="{StaticResource ChipHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource ChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
@@ -1371,6 +1374,7 @@
         <Setter Property="Padding" Value="12,0" />
     </Style>
     <Style x:Key="LargeChipButton" TargetType="Button" BasedOn="{StaticResource ChipButton}">
+        <Setter Property="Height" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource LargeChipRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource LargeChipHeight}" />
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
@@ -1424,6 +1428,7 @@
         </Setter>
     </Style>
     <Style x:Key="PlayerPlateButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
         <Setter Property="CornerRadius" Value="{StaticResource PlateRadius}" />
         <Setter Property="Background" Value="{ThemeResource hover}" />
         <Setter Property="BorderBrush" Value="{ThemeResource panelStroke}" />
@@ -1508,6 +1513,7 @@
         <Setter Property="Foreground" Value="{ThemeResource NegativeBrush}" />
     </Style>
     <Style x:Key="ColumnHeading" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
         <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
@@ -1578,12 +1584,14 @@
         <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
     </Style>
     <Style x:Key="SmallAction" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="{StaticResource ButtonSmallHeight}" />
         <Setter Property="CornerRadius" Value="{StaticResource ButtonSmallRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource ButtonSmallHeight}" />
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="FontSize" Value="{StaticResource HelpSize}" />
     </Style>
     <Style x:Key="SmallSubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <Setter Property="Height" Value="28" />
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="MinHeight" Value="28" />
@@ -1608,6 +1616,7 @@
         <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="FavoriteAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
+        <Setter Property="Height" Value="32" />
         <Setter Property="MinWidth" Value="32" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="CornerRadius" Value="{StaticResource CircleRadius}" />
@@ -1671,6 +1680,7 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style x:Key="SetupCard" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
+        <Setter Property="Height" Value="NaN" />
         <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -1691,6 +1701,31 @@
     </Style>
 
     <!-- The sidebar's labelled Settings entry: a navigation row that opens the Settings window. -->
+    <!-- launcher.css .nav .count: 12, tertiary, tabular, on the fill's inner right edge. -->
+    <Style x:Key="SidebarCount" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- PcSide: the icon column is this minus NavigationView's 8, so glyph centres land on 13 + 12 + 9 = 34. -->
+    <x:Double x:Key="SidebarCompactLength">50</x:Double>
+    <!-- launcher.css .side-sec: 11 semibold tertiary, 16 above and 6 below, on the 25 column. The stock header
+         template draws a 14 semibold 40-high row; this template keeps the control and its automation view. -->
+    <Style x:Key="SidebarSectionHeader" TargetType="NavigationViewItemHeader">
+        <Setter Property="IsEnabled" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="NavigationViewItemHeader">
+                    <TextBlock Text="{TemplateBinding Content}" Margin="25,18,13,8" FontSize="{StaticResource LabelSize}"
+                               FontWeight="SemiBold" Foreground="{ThemeResource tertiary}" TextTrimming="CharacterEllipsis" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <Style x:Key="SidebarSettingsButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
         <Setter Property="Background" Value="Transparent" />
@@ -1701,7 +1736,7 @@
         <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
         <Setter Property="MinHeight" Value="{StaticResource NavHeight}" />
         <Setter Property="Height" Value="{StaticResource NavHeight}" />
-        <Setter Property="Margin" Value="4,2" />
+        <Setter Property="Margin" Value="13,0" />
         <Setter Property="Padding" Value="12,0" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -1742,20 +1777,21 @@
         <Setter Property="IsTextPredictionEnabled" Value="False" />
     </Style>
     <!-- A Jump to result row: 40 high, 12 radius; the selected row takes selection and selectionStroke. -->
-    <Style x:Key="JumpRow" TargetType="Button">
-        <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
-        <Setter Property="Foreground" Value="{ThemeResource text}" />
-        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
-        <Setter Property="Height" Value="40" />
+    <!-- Jump to rows: real ListView items, 40 high, the list's rounded selection. Section labels are items
+         that cannot be selected, so the arrow keys pass over them. -->
+    <Style x:Key="JumpRowItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
+        <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="12,0" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Margin" Value="8,1" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="JumpHeaderItem" TargetType="ListViewItem" BasedOn="{StaticResource JumpRowItem}">
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="12,8,12,4" />
+        <Setter Property="IsEnabled" Value="False" />
         <Setter Property="IsTabStop" Value="False" />
-        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
     </Style>
     <!-- The Settings window's pane bar (SettingsTabBar): a symbol over a name, 84 x 50, 12 radius; the chosen
          pane a neutral fill with its name in the accent. -->

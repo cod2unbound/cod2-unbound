@@ -42,6 +42,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
+        ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
         // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
             notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
@@ -369,7 +370,7 @@ public sealed partial class MainWindow : Window
             Nav.MenuItems.RemoveAt(Nav.MenuItems.Count - 1);
         if (!Nav.IsPaneOpen || session.Library.Favorites.Count == 0)
             return;
-        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites" });
+        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites", Style = StyleFor("SidebarSectionHeader") });
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
@@ -384,7 +385,7 @@ public sealed partial class MainWindow : Window
             if (favorite.MaxPlayers > 0)
                 Put(content, 1, new TextBlock
                 {
-                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SetupFactLabel"),
+                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SidebarCount"),
                     VerticalAlignment = VerticalAlignment.Center
                 });
             var item = new NavigationViewItem

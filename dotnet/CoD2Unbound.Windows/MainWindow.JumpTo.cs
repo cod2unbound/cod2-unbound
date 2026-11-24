@@ -25,8 +25,7 @@ public sealed partial class MainWindow
     private int jumpGeneration;
     private IReadOnlyList<ConfigProfile> jumpLoadouts = [];
     private JumpTarget[] jumpResults = [];
-    private Button[] jumpButtons = [];
-    private int jumpIndex = -1;
+    private ListViewItem[] jumpRows = [];
 
     private void InitializeJumpTo()
     {
@@ -37,12 +36,13 @@ public sealed partial class MainWindow
             if (jumpOpen)
                 RenderJumpResults();
         };
-        JumpBox.LostFocus += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        // A click outside dismisses the popup, as on the Mac; the field keeps focus while it is open.
+        JumpPopup.Closed += (_, _) =>
         {
-            // Clicking a row keeps the palette; focus leaving it for anything else closes it, as on the Mac.
-            if (jumpOpen && FocusManager.GetFocusedElement(DialogRoot) is DependencyObject focused && !IsInJumpPanel(focused))
+            if (jumpOpen)
                 CloseJumpTo(restoreFocus: false);
-        });
+        };
+        Root.SizeChanged += (_, _) => PlaceJumpTo();
         foreach (var (keys, words) in new[] { (new[] { "↑", "↓" }, "to move"), (["Enter"], "to open"), (["Ctrl+Enter"], "to launch on a server") })
         {
             var hint = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 };
@@ -68,18 +68,12 @@ public sealed partial class MainWindow
         Child = new TextBlock { Text = key, Style = StyleFor("KeyCapText") }
     };
 
-    private bool IsInJumpPanel(DependencyObject element)
+    // HomeJump board: 640 wide, centred, 122 below the window's top.
+    private void PlaceJumpTo()
     {
-        for (var node = element; node is not null; node = VisualTreeHelper.GetParent(node))
-            if (ReferenceEquals(node, JumpPanel))
-                return true;
-        return false;
-    }
-
-    private void OnJumpScrimTapped(object sender, TappedRoutedEventArgs args)
-    {
-        args.Handled = true;
-        CloseJumpTo(restoreFocus: true);
+        JumpPopup.HorizontalOffset = Math.Max(16, (Root.ActualWidth - JumpPanel.Width) / 2);
+        JumpPopup.VerticalOffset = 122;
+        JumpPanel.MaxHeight = Math.Max(200, Root.ActualHeight - 138);
     }
 
     private async void OpenJumpTo()
@@ -98,7 +92,8 @@ public sealed partial class MainWindow
         jumpSettings = ContentFrame.Content is ConfigsPage { ShowsLoadout: true };
         JumpBox.PlaceholderText = jumpSettings ? SettingJumpPlaceholder : AppJumpPlaceholder;
         JumpBox.Text = "";
-        JumpLayer.Visibility = Visibility.Visible;
+        PlaceJumpTo();
+        JumpPopup.IsOpen = true;
         RenderJumpResults();
         JumpBox.Focus(FocusState.Keyboard);
         if (!jumpSettings)
@@ -122,11 +117,10 @@ public sealed partial class MainWindow
             return;
         jumpOpen = false;
         ++jumpGeneration;
-        JumpLayer.Visibility = Visibility.Collapsed;
-        JumpRows.Children.Clear();
+        JumpPopup.IsOpen = false;
+        JumpList.Items.Clear();
         jumpResults = [];
-        jumpButtons = [];
-        jumpIndex = -1;
+        jumpRows = [];
         var previous = jumpReturnFocus;
         jumpReturnFocus = null;
         if (restoreFocus)
@@ -140,32 +134,32 @@ public sealed partial class MainWindow
     {
         string query = JumpBox.Text;
         jumpResults = [.. JumpResults(query)];
-        JumpRows.Children.Clear();
-        var buttons = new List<Button>();
+        JumpList.Items.Clear();
+        var rows = new List<ListViewItem>();
         JumpGroup? group = null;
         foreach (var target in jumpResults)
         {
             if (!jumpSettings && group != target.Group)
             {
                 group = target.Group;
-                JumpRows.Children.Add(new TextBlock
+                JumpList.Items.Add(new ListViewItem
                 {
-                    Text = GroupName(target.Group), Style = StyleFor("GroupLabelText"), Margin = new Thickness(12, 8, 12, 4)
+                    Style = StyleFor("JumpHeaderItem"),
+                    Content = new TextBlock { Text = GroupName(target.Group), Style = StyleFor("GroupLabelText") }
                 });
             }
-            var row = JumpRow(target, buttons.Count);
-            buttons.Add(row);
-            JumpRows.Children.Add(row);
+            var row = JumpRow(target);
+            rows.Add(row);
+            JumpList.Items.Add(row);
         }
-        jumpButtons = [.. buttons];
+        jumpRows = [.. rows];
         bool empty = jumpResults.Length == 0;
-        JumpScroll.Visibility = IsVisible(!empty);
+        JumpList.Visibility = IsVisible(!empty);
         JumpEmpty.Visibility = IsVisible(empty);
         JumpEmpty.Text = jumpSettings
             ? "No setting matches. Try a word like “jump”, “turn” or “sound”."
             : $"Nothing matches “{query.Trim()}”. Try a server, map, loadout or setting name.";
         SelectJumpRow(empty ? -1 : 0);
-        JumpScroll.ChangeView(null, 0, null, disableAnimation: true);
     }
 
     // The Mac's result list: with nothing typed, the three most recent servers and the first actions; with a
@@ -189,7 +183,7 @@ public sealed partial class MainWindow
         });
     }
 
-    private Button JumpRow(JumpTarget target, int index)
+    private ListViewItem JumpRow(JumpTarget target)
     {
         var line = new Grid { ColumnSpacing = 12 };
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
@@ -220,45 +214,49 @@ public sealed partial class MainWindow
             Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast), Text = target.Keys
         };
         Put(line, 3, hint);
-        var row = new Button { Style = StyleFor("JumpRow"), Content = line, Tag = hint };
+        var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = line, Tag = (target, hint) };
         AutomationProperties.SetName(row, target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}");
         if (target.Group == JumpGroup.Servers)
             AutomationProperties.SetHelpText(row, "Enter shows it in Servers. Ctrl+Enter launches on it.");
-        row.Click += async (_, _) =>
-        {
-            if (jumpOpen && jumpResults.ElementAtOrDefault(index) is { } chosen)
-                await OpenJumpTargetAsync(chosen, launch: false);
-        };
-        row.PointerEntered += (_, _) => SelectJumpRow(index, scroll: false);
+        PaintJumpRow(row, selected: false);
         return row;
     }
 
-    private void SelectJumpRow(int index, bool scroll = true)
+    private int JumpIndexOf(object? item) => item is ListViewItem row ? Array.IndexOf(jumpRows, row) : -1;
+
+    private void SelectJumpRow(int index)
     {
-        if (jumpButtons.ElementAtOrDefault(jumpIndex) is { } old)
-            PaintJumpRow(old, jumpResults[jumpIndex], selected: false);
-        jumpIndex = index;
-        if (jumpButtons.ElementAtOrDefault(index) is not { } row)
+        if (jumpRows.ElementAtOrDefault(index) is not { } row)
+        {
+            JumpList.SelectedItem = null;
             return;
-        PaintJumpRow(row, jumpResults[index], selected: true);
-        if (scroll)
-            row.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false, VerticalAlignmentRatio = 0.5 });
+        }
+        JumpList.SelectedItem = row;
+        JumpList.ScrollIntoView(row);
     }
 
-    private void PaintJumpRow(Button row, JumpTarget target, bool selected)
+    private async void OnJumpItemClick(object sender, ItemClickEventArgs args)
     {
-        var theme = Root.ActualTheme;
-        bool contrast = IsHighContrast;
-        row.Background = selected ? ThemeBrush("selection", theme, contrast) : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        row.BorderBrush = selected ? ThemeBrush("selectionStroke", theme, contrast) : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        AutomationProperties.SetItemStatus(row, selected ? "Selected" : "");
-        if (row.Tag is TextBlock hint)
-        {
-            // The board's selected server row offers its launch key; other rows show their shortcut.
-            bool server = target.Group == JumpGroup.Servers;
-            hint.Text = server ? (selected ? "Launch Ctrl+Enter" : "") : target.Keys;
-            hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", theme, contrast);
-        }
+        if (jumpOpen && jumpResults.ElementAtOrDefault(JumpIndexOf(args.ClickedItem)) is { } chosen)
+            await OpenJumpTargetAsync(chosen, launch: false);
+    }
+
+    private void OnJumpSelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        foreach (var item in args.RemovedItems.OfType<ListViewItem>())
+            PaintJumpRow(item, selected: false);
+        foreach (var item in args.AddedItems.OfType<ListViewItem>())
+            PaintJumpRow(item, selected: true);
+    }
+
+    // The board's selected server row offers its launch key; other rows show their shortcut.
+    private void PaintJumpRow(ListViewItem row, bool selected)
+    {
+        if (row.Tag is not (JumpTarget target, TextBlock hint))
+            return;
+        bool server = target.Group == JumpGroup.Servers;
+        hint.Text = server ? (selected ? "Launch Ctrl+Enter" : "") : target.Keys;
+        hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", Root.ActualTheme, IsHighContrast);
     }
 
     private async void OnJumpKeyDown(object sender, KeyRoutedEventArgs args)
@@ -275,11 +273,11 @@ public sealed partial class MainWindow
             case VirtualKey.Down:
                 args.Handled = true;
                 if (jumpResults.Length != 0)
-                    SelectJumpRow(Math.Clamp(jumpIndex + (args.Key == VirtualKey.Up ? -1 : 1), 0, jumpResults.Length - 1));
+                    SelectJumpRow(Math.Clamp(JumpIndexOf(JumpList.SelectedItem) + (args.Key == VirtualKey.Up ? -1 : 1), 0, jumpResults.Length - 1));
                 break;
             case VirtualKey.Enter:
                 args.Handled = true;
-                if (jumpResults.ElementAtOrDefault(jumpIndex) is { } target)
+                if (jumpResults.ElementAtOrDefault(JumpIndexOf(JumpList.SelectedItem)) is { } target)
                     await OpenJumpTargetAsync(target, launch: ControlKeyDown());
                 break;
         }
