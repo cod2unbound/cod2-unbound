@@ -36,7 +36,7 @@ public sealed partial class MainWindow
 
         var dialog = new ProblemReportDialog(report, logs.Game is not null, logs.Server is not null)
         {
-            XamlRoot = Root.XamlRoot, RequestedTheme = DialogTheme
+            XamlRoot = DialogRoot, RequestedTheme = DialogTheme
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;

@@ -42,6 +42,10 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
+        // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
+        foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
+            notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
+                ShellNotices.Padding = new Thickness(16, Problem.IsOpen || ReportCopied.IsOpen || ReportWarning.IsOpen ? 40 : 0, 16, 0));
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
         useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();

@@ -101,7 +101,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <StackPanel x:Name="ShellNotices" Spacing="8">
+                    <StackPanel x:Name="ShellNotices">
                         <InfoBar x:Name="Problem" Severity="Error" IsClosable="False" />
                         <InfoBar x:Name="ReportCopied" Severity="Success" />
                         <InfoBar x:Name="ReportWarning" Severity="Warning" />
