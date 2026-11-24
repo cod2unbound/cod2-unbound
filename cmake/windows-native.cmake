@@ -72,7 +72,7 @@ if(COD2_WIN32_CLIENT)
   # The renderer drives the system Direct3D 9 device; the OpenGL device layer
   # stays linked for the helpers the renderer shares with it.
   if(COD2_WIN32_D3D9)
-    list(APPEND WIN_TARGET_C src/win32/win_d3d9.c)
+    list(APPEND WIN_TARGET_C src/win32/win_d3d9.c src/win32/win_frame_trace.c)
   endif()
 else()
   # The dedicated graph matches cod2_lnxded: no renderer, client, UI or sound.

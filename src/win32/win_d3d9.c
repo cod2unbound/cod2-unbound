@@ -20,6 +20,9 @@
 #include <string.h>
 
 #include "platform/macos_display.h"
+#if COD2_WINDOWS_NATIVE
+#include "win_frame_trace.h"
+#endif
 
 extern SDL_Window *sdl_gl_window;
 extern int MacDisplay_Initialize(void);
@@ -86,6 +89,9 @@ typedef HRESULT(WINAPI *D3DCompileFn)(LPCVOID data, SIZE_T size, LPCSTR name, co
 
 void *Win_D3D9_Direct3DCreate9(void)
 {
+#if COD2_WINDOWS_NATIVE
+    Win_FrameTraceInit();
+#endif
     static Direct3DCreate9Fn create;
     if (!create) {
         HMODULE module = LoadLibraryA("d3d9.dll");
