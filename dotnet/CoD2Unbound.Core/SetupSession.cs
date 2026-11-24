@@ -62,6 +62,19 @@ public sealed class SetupSession
         Data = Inspect(initialData);
     }
 
+    /// <summary>The steps this setup shows, in order: a build without the crash-report or usage
+    /// service leaves those questions out, and the step label and capsules count only these.</summary>
+    public IReadOnlyList<SetupStep> Steps =>
+    [
+        SetupStep.Welcome, SetupStep.Data, SetupStep.Key, SetupStep.Personalize,
+        .. hasReportService ? [SetupStep.CrashReports] : Array.Empty<SetupStep>(),
+        .. hasUsageService ? [SetupStep.UsageData] : Array.Empty<SetupStep>(),
+        SetupStep.Ready
+    ];
+
+    /// <summary>The one-based position of the current step among <see cref="Steps"/>.</summary>
+    public int StepNumber => Math.Max(0, Steps.ToList().IndexOf(Step == SetupStep.Complete ? SetupStep.Ready : Step)) + 1;
+
     public static string InitialDataPath(string? found, string? remembered, bool setupComplete) =>
         found ?? (setupComplete ? remembered?.Trim() ?? "" : "");
 

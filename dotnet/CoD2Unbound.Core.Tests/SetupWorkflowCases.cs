@@ -83,6 +83,34 @@ internal static partial class Program
             Equal(false, setup.DataWasPicked);
         });
 
+        Check("Setup counts only the steps it shows", () =>
+        {
+            foreach (var (report, usage, total) in new[] { (false, false, 5), (true, false, 6), (false, true, 6), (true, true, 7) })
+            {
+                var setup = new SetupSession(new ArchiveChoices { Complete = true }, new MemoryPlatform("home"), new TestSecrets(),
+                    "old", false, hasReportService: report, hasUsageService: usage, deferWrites: true);
+                Equal(total, setup.Steps.Count);
+                var seen = new List<int> { setup.StepNumber };
+                Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+                seen.Add(setup.StepNumber);
+                Equal(true, setup.ContinueAsync().AsTask().GetAwaiter().GetResult());
+                seen.Add(setup.StepNumber);
+                Equal(true, setup.SkipKey());
+                seen.Add(setup.StepNumber);
+                Equal(true, setup.ReviewPersonalization(null));
+                seen.Add(setup.StepNumber);
+                while (setup.Step is SetupStep.CrashReports or SetupStep.UsageData)
+                {
+                    setup.ReviewPrivacy(false);
+                    seen.Add(setup.StepNumber);
+                }
+                Equal(SetupStep.Ready, setup.Step);
+                Sequence(Enumerable.Range(1, total), seen);
+                Equal(true, setup.Back());
+                Equal(total - 1, setup.StepNumber);
+            }
+        });
+
         Check("Canceling the Windows wizard discards confirmed folder and key drafts", () =>
         {
             var storage = new MemoryPlatform("home");
