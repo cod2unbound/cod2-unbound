@@ -59,6 +59,7 @@ public sealed partial class ConfigsPage : Page
                 DiscoverPlaces.SelectedIndex = 0;
         };
         RenderLoadouts();
+        UpdateSavedCount();
     }
 
     private void OnLoadoutContainerChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -786,8 +787,13 @@ public sealed partial class ConfigsPage : Page
         });
     }
 
-    private void UpdateSavedCount() => SavedCount.Text = model.Discover.State.Saved.Length is int count && count > 0
-        ? count.ToString(CultureInfo.CurrentCulture) : "";
+    private void UpdateSavedCount()
+    {
+        var saved = model.Discover.State.Saved;
+        SavedCount.Text = saved.Length.ToString(CultureInfo.CurrentCulture);
+        if (DiscoverPlaces.Items[1] is ListViewItem row)
+            row.Visibility = IsVisible(!saved.IsEmpty || !model.Discover.Entries.IsEmpty);
+    }
 
     private (string Title, string Detail) ReviewCopy(ConfigImportRow row, Func<double?>? setupDistance)
     {

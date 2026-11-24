@@ -175,7 +175,12 @@ internal sealed class ShareSetupDialog : ContentDialog
         factCard.Visibility = see.Visibility = IsVisible(form.ShowDetails);
         sending.Visibility = IsVisible(busy);
         sending.IsIndeterminate = busy;
-        PrimaryButtonText = form.Phase == ConfigSharePhase.Offline ? "Try Again" : form.Action;
+        PrimaryButtonText = form.Phase switch
+        {
+            ConfigSharePhase.Offline => "Try Again",
+            ConfigSharePhase.Sending => form.Action,
+            _ => "Share Setup"
+        };
         RefreshName();
         var problem = form.CanSend && readOnly()
             ? new ConfigShareNotice(ConfigShareNoticeLevel.Info, "", "Sharing is off while Call of Duty 2 is running.")
