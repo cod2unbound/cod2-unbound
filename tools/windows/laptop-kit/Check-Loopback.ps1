@@ -569,7 +569,8 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
     $run = $null
     $window = [IntPtr]::Zero
     $trace = New-KitFrameTrace $clientEntry.Evidence
-    $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder -NoWindow
+    $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder `
+        @{ COD2_UNBOUND_HIDE_SERVER_CONSOLE='1' } -NoWindow
     try {
         Wait-KitCondition {
             (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
@@ -603,8 +604,8 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
     } finally {
         if ($run) {
             $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
-            Stop-KitOwnedGame $run.Process $window
-            Complete-KitProcess $run $clientEntry.Evidence 8 | Out-Null
+            if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
+            $clientDone = Complete-KitProcess $run $clientEntry.Evidence 8
             Save-GameEvidence $clientEntry.Folder $clientEntry.Evidence
             Save-KitFrameTrace $trace $clientEntry.Evidence $log
         }
@@ -612,5 +613,6 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
         Complete-KitProcess $server $serverEntry.Evidence 8 | Out-Null
         Save-GameEvidence $serverEntry.Folder $serverEntry.Evidence
     }
+    if ($clientDone.TimedOut -or $clientDone.ExitCode -ne 0) { throw 'The game did not close cleanly after the switch.' }
     if ([KitDesktop]::CurrentMode() -ne $desktop) { throw 'Windows did not return to the desktop resolution.' }
 }

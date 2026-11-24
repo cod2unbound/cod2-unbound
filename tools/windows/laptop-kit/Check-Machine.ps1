@@ -48,11 +48,12 @@ function Save-KitPreflightComputer {
 }
 
 function Save-KitGraphicsPreferences([string]$Root, [string]$Evidence) {
-    $key = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
+    $key = 'HKEY_CURRENT_USER\Software\Microsoft\DirectX\UserGpuPreferences'
     $data = foreach ($rel in 'launcher\CoD2Unbound.Windows.exe','original\cod2_win32.exe','cod2x\cod2_win32.exe',
         'original\cod2_win32_ded.exe','cod2x\cod2_win32_ded.exe') {
         $path = Join-Path $Root $rel
-        $value = Get-ItemPropertyValue -LiteralPath $key -Name $path -ErrorAction SilentlyContinue
+        # Windows PowerShell 5.1 throws for a missing named registry value.
+        $value = [Microsoft.Win32.Registry]::GetValue($key, $path, $null)
         [pscustomobject]@{ Program=$rel; Preference=if ($value) { $value } else { 'System default' } }
     }
     $gpu = @(Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion)

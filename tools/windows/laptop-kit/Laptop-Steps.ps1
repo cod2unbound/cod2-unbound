@@ -368,7 +368,7 @@ $Steps = @(
         if ($failures.Count) { throw ($failures -join ' ') }
         Remove-KitScratch $KitProfile
         $parent = Split-Path $KitProfile -Parent
-        if ((Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
+        if (-not $ProfileName -and (Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
             [IO.Directory]::Delete($parent)
         }
     } 'Type YES to uninstall the test copy and clear its sample data, or press Enter to keep it' -Consent

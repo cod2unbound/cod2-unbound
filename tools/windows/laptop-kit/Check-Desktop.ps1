@@ -67,7 +67,8 @@ function Invoke-KitFirewallWarmup {
     $port = 29789
     $exe = Get-Binary 'original' -Server -Root $InstallRoot
     $password = [guid]::NewGuid().ToString('N')
-    $arguments = (Get-EngineArgs $entry.Folder $GamePath -Address '0.0.0.0' -Port $port) +
+    $bindAddress = if ($env:COD2_KIT_ONLINE -eq '1') { '127.0.0.1' } else { '0.0.0.0' }
+    $arguments = (Get-EngineArgs $entry.Folder $GamePath -Address $bindAddress -Port $port) +
         " +set dedicated 1 +set rcon_password $password +map mp_toujane"
     $run = Start-KitProcess $exe $arguments $entry.Folder -NoWindow
     try {
@@ -127,12 +128,20 @@ function Get-KitGameWindow($Process) {
     } 65 'the game window'
 }
 
-function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [string]$Name) {
+function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [string]$Name, [switch]$NativeConsole) {
     $shot = Join-Path $GameHome "main\screenshots\$Name.jpg"
     if (Test-Path -LiteralPath $shot) { Remove-Item -LiteralPath $shot }
-    Send-KitCommand $Window "/toggleconsole; screenshotJpeg $Name"
+    if ($NativeConsole) {
+        $dumpName = "$Name-console.txt"
+        [KitDesktop]::SendGameConsole($Window, "condump $dumpName; screenshotJpeg $Name")
+    } else {
+        Send-KitCommand $Window "/toggleconsole; screenshotJpeg $Name"
+    }
     Wait-KitCondition { Test-Path -LiteralPath $shot -PathType Leaf } 12 "$Name game picture" | Out-Null
     Copy-Item -LiteralPath $shot -Destination $Evidence
+    if ($NativeConsole) {
+        Save-Text (Join-Path $GameHome "main\$dumpName") (Join-Path $Evidence $dumpName)
+    }
     Save-KitWindow $Window (Join-Path $Evidence "$Name-window.png")
 }
 
@@ -228,6 +237,7 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
 
 function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evidence, [string]$Label) {
     $switches = Join-Path $Evidence 'fullscreen-switch.txt'
+    $mode = [KitDesktop]::CurrentMode()
     [KitDesktop]::Chord(18, 9)
     Wait-KitCondition {
         $current = [KitDesktop]::GetForegroundWindow()
@@ -235,7 +245,7 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
             [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
     } 8 'Alt+Tab to switch away' | Out-Null
     $foreground = [KitDesktop]::GetForegroundWindow()
-    "Away: shell foreground class $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window))" |
+    "Away: foreground class $([KitDesktop]::WindowClass($foreground)); PID $([KitDesktop]::WindowPid($foreground)); game PID $([KitDesktop]::WindowPid($Window)); game minimized $([KitDesktop]::IsIconic($Window))" |
         Set-Content -LiteralPath $switches -Encoding UTF8
     [KitDesktop]::Chord(18, 9)
     try {
@@ -247,7 +257,13 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
             Add-Content -LiteralPath $switches
         Focus-KitWindow $window
     }
-    Save-KitFrame $window $HomePath $Evidence "$Label-return"
+    Wait-KitCondition {
+        [KitDesktop]::GetForegroundWindow() -eq $Window -and -not [KitDesktop]::IsIconic($Window) -and
+            [KitDesktop]::CurrentMode() -eq $mode
+    } 8 'the game to restore its exclusive display mode' | Out-Null
+    # During mode recovery Windows can discard console keystrokes. Ask the
+    # running client for the picture through its own native console.
+    Save-KitFrame $Window $HomePath $Evidence "$Label-return" -NativeConsole
     "The restored game rendered at $([KitDesktop]::CurrentMode())." | Add-Content -LiteralPath $switches
 }
 
@@ -291,9 +307,7 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
             Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace
         }
     } finally {
-        if (-not $run.Process.HasExited -and $window -ne [IntPtr]::Zero) {
-            try { Send-KitCommand $window '/quit' } catch { [void]$run.Process.CloseMainWindow() }
-        }
+        if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
         $done = Complete-KitProcess $run $entry.Evidence 12
         Save-GameEvidence $homePath $entry.Evidence
         Save-KitFrameTrace $trace $entry.Evidence (Join-Path $homePath 'main\console_mp.log')

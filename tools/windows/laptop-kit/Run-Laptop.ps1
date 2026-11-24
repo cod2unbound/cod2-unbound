@@ -8,6 +8,7 @@ param(
     [string]$Answer,
     [ValidateSet('Default','Intel','Radeon')][string]$GraphicsLabel = 'Default',
     [string]$DriverUtc,
+    [ValidatePattern('^[a-zA-Z0-9_-]{0,48}$')][string]$ProfileName,
     [switch]$InternetPlay
 )
 
@@ -18,9 +19,11 @@ foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Serv
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
-$KitProfile = Join-Path $AppDataRoot "Windows Kit\$RunId"
+if ($ProfileName -and $InternetPlay) { throw 'A named private profile is only for the Fixture run.' }
+$KitProfile = if ($ProfileName) { Join-Path $AppDataRoot $ProfileName } else { Join-Path $AppDataRoot "Windows Kit\$RunId" }
 $RunResults = Join-Path $Kit "results\$RunId"
 $RunStart = Join-Path $RunResults 'started.txt'
+$RunProfileName = Join-Path $RunResults 'profile-name.txt'
 $GamePathFile = Join-Path $KitProfile 'game-path.txt'
 $UpdateTrustFile = Join-Path $RunResults 'preflight\update-trust.txt'
 $script:KitSerials = @()
@@ -153,7 +156,14 @@ try {
     if (-not $owned) { throw 'A kit check is already running in this account.' }
     New-Folder $RunResults | Out-Null
     if (-not (Test-Path -LiteralPath $RunStart)) {
+        if ($ProfileName -and (Test-Path -LiteralPath $KitProfile)) {
+            throw 'The named private test profile already exists.'
+        }
+        if ($ProfileName) { [IO.File]::WriteAllText($RunProfileName, $ProfileName) }
         [IO.File]::WriteAllText($RunStart, [DateTime]::UtcNow.ToString('o'))
+    } else {
+        $previous = if ([IO.File]::Exists($RunProfileName)) { [IO.File]::ReadAllText($RunProfileName) } else { '' }
+        if ($previous -ine [string]$ProfileName) { throw 'Resume with the same private profile name.' }
     }
     do {
         $next = Get-KitStatus

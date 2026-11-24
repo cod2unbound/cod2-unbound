@@ -135,7 +135,7 @@ class UtmTransport:
 
 class Kit:
     def __init__(self, transport, name, output, game_path, arm_rehearsal, online=False, graphics_label="Default",
-                 internet_play=False):
+                 internet_play=False, stage_parent=None, profile_name=None):
         self.transport = transport
         self.name = name
         self.output = output
@@ -145,6 +145,8 @@ class Kit:
         self.online = online
         self.graphics_label = graphics_label
         self.internet_play = internet_play
+        self.stage_parent = stage_parent
+        self.profile_name = profile_name
         if internet_play and (not online or self.arm_rehearsal or
                               getattr(transport, "host", "") in ("localhost", "127.0.0.1", "::1")):
             raise ValueError("Internet play requires an online physical laptop run.")
@@ -153,7 +155,9 @@ class Kit:
             self.prefix = f"$profile=(Get-ItemProperty ('HKLM:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\'+{sid})).ProfileImagePath;"
         else:
             self.prefix = "$profile=[Environment]::GetFolderPath('UserProfile');"
-        self.prefix += f"$stage=Join-Path $profile {powershell_literal(name)};"
+        parent = powershell_literal(stage_parent) if stage_parent else "$profile"
+        self.prefix += f"$parent={parent};$stage=Join-Path $parent {powershell_literal(name)};"
+        self.ssh_stage = ("/" + stage_parent.replace("\\", "/") + "/" if stage_parent else "") + name
         if self.utm:
             # utmctl transfers use an absolute guest path. Quote only for PowerShell,
             # never for the guest agent's binary file interface.
@@ -163,11 +167,19 @@ class Kit:
         return self.transport.exec(self.prefix + script, timeout)
 
     def remote_path(self, file):
-        return self.absolute_stage + "\\" + file if self.utm else f"{self.name}/{file}"
+        return self.absolute_stage + "\\" + file if self.utm else f"{self.ssh_stage}/{file}"
 
     def deploy(self, archive, digest):
         archive_name = "kit-upload.zip"
+        if self.stage_parent:
+            self.exec(
+                "if(-not (Test-Path -LiteralPath $parent -PathType Container) -or "
+                "((Get-Item -LiteralPath $parent -Force).Attributes -band [IO.FileAttributes]::ReparsePoint))"
+                "{throw 'The stage parent must be an existing regular folder.'};")
         installed = self.exec(
+            "if((Test-Path -LiteralPath $stage) -and "
+            "((Get-Item -LiteralPath $stage -Force).Attributes -band [IO.FileAttributes]::ReparsePoint))"
+            "{throw 'The stage must be a regular folder.'};"
             "$digest=Join-Path $stage 'kit.sha256';"
             "if(Test-Path -LiteralPath $digest){[IO.File]::ReadAllText($digest)}")
         if installed:
@@ -175,9 +187,6 @@ class Kit:
                 raise ValueError("That run already holds a different kit ZIP. Use a new --run name.")
             return
         self.exec(
-            "if((Test-Path -LiteralPath $stage) -and "
-            "((Get-Item -LiteralPath $stage -Force).Attributes -band [IO.FileAttributes]::ReparsePoint))"
-            "{throw 'The stage must be a regular folder.'};"
             "if(-not (Test-Path -LiteralPath $stage)){[void][IO.Directory]::CreateDirectory($stage)};")
         if self.utm:
             # A stage created as SYSTEM must belong to the console user's writable area.
@@ -207,6 +216,8 @@ class Kit:
             args += " -Online"
         if self.internet_play:
             args += " -InternetPlay"
+        if self.profile_name:
+            args += f" -ProfileName {powershell_literal(self.profile_name)}"
         if operation == "queue":
             args += f" -GraphicsLabel {powershell_literal(self.graphics_label)}"
             args += f" -DriverUtc {powershell_literal(datetime.now(timezone.utc).isoformat())}"
@@ -342,6 +353,8 @@ def main():
                         help="run only the separate consented play checks with the installed Public build")
     parser.add_argument("--kit", type=Path, default=os.environ.get("COD2_KIT_ZIP"))
     parser.add_argument("--run", default="laptop")
+    parser.add_argument("--stage-parent", help="existing absolute Windows directory for a private SSH stage")
+    parser.add_argument("--profile-name", help="fresh private directory directly under LocalAppData\\CoD2 Unbound")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--game-path")
     parser.add_argument("--graphics-label", choices=("Default", "Intel", "Radeon"), default="Default")
@@ -357,6 +370,10 @@ def main():
         parser.error("Supply the kit archive with --kit.")
     if not re.fullmatch(r"[a-zA-Z0-9_-]{1,36}", args.run):
         parser.error("--run must use up to 36 letters, numbers, underscores or hyphens")
+    if args.stage_parent and (args.utm_sid or not re.fullmatch(r"[a-zA-Z]:\\(?:[a-zA-Z0-9_-]+\\)*[a-zA-Z0-9_-]+", args.stage_parent)):
+        parser.error("--stage-parent requires SSH and a qualified Windows path such as C:\\kit-work")
+    if args.profile_name and (args.internet_play or not re.fullmatch(r"[a-zA-Z0-9_-]{1,48}", args.profile_name)):
+        parser.error("--profile-name requires the Fixture route and up to 48 letters, numbers, underscores or hyphens")
     if args.utm_sid:
         if args.host or args.user:
             parser.error("Use either SSH or --utm-sid.")
@@ -374,7 +391,8 @@ def main():
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     args.output.mkdir(parents=True, exist_ok=True)
     driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path,
-                 args.arm_rehearsal, args.online, args.graphics_label, args.internet_play)
+                 args.arm_rehearsal, args.online, args.graphics_label, args.internet_play,
+                 args.stage_parent, args.profile_name)
     driver.deploy(args.kit.resolve(), digest)
     driver.run(args.steps)
 
