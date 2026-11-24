@@ -100,7 +100,8 @@ public sealed partial class ConfigsPage
         var key = new Button { Content = draft.Key is { } saved ? KeyLabel(saved) : "Choose…", IsEnabled = !state.ReadOnly, MinWidth = 90 };
         key.Style = StyleFor("Keycap");
         AutomationProperties.SetName(key, $"Key for this bind, {key.Content}");
-        var kind = new ComboBox { Header = "Type", ItemsSource = ChainKinds, SelectedIndex = (int)draft.Kind, IsEnabled = !state.ReadOnly };
+        var kind = new ComboBox { Header = "Type", Height = double.NaN, ItemsSource = ChainKinds,
+            SelectedIndex = (int)draft.Kind, IsEnabled = !state.ReadOnly };
         var help = Caption(ChainKindsHelp[kind.SelectedIndex]);
         var steps = new StackPanel { Spacing = 8 };
         var preview = Body("");
@@ -296,7 +297,7 @@ public sealed partial class ConfigsPage
             {
                 var choices = model.Model.Specs.Where(spec => !spec.LauncherOwned && ((spec.Type is "bool" or "enum") ||
                     string.Equals(spec.Name, draft.Setting, StringComparison.OrdinalIgnoreCase))).ToArray();
-                var settings = new ComboBox { Header = "Setting", ItemsSource = choices, DisplayMemberPath = "Title",
+                var settings = new ComboBox { Header = "Setting", Height = double.NaN, ItemsSource = choices, DisplayMemberPath = "Title",
                     SelectedItem = choices.FirstOrDefault(spec => spec.Name.Equals(draft.Setting, StringComparison.OrdinalIgnoreCase)),
                     IsEnabled = !state.ReadOnly };
                 settings.SelectionChanged += (_, _) =>
@@ -315,7 +316,8 @@ public sealed partial class ConfigsPage
                 var values = draft.Kind == ChainEditorKind.Several ? draft.Several : draft.Cycle;
                 AddRows(values, (step, index) =>
                 {
-                    var choose = new ComboBox { Header = $"Step {index + 1}", ItemsSource = ChainStepKinds, SelectedIndex = (int)step.Kind,
+                    var choose = new ComboBox { Header = $"Step {index + 1}", Height = double.NaN,
+                        ItemsSource = ChainStepKinds, SelectedIndex = (int)step.Kind,
                         IsEnabled = !state.ReadOnly, HorizontalAlignment = HorizontalAlignment.Stretch };
                     choose.SelectionChanged += (_, _) =>
                     {

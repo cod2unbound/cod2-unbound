@@ -201,7 +201,8 @@ public sealed partial class ConfigsPage
             var mouse = mice.ElementAtOrDefault(chosenMouse) ?? new WindowsMouse("Mouse", null);
             if (mice.Count > 1)
             {
-                var devices = new ComboBox { Header = "Mouse", ItemsSource = mice.Select(item => item.Name).ToArray(), SelectedIndex = chosenMouse };
+                var devices = new ComboBox { Header = "Mouse", Height = double.NaN,
+                    ItemsSource = mice.Select(item => item.Name).ToArray(), SelectedIndex = chosenMouse };
                 devices.SelectionChanged += (_, _) =>
                 {
                     if (devices.SelectedIndex >= 0)
@@ -316,7 +317,8 @@ public sealed partial class ConfigsPage
                 }
                 else
                 {
-                    var actionsBox = new ComboBox { Header = "Action", ItemsSource = binds.Actions, DisplayMemberPath = "Title", MinWidth = 220 };
+                    var actionsBox = new ComboBox { Header = "Action", Height = double.NaN, ItemsSource = binds.Actions,
+                        DisplayMemberPath = "Title", MinWidth = 220 };
                     var dialog = Dialog($"Bind {label}", actionsBox, "Set binding");
                     dialog.IsPrimaryButtonEnabled = false;
                     actionsBox.SelectionChanged += (_, _) => dialog.IsPrimaryButtonEnabled = actionsBox.SelectedIndex >= 0;

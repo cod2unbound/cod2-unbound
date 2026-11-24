@@ -141,7 +141,8 @@ public sealed partial class ConfigsPage
             Put(attribution, 1, provenance);
             header.Children.Add(attribution);
 
-            var into = new ComboBox { Header = "Into", HorizontalAlignment = HorizontalAlignment.Stretch };
+            // A native ComboBox is taller when it has a header.
+            var into = new ComboBox { Header = "Into", Height = double.NaN, HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(into, "Into");
             into.Items.Add($"New loadout “{initialName}”");
             if (!newOnly)
@@ -149,7 +150,7 @@ public sealed partial class ConfigsPage
                     into.Items.Add(profile.DisplayName);
             into.SelectedIndex = 0;
             var intoNote = Caption("");
-            var mode = new ComboBox { Header = "How to import", HorizontalAlignment = HorizontalAlignment.Stretch,
+            var mode = new ComboBox { Header = "How to import", Height = double.NaN, HorizontalAlignment = HorizontalAlignment.Stretch,
                 ItemsSource = new[] { "Review", "Import Everything" }, SelectedIndex = 0 };
             var choices = Columns(12, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
             Put(choices, 0, into);
