@@ -43,11 +43,16 @@ internal static class PagePresentation
     };
 
     // Glyph and label: a horizontal StackPanel of a FontIcon then a TextBlock, which GlyphAlign lines up.
-    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false) => new()
+    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false)
     {
-        Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
-        Children = { Fluent(icon, size, filled), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
-    };
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
+            Children = { Fluent(icon, size, filled), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
+        };
+        GlyphAlign.SetIsEnabled(panel, true);
+        return panel;
+    }
 
     internal static Brush ThemeBrush(string key, ElementTheme theme, bool contrast)
     {

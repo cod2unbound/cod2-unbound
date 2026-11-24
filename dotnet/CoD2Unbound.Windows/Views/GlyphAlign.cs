@@ -6,11 +6,16 @@ namespace CoD2Unbound.Windows.Views;
 
 /// <summary>
 /// Glyph and label: the one shared way a symbol sits beside a word. In a horizontal StackPanel whose children
-/// include a FontIcon and, after it, a TextBlock (a button's content, a chip, a row), the symbol's ink centre is
-/// moved onto the label's cap-height centre line, as SF Symbols sit on the Mac. It is worked out from font
-/// metrics and the panel's own laid-out children, for any glyph and label size at any scale, so no page tunes a
-/// symbol by hand. LauncherStyles turns it on for every StackPanel (implicit style); set
-/// <c>GlyphAlign.IsEnabled="False"</c> on a panel to opt out.
+/// include a FontIcon and, after it, a TextBlock, the symbol's ink centre is moved onto the label's cap-height
+/// centre line, as SF Symbols sit on the Mac. It is worked out from font metrics and the panel's own laid-out
+/// children, for any glyph and label size at any scale, so no page tunes a symbol by hand.
+/// Where it is on:
+/// <list type="bullet">
+/// <item>every button drawn by the shared button templates (LauncherStyles: the content presenter carries
+/// <c>views:GlyphAlign.IsEnabled="True"</c>, which aligns whatever StackPanel is the button's content);</item>
+/// <item>every panel made by <c>PagePresentation.IconLabel</c>;</item>
+/// <item>any other panel that sets <c>views:GlyphAlign.IsEnabled="True"</c> itself.</item>
+/// </list>
 /// </summary>
 public static class GlyphAlign
 {
@@ -47,6 +52,10 @@ public static class GlyphAlign
         [""] = 0.027, [""] = 0.016, [""] = 0.031,
     };
 
+#if UPDATE_FIXTURES
+    private static int traced;
+#endif
+
     /// <summary>
     /// The vertical move that puts a glyph's ink centre on a label's cap centre when NavigationView centres the
     /// glyph's box and the label's line box on the same line (the sidebar rows).
@@ -69,41 +78,43 @@ public static class GlyphAlign
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not StackPanel panel)
+        if (e.NewValue is not true)
             return;
-        if ((bool)e.NewValue)
+        switch (d)
         {
-            panel.Loaded += OnLoaded;
-            panel.SizeChanged += OnSizeChanged;
-            if (panel.IsLoaded)
-                Attach(panel);
-        }
-        else
-        {
-            panel.Loaded -= OnLoaded;
-            panel.SizeChanged -= OnSizeChanged;
+            case StackPanel panel:
+                Watch(panel);
+                break;
+            case ContentPresenter presenter:
+                // A button's content: align it when it is (or becomes) a StackPanel.
+                presenter.RegisterPropertyChangedCallback(ContentPresenter.ContentProperty,
+                    (sender, _) => WatchContent((ContentPresenter)sender));
+                WatchContent(presenter);
+                break;
         }
     }
 
-    private static void OnLoaded(object sender, RoutedEventArgs e) => Attach((StackPanel)sender);
-    private static void OnSizeChanged(object sender, SizeChangedEventArgs e) => Align((StackPanel)sender);
-
-    private static void Attach(StackPanel panel)
+    private static void WatchContent(ContentPresenter presenter)
     {
-        if (Pair(panel) is not { } pair)
+        if (presenter.Content is StackPanel panel)
+            Watch(panel);
+    }
+
+    private static readonly DependencyProperty WatchedProperty = DependencyProperty.RegisterAttached(
+        "Watched", typeof(bool), typeof(GlyphAlign), new PropertyMetadata(false));
+
+    private static void Watch(StackPanel panel)
+    {
+        if ((bool)panel.GetValue(WatchedProperty))
             return;
-        var (icon, text) = pair;
+        panel.SetValue(WatchedProperty, true);
+        panel.SizeChanged += (sender, _) => Align((StackPanel)sender);
+        panel.Loaded += (sender, _) => Align((StackPanel)sender);
         // The pair's own size changes move the centres without resizing the panel (a label that changes weight).
-        icon.SizeChanged -= OnChildSizeChanged;
-        icon.SizeChanged += OnChildSizeChanged;
-        text.SizeChanged -= OnChildSizeChanged;
-        text.SizeChanged += OnChildSizeChanged;
-        Align(panel);
-    }
-
-    private static void OnChildSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (sender is FrameworkElement { Parent: StackPanel panel } && GetIsEnabled(panel))
+        foreach (var child in panel.Children)
+            if (child is FrameworkElement element)
+                element.SizeChanged += (_, _) => Align(panel);
+        if (panel.IsLoaded)
             Align(panel);
     }
 
@@ -137,14 +148,25 @@ public static class GlyphAlign
         double inkCentre = icon.ActualOffset.Y + (icon.ActualHeight - lineHeight) / 2 + inkEm * icon.FontSize;
         double capCentre = text.ActualOffset.Y + text.BaselineOffset - CapHalfEm * text.FontSize;
         double move = Math.Round(capCentre - inkCentre, 2);
+        // The behaviour owns the icon's render transform; a page that needs another transform turns it off.
         if (icon.RenderTransform is TranslateTransform translate)
         {
-            if (translate.Y != move)
-                translate.Y = move;
+            if (translate.Y == move)
+                return;
+            translate.Y = move;
         }
-        else if (icon.RenderTransform is null)
+        else
         {
             icon.RenderTransform = new TranslateTransform { Y = move };
         }
+#if UPDATE_FIXTURES
+        if (traced++ < 40)
+            StartupTrace.Mark($"glyph-align {++moved} U+{(int)(icon.Glyph?.FirstOrDefault() ?? ' '):X4}/{icon.FontSize}" +
+                $" '{text.Text}'/{text.FontSize} moved {move:0.00}");
+#endif
     }
+
+#if UPDATE_FIXTURES
+    private static int moved;
+#endif
 }
