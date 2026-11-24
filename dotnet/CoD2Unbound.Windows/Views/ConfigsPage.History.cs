@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.Foundation;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -78,10 +79,23 @@ public sealed partial class ConfigsPage
         int keep = ConfigProfileStore.HistoryRetention;
         var retention = Caption($"CoD2 Unbound keeps the last {keep} snapshots of each loadout. This one has {state.History.Length} of {keep}. Older ones are removed on their own.");
         var timelineArea = new StackPanel { Spacing = 10, Children = { timeline, empty, retention } };
-        var compare = new StackPanel();
+        var compare = new ContentControl
+        {
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch, IsTabStop = false
+        };
         var inspector = CheckCard(compare);
         inspector.MinHeight = 320;
-        studioBody.Children.Add(CheckPair(timelineArea, inspector, 755, rightWidth: 372));
+        const double sideBySide = 760;
+        var layout = CheckPair(timelineArea, inspector, sideBySide, rightWidth: 372);
+        studioBody.Children.Add(layout);
+        layout.SizeChanged += FitInspector;
+        layout.Loaded += (_, _) =>
+        {
+            DetailScroll.SizeChanged += FitInspector;
+            FitInspector(layout, null!);
+        };
+        layout.Unloaded += (_, _) => DetailScroll.SizeChanged -= FitInspector;
         bool drawing = false;
         filters.SelectionChanged += (_, _) =>
         {
@@ -119,10 +133,22 @@ public sealed partial class ConfigsPage
         {
             var entry = (timeline.SelectedItem as StudioHistoryRow)?.Entry;
             historySelection = entry?.Id;
-            compare.Children.Clear();
-            compare.Children.Add(entry is null
+            compare.Content = entry is null
                 ? EmptyState("History", "This is now", "Pick an earlier snapshot to see what has changed since then, or to go back to it.")
-                : HistoryComparison(state, profile, entry));
+                : HistoryComparison(state, profile, entry);
+        }
+
+        void FitInspector(object sender, SizeChangedEventArgs args)
+        {
+            if (!layout.IsLoaded)
+                return;
+            if (layout.ActualWidth < sideBySide)
+            {
+                inspector.Height = double.NaN;
+                return;
+            }
+            double top = layout.TransformToVisual(DetailColumn).TransformPoint(new Point(0, 0)).Y;
+            inspector.Height = Math.Max(inspector.MinHeight, DetailScroll.ActualHeight - top - DetailColumn.Padding.Bottom);
         }
     }
 
@@ -146,10 +172,6 @@ public sealed partial class ConfigsPage
             compare.Children.Add(HistoryValues("No differences", "—", "—"));
         foreach (var change in changes)
             compare.Children.Add(HistoryValues(change.Label, change.Before.Length == 0 ? "—" : change.Before, change.After));
-        if (historyRestored == entry.Id)
-            compare.Children.Add(CheckNotice(InfoBarSeverity.Success, "Restored", "Your previous state is saved as a snapshot."));
-        compare.Children.Add(Caption("Restoring saves how things are now as a new snapshot first, so you can always come back."));
-
         var restore = Action("Restore This Snapshot", () => RestoreSnapshotAsync(profile, entry, ConfigSnapshotRevision.After));
         restore.Style = StyleFor("LauncherAccentButton");
         restore.IsEnabled = CanEdit && !entry.After.Matches(profile.Version);
@@ -165,8 +187,19 @@ public sealed partial class ConfigsPage
         restore.HorizontalAlignment = HorizontalAlignment.Right;
         Put(actions, 0, more);
         Put(actions, 1, restore);
-        compare.Children.Add(actions);
-        return compare;
+        var footer = new StackPanel { Spacing = 12 };
+        if (historyRestored == entry.Id)
+            footer.Children.Add(CheckNotice(InfoBarSeverity.Success, "Restored", "Your previous state is saved as a snapshot."));
+        footer.Children.Add(Caption("Restoring saves how things are now as a new snapshot first, so you can always come back."));
+        footer.Children.Add(actions);
+
+        var layout = new Grid { RowSpacing = 12 };
+        layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layout.Children.Add(new ScrollViewer { Content = compare, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        layout.Children.Add(footer);
+        Grid.SetRow(footer, 1);
+        return layout;
     }
 
     private async Task RestoreSnapshotAsync(ConfigProfileRead profile, ConfigHistoryEntry entry, ConfigSnapshotRevision revision)
