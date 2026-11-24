@@ -15,7 +15,7 @@ HOME = ROOT / "launcher/HomeView.swift"
 # Values specified by WinParts/launcher.css. Where there is a directly equivalent
 # Swift constant, read it below. The board specifies the Windows DIP geometry.
 RADII = dict(ProgressTrack=4, Sheet=26, Sidebar=22, Group=20, Popover=20, Crate=16, Banner=14,
-             Menu=14, Plate=14, NavItem=12, Well=12, IconTile=8, InlineField=7,
+             Menu=14, Plate=14, NavItem=12, SidebarRow=10, Well=12, IconTile=8, InlineField=7,
              MenuItem=7, Badge=6, Keycap=6)
 TYPE = {
     "Page": (30, "Bold", 33), "Section": (22, "Bold", 25.3),
@@ -28,7 +28,7 @@ BOARD_METRICS = dict(ButtonSmallHeight=24, ButtonRegularHeight=28, ButtonHeroHei
                      FieldInlineHeight=28, FieldCapsuleHeight=36, CircleHeight=36,
                      SegmentHeight=28, SegmentLargeHeight=36, SwitchWidth=40, SwitchHeight=24,
                      SwitchKnobSize=20, SwitchTravel=16, ProgressTrackHeight=8, BadgeHeight=18, ChipHeight=26, LargeChipHeight=40,
-                     SidebarWidth=232, SidebarInset=10, NavHeight=38, CaptionHeight=32,
+                     SidebarWidth=232, SidebarInset=10, NavHeight=38, SidebarRowHeight=40, SidebarFooterRowHeight=36, CaptionHeight=32,
                      GlassShadowBlur=48, GlassShadowOffset=18,
                      FocusThickness=3, FocusOffset=2)
 BOARD_COLORS = {
@@ -38,6 +38,16 @@ BOARD_COLORS = {
     "prominentEdge": ("#8CFFECBE", "#4DFFFFFF", "ButtonText"),
     "prominentGlow": ("#57C4984C", "#4746522A", None),
     "systemSheet": ("#282727", "#FFFFFF", "Window"),
+    # The Mac sidebar as drawn (0.4.2 captures at 2x, sampled over its panel): labels in the system label
+    # colour, symbols in the app accent on every row (vibrancy dims the unchosen ones), the star in the
+    # palette accent, a neutral selection fill, the section caption and the Settings row quieter.
+    "sidebarLabel": ("#FFFFFF", "#000000", "WindowText"),
+    "sidebarGlyph": ("#D3AE60", "#818D4E", "WindowText"),
+    "sidebarGlyphSelected": ("#E1BD6F", "#768244", "HighlightText"),
+    "sidebarStar": ("#D3BF7E", "#5F4C1F", "WindowText"),
+    "sidebarCaption": ("#3AFFFFFF", "#54000000", "WindowText"),
+    "sidebarQuiet": ("#D8FFFFFF", "#D8000000", "WindowText"),
+    "sidebarSelection": ("#22FFFFFF", "#18000000", "Highlight"),
 }
 TRANSPARENT = "#00000000"
 

@@ -367,7 +367,8 @@ public sealed partial class MainWindow : Window
             servers.RefreshActiveLoadout();
     }
 
-    // launcher.css .nav.on .ic: the chosen row's symbol is the accent; the others follow the row's text.
+    // The Mac sidebar: every page row's symbol is in the accent (the chosen one a little stronger, as vibrancy
+    // draws it) and the chosen row's label is semibold. In a contrast theme the symbols follow the row's text.
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args) => PaintNavGlyphs();
 
     private void PaintNavGlyphs()
@@ -376,10 +377,12 @@ public sealed partial class MainWindow : Window
         foreach (var item in sender.MenuItems.OfType<NavigationViewItem>())
             if (item.Icon is FontIcon glyph && item.Tag is null)
             {
-                if (ReferenceEquals(item, sender.SelectedItem) && !IsHighContrast)
-                    glyph.Foreground = ThemeBrush("accent", Root.ActualTheme, false);
-                else
+                bool chosen = ReferenceEquals(item, sender.SelectedItem);
+                item.FontWeight = chosen ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+                if (IsHighContrast)
                     glyph.ClearValue(IconElement.ForegroundProperty);
+                else
+                    glyph.Foreground = ThemeBrush(chosen ? "sidebarGlyphSelected" : "sidebarGlyph", Root.ActualTheme, false);
             }
     }
 
@@ -393,13 +396,14 @@ public sealed partial class MainWindow : Window
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
-            // PcSide: the star is the accent (c-acc), 16 px, centred in the 18 glyph column. The margin pads
-            // its line box to the icon box's height so the item's Viewbox draws it at 16 rather than enlarging it.
-            var icon = Fluent("StarFilled", 16, filled: true);
-            icon.Margin = new Thickness(1);
-            icon.RenderTransform = new TranslateTransform { Y = 1 };
+            // The Mac's favourite star: the palette accent, about 21 px of ink (Fluent's star at 26), on the
+            // name's cap centre. The margin pads its line box (28.34) to the icon box's height (30.52) so the
+            // item's Viewbox draws it at 26 rather than enlarging it.
+            var icon = Fluent("StarFilled", 26, filled: true);
+            icon.Margin = new Thickness(1.09);
+            icon.RenderTransform = new TranslateTransform { Y = 1.8 };
             if (!IsHighContrast)
-                icon.Foreground = ThemeBrush("accent", Root.ActualTheme, false);
+                icon.Foreground = ThemeBrush("sidebarStar", Root.ActualTheme, false);
             string plain = QuakeColors.Plain(favorite.Name);
             string shortName = plain.Split('|', 2)[0].Trim();
             var title = new TextBlock { Text = shortName, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -409,7 +413,7 @@ public sealed partial class MainWindow : Window
                 Put(content, 1, new TextBlock
                 {
                     Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SidebarCount"),
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, -5, 0)
                 });
             var item = new NavigationViewItem
             {
