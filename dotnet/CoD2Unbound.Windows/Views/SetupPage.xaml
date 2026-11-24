@@ -18,7 +18,9 @@
                 <StackPanel x:Name="SetupColumn" HorizontalAlignment="Center" Spacing="12">
                     <Image x:Name="SetupMark" Source="ms-appx:///Assets/mark-372.png" Width="124" Height="124"
                            HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                    <TextBlock x:Name="SetupEyebrow" Style="{StaticResource SetupEyebrow}" />
+                    <!-- Decorative: the step's name is read from the title and the step capsules' name. Kept out of UI
+                         Automation so names such as "CD key" stay unique for the field. -->
+                    <TextBlock x:Name="SetupEyebrow" Style="{StaticResource SetupEyebrow}" AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock x:Name="SetupTitle" Style="{StaticResource SetupTitle}" />
                     <TextBlock x:Name="SetupDescription" Style="{StaticResource SetupSubtitle}" />
                     <StackPanel x:Name="StepContent" Spacing="12" Margin="0,13,0,0" HorizontalAlignment="Center" />

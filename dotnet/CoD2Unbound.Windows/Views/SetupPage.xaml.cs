@@ -89,7 +89,6 @@ public sealed partial class SetupPage : Page
         SetupEyebrow.Text = eyebrow.ToUpperInvariant();
         // The Mac sets the Welcome eyebrow 14 further below the mark.
         SetupEyebrow.Margin = new Thickness(0, welcome ? 14 : 0, 0, 0);
-        AutomationProperties.SetName(SetupEyebrow, eyebrow);
         SetupTitle.FontSize = welcome ? 40 : 30;
         SetupTitle.LineHeight = welcome ? 46 : 36;
         (SetupTitle.Text, SetupDescription.Text) = step switch
