@@ -94,7 +94,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18"
                                   AutomationProperties.AccessibilityView="Raw">
-                            <FontIcon.RenderTransform><TranslateTransform Y="1" /></FontIcon.RenderTransform>
+                            <FontIcon.RenderTransform><TranslateTransform Y="1.8" /></FontIcon.RenderTransform>
                         </FontIcon>
                         <TextBlock x:Name="SettingsLabel" Text="Settings" VerticalAlignment="Center" />
                     </StackPanel>
