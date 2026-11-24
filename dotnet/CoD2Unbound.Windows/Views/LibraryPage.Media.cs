@@ -38,7 +38,7 @@ public sealed partial class LibraryPage
             return;
         const double gap = 18, minimumTile = 240, caption = 36;
         int columns = Math.Max(1, (int)(width / (minimumTile + gap)));
-        double itemWidth = Math.Floor(width / columns);
+        double itemWidth = width / columns;
         grid.ItemWidth = itemWidth;
         grid.ItemHeight = Math.Round((itemWidth - gap) * 0.75) + caption + gap;
     }
@@ -73,16 +73,21 @@ public sealed partial class LibraryPage
             await shell.RunAsync(() => OpenFileAsync(item.Row));
     }
 
+    private void OnSearchKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key == VirtualKey.Escape && ClearSearch())
+            args.Handled = true;
+    }
+
     private async void OnLibraryKeyDown(object sender, KeyRoutedEventArgs args)
     {
         if (ShowingMatches || XamlRoot is not { } root)
             return;
         var focus = FocusManager.GetFocusedElement(root) as DependencyObject;
-        if (args.Key == VirtualKey.Escape && Search.Text.Length != 0)
+        if (args.Key == VirtualKey.Escape && (ClearSearch() || MediaList.SelectedItem is not null))
         {
             args.Handled = true;
-            ClearSearch();
-            MediaList.Focus(FocusState.Keyboard);
+            MediaList.SelectedItem = null;
             return;
         }
         if (FindMedia(focus) is not { } item)
@@ -256,9 +261,10 @@ public sealed partial class LibraryPage
 
         void Validate()
         {
-            var (_, message) = MediaLibrary.Rename(row.File, name.Text);
+            bool blank = string.IsNullOrWhiteSpace(name.Text);
+            var message = blank ? null : MediaLibrary.Rename(row.File, name.Text).Problem;
             ShowProblem(message);
-            dialog.IsPrimaryButtonEnabled = message is null;
+            dialog.IsPrimaryButtonEnabled = !blank && message is null;
         }
 
         void ShowProblem(string? message)
@@ -295,7 +301,6 @@ public sealed partial class LibraryPage
         recycled = new(row.Kind, row.Name, token);
         RecycleNotice.Message = $"Moved “{row.Name}” to the Recycle Bin.";
         AutomationProperties.SetName(RecycleNotice.ActionButton, $"Undo moving {row.Name} to the Recycle Bin");
-        RecycleNotice.Visibility = Visibility.Visible;
         RecycleNotice.IsOpen = true;
         Notice.IsOpen = false;
         Render();

@@ -32,6 +32,12 @@ public sealed partial class LibraryPage : Page
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
         LibraryLayout.Children.Remove(LibraryToolbar);
+        foreach (var banner in new[] { SummariesOff, RecycleNotice, Notice })
+        {
+            banner.Visibility = Visibility.Collapsed;
+            banner.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
+                banner.Visibility = IsVisible(banner.IsOpen));
+        }
         Loaded += (_, _) =>
         {
             PositionToolbar();
@@ -59,7 +65,9 @@ public sealed partial class LibraryPage : Page
         if (XamlRoot is null)
             return;
         var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point());
-        LibraryToolbar.Margin = new Thickness(origin.X + 18, 16, 18, 0);
+        var margin = new Thickness(origin.X + 12, 15, 10, 0);
+        if (!LibraryToolbar.Margin.Equals(margin))
+            LibraryToolbar.Margin = margin;
     }
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
@@ -108,7 +116,6 @@ public sealed partial class LibraryPage : Page
         bool canPlay = !demos || !session.Game.State.Running;
         Search.Visibility = ShowFolder.Visibility = IsVisible(!matches);
         DeleteSummaries.Visibility = IsVisible(matches);
-        RecycleNotice.Visibility = IsVisible(!matches && recycled?.Kind == kind);
         SectionTitle.Text = matches ? "Matches" : demos ? "Demos" : "Screenshots";
         SectionDetail.Text = matches ? "How your recent matches ran: ping and connection."
             : demos ? "Recorded matches play back in the game, from any point."
@@ -165,7 +172,7 @@ public sealed partial class LibraryPage : Page
     private void ShowDemoArt(Image image)
     {
         if (image.DataContext is MediaRow row)
-            _ = previews.FillAsync(image, row.Facts.Map ?? row.Name);
+            _ = previews.FillAsync(image, row.Facts.Map ?? row.Name, squareAsFourByThree: true);
         else
         {
             image.Tag = null;

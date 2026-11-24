@@ -111,7 +111,7 @@ public sealed partial class LibraryPage
     private void ShowMatchArt(Image image)
     {
         if (image.DataContext is LibraryMatchRow row)
-            _ = previews.FillAsync(image, row.Summary.Map);
+            _ = previews.FillAsync(image, row.Summary.Map, squareAsFourByThree: true);
         else
         {
             image.Tag = null;
@@ -152,6 +152,8 @@ internal sealed class LibraryMatchRow(MatchSummary match, DateTimeOffset now, in
         _ => "\uE946"
     };
     public string CheckupName => $"Check-up for {Title}, {Stamp}";
+
+    public override string ToString() => $"{Title}, {Stamp}, {PingName}, connection {ConnectionLabel}";
 
     internal LibraryMatchRow Reconcile(LibraryMatchRow incoming)
     {

@@ -31,7 +31,7 @@ internal sealed class MapPreviews(Func<string, Task<MapPixels?>> read)
         return new Border { Width = width, Height = height, Style = StyleFor("MediaTile"), Child = art };
     }
 
-    internal async Task FillAsync(Image image, string map)
+    internal async Task FillAsync(Image image, string map, bool squareAsFourByThree = false)
     {
         if (image.Tag is not PreviewRequest)
         {
@@ -40,11 +40,16 @@ internal sealed class MapPreviews(Func<string, Task<MapPixels?>> read)
         }
         var request = new PreviewRequest(map);
         image.Tag = request;
+        if (squareAsFourByThree)
+            image.Stretch = Stretch.UniformToFill;
         OnPreviewThemeChanged(image, null);
         var source = await GetAsync(map);
         if (ReferenceEquals(image.Tag, request) && source is not null)
         {
             request.HasArtwork = true;
+            // The map texture is intended for a 4:3 viewport. Library's 80 × 60 tiles use that viewport directly.
+            if (squareAsFourByThree && source is WriteableBitmap bitmap && bitmap.PixelWidth == bitmap.PixelHeight)
+                image.Stretch = Stretch.Fill;
             image.Source = source;
         }
     }

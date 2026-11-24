@@ -10,13 +10,17 @@
             <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
+        <Style x:Key="LibraryColumnLabel" TargetType="TextBlock" BasedOn="{StaticResource TypeLabel}">
+            <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
         <Style x:Key="LibraryArt" TargetType="Border" BasedOn="{StaticResource MediaTile}">
             <Setter Property="Width" Value="80" />
             <Setter Property="Height" Value="60" />
             <Setter Property="CornerRadius" Value="{StaticResource SidebarRowRadius}" />
         </Style>
     </Page.Resources>
-    <Grid x:Name="LibraryLayout" Padding="20,88,24,24" RowDefinitions="Auto,Auto,*">
+    <Grid x:Name="LibraryLayout" Padding="14,88,16,24" RowDefinitions="Auto,Auto,*">
         <Grid x:Name="LibraryToolbar" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Top">
             <Border Style="{StaticResource ToolbarSurface}">
                 <SelectorBar x:Name="Sections" Style="{StaticResource SegmentedLarge}"
@@ -30,7 +34,7 @@
                 </SelectorBar>
             </Border>
             <TextBox x:Name="Search" Grid.Column="1" Width="160" Height="44" CornerRadius="22" HorizontalAlignment="Right"
-                     PlaceholderText="Find a file" TextChanged="OnSearch" Visibility="Collapsed"
+                     PlaceholderText="Find a file" TextChanged="OnSearch" PreviewKeyDown="OnSearchKeyDown" Visibility="Collapsed"
                      Style="{StaticResource SearchField}" AutomationProperties.Name="Find a file"
                      AutomationProperties.AcceleratorKey="Ctrl+F" AccessKey="F" MaxLength="256" />
             <Button x:Name="DeleteSummaries" Grid.Column="2" Style="{StaticResource ToolbarPill}"
@@ -52,7 +56,7 @@
 
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="16,0,4,20">
             <StackPanel Spacing="6">
-                <TextBlock x:Name="SectionTitle" Style="{StaticResource PageTitle}" />
+                <TextBlock x:Name="SectionTitle" Style="{StaticResource PageTitle}" LineStackingStrategy="BlockLineHeight" />
                 <TextBlock x:Name="SectionDetail" Style="{StaticResource SecondaryText}" />
             </StackPanel>
             <StackPanel x:Name="Retention" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
@@ -82,10 +86,10 @@
 
             <Grid x:Name="MatchTable" RowDefinitions="Auto,*">
                 <Grid Padding="10,0,22,8" ColumnSpacing="16" ColumnDefinitions="80,*,100,130,110">
-                    <TextBlock Text="Map" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Grid.Column="1" Text="Match" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="3" Text="Connection" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" />
+                    <TextBlock Text="Map" Style="{StaticResource LibraryColumnLabel}" />
+                    <TextBlock Grid.Column="1" Text="Match" Style="{StaticResource LibraryColumnLabel}" />
+                    <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="Connection" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
                 </Grid>
                 <ListView x:Name="Matches" Grid.Row="1" SelectionMode="None" TabNavigation="Once"
                           ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Match history">
@@ -126,7 +130,7 @@
 
             <Grid x:Name="ScreenshotGallery">
                 <GridView x:Name="Screenshots" Margin="0,0,-18,0" AutomationProperties.Name="Screenshots"
-                          SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
+                          SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False" VerticalAlignment="Top"
                           DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested"
                           ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           SizeChanged="OnScreenshotGridSizeChanged">
@@ -172,10 +176,10 @@
 
             <Grid x:Name="FileTable" RowDefinitions="Auto,*">
                 <Grid Padding="10,0,22,8" ColumnSpacing="16" ColumnDefinitions="80,*,130,70,118">
-                    <TextBlock Text="Map" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Grid.Column="1" Text="Recording" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Grid.Column="2" Text="Recorded" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="3" Text="Size" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" />
+                    <TextBlock Text="Map" Style="{StaticResource LibraryColumnLabel}" />
+                    <TextBlock Grid.Column="1" Text="Recording" Style="{StaticResource LibraryColumnLabel}" />
+                    <TextBlock Grid.Column="2" Text="Recorded" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="Size" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
                           ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files"
@@ -198,7 +202,7 @@
                                            Foreground="{ThemeResource secondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="3" Text="{Binding Size}" FontSize="13" Foreground="{ThemeResource tertiary}"
                                            HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12"
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="16"
                                             HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <Button Click="OnPlayDemo" Tag="{Binding}" IsEnabled="{Binding CanPlay}"
                                             AutomationProperties.Name="{Binding PlayName}" AutomationProperties.HelpText="{Binding PlaybackHint}">
@@ -208,6 +212,9 @@
                                         </StackPanel>
                                     </Button>
                                     <Button Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
+                                            Width="{StaticResource ButtonRegularHeight}" Height="{StaticResource ButtonRegularHeight}"
+                                            MinWidth="{StaticResource ButtonRegularHeight}" MinHeight="{StaticResource ButtonRegularHeight}"
+                                            CornerRadius="{StaticResource ButtonRegularRadius}" Foreground="{ThemeResource chipIcon}"
                                             AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="More actions">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="17" />
                                     </Button>
