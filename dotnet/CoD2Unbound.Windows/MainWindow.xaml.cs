@@ -424,7 +424,7 @@ public sealed partial class MainWindow : Window
                 SelectsOnInvoked = false, Style = StyleFor("ShellNavItem")
             };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, plain);
-            GlyphAlign.WatchCentered(icon, () => item.FontSize);
+            GlyphAlign.WatchBeside(icon, title);
             Nav.MenuItems.Add(item);
         }
     }

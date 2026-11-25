@@ -65,7 +65,11 @@ public static class GlyphAlign
         var (lineEm, inkEm) = Metrics(icon);
         double capFromCentre = (TextAscentEm - CapHalfEm - TextLineEm / 2) * textSize;
         double inkFromCentre = (inkEm - lineEm / 2) * icon.FontSize;
-        Move(icon, capFromCentre - inkFromCentre);
+        double scale = icon.XamlRoot?.RasterizationScale ?? 1;
+        // At 42 physical pixels these sidebar outlines rasterize one pixel above their optical centres.
+        double rasterOffset = scale * icon.FontSize >= 42 && icon.Glyph is "\uF4F0" or "\uEEFB" or "\uF792"
+            ? 1 / scale : 0;
+        Move(icon, capFromCentre - inkFromCentre + rasterOffset);
     }
 
     private static (double LineEm, double InkCentreEm) Metrics(FontIcon icon)
@@ -73,6 +77,9 @@ public static class GlyphAlign
         bool fluent = icon.FontFamily?.Source?.Contains("FluentSystemIcons", StringComparison.Ordinal) == true;
         var raise = fluent ? FluentInkRaise : SystemInkRaise;
         double ink = (fluent ? FluentInkCentreEm : SystemInkCentreEm) - raise.GetValueOrDefault(icon.Glyph ?? "");
+        // The small filled Play outline rounds high at 100% and draws on centre from its 150% size onward.
+        if (fluent && icon.Glyph is "\uE9A2" && icon.FontSize * (icon.XamlRoot?.RasterizationScale ?? 1) <= 12)
+            ink -= 0.07;
         return (fluent ? FluentLineEm : SystemLineEm, ink);
     }
 
