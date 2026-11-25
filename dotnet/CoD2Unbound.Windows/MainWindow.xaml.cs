@@ -582,6 +582,8 @@ public sealed partial class MainWindow : Window
                 ScheduleActivation();
                 RefreshTaskbarJumpList();
             }
+            if (closingHomeSheet)
+                await ResumeHomeShortcutAsync();
         }
     }
 

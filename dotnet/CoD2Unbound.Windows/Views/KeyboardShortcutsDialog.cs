@@ -17,6 +17,7 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
         Resources["ContentDialogMaxWidth"] = 720d;
         Width = 720;
         Title = "Keyboard shortcuts";
+        AutomationProperties.SetAutomationId(this, "KeyboardShortcutsDialog");
         this.WithSymbol("SystemKeyboard", "Every shortcut, in one place: Windows has no menu bar.");
         PrimaryButtonText = "Done";
         DefaultButton = ContentDialogButton.Primary;
@@ -36,7 +37,7 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
         };
     }
 
-    internal static async Task ShowAsync(MainWindow shell) => await new KeyboardShortcutsDialog(shell).ShowAsync();
+    internal static async Task ShowAsync(MainWindow shell) => await shell.ShowShellSheetAsync(new KeyboardShortcutsDialog(shell));
 
     private static StackPanel ShortcutColumn(IEnumerable<LauncherShortcut> shortcuts)
     {

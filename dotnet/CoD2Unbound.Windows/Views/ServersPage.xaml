@@ -21,7 +21,7 @@
                 <SelectorBarItem Text="All" AccessKey="A" Style="{StaticResource SegmentLargeItem}" />
                 <SelectorBarItem Text="Favorites" AccessKey="V" Style="{StaticResource SegmentLargeItem}" />
                 <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" Style="{StaticResource SegmentLargeItem}" />
-                <SelectorBarItem Text="Hosting" AccessKey="T" Style="{StaticResource SegmentLargeItem}" />
+                <SelectorBarItem Text="Hosting" AutomationProperties.AutomationId="HostingTab" AccessKey="T" Style="{StaticResource SegmentLargeItem}" />
             </SelectorBar>
             <StackPanel x:Name="BrowserTools" Grid.Column="1" Orientation="Horizontal" Spacing="12">
                 <AutoSuggestBox x:Name="SearchBox" Width="280"
@@ -145,7 +145,7 @@
                         <TextBlock Text="Export for Another PC…" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolbarPill}" AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server">
+                <Button Style="{StaticResource ToolbarPill}" AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" AutomationProperties.AutomationId="HostingNewServer">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="15" />
                         <TextBlock Text="New Server" VerticalAlignment="Center" />

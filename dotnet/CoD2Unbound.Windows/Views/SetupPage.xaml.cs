@@ -147,14 +147,6 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
         // The board: the first capsule sits 10 in from the bar's edge on Welcome, 18 after Back elsewhere.
         StepDots.Margin = new Thickness(step == SetupStep.Welcome ? 10 : 18, 0, 0, 0);
         SetupCancel.Visibility = IsVisible(Setup.CanCancel);
-        string? alternate = step switch
-        {
-            SetupStep.Key or SetupStep.Personalize => "Skip for Now",
-            SetupStep.Ready => "Find a Server",
-            _ => null
-        };
-        SetupAlternate.Content = alternate;
-        SetupAlternate.Visibility = IsVisible(alternate is not null);
         DeclineReport.Visibility = IsVisible(question);
         SetupNext.Content = step switch
         {
@@ -451,9 +443,15 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
             SetupStep.Personalize => nameEditor?.Valid == true,
             _ => true
         };
-        // ModelSetup.swift: the key step offers Skip for Now only while no key is kept or checks out.
-        if (Setup.Step == SetupStep.Key)
-            SetupAlternate.Visibility = IsVisible(!(Setup.HasStoredKey && !Setup.ReplacingKey) && keyEditor?.Verified != true);
+        string? alternate = Setup.Step switch
+        {
+            SetupStep.Key when !SetupNext.IsEnabled => "Skip for Now",
+            SetupStep.Personalize => "Skip for Now",
+            SetupStep.Ready => "Find a Server",
+            _ => null
+        };
+        SetupAlternate.Content = alternate;
+        SetupAlternate.Visibility = IsVisible(alternate is not null);
     }
 
     private async void OnSetupBack(object sender, RoutedEventArgs args) => await shell.RunAsync(async () =>

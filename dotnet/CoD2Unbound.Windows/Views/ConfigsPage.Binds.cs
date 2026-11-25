@@ -60,6 +60,7 @@ public sealed partial class ConfigsPage
         var find = new AutoSuggestBox { PlaceholderText = "Find an action or key", Text = bindQuery, QueryIcon = Fluent("Search", 18) };
         studioFind = find;
         AutomationProperties.SetName(find, "Find an action or key");
+        AutomationProperties.SetAutomationId(find, "ConfigsFindBind");
         var shortcut = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
         shortcut.Invoked += (_, args) =>
         {

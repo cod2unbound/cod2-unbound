@@ -41,7 +41,7 @@ public sealed partial class MainWindow
         bool canInstall = hold is null && session.CanCheckUpdates && updateRequest is null &&
             !state.IsBusy && state.Issue is not UpdateIssue.ProtectedLocation;
         var dialog = new ReleaseNotesDialog(this, version, session.Version, offer, notes, link, hold, canInstall);
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && offer is not null &&
+        if (await ShowShellSheetAsync(dialog) == ContentDialogResult.Primary && offer is not null &&
             session.Updates.State.Offer?.Version == version && updateRequest is null)
         {
             await NavigateAsync(LauncherPlace.UpdateSettings);

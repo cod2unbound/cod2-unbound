@@ -219,6 +219,8 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(row, target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}");
         if (target.Group == JumpGroup.Servers)
             AutomationProperties.SetHelpText(row, "Enter shows it in Servers. Ctrl+Enter launches on it.");
+        if (target.Group == JumpGroup.Actions)
+            AutomationProperties.SetAutomationId(row, $"JumpCommand{target.Id}");
         PaintJumpRow(row, selected: false);
         return row;
     }

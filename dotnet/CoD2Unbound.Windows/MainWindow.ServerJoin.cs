@@ -131,7 +131,7 @@ public sealed partial class MainWindow
     private async Task<(string Password, bool Remember)?> PromptPasswordAsync(string name, string? saved, string? supplied)
     {
         var dialog = new ServerPasswordDialog(name, saved, supplied) { XamlRoot = DialogRoot, RequestedTheme = DialogTheme };
-        return await dialog.ShowAsync() == ContentDialogResult.Primary ? (dialog.Password, dialog.Remember) : null;
+        return await ShowShellSheetAsync(dialog) == ContentDialogResult.Primary ? (dialog.Password, dialog.Remember) : null;
     }
 
     private async Task<bool> ConfirmServerVersionAsync(GameServer? server, string address, GameEdition normal, GameEdition needed,
@@ -153,7 +153,7 @@ public sealed partial class MainWindow
             Content = remember,
             PrimaryButtonText = $"Launch with {version}", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
         }.WithSymbol("FluentGauge", explanation);
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await ShowShellSheetAsync(dialog) != ContentDialogResult.Primary)
             return false;
         if (remember.IsChecked == true)
             await session.RememberServerVersionChoiceAsync();

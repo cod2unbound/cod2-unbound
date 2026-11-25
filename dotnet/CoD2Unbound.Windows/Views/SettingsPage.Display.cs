@@ -75,6 +75,7 @@ public sealed partial class SettingsPage
         var mode = new ComboBox { ItemsSource = modes.Select(WindowsDisplays.ModeName).ToArray(), MinWidth = 160,
             SelectedIndex = Math.Max(0, Array.IndexOf(modes, Current.Fullscreen)) };
         AutomationProperties.SetName(mode, "Mode");
+        AutomationProperties.SetAutomationId(mode, "SettingsMode");
         var modeHint = Caption("");
         AddRow("Mode", mode, modeHint);
 
@@ -83,6 +84,7 @@ public sealed partial class SettingsPage
         var graphics = Tabs(["Direct3D 9", "DirectX 7"], (int)model.Renderer, index => chooseGraphics(index));
         graphics.HorizontalAlignment = HorizontalAlignment.Right;
         AutomationProperties.SetName(graphics, "Graphics");
+        AutomationProperties.SetAutomationId(graphics, "SettingsGraphics");
         rows.Children.Add(SettingRow("Graphics",
             "Direct3D 9 is how the game draws on Windows. DirectX 7 is the older way, kept in case something looks wrong.", graphics));
 

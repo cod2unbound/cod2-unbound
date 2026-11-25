@@ -15,22 +15,22 @@
             <SelectorBarItem Text="General" AccessKey="G" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="General">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Display" AccessKey="D" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Display">
+            <SelectorBarItem Text="Display" AutomationProperties.AutomationId="SettingsDisplayPane" AccessKey="D" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Display">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDesktop}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Game Data" AccessKey="F" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Game Data">
+            <SelectorBarItem Text="Game Data" AutomationProperties.AutomationId="SettingsGameDataPane" AccessKey="F" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Game Data">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFolder}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
             <SelectorBarItem Text="Privacy" AccessKey="I" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Privacy">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Updates" AccessKey="U" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Updates">
+            <SelectorBarItem Text="Updates" AutomationProperties.AutomationId="SettingsUpdatesPane" AccessKey="U" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Updates">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
             <SelectorBarItem Text="Advanced" AccessKey="A" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Advanced">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource SystemIcons}" Glyph="{StaticResource SystemSliders}" FontSize="19" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="About" AccessKey="B" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="About">
+            <SelectorBarItem Text="About" AutomationProperties.AutomationId="SettingsAboutPane" AccessKey="B" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="About">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource SystemIcons}" Glyph="{StaticResource SystemInfo}" FontSize="19" /></SelectorBarItem.Icon>
             </SelectorBarItem>
         </SelectorBar>

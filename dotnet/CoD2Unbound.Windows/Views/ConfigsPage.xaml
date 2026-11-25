@@ -138,7 +138,7 @@
                                     <TextBlock x:Name="SavedCount" Grid.Column="1" Style="{StaticResource SidebarCount}" />
                                 </Grid>
                             </ListViewItem>
-                            <ListViewItem AutomationProperties.Name="Check a config" Style="{StaticResource StudioColumnItem}">
+                            <ListViewItem AutomationProperties.Name="Check a config" AutomationProperties.AutomationId="ConfigsCheckConfig" Style="{StaticResource StudioColumnItem}">
                                 <Grid>
                                     <Border Style="{StaticResource StudioMonogramTile}" />
                                     <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">

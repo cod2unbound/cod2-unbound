@@ -254,6 +254,7 @@ public sealed partial class ConfigsPage
             CornerRadius = (CornerRadius)Application.Current.Resources["ButtonRegularRadius"]
         };
         AutomationProperties.SetName(loadouts, "Check a loadout");
+        AutomationProperties.SetAutomationId(loadouts, "ConfigsCheckerLoadout");
         var menu = new MenuFlyout();
         foreach (var profile in model.State.Profiles)
         {

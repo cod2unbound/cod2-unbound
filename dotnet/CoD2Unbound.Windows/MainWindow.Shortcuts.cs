@@ -11,42 +11,104 @@ namespace CoD2Unbound.Windows;
 public sealed partial class MainWindow
 {
     internal const string HelpUrl = "https://cod2unbound.com/help";
+    private bool closingHomeSheet;
+    private (HomePage Page, ShellCommand Command)? homeShortcutAfterSheet;
 
     private void InitializeShellShortcuts()
     {
         Root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         foreach (var shortcut in LauncherShortcuts.All.Where(item => HasShellAccelerator(item.Command)))
+            AddShellAccelerators(Root, shortcut);
+        Root.GotFocus += OnHomeButtonFocused;
+    }
+
+    private void OnHomeButtonFocused(object sender, RoutedEventArgs args)
+    {
+        if (ContentFrame.Content is not HomePage || args.OriginalSource is not Button button)
+            return;
+
+        // A dismissed sheet restores focus to its opener. WinUI checks accelerators
+        // on the focused button before the button can consume Enter as a click.
+        button.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+        foreach (var shortcut in LauncherShortcuts.All.Where(item => item.Command is ShellCommand.Launch or ShellCommand.OpenGameMenu))
+            AddShellAccelerators(button, shortcut, scopeToOwner: true);
+    }
+
+    private void AddShellAccelerators(UIElement owner, LauncherShortcut shortcut, bool scopeToOwner = false)
+    {
+        foreach (string chord in shortcut.Chords)
         {
-            foreach (string chord in shortcut.Chords)
+            var key = chord.Split('+')[^1] switch
             {
-                var key = chord.Split('+')[^1] switch
+                "," => (VirtualKey)0xBC, // VK_OEM_COMMA
+                "/" => (VirtualKey)0xBF, // VK_OEM_2
+                "1" => VirtualKey.Number1, "2" => VirtualKey.Number2,
+                "3" => VirtualKey.Number3, "4" => VirtualKey.Number4,
+                var name => Enum.Parse<VirtualKey>(name)
+            };
+            var modifiers = VirtualKeyModifiers.None;
+            if (chord.Contains("Ctrl+", StringComparison.Ordinal))
+                modifiers |= VirtualKeyModifiers.Control;
+            if (chord.Contains("Shift+", StringComparison.Ordinal))
+                modifiers |= VirtualKeyModifiers.Shift;
+            if (scopeToOwner && owner.KeyboardAccelerators.Any(item => item.Key == key && item.Modifiers == modifiers))
+                continue;
+
+            var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
+            if (scopeToOwner)
+                accelerator.ScopeOwner = owner;
+            accelerator.Invoked += async (sender, args) =>
+            {
+                if (shortcut.Command == ShellCommand.FullScreen)
+                    OnFullScreen(sender, args);
+                else if (shortcut.Command == ShellCommand.Find)
+                    args.Handled = FocusPageSearch();
+                else if (DeferHomeShortcut(shortcut.Command))
+                    args.Handled = true;
+                else if (scopeToOwner || CanRunShellCommand(shortcut.Command))
                 {
-                    "," => (VirtualKey)0xBC, // VK_OEM_COMMA
-                    "/" => (VirtualKey)0xBF, // VK_OEM_2
-                    "1" => VirtualKey.Number1, "2" => VirtualKey.Number2,
-                    "3" => VirtualKey.Number3, "4" => VirtualKey.Number4,
-                    var name => Enum.Parse<VirtualKey>(name)
-                };
-                var accelerator = new KeyboardAccelerator { Key = key, Modifiers = VirtualKeyModifiers.None };
-                if (chord.Contains("Ctrl+", StringComparison.Ordinal))
-                    accelerator.Modifiers |= VirtualKeyModifiers.Control;
-                if (chord.Contains("Shift+", StringComparison.Ordinal))
-                    accelerator.Modifiers |= VirtualKeyModifiers.Shift;
-                accelerator.Invoked += async (sender, args) =>
-                {
-                    if (shortcut.Command == ShellCommand.FullScreen)
-                        OnFullScreen(sender, args);
-                    else if (shortcut.Command == ShellCommand.Find)
-                        args.Handled = FocusPageSearch();
-                    else if (CanRunShellCommand(shortcut.Command))
-                    {
-                        args.Handled = true;
-                        await RunShellCommandAsync(shortcut.Command);
-                    }
-                };
-                Root.KeyboardAccelerators.Add(accelerator);
-            }
+                    args.Handled = true;
+                    await RunShellCommandAsync(shortcut.Command);
+                }
+            };
+            owner.KeyboardAccelerators.Add(accelerator);
         }
+    }
+
+    internal async Task<ContentDialogResult> ShowShellSheetAsync(ContentDialog sheet)
+    {
+        if (!busy || ContentFrame.Content is not HomePage)
+            return await sheet.ShowAsync();
+
+        closingHomeSheet = false;
+        homeShortcutAfterSheet = null;
+        sheet.Closing += OnClosing;
+        try { return await sheet.ShowAsync(); }
+        finally { sheet.Closing -= OnClosing; }
+
+        void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
+        {
+            if (!args.Cancel && args.Result == ContentDialogResult.None)
+                closingHomeSheet = true;
+        }
+    }
+
+    private bool DeferHomeShortcut(ShellCommand command)
+    {
+        // WinUI can restore Home focus before the sheet's owning action releases busy.
+        if (!busy || !closingHomeSheet || ContentFrame.Content is not HomePage home)
+            return false;
+        homeShortcutAfterSheet ??= (home, command);
+        return true;
+    }
+
+    private Task ResumeHomeShortcutAsync()
+    {
+        var pending = homeShortcutAfterSheet;
+        closingHomeSheet = false;
+        homeShortcutAfterSheet = null;
+        return pending is { } shortcut && ReferenceEquals(shortcut.Page, ContentFrame.Content)
+            ? RunShellCommandAsync(shortcut.Command) : Task.CompletedTask;
     }
 
     private static bool HasShellAccelerator(ShellCommand command) => command is

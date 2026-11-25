@@ -366,7 +366,7 @@ public sealed partial class SettingsPage : Page
         {
             title = "Couldn’t check for updates";
             message = state.Message;
-            AddAction("Try Again");
+            AddAction("Try Again", "UpdateRetry");
         }
         else if (state.Issue == UpdateIssue.Refused)
         {
@@ -385,19 +385,19 @@ public sealed partial class SettingsPage : Page
             title = "The update didn’t finish.";
             message = session.InstallNeedsRepair ? "Run Setup again to repair CoD2 Unbound." :
                 $"{current} is still installed and works.";
-            AddAction("Try Again");
+            AddAction("Try Again", "UpdateRetry");
             AddDownloadPage();
         }
         else if (state.Issue == UpdateIssue.Interrupted)
         {
             message = "The download stopped before it finished.";
-            AddAction("Try Again", install: true);
+            AddAction("Try Again", "UpdateRetry", install: true);
         }
         else if (state.Issue == UpdateIssue.Unexpected)
         {
             title = state.Offer is null ? installed : available;
             message = state.Message ?? "The update could not be completed.";
-            AddAction("Try Again", install: state.Offer is not null);
+            AddAction("Try Again", "UpdateRetry", install: state.Offer is not null);
             if (state.Offer is not null)
                 AddDownloadPage();
         }
@@ -409,17 +409,17 @@ public sealed partial class SettingsPage : Page
                     title = installed;
                     message = "Checking for updates…";
                     showProgress = true;
-                    AddAction("Check Now", enabled: false);
+                    AddAction("Check Now", "UpdateCheck", enabled: false);
                     break;
                 case UpdatePhase.Downloading:
                     message = DownloadMessage(state);
                     showProgress = true;
-                    AddAction("Cancel");
+                    AddAction("Cancel", "UpdateCancel");
                     break;
                 case UpdatePhase.Verifying:
                     message = "Checking the download is genuine…";
                     showProgress = true;
-                    AddAction("Cancel");
+                    AddAction("Cancel", "UpdateCancel");
                     break;
                 case UpdatePhase.Ready:
                     title = $"CoD2 Unbound {version} is ready to install";
@@ -427,12 +427,12 @@ public sealed partial class SettingsPage : Page
                         ? "Close Call of Duty 2 to install it. The update waits until then."
                         : $"Downloaded, {Megabytes(state.Offer!.Archive.Size)} MB. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and Relaunch", install: true, enabled: state.Hold is null, primary: state.Hold is null);
+                    AddAction("Install and Relaunch", "UpdateInstall", install: true, enabled: state.Hold is null, primary: state.Hold is null);
                     break;
                 case UpdatePhase.Offered:
                     message = state.Message ?? $"You have {current}. Installing takes a few seconds and reopens the launcher.";
                     AddWhatsNew(version);
-                    AddAction("Install and Relaunch", install: true, primary: true);
+                    AddAction("Install and Relaunch", "UpdateInstall", install: true, primary: true);
                     break;
                 case UpdatePhase.Installed:
                     title = $"CoD2 Unbound is now {current}.";
@@ -442,7 +442,7 @@ public sealed partial class SettingsPage : Page
                 default:
                     title = state.WasChecked || checkedAt is not null ? $"CoD2 Unbound {current} is up to date" : installed;
                     message = checkedAt;
-                    AddAction("Check Now");
+                    AddAction("Check Now", "UpdateCheck");
                     break;
             }
         }
@@ -471,19 +471,30 @@ public sealed partial class SettingsPage : Page
             Put(layout, 2, actions);
         updateCard!.Child = layout;
 
-        void AddAction(string label, bool install = false, bool enabled = true, bool primary = false)
+        void AddAction(string label, string id, bool install = false, bool enabled = true, bool primary = false)
         {
             var action = Action(label, () => shell.RunUpdateAsync(install), exclusive: false);
+            AutomationProperties.SetAutomationId(action, id);
             action.IsEnabled = enabled && session.CanCheckUpdates;
             if (primary)
                 action.Style = StyleFor("LauncherAccentButton");
             actions.Children.Add(action);
         }
 
-        void AddLink(string label, Uri target) => actions.Children.Add(Action(label, () => OpenAsync(target.AbsoluteUri)));
-        void AddDownloadPage() => AddLink("Open download page", state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage);
-        void AddWhatsNew(string release) =>
-            actions.Children.Add(Action("What’s New", () => shell.ShowReleaseNotesAsync(release)));
+        void AddDownloadPage()
+        {
+            var target = state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage;
+            var action = Action("Open download page", () => OpenAsync(target.AbsoluteUri));
+            AutomationProperties.SetAutomationId(action, "UpdateDownloadPage");
+            actions.Children.Add(action);
+        }
+
+        void AddWhatsNew(string release)
+        {
+            var action = Action("What’s New", () => shell.ShowReleaseNotesAsync(release));
+            AutomationProperties.SetAutomationId(action, "UpdateWhatsNew");
+            actions.Children.Add(action);
+        }
     }
 
     private static string? LastChecked(DateTimeOffset? time)

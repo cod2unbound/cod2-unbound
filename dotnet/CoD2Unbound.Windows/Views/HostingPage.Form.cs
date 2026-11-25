@@ -71,6 +71,7 @@ public sealed partial class HostingPage
             previews = new(map => Task.Run(() => page.session.ReadMapArtwork(map)));
             name = new() { Text = server.Name, MaxLength = 64, Width = 200 };
             AutomationProperties.SetName(name, "Server name");
+            AutomationProperties.SetAutomationId(name, "HostingServerName");
             edition = Segments("Game version", ["CoD2x", "Original 1.3"], (int)server.Engine);
             reach = Choice("Who can join", ["My Network", "The Internet"], page.hosting.LoopbackOnly ? 0 : (int)server.Reach);
             reach.IsEnabled = !page.hosting.LoopbackOnly;
@@ -93,6 +94,7 @@ public sealed partial class HostingPage
 
             start = page.Action("Start Server", () => PersistAsync(startServer: true), "R");
             AutomationProperties.SetName(start, "Start server");
+            AutomationProperties.SetAutomationId(start, "HostingStartServer");
             start.Style = StyleFor("LauncherAccentButton");
             start.Visibility = IsVisible(!editingRunning);
             save = page.Action(isNew ? "Save Server" : "Save Changes", () => PersistAsync(startServer: false), "S");

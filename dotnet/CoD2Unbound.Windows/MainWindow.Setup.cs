@@ -100,7 +100,7 @@ public sealed partial class MainWindow
                 },
                 SecondaryButtonText = "Show Log", CloseButtonText = "Close"
             }.WithSymbol("SystemWarning", tone: SheetPresentation.Tone.Negative);
-            switch (await dialog.ShowAsync())
+            switch (await ShowShellSheetAsync(dialog))
             {
                 case ContentDialogResult.Secondary:
                     await ShowGameStartLogAsync();
@@ -135,10 +135,10 @@ public sealed partial class MainWindow
             IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 320
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(text, "Last game log");
-        await new ContentDialog
+        await ShowShellSheetAsync(new ContentDialog
         {
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme,
             Title = "Game log", Content = text, CloseButtonText = "Close", DefaultButton = ContentDialogButton.Close
-        }.WithSymbol("FluentDocument").ShowAsync();
+        }.WithSymbol("FluentDocument"));
     }
 }

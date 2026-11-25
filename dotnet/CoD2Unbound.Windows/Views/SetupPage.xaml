@@ -46,11 +46,12 @@
                         <Button x:Name="SetupCancel" Content="Cancel" Click="OnCancelSetup" Style="{StaticResource SetupAction}"
                                 HorizontalAlignment="Stretch" />
                         <Button x:Name="SetupAlternate" Click="OnAlternate" Style="{StaticResource SetupAction}"
-                                HorizontalAlignment="Stretch" />
+                                HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SetupAlternate" />
                         <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t Send" AccessKey="N"
                                 Style="{StaticResource SetupAction}" HorizontalAlignment="Stretch" />
                         <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
-                                Style="{StaticResource SetupPrimary}" HorizontalAlignment="Stretch" />
+                                Style="{StaticResource SetupPrimary}" HorizontalAlignment="Stretch"
+                                AutomationProperties.AutomationId="SetupNext" />
                     </views:SetupFooterActions>
                 </Grid>
             </Grid>

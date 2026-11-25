@@ -168,6 +168,22 @@ public sealed partial class LibraryPage : Page
     private void OnScreenshotChanged(FrameworkElement sender, DataContextChangedEventArgs args) => _ = ShowScreenshotAsync((Image)sender);
     private void OnDemoArtLoaded(object sender, RoutedEventArgs args) => ShowDemoArt((Image)sender);
     private void OnDemoArtChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ShowDemoArt((Image)sender);
+    private void OnDemoMenuLoaded(object sender, RoutedEventArgs args) => StyleDemoMenu((Button)sender);
+    private void OnDemoMenuContextChanged(FrameworkElement sender, DataContextChangedEventArgs args) => StyleDemoMenu((Button)sender);
+
+    private void OnDemoSelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        foreach (var item in args.RemovedItems.Concat(args.AddedItems))
+            if (Files.ContainerFromItem(item) is ListViewItem { ContentTemplateRoot: Grid row } &&
+                row.FindName("DemoMenuButton") is Button menu)
+                StyleDemoMenu(menu);
+    }
+
+    private void StyleDemoMenu(Button menu)
+    {
+        bool selected = menu.DataContext is MediaRow item && ReferenceEquals(item, Files.SelectedItem);
+        menu.Style = (Style)Files.Resources[selected ? "SelectedDemoMenuAction" : "DemoMenuAction"];
+    }
 
     private void ShowDemoArt(Image image)
     {
@@ -267,6 +283,7 @@ public sealed partial class LibraryPage : Page
                 XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Play this demo?", Content = details,
                 PrimaryButtonText = "Play Demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
             };
+            AutomationProperties.SetAutomationId(dialog, "LibraryDemoPlaybackDialog");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
                 return;
         }

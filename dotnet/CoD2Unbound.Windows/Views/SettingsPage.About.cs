@@ -20,6 +20,7 @@ public sealed partial class SettingsPage
             TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
         var copy = new Button { Content = IconLabel("Copy", "Copy Version Info", 16) };
+        AutomationProperties.SetAutomationId(copy, "SettingsCopyVersionInfo");
         ToolTipService.SetToolTip(copy, "Copy the app and game versions, Windows version, graphics and display, as Report a Problem shows them.");
         ProblemReportDialog.AddCopyFeedback(copy, "Copy Version Info", async () => (await session.ReadProblemReportAsync()).Details);
         var version = Body("Version " + session.Version + (session.Build.Length == 0 ? "" : $" ({session.Build})"));
@@ -44,12 +45,15 @@ public sealed partial class SettingsPage
         var website = Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound"));
         var report = Action("Report a Problem…", ReportProblemFromShellAsync);
         var acknowledgements = Action("Acknowledgements", ShowAcknowledgementsAsync);
+        AutomationProperties.SetAutomationId(report, "SettingsReportProblem");
+        AutomationProperties.SetAutomationId(acknowledgements, "SettingsAcknowledgements");
         var shortcuts = Action("Show", () => KeyboardShortcutsDialog.ShowAsync(shell));
         var update = Action("Check for Updates…", () =>
         {
             Panes.SelectedItem = Panes.Items[4];
             return shell.RunUpdateAsync(install: false);
         }, exclusive: false);
+        AutomationProperties.SetAutomationId(update, "SettingsAboutCheckUpdates");
         var actions = new StackPanel { Spacing = 8, Children =
         {
             Buttons(release, website, report),
