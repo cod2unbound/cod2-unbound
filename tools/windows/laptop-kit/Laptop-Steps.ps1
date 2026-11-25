@@ -231,6 +231,9 @@ $Steps = @(
             Invoke-KitSurface $step.Variant
         } -Variant $surface
     }
+    Add-KitStep 'servers-refresh-navigation' 'Navigate away and preserve the selected server during a 252-address refresh' {
+        Invoke-KitRefreshNavigation
+    }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
         foreach ($renderer in 'dx9','dx7') {

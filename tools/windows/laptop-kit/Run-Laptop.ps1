@@ -15,7 +15,7 @@ param(
 . (Join-Path $PSScriptRoot 'Common.ps1')
 foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays',
     'Check-Launcher','Check-Installer','Check-Desktop','Check-Diagnostics','Check-Installed','Check-Frames',
-    'Check-Updates','Check-Loopback','Check-Surfaces','Check-Identity','Check-PublicPlay') {
+    'Check-Updates','Check-Loopback','Check-Surfaces','Check-Identity','Check-PublicPlay','Check-Refresh') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
