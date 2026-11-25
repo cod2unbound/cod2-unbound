@@ -87,7 +87,12 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 Open-KitConnect $app
                 Save-KitSurface $app 'connect' @('AddressBox', 'CloseButton')
                 Invoke-KitControl $app 'CloseButton'
-                $news = if (Find-KitControl $app 'SeeAllNews') { 'SeeAllNews' } else { 'NewsChip' }
+                $news = Wait-KitCondition {
+                    if (Find-KitControl $app 'AddressBox') { return }
+                    foreach ($id in 'SeeAllNews', 'NewsChip') {
+                        if (Find-KitControl $app $id) { return $id }
+                    }
+                } 12 'the visible Home news action after Connect closes'
                 Invoke-KitControl $app $news
                 Save-KitSurface $app 'news' @('CloseButton')
                 Invoke-KitControl $app 'CloseButton'
@@ -143,7 +148,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 Invoke-KitControl $app 'DemosSection'
                 Save-KitSurface $app 'library-demos' @('Search','ShowFolder','Files')
                 Invoke-KitControl $app 'ScreenshotsSection'
-                Save-KitSurface $app 'library-screenshots' @('Search','ShowFolder','Files')
+                Save-KitSurface $app 'library-screenshots' @('Search','ShowFolder','Screenshots')
             }
             'settings' {
                 $settingsWindow = Open-KitSettings $app
