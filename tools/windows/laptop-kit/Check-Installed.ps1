@@ -45,11 +45,15 @@ function Wait-KitHome([IntPtr]$Window) {
     } 45 'Home to open' | Out-Null
 }
 
-function Open-KitGameMenu([IntPtr]$Window) {
+function Open-KitGameMenu([IntPtr]$Window, [switch]$UseJump) {
     Wait-KitHome $Window
     if (Find-KitControl $Window 'OpenGameMenuButton') {
         Invoke-KitControl $Window 'OpenGameMenuButton'
         'First-run OpenGameMenuButton' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
+    } elseif ($UseJump) {
+        Open-KitJump $Window 'open game menu' 'Open Game Menu'
+        [KitDesktop]::Tap(13)
+        'Returning Home Jump to > Open Game Menu' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     } else {
         Focus-KitWindow $Window
         [KitDesktop]::Chord(17, 16, 13)
@@ -175,7 +179,8 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
     Set-KitLauncherProfile $Edition $Renderer
-    if ($Edition -eq 'cod2x' -and $Renderer -eq 'dx9') {
+    $useJump = $Edition -eq 'original' -and $Renderer -eq 'dx7'
+    if ($useJump -or ($Edition -eq 'cod2x' -and $Renderer -eq 'dx9')) {
         [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
             '{"recent":["127.0.0.1:9"]}')
     }
@@ -196,7 +201,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
         Complete-KitLauncherSetup $launcher $Results
         $binary = Get-Binary $Edition -Root $InstallRoot
         $start = Get-Date
-        Open-KitGameMenu $launcher
+        Open-KitGameMenu $launcher -UseJump:$useJump
         $game = Wait-KitCondition {
             Get-Process -Name 'cod2_win32' -ErrorAction SilentlyContinue |
                 Where-Object { $_.Path -ieq $binary -and $_.StartTime -ge $start -and $_.SessionId -eq $run.Process.SessionId } |
