@@ -21,7 +21,11 @@ function Invoke-KitSurface([string]$Page) {
         Invoke-KitSurfaceRun 'home' -Variant 'returning'
         return
     }
-    foreach ($theme in 'dark', 'light') { Invoke-KitSurfaceRun 'hosting' -Variant $theme }
+    $failures = foreach ($theme in 'dark', 'light') {
+        try { Invoke-KitSurfaceRun 'hosting' -Variant $theme | Out-Null }
+        catch { "$theme appearance. $($_.Exception.Message)" }
+    }
+    if ($failures) { throw ($failures -join ' ') }
 }
 
 function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
@@ -187,12 +191,16 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
     }
 }
 
+function Find-KitHostingPasswordToggle($Root) {
+    Get-KitControls $Root 'Passwords' -Name |
+        Where-Object { $_.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::IsTogglePatternAvailableProperty) } |
+        Select-Object -First 1
+}
+
 function Find-KitHostingExportDialog([IntPtr]$App) {
     # Passwords is owned by this sheet and exposed as a toggle. There can
     # be unrelated Cancel buttons under the launcher window.
-    $toggle = Get-KitControls $App 'Passwords' -Name |
-        Where-Object { $_.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::IsTogglePatternAvailableProperty) } |
-        Select-Object -First 1
+    $toggle = Find-KitHostingPasswordToggle $App
     if (-not $toggle) { return }
     $walker = [Windows.Automation.TreeWalker]::RawViewWalker
     for ($node = $walker.GetParent($toggle); $node; $node = $walker.GetParent($node)) {
@@ -212,20 +220,20 @@ function Find-KitExportPicker([IntPtr]$App) {
         (Find-KitControl $root '1') -and (Find-KitControl $root '2')) { return $root }
 }
 
-function Wait-KitHostingExport([IntPtr]$App, [string]$Route) {
+function Wait-KitHostingExport([IntPtr]$App, [string]$Route, [int]$Seconds = 12) {
     $surface = Wait-KitCondition {
         $picker = Find-KitExportPicker $App
         if ($picker) { return @{ Kind='picker'; Root=$picker } }
         $dialog = Find-KitHostingExportDialog $App
         if ($dialog) { return @{ Kind='dialog'; Root=$dialog } }
-    } 12 "the Hosting export surface opened by $Route"
+    } $Seconds "the Hosting export surface opened by $Route"
     Save-KitHostingExportPeers $surface.Root $Route $surface.Kind
     $surface
 }
 
 function Save-KitHostingExportPeers($Root, [string]$Route, [string]$Kind) {
     $peers = foreach ($key in 'Passwords','PrimaryButton','CloseButton','1148','1','2') {
-        $peer = Find-KitControl $root $key -Name:($key -eq 'Passwords')
+        $peer = if ($key -eq 'Passwords') { Find-KitHostingPasswordToggle $Root } else { Find-KitControl $Root $key }
         if ($peer) { "$key=$($peer.Current.ControlType.ProgrammaticName)/$($peer.Current.AutomationId)" }
     }
     "route=$Route kind=$Kind type=$($Root.Current.ControlType.ProgrammaticName) id=$($Root.Current.AutomationId) peers=$($peers -join ', ')" |
@@ -256,8 +264,17 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
     }
     if (@(Get-ChildItem -LiteralPath $Destination -Force).Count) { throw 'Cancel wrote export files.' }
 
-    Invoke-KitControl $App 'ExportHost'
-    $surface = Wait-KitHostingExport $App 'page'
+    $surface = $null
+    foreach ($attempt in 1..3) {
+        Invoke-KitControl $App 'ExportHost'
+        try {
+            $surface = Wait-KitHostingExport $App 'page' 6
+            break
+        } catch {
+            # WinUI may expose the page before its previous dialog's action has finished.
+            if ($attempt -eq 3 -or $_.Exception.Message -ne 'Timed out waiting for the Hosting export surface opened by page.') { throw }
+        }
+    }
     if ($surface.Kind -eq 'dialog') {
         Save-KitWindow $App (Join-Path $Results 'hosting-export-accept.png')
         Invoke-KitControl $surface.Root 'PrimaryButton'
