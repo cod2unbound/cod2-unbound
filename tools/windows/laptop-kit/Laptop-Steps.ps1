@@ -159,6 +159,7 @@ $Steps = @(
             $extracted = Expand-ServerPackage
             try {
                 Invoke-ServerCheck $step.Edition $GamePath $extracted 'server'
+                Wait-KitCooling
                 Invoke-Replay $step.Edition $GamePath 'standing' 'mp_toujane' 'dm' 12345 600 2 (Join-Path $Kit 'replays\standing\usercmds.txt') ''
             } finally { [void](Save-KitFirewall 'after-server') }
         } -Edition $edition

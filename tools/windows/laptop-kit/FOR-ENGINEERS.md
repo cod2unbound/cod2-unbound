@@ -165,6 +165,8 @@ python3 drive.py LAPTOP_IP WINDOWS_USER --online --kit /path/to/kit.zip --output
 python3 drive.py LAPTOP_IP WINDOWS_USER --online --internet-play --run play --kit /path/to/kit.zip --output ./play-results
 ```
 
+Add `--cool-down` for the Fixture run on a laptop that needs two idle minutes between groups that start the game or dedicated server. Steps that need a live local match still start a client and its prerequisite server together.
+
 If SSH stops during a restart, sign in again and resume with the same inputs.
 Remove only the one-run public key when done. If you installed SSH for this
 test, stop it and remove the optional capability when you no longer need it.
