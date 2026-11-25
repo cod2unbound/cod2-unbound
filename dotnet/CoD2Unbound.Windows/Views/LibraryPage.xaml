@@ -183,19 +183,21 @@
                     <TextBlock Grid.Column="3" Text="Size" Style="{StaticResource LibraryColumnLabel}" HorizontalAlignment="Right" />
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
-                          ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files">
+                          ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files"
+                          SelectionChanged="OnDemoSelectionChanged">
                     <ListView.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.ThemeDictionaries>
-                                <ResourceDictionary x:Key="Default">
-                                    <Style x:Key="DemoRowTitle" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
-                                        <Setter Property="Foreground" Value="{ThemeResource heading}" />
-                                    </Style>
-                                </ResourceDictionary>
                                 <ResourceDictionary x:Key="HighContrast">
-                                    <Style x:Key="DemoRowTitle" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
+                                    <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
                                 </ResourceDictionary>
                             </ResourceDictionary.ThemeDictionaries>
+                            <Style x:Key="DemoMenuAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
+                                <Setter Property="Foreground" Value="{ThemeResource heading}" />
+                            </Style>
+                            <Style x:Key="SelectedDemoMenuAction" TargetType="Button" BasedOn="{StaticResource DemoMenuAction}">
+                                <Setter Property="Foreground" Value="{ThemeResource ListViewItemForegroundSelected}" />
+                            </Style>
                         </ResourceDictionary>
                     </ListView.Resources>
                     <ListView.ItemTemplate>
@@ -208,8 +210,8 @@
                                            AutomationProperties.AccessibilityView="Raw" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock x:Name="DemoTitle" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
-                                               Style="{ThemeResource DemoRowTitle}" FontSize="14" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Style="{StaticResource Mono}"
+                                               FontSize="14" FontWeight="Bold" Foreground="{ThemeResource heading}" />
                                     <TextBlock Text="{Binding DemoDetail}" TextTrimming="CharacterEllipsis" FontSize="12"
                                                Foreground="{ThemeResource secondary}" />
                                 </StackPanel>
@@ -226,13 +228,14 @@
                                             <TextBlock Text="Play" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
+                                    <Button x:Name="DemoMenuButton" Style="{StaticResource DemoMenuAction}" Click="OnFileMenu" Tag="{Binding}"
+                                            Loaded="OnDemoMenuLoaded" DataContextChanged="OnDemoMenuContextChanged"
                                             Width="{StaticResource ButtonRegularHeight}" Height="{StaticResource ButtonRegularHeight}"
                                             MinWidth="{StaticResource ButtonRegularHeight}" MinHeight="{StaticResource ButtonRegularHeight}"
                                             CornerRadius="{StaticResource ButtonRegularRadius}"
                                             AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="More actions">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="17"
-                                                  Foreground="{Binding Foreground, ElementName=DemoTitle}" />
+                                                  HighContrastAdjustment="None" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
