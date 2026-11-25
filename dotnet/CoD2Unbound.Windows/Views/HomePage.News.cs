@@ -171,7 +171,7 @@ public sealed partial class HomePage
         };
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
-            await OpenAsync(WindowsReleaseAssets.ReleasesPage.AbsoluteUri);
+            await shell.ShowReleaseNotesAsync(session.Updates.State.AvailableVersion ?? session.Version);
         else if (selected is not null)
             await OpenNewsItemAsync(selected);
     });
@@ -205,9 +205,7 @@ public sealed partial class HomePage
         UpdateProgress.IsActive = installing;
         UpdateProgress.Visibility = IsVisible(installing);
         UpdateIcon.Visibility = IsVisible(!installing);
-        UpdateIcon.Glyph = failed ? "" : (string)Application.Current.Resources["FluentArrowDownload"];
-        UpdateIcon.FontFamily = failed ? new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets") :
-            (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["FluentRegular"];
+        UpdateIcon.Glyph = (string)Application.Current.Resources[failed ? "FluentWarning" : "FluentArrowDownload"];
         UpdateIcon.Foreground = Ink(failed ? "NegativeBrush" : "HeroAccentBrush");
         UpdateText.Text = installing ? "Installing CoD2 Unbound " + version + "…" :
             failed ? state.Issue == UpdateIssue.SetupFailed

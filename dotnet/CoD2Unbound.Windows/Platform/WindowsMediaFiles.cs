@@ -2,6 +2,9 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 using CoD2Unbound.Core;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Platform;
 
@@ -92,6 +95,22 @@ internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
     }
 
     internal FileStream OpenScreenshot(string name) => WindowsFiles.Open(home, Relative(MediaKind.Screenshot, name));
+
+    internal async Task<ImageSource?> ReadScreenshotPreviewAsync(string name)
+    {
+        const int previewWidth = 1440;
+        using var input = OpenScreenshot(name);
+        if (Path.GetExtension(name).Equals(".tga", StringComparison.OrdinalIgnoreCase))
+        {
+            var decoded = await Task.Run(() => TgaThumbnail.Read(input, previewWidth));
+            return BitmapFromBgra(decoded.Bgra, decoded.Width, decoded.Height);
+        }
+
+        using var source = input.AsRandomAccessStream();
+        var bitmap = new BitmapImage { DecodePixelWidth = previewWidth };
+        await bitmap.SetSourceAsync(source);
+        return bitmap.PixelWidth > 0 ? bitmap : null;
+    }
 
     internal string Existing(MediaKind kind, string name)
     {

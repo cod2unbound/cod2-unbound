@@ -170,7 +170,7 @@
                     </GridView.ItemTemplate>
                     <GridView.Footer>
                         <TextBlock Style="{StaticResource SecondaryText}" FontSize="12" Foreground="{ThemeResource tertiary}"
-                                   Margin="6,0,18,0" Text="Double-click to open. Right-click for Copy, Show in File Explorer and Move to Recycle Bin." />
+                                   Margin="6,0,18,0" Text="Double-click to open. Press Space to preview. Right-click for more actions." />
                     </GridView.Footer>
                 </GridView>
             </Grid>

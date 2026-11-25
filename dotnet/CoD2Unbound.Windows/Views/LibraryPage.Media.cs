@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.System;
 using Windows.UI.Core;
 
@@ -96,6 +97,7 @@ public sealed partial class LibraryPage
         {
             SelectorItem { Content: MediaRow media } => media,
             Button { Tag: MediaRow media } => media,
+            FrameworkElement { DataContext: MediaRow media } => media,
             _ => null
         };
         if (row is null || MediaList.ContainerFromItem(row) is not SelectorItem container)
@@ -111,14 +113,9 @@ public sealed partial class LibraryPage
             ShowFileMenu(row, container);
             return;
         }
-        if (!fromButton && args.Key == VirtualKey.Space && !control && !alt && !shift)
-        {
-            args.Handled = true;
-            return;
-        }
-
         Func<Task>? action = (args.Key, control, shift, alt) switch
         {
+            (VirtualKey.Space, false, false, false) when !fromButton => () => PreviewMediaAsync(row),
             (VirtualKey.Enter, false, false, false) when !fromButton && row.CanPlay => () => OpenFileAsync(row),
             (VirtualKey.F2, false, false, false) when row.Kind == MediaKind.Demo => () => RenameAsync(row),
             (VirtualKey.Delete, false, false, false) => () => RecycleAsync(row),
@@ -143,6 +140,7 @@ public sealed partial class LibraryPage
         if (anchor is Button)
             menu.Placement = FlyoutPlacementMode.BottomEdgeAlignedRight;
         Add(demo ? "Play" : "Open", () => OpenFileAsync(row), "Enter", row.CanPlay);
+        Add("Preview", () => PreviewMediaAsync(row), LauncherShortcuts.Keys(ShellCommand.PreviewMedia));
         Add("Show in File Explorer", () => RevealMediaAsync(row));
         menu.Items.Add(new MenuFlyoutSeparator());
         if (demo)
@@ -166,6 +164,92 @@ public sealed partial class LibraryPage
                 item.KeyboardAcceleratorTextOverride = shortcut;
             item.Click += async (_, _) => await shell.RunAsync(action);
             menu.Items.Add(item);
+        }
+    }
+
+    private async Task PreviewMediaAsync(MediaRow row)
+    {
+        bool demo = row.Kind == MediaKind.Demo;
+        var name = Body(row.Name);
+        name.TextWrapping = TextWrapping.Wrap;
+        var content = new StackPanel { Spacing = 12, Children = { name } };
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme, Title = demo ? "Demo Preview" : "Screenshot Preview",
+            Content = content, CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close
+        }.WithSymbol(demo ? "FluentFilmstrip" : "FluentImage");
+
+        if (demo)
+        {
+            string map = row.Facts.Map is { } key ? MapCatalog.DisplayName(key) : "Unknown";
+            string date = row.File.Modified?.ToLocalTime().ToString("g") ?? "Unknown";
+            content.Children.Add(Body($"Map: {map}\nLength: Unknown\nDate: {date}\nSize: {row.Size}"));
+            dialog.PrimaryButtonText = "Play";
+            dialog.IsPrimaryButtonEnabled = row.CanPlay;
+            if (!row.CanPlay)
+                content.Children.Add(Body(row.PlaybackHint));
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                await OpenFileAsync(row);
+            return;
+        }
+
+        dialog.Resources["ContentDialogMaxWidth"] = 760d;
+        dialog.Width = 760;
+        var image = new Image { MaxHeight = 360, Stretch = Stretch.Uniform };
+        var status = Body("");
+        AutomationProperties.SetLiveSetting(status, AutomationLiveSetting.Polite);
+        content.Children.Add(new Grid { Children = { image, status } });
+
+        MediaRow[] items = [.. screenshots];
+        int index = Array.IndexOf(items, row);
+        if (index < 0)
+            return;
+        var previous = new Button { Content = "Previous" };
+        var next = new Button { Content = "Next" };
+        if (items.Length > 1)
+            content.Children.Add(new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Spacing = 8, Children = { previous, next }
+            });
+
+        int request = 0;
+        previous.Click += async (_, _) => await ShowAtAsync(index - 1);
+        next.Click += async (_, _) => await ShowAtAsync(index + 1);
+        await ShowAtAsync(index);
+        try { await dialog.ShowAsync(); }
+        finally { request++; }
+
+        async Task ShowAtAsync(int position)
+        {
+            if (position < 0 || position >= items.Length)
+                return;
+            int current = ++request;
+            index = position;
+            string filename = items[position].Name;
+            name.Text = filename;
+            AutomationProperties.SetName(image, filename);
+            previous.IsEnabled = position > 0;
+            next.IsEnabled = position + 1 < items.Length;
+            image.Source = null;
+            status.Text = "Loading screenshot…";
+            status.Visibility = Visibility.Visible;
+
+            ImageSource? source = null;
+            string failure = "This screenshot format can’t be previewed.";
+            try { source = await files.ReadScreenshotPreviewAsync(filename); }
+            catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException or UnauthorizedAccessException)
+            {
+                failure = "This screenshot is unavailable.";
+            }
+            catch (Exception error) when (error is IOException or COMException or ArgumentException or NotSupportedException)
+            {
+                // The Windows codec or TGA decoder could not read the file.
+            }
+            if (current != request)
+                return;
+            image.Source = source;
+            status.Text = source is null ? failure : "";
+            status.Visibility = IsVisible(source is null);
         }
     }
 
