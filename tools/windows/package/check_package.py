@@ -24,7 +24,7 @@ ENV = dict(os.environ, WINEARCH="win64", WINEDEBUG="-all", WINEDLLOVERRIDES="msc
            COD2X_TEST_SERVICE_URL="http://127.0.0.1:9",
            COD2X_TEST_UPDATER_ADDRESS="127.0.0.1:9",
            COD2X_TEST_UPDATER_URL="http://127.0.0.1:9/api/updater/check")
-UNINSTALL = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1"
+UNINSTALL = r"Software\Microsoft\Windows\CurrentVersion\Uninstall"
 USER_CLASSES = r"HKCU\Software\Classes"
 RETAIL = r"HKLM\Software\Activision\Call of Duty 2"
 SILENT = ("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART")
@@ -176,7 +176,7 @@ def install_with_folder_lock(env, setup, root, holder, run, release_after=None):
 
 
 def assert_version(env, root, scope, version):
-    key = scope + "\\" + UNINSTALL
+    key = f"{scope}\\{UNINSTALL}\\{root.name.replace(' ', '')}_is1"
     result = wine(env, "reg", "query", key, "/v", "DisplayVersion", "/reg:64")
     if result.stdout.split()[-1] != version or (root / "RELEASE_VERSION").read_text().strip() != version:
         raise ValueError(f"Expected {version} in both installed version locations")
@@ -211,9 +211,12 @@ def verify_shortcut_working_directory(shortcut, expected):
 
 
 def verify_launcher(env, root, start, uninstaller, signer):
+    fixture = root.name == "CoD2 Unbound Test"
+    product_id = root.name.replace(" ", "")
+    suffix = "-test" if fixture else ""
     shortcuts = list(start.glob("*.lnk"))
     if {path.name for path in shortcuts} != {
-            "CoD2 Unbound.lnk", "Dedicated Server Guide.lnk"}:
+            f"{root.name}.lnk", "Dedicated Server Guide.lnk"}:
         raise ValueError("Expected a launcher shortcut and a dedicated server guide")
     for shortcut in shortcuts:
         verify_shortcut_working_directory(shortcut, r"C:\windows\system32")
@@ -222,13 +225,14 @@ def verify_launcher(env, root, start, uninstaller, signer):
     for path in binaries:
         signer.verify(path)
 
-    for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x", "cod2unbound"):
+    for key in (f"{product_id}.Demo", f"{product_id}.Config", f"cod2x{suffix}", f"cod2unbound{suffix}"):
         command = wine(env, "reg", "query", f"{USER_CLASSES}\\{key}\\shell\\open\\command",
                        "/ve", "/reg:64").stdout
         if f'\\launcher\\{LAUNCHER_NAME}" "%1"' not in command:
             raise ValueError(f"{key} does not open the installed launcher")
-    wine(env, "reg", "query", f"{USER_CLASSES}\\cod2unbound", "/v", "URL Protocol", "/reg:64")
-    for ext, handler in ((".cfg", "CoD2Unbound.Config"), (".dm_1", "CoD2Unbound.Demo")):
+    wine(env, "reg", "query", f"{USER_CLASSES}\\cod2unbound{suffix}", "/v", "URL Protocol", "/reg:64")
+    demo, config = (".cod2-unbound-test-demo", ".cod2-unbound-test-config") if fixture else (".dm_1", ".cfg")
+    for ext, handler in ((config, f"{product_id}.Config"), (demo, f"{product_id}.Demo")):
         wine(env, "reg", "query", f"{USER_CLASSES}\\{ext}\\OpenWithProgids", "/v", handler,
              "/reg:64")
     print(f"PASS launcher shortcut, associations, signed payload catalog and {len(binaries)} PEs",
@@ -249,13 +253,20 @@ def verify_installer(artifacts, work, previous, run):
     signer = Signer(None, None, work / "test-code.pem", work / "test-tsa.pem",
                     run / "signature-verification.log")
     signer.verify(setup)
+    # The release packager also checks the Setup product version resource.
+    assembly = artifacts.parent / "signed-layout/launcher/CoD2Unbound.Windows.dll"
+    fixture = assembly.is_file() and "COD2_UNBOUND_TEST_KEY_SLOT".encode("utf-16le") in assembly.read_bytes()
+    product = "CoD2 Unbound Test" if fixture else "CoD2 Unbound"
+    product_id = product.replace(" ", "")
+    suffix = "-test" if fixture else ""
 
     with helpers["private_wine"](ENV, run / "installer-wine") as env:
+        env["COD2_UNBOUND_TEST_KEY_SLOT"] = "package"
         wine(env, "winecfg.exe", "-v", "win11")
         local = helpers["wine_local_app_data"](env)
-        root = local / "Programs/CoD2 Unbound"
-        user_start = local.parent / "Roaming/Microsoft/Windows/Start Menu/Programs/CoD2 Unbound"
-        data = local / "CoD2 Unbound"
+        root = local / "Programs" / product
+        user_start = local.parent / "Roaming/Microsoft/Windows/Start Menu/Programs" / product
+        data = local / product
         retail = run / "Retail Data Control"
         retail.mkdir()
         (retail / "retail.txt").write_text("licensed data sentinel")
@@ -283,7 +294,7 @@ def verify_installer(artifacts, work, previous, run):
         # Wine 9's Windows 10 preset reports 19043. Keep the upgrade checks on
         # its supported Windows 11 preset and check 22H2 on native Windows.
 
-        existing_scheme = USER_CLASSES + r"\cod2\shell\open\command"
+        existing_scheme = f"{USER_CLASSES}\\cod2{suffix}\\shell\\open\\command"
         wine(env, "reg", "add", existing_scheme, "/ve", "/d", "Third-party link handler",
              "/f", "/reg:64")
         status, receipt, refusals = install_with_folder_lock(env, setup, root, holder, run / "persistent-lock")
@@ -336,9 +347,9 @@ def verify_installer(artifacts, work, previous, run):
         subprocess.run(["wineserver", "-w"], env=env, check=True, timeout=45)
         if files(root) != [extra] or list(user_start.glob("*.lnk")):
             raise ValueError("Uninstall left installed files or removed the user's own file")
-        if not wine(env, "reg", "query", "HKCU\\" + UNINSTALL, check=False).returncode:
+        if not wine(env, "reg", "query", f"HKCU\\{UNINSTALL}\\{product_id}_is1", check=False).returncode:
             raise ValueError("Uninstall key still exists")
-        for key in ("CoD2Unbound.Demo", "CoD2Unbound.Config", "cod2x", "cod2unbound"):
+        for key in (f"{product_id}.Demo", f"{product_id}.Config", f"cod2x{suffix}", f"cod2unbound{suffix}"):
             if not wine(env, "reg", "query", USER_CLASSES + "\\" + key, "/reg:64",
                         check=False).returncode:
                 raise ValueError(f"Uninstall left the {key} association")

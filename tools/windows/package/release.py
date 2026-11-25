@@ -112,6 +112,7 @@ def require_public_launcher(bundle):
         "COD2_UNBOUND_TEST_RELEASES",
         "COD2_UNBOUND_TEST_MASTER_PORT",
         "COD2_UNBOUND_TEST_HOME",
+        "COD2_UNBOUND_TEST_KEY_SLOT",
         "COD2_UNBOUND_TEST_UPDATE_VISUAL",
         "COD2_UNBOUND_TEST_CONFIG_DIRECTORY",
         "COD2_USAGE_URL",
@@ -122,6 +123,16 @@ def require_public_launcher(bundle):
         raise ValueError("The production release requires a launcher without updater or reporting fixtures")
     if b"UpdatePublisherRules" not in assembly:
         raise ValueError("The production release requires an updater publisher identity")
+
+
+def has_fixture_identity(bundle):
+    with zipfile.ZipFile(bundle) as archive:
+        assembly = archive.read("CoD2Unbound.Windows.dll")
+    if "COD2_UNBOUND_TEST_KEY_SLOT".encode("utf-16le") in assembly:
+        return True
+    if "COD2_UNBOUND_TEST_HOME".encode("utf-16le") in assembly:
+        raise ValueError("Publish this Fixture again for the separate Test installer identity")
+    return False
 
 
 def check_pe(exe, allowed_file):
@@ -146,7 +157,7 @@ def version_string(resources, name):
     return resources[value:value + length * 2].decode("utf-16le").rstrip("\x00 ")
 
 
-def check_version(exe, version, company):
+def check_version(exe, version, company, product="CoD2 Unbound"):
     image = exe.read_bytes()
     header = struct.unpack_from("<I", image, 0x3C)[0]
     count = struct.unpack_from("<H", image, header + 6)[0]
@@ -163,7 +174,7 @@ def check_version(exe, version, company):
         product_version = struct.pack("<II", (major << 16) | minor, patch << 16)
         if (fixed >= 0 and resources[fixed + 16:fixed + 24] == product_version
                 and version_string(resources, "ProductVersion") == version
-                and version_string(resources, "ProductName") == "CoD2 Unbound"
+                and version_string(resources, "ProductName") == product
                 and version_string(resources, "CompanyName") == company):
             return
     raise ValueError(f"{exe}: Windows version resource does not match {version} and {company}")
@@ -271,10 +282,11 @@ def main(mode):
         raise ValueError("A verified x64 launcher publish ZIP is required for Setup")
     if mode == "azure":
         require_public_launcher(launcher)
+    fixture = mode == "test" and has_fixture_identity(launcher)
     stage(tree, work, version, company, jobs, launcher if launcher.is_file() else None)
     if mode != "layout":
         from package_installer import release
-        release(mode, tree, work, version, company)
+        release(mode, tree, work, version, company, fixture=fixture)
 
 
 if __name__ == "__main__":

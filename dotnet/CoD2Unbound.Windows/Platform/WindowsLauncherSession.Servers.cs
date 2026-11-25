@@ -20,7 +20,7 @@ internal sealed partial class WindowsLauncherSession
         DismissedWarnings = Settings.Working.DismissedWarnings.Add(SwitchVersionWarning)
     });
 
-    internal ServerPasswordStore ServerPasswords => new(credentials);
+    internal ServerPasswordStore ServerPasswords => new(serverCredentials);
 
     internal ServerReadySession OpenServerReadySession(GameEdition edition)
     {

@@ -56,7 +56,7 @@ def compiler_env(work):
             subprocess.run(["wineserver", "-w"], env=env, timeout=30, check=True)
 
 
-def compile_setup(tree, artifacts, work, version, company, signer):
+def compile_setup(tree, artifacts, work, version, company, signer, *, fixture=False):
     script = work / "inno-script"
     script.mkdir()
     uninstallers = work / "uninstallers"
@@ -70,6 +70,8 @@ def compile_setup(tree, artifacts, work, version, company, signer):
         "ReleaseVersion": version,
         "Company": company,
     }
+    if fixture:
+        defines["FixtureIdentity"] = "1"
     (script / "release.iss").write_text(
         "".join(f'#define {name} "{value}"\n' for name, value in defines.items())
     )
@@ -102,11 +104,11 @@ def compile_setup(tree, artifacts, work, version, company, signer):
     check_pe(uninstaller, HERE / "inno-uninstall-imports.txt")
     check_pe(installer, HERE / "inno-setup-imports.txt")
     for pe in (uninstaller, installer):
-        check_version(pe, version, company)
+        check_version(pe, version, company, "CoD2 Unbound Test" if fixture else "CoD2 Unbound")
     signer.sign([installer])
 
 
-def release(mode, tree, work, version, company):
+def release(mode, tree, work, version, company, *, fixture=False):
     fetch(JSIGN_URL, JSIGN_SHA256, work / "jsign.jar")
     if mode == "test":
         options = test_authority(work)
@@ -127,7 +129,7 @@ def release(mode, tree, work, version, company):
         write_checksums(signed_tree, [p for p in files(signed_tree) if p.name != "SHA256SUMS"])
         artifacts = work.parent / "artifacts"
         artifacts.mkdir()
-        compile_setup(signed_tree, artifacts, work, version, company, signer)
+        compile_setup(signed_tree, artifacts, work, version, company, signer, fixture=fixture)
         archive = artifacts / f"CoD2-Unbound-{version}-windows-x64-server.zip"
         server_zip(signed_tree, archive)
         catalog = archive.with_suffix(".cat")

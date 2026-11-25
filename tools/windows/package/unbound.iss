@@ -5,18 +5,36 @@
   #define HasLauncher
 #endif
 
-#define Product "CoD2 Unbound"
-#define InstallDir "{autopf}\CoD2 Unbound"
+#ifdef FixtureIdentity
+  #define Product "CoD2 Unbound Test"
+  #define ProductId "CoD2UnboundTest"
+  #define LauncherId "CoD2Unbound.Launcher.Fixture"
+  #define DemoExtension ".cod2-unbound-test-demo"
+  #define ConfigExtension ".cod2-unbound-test-config"
+  #define OriginalScheme "cod2-test"
+  #define Cod2xScheme "cod2x-test"
+  #define SetupScheme "cod2unbound-test"
+#else
+  #define Product "CoD2 Unbound"
+  #define ProductId "CoD2Unbound"
+  #define LauncherId "CoD2Unbound.Launcher"
+  #define DemoExtension ".dm_1"
+  #define ConfigExtension ".cfg"
+  #define OriginalScheme "cod2"
+  #define Cod2xScheme "cod2x"
+  #define SetupScheme "cod2unbound"
+#endif
+#define InstallDir "{autopf}\" + Product
 
 [Setup]
-AppId=CoD2Unbound
+AppId={#ProductId}
 AppName={#Product}
 AppVersion={#ReleaseVersion}
 AppPublisher={#Company}
 VersionInfoCompany={#Company}
 VersionInfoProductName={#Product}
 #ifdef HasLauncher
-VersionInfoDescription=CoD2 Unbound Setup with recovery
+VersionInfoDescription={#Product} Setup with recovery
 #endif
 VersionInfoProductVersion={#ReleaseVersion}
 VersionInfoProductTextVersion={#ReleaseVersion}
@@ -27,6 +45,9 @@ DefaultGroupName={#Product}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 UsePreviousAppDir=no
+#ifdef FixtureIdentity
+UsePreviousGroup=no
+#endif
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 SetupArchitecture=x64
@@ -42,7 +63,7 @@ SolidCompression=yes
 LZMANumBlockThreads=1
 CloseApplications=no
 RestartApplications=no
-SetupMutex=CoD2UnboundSetup
+SetupMutex={#ProductId}Setup
 UninstallFilesDir={app}
 SetupLogging=yes
 #ifdef HasLauncher
@@ -76,46 +97,46 @@ Source: "{#Payload}\launcher\*"; DestDir: "{app}\launcher"; Flags: ignoreversion
 
 [Icons]
 #ifdef HasLauncher
-Name: "{group}\CoD2 Unbound"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; AppUserModelID: "CoD2Unbound.Launcher"
+Name: "{group}\{#Product}"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; AppUserModelID: "{#LauncherId}"
 #else
-Name: "{group}\CoD2 Unbound (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{sys}"
-Name: "{group}\CoD2 Unbound (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{sys}"
+Name: "{group}\{#Product} (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{sys}"
+Name: "{group}\{#Product} (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{sys}"
 #endif
 Name: "{group}\Dedicated Server Guide"; Filename: "{app}\README-server.txt"; WorkingDir: "{sys}"
 
 #ifdef HasLauncher
 [InstallDelete]
-Type: files; Name: "{group}\CoD2 Unbound (Original 1.3).lnk"
-Type: files; Name: "{group}\CoD2 Unbound (CoD2x).lnk"
+Type: files; Name: "{group}\{#Product} (Original 1.3).lnk"
+Type: files; Name: "{group}\{#Product} (CoD2x).lnk"
 
 [Tasks]
 Name: "links"; Description: "Handle server and player setup links when no other app handles them"; Flags: unchecked
 
 [Registry]
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo"; ValueType: string; ValueData: "Call of Duty 2 demo"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Demo\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\.dm_1\OpenWithProgids"; ValueType: string; ValueName: "CoD2Unbound.Demo"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Config"; ValueType: string; ValueData: "Call of Duty 2 config"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CoD2Unbound.Config\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\.cfg\OpenWithProgids"; ValueType: string; ValueName: "CoD2Unbound.Config"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
-Root: HKA; Subkey: "Software\Classes\cod2x"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('cod2x')
-Root: HKA; Subkey: "Software\Classes\cod2x"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2x')
-Root: HKA; Subkey: "Software\Classes\cod2x\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2x')
-Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('cod2')
-Root: HKA; Subkey: "Software\Classes\cod2"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2')
-Root: HKA; Subkey: "Software\Classes\cod2\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2')
-Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueData: "URL:CoD2 Unbound player setup link"; Tasks: links; Check: CanRegisterLink('cod2unbound')
-Root: HKCU64; Subkey: "Software\Classes\cod2unbound"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('cod2unbound')
-Root: HKCU64; Subkey: "Software\Classes\cod2unbound\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('cod2unbound')
+Root: HKA; Subkey: "Software\Classes\{#ProductId}.Demo"; ValueType: string; ValueData: "Call of Duty 2 demo"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\{#ProductId}.Demo\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\{#DemoExtension}\OpenWithProgids"; ValueType: string; ValueName: "{#ProductId}.Demo"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
+Root: HKA; Subkey: "Software\Classes\{#ProductId}.Config"; ValueType: string; ValueData: "Call of Duty 2 config"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\{#ProductId}.Config\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\{#ConfigExtension}\OpenWithProgids"; ValueType: string; ValueName: "{#ProductId}.Config"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
+Root: HKA; Subkey: "Software\Classes\{#Cod2xScheme}"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('{#Cod2xScheme}')
+Root: HKA; Subkey: "Software\Classes\{#Cod2xScheme}"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('{#Cod2xScheme}')
+Root: HKA; Subkey: "Software\Classes\{#Cod2xScheme}\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('{#Cod2xScheme}')
+Root: HKA; Subkey: "Software\Classes\{#OriginalScheme}"; ValueType: string; ValueData: "URL:CoD2x server link"; Tasks: links; Check: CanRegisterLink('{#OriginalScheme}')
+Root: HKA; Subkey: "Software\Classes\{#OriginalScheme}"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('{#OriginalScheme}')
+Root: HKA; Subkey: "Software\Classes\{#OriginalScheme}\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('{#OriginalScheme}')
+Root: HKCU64; Subkey: "Software\Classes\{#SetupScheme}"; ValueType: string; ValueData: "URL:CoD2 Unbound player setup link"; Tasks: links; Check: CanRegisterLink('{#SetupScheme}')
+Root: HKCU64; Subkey: "Software\Classes\{#SetupScheme}"; ValueType: string; ValueName: "URL Protocol"; Tasks: links; Check: CanRegisterLink('{#SetupScheme}')
+Root: HKCU64; Subkey: "Software\Classes\{#SetupScheme}\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""; Tasks: links; Check: CanRegisterLink('{#SetupScheme}')
 
 [Run]
-Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; Description: "Launch CoD2 Unbound"; Flags: postinstall nowait skipifsilent unchecked runasoriginaluser
+Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; Description: "Launch {#Product}"; Flags: postinstall nowait skipifsilent unchecked runasoriginaluser
 #endif
 
 [Code]
 const
 #ifdef HasLauncher
-  TransactionKey = 'Software\CoD2Unbound\InstallTransaction';
+  TransactionKey = 'Software\{#ProductId}\InstallTransaction';
   RetryWindowMs = 15000;
   RetryIntervalMs = 250;
   ErrorAccessDenied = 5;
@@ -390,7 +411,7 @@ begin
   if Result then Exit;
   Sid := CurrentUserSid();
   if Sid = '' then Exit;
-  TransactionLock := CreateMutexW(0, False, 'Local\CoD2Unbound.InstallTransaction-' + Sid);
+  TransactionLock := CreateMutexW(0, False, 'Local\{#ProductId}.InstallTransaction-' + Sid);
   if TransactionLock = 0 then Exit;
   Wait := WaitForSingleObject(TransactionLock, 0);
   Result := (Wait = 0) or (Wait = $80);
@@ -473,7 +494,7 @@ begin
   end;
   Restored := True;
   if LoadStringFromFile(Root + '\RELEASE_VERSION', Version) then
-    RegWriteStringValue(HKCU64, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1',
+    RegWriteStringValue(HKCU64, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#ProductId}_is1',
       'DisplayVersion', Trim(Version));
   ClearTransaction();
   Log('Restored the previous installation after the update stopped.');
@@ -623,7 +644,7 @@ end;
 #ifdef HasLauncher
 function LinkClassesRoot(const Scheme: String): HKEY;
 begin
-  if IsAdminInstallMode and (Scheme <> 'cod2unbound') then Result := HKLM64 else Result := HKCU64;
+  if IsAdminInstallMode and (Scheme <> '{#SetupScheme}') then Result := HKLM64 else Result := HKCU64;
 end;
 
 function LinkCommand(): String;
@@ -654,9 +675,9 @@ var
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then begin
-    AllowCod2x := CanClaimLink('cod2x');
-    AllowCod2 := CanClaimLink('cod2');
-    AllowSetupLinks := CanClaimLink('cod2unbound');
+    AllowCod2x := CanClaimLink('{#Cod2xScheme}');
+    AllowCod2 := CanClaimLink('{#OriginalScheme}');
+    AllowSetupLinks := CanClaimLink('{#SetupScheme}');
   end;
   { The Finish page can launch the app before ssDone. Commit before offering
     that action so startup cannot mistake an active update for an interruption. }
@@ -674,8 +695,8 @@ end;
 
 function CanRegisterLink(const Scheme: String): Boolean;
 begin
-  if Scheme = 'cod2x' then Result := AllowCod2x
-  else if Scheme = 'cod2' then Result := AllowCod2
+  if Scheme = '{#Cod2xScheme}' then Result := AllowCod2x
+  else if Scheme = '{#OriginalScheme}' then Result := AllowCod2
   else Result := AllowSetupLinks;
 end;
 
@@ -699,9 +720,16 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then begin
-    DeleteLink('cod2x');
-    DeleteLink('cod2');
-    DeleteLink('cod2unbound');
+    DeleteLink('{#Cod2xScheme}');
+    DeleteLink('{#OriginalScheme}');
+    DeleteLink('{#SetupScheme}');
   end;
+#ifdef FixtureIdentity
+  if CurUninstallStep = usPostUninstall then begin
+    RegDeleteKeyIfEmpty(LinkClassesRoot(''), 'Software\Classes\{#DemoExtension}');
+    RegDeleteKeyIfEmpty(LinkClassesRoot(''), 'Software\Classes\{#ConfigExtension}');
+    RegDeleteKeyIfEmpty(HKCU64, 'Software\{#ProductId}');
+  end;
+#endif
 end;
 #endif

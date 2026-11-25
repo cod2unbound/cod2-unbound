@@ -12,6 +12,19 @@ internal sealed class WindowsCredentials : ISecretStore
     private const string EngineCdKey = "CoD2 Unbound/CD Key";
     private const uint CdKeyBytes = 20;
 
+    private readonly string? testKeyTarget = ResolveTestSlot() is { } slot ? $"{EngineCdKey} (test {slot})" : null;
+
+    internal static string? ResolveTestSlot()
+    {
+#if UPDATE_FIXTURES
+        string? slot = Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_KEY_SLOT");
+        if (slot is { Length: >= 1 and <= 32 } &&
+            slot.All(ch => ch is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-'))
+            return slot;
+#endif
+        return null;
+    }
+
     public ValueTask<string?> ReadAsync(string name, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -19,8 +32,8 @@ internal sealed class WindowsCredentials : ISecretStore
         if (name != SetupSession.KeySecret)
             return ValueTask.FromResult(Read(target, ascii: false).Value);
 
-        var (found, key) = Read(EngineCdKey, ascii: true);
-        if (found)
+        var (found, key) = Read(testKeyTarget ?? EngineCdKey, ascii: true);
+        if (found || testKeyTarget is not null)
             return ValueTask.FromResult(key is not null && CdKey.IsValid(key) ? key : null);
 
         // Earlier launchers stored the CD key under the core name in UTF-16.
@@ -35,6 +48,16 @@ internal sealed class WindowsCredentials : ISecretStore
     public ValueTask WriteAsync(string name, string? value, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (name == SetupSession.KeySecret && testKeyTarget is { } testTarget)
+        {
+            if (value is null)
+                Delete(testTarget);
+            else if (!CdKey.IsValid(value))
+                throw new ArgumentException("The CD key is invalid.", nameof(value));
+            else
+                Write(testTarget, CdKey.Normalize(value), ascii: true);
+            return ValueTask.CompletedTask;
+        }
         string target = Target(name);
         bool cdKey = name == SetupSession.KeySecret;
         if (value is null)

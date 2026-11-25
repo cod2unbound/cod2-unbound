@@ -10,6 +10,7 @@ internal sealed partial class WindowsLauncherSession
     private readonly WindowsFiles files = new();
     private readonly ISettingsFolder folder;
     private readonly ISecretStore credentials;
+    private readonly ISecretStore serverCredentials;
     private readonly WindowsGameDiscovery discovery;
     private readonly WindowsSettingsFolder gameFolder;
     private readonly WindowsEngineInventory inventory;
@@ -52,7 +53,7 @@ internal sealed partial class WindowsLauncherSession
 #endif
 
     internal static string ResolveHome() => FixtureHome() ?? Path.Join(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CoD2 Unbound");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), WindowsInstallIdentity.Product);
 
     internal WindowsLauncherSession()
     {
@@ -66,7 +67,10 @@ internal sealed partial class WindowsLauncherSession
         rejectFixturePasswordWrites = TestMaster is not null &&
             Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_SERVER_PASSWORD_WRITE_FAILURE") == "1";
 #endif
-        credentials = useWindowsCredentials ? new WindowsCredentials() : new ProbeCredentials(rejectFixturePasswordWrites);
+        bool hasTestSlot = WindowsCredentials.ResolveTestSlot() is not null;
+        var probeCredentials = new ProbeCredentials(rejectFixturePasswordWrites);
+        credentials = useWindowsCredentials || hasTestSlot ? new WindowsCredentials() : probeCredentials;
+        serverCredentials = hasTestSlot ? probeCredentials : credentials;
         gameFolder = new WindowsSettingsFolder(ResolveHome(), allowNestedWrites: true);
         var settingsFolder = new WindowsSettingsFolder(Path.Join(HomePath, "launcher"));
         folder = settingsFolder;

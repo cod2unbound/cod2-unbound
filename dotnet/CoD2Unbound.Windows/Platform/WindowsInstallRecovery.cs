@@ -9,14 +9,11 @@ namespace CoD2Unbound.Windows.Platform;
 
 internal static class WindowsInstallRecovery
 {
-    // Keep these names in sync with unbound.iss. The previous directory is the journal.
-    private const string TransactionKey = @"Software\CoD2Unbound\InstallTransaction";
+    // The previous directory is the journal.
     private const string Previous = ".previous-install";
     private const string Incomplete = ".incomplete-install";
-    internal const string RestoreDescription = "CoD2 Unbound Setup with recovery";
-
     internal static string StandardRoot => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "CoD2 Unbound");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", WindowsInstallIdentity.Product);
 
     internal static bool NeedsRestore(string root) => Directory.Exists(root + Previous);
 
@@ -29,7 +26,7 @@ internal static class WindowsInstallRecovery
     private static string? ReadTransactionValue(string name)
     {
         using var registry = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
-        using var transaction = registry.OpenSubKey(TransactionKey);
+        using var transaction = registry.OpenSubKey(WindowsInstallIdentity.TransactionKey);
         return transaction?.GetValue(name) as string;
     }
 
@@ -45,7 +42,7 @@ internal static class WindowsInstallRecovery
             using var parent = new WindowsFiles.DirectoryHandles(Path.GetDirectoryName(root)!);
             using var identity = WindowsIdentity.GetCurrent();
             var sid = identity.User ?? throw new IOException("Windows did not identify the current user.");
-            using var transaction = new Mutex(false, @"Local\CoD2Unbound.InstallTransaction-" + sid.Value);
+            using var transaction = new Mutex(false, WindowsInstallIdentity.TransactionMutex + sid.Value);
             try
             {
                 if (!transaction.WaitOne(0))

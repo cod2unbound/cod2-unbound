@@ -8,13 +8,7 @@ namespace CoD2Unbound.Windows.Platform;
 
 internal sealed class WindowsUpdateNotifications : IDisposable
 {
-    // Keep this ID in sync with the installer's Start menu shortcut.
-    internal const string AppId =
-#if UPDATE_FIXTURES
-        "CoD2Unbound.Launcher.Fixture";
-#else
-        "CoD2Unbound.Launcher";
-#endif
+    internal const string AppId = WindowsInstallIdentity.AppId;
     private const string UpdateAction = "updates";
     internal const string ActivationPrefix = "cod2unbound:updates:";
     private AppNotificationManager? manager;

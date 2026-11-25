@@ -39,7 +39,10 @@ internal static class Program
         current.Activated += Redirected;
         try
         {
-            var owner = AppInstance.FindOrRegisterForKey("CoD2Unbound.Launcher");
+            string instanceKey = WindowsInstallIdentity.AppId;
+            if (WindowsCredentials.ResolveTestSlot() is { } slot)
+                instanceKey += "." + slot;
+            var owner = AppInstance.FindOrRegisterForKey(instanceKey);
             if (!owner.IsCurrent)
                 return Redirect(owner, current.GetActivatedEventArgs());
 
@@ -92,7 +95,24 @@ internal static class Program
         return 0;
     }
 
-    private static string[] ReadArguments(AppActivationArguments activation) => activation.Data switch
+    private static string[] ReadArguments(AppActivationArguments activation)
+    {
+        string[] arguments = ReadActivation(activation);
+#if UPDATE_FIXTURES
+        // The Fixture has its own Windows protocol registrations. The shared
+        // activation parser still receives the standard game/setup URI.
+        if (arguments is [var link])
+            foreach (string scheme in new[] { "cod2", "cod2x", "cod2unbound" })
+            {
+                string prefix = scheme + "-test://";
+                if (link.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return [scheme + "://" + link[prefix.Length..]];
+            }
+#endif
+        return arguments;
+    }
+
+    private static string[] ReadActivation(AppActivationArguments activation) => activation.Data switch
     {
         AppNotificationActivatedEventArgs notification => WindowsUpdateNotifications.ReadArguments(notification),
         ILaunchActivatedEventArgs launch => ReadCommandLine(launch.Arguments),

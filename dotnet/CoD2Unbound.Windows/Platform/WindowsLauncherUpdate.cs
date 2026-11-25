@@ -15,7 +15,6 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
 {
     private const string SetupName = "setup.exe";
     private const string PendingName = "pending.txt";
-    private const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1";
     private const string LocationProblem = "This copy of CoD2 Unbound cannot be updated here. Open the download page to get Setup.";
     private readonly string target = installRoot;
     private readonly Func<Task> flushSettings = flush;
@@ -30,7 +29,7 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
     {
         string standard = WindowsInstallRecovery.StandardRoot;
         using var registry = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
-        using var installed = registry.OpenSubKey(RegistryPath);
+        using var installed = registry.OpenSubKey(WindowsInstallIdentity.UninstallKey);
         if (!PathsMatch(target, standard) || installed?.GetValue("InstallLocation") is not string registered ||
             !PathsMatch(target, registered))
             throw new LauncherUpdateException(LocationProblem, issue: UpdateIssue.ProtectedLocation);
@@ -217,10 +216,10 @@ internal sealed class WindowsLauncherUpdate(string installRoot, string home, str
         var details = FileVersionInfo.GetVersionInfo(path);
         var version = new Version(details.FileMajorPart, details.FileMinorPart, details.FileBuildPart);
         // Inno reserves room in its version resource by padding the product name.
-        if (details.ProductName?.TrimEnd(' ') != "CoD2 Unbound" || details.FilePrivatePart != 0 ||
+        if (details.ProductName?.TrimEnd(' ') != WindowsInstallIdentity.Product || details.FilePrivatePart != 0 ||
             version != WindowsReleaseAssets.ParseVersion(expectedVersion))
             throw new LauncherUpdateException("Setup did not contain the offered version of CoD2 Unbound.");
-        if (restore && details.FileDescription?.TrimEnd(' ') != WindowsInstallRecovery.RestoreDescription)
+        if (restore && details.FileDescription?.TrimEnd(' ') != WindowsInstallIdentity.RestoreDescription)
             throw new LauncherUpdateException("Setup did not advertise restore-only support.");
     }
 
