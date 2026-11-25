@@ -244,6 +244,8 @@ function Select-KitExportFolder($Picker, [string]$Destination) {
     if ($window -eq [IntPtr]::Zero -or [KitDesktop]::GetForegroundWindow() -ne $window) {
         throw 'The launcher folder picker is no longer in front.'
     }
+    $marker = 'Kit target ' + [guid]::NewGuid().ToString('N')
+    [void][IO.Directory]::CreateDirectory((Join-Path $Destination $marker))
     # Alt+D is the native folder picker's address shortcut on both Windows versions.
     [KitDesktop]::Chord(18, 68)
     $keys = [regex]::Replace($Destination, '[+^%~(){}\[\]]', [Text.RegularExpressions.MatchEvaluator]{
@@ -252,17 +254,12 @@ function Select-KitExportFolder($Picker, [string]$Destination) {
     })
     [Windows.Forms.SendKeys]::SendWait($keys)
     [KitDesktop]::Tap(13)
-    [KitDesktop]::Tap(9)
-    [KitDesktop]::Chord(18, 68)
     Wait-KitCondition {
         if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'The folder picker lost foreground.' }
-        $edit = [Windows.Automation.AutomationElement]::FocusedElement
-        $value = $null
-        if ($edit -and $edit.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern, [ref]$value)) {
-            $value.Current.Value.TrimEnd([char]92) -ieq $Destination.TrimEnd([char]92)
-        }
-    } 10 'the folder picker to show the private export path' | Out-Null
-    [KitDesktop]::Tap(9)
+        Find-KitControl $Picker $marker -Name
+    } 10 'the folder picker to show the marker in the private destination' | Out-Null
+    'The folder picker displayed the private destination marker.' |
+        Add-Content -LiteralPath (Join-Path $Results 'hosting-export-peers.txt') -Encoding UTF8
     $commit = Wait-KitCondition {
         $button = Find-KitControl $Picker '1'
         if ($button -and $button.Current.ControlType -eq [Windows.Automation.ControlType]::Button) { return $button }
