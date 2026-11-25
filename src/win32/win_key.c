@@ -3,9 +3,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <wincred.h>
+#include "win_key_slot.h"
 #include "win_paths.h"
 
-static wchar_t target[] = L"CoD2 Unbound/CD Key";
+static wchar_t realTarget[] = L"CoD2 Unbound/CD Key";
 
 /* The same CRC-16 as CL_CDKeyValidate, also available to dedicated builds. */
 static int ValidKey(const char *key)
@@ -53,6 +54,9 @@ int Win_ReadCDKey(char key[21])
 {
     PCREDENTIALW entry;
     int valid = 0;
+    wchar_t testTarget[WIN_TEST_KEY_TARGET_SIZE];
+    int testing = Win_TestKeyTarget(testTarget);
+    const wchar_t *target = testing ? testTarget : realTarget;
     if (CredReadW(target, CRED_TYPE_GENERIC, 0, &entry)) {
         if (entry->CredentialBlobSize == 20) {
             memcpy(key, entry->CredentialBlob, 20);
@@ -64,7 +68,10 @@ int Win_ReadCDKey(char key[21])
         /* A broken explicit credential requires re-entry, even if retail has a key. */
         if (!valid) fprintf(stderr, "CoD2 Unbound: re-enter your CD key in the launcher.\n");
     } else if (GetLastError() == ERROR_NOT_FOUND) {
-        valid = LegacyKey(key);
+        if (testing)
+            fprintf(stderr, "CoD2 Unbound: no CD key in the test slot.\n");
+        else
+            valid = LegacyKey(key);
     } else {
         fprintf(stderr, "CoD2 Unbound: could not read the Windows CD key credential.\n");
     }
@@ -76,8 +83,9 @@ int Win_WriteCDKey(const char key[21])
 {
     CREDENTIALW entry = {0};
     if (!ValidKey(key)) return 0;
+    wchar_t testTarget[WIN_TEST_KEY_TARGET_SIZE];
     entry.Type = CRED_TYPE_GENERIC;
-    entry.TargetName = target;
+    entry.TargetName = Win_TestKeyTarget(testTarget) ? testTarget : realTarget;
     entry.CredentialBlobSize = 20;
     entry.CredentialBlob = (BYTE *)key;
     entry.Persist = CRED_PERSIST_LOCAL_MACHINE;

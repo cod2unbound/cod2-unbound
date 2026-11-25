@@ -160,6 +160,7 @@ def check(case, edition, licensed_cache):
         if case == 'unsafe-home':
             args += ['+set', 'fs_homepath', win(LICENSED)]
         if case == 'key':
+            env['COD2_UNBOUND_TEST_KEY_SLOT'] = 'paths'
             result = command(env, 'wine', str(OUTPUT / 'key-probe.exe'), check=False)
             (run / 'key-probe.log').write_bytes(result.stdout)
             if result.returncode:
