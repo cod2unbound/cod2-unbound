@@ -39,29 +39,38 @@ public sealed partial class HostingPage
 
     private void AttachRowMenu(ListViewItem row)
     {
+        if (row.ContextFlyout is MenuFlyout)
+            return;
+
+        HostedServer? menuServer = null;
         var menu = new MenuFlyout();
+        var export = Item(ExportTitle, "X", server => ExportSavedAsync(server.Id), "Export for another machine…");
+        var reveal = Item(RevealFolderTitle, "F", server => hosting.RevealServerFolderAsync(server.Id), "Show its folder in File Explorer");
+        var delete = Item(DeleteTitle, "D", DeleteServerAsync);
+        AutomationProperties.SetAutomationId(export, "HostingRowExport");
+        AutomationProperties.SetAutomationId(reveal, "HostingRowReveal");
+        menu.Items.Add(export);
+        menu.Items.Add(reveal);
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(delete);
         menu.Opening += (_, _) =>
         {
-            menu.Items.Clear();
-            if (row.Content is not HostedServer server)
-                return;
-            var export = Item(ExportTitle, "X", () => ExportSavedAsync(server.Id), automationName: "Export for another machine…");
-            var reveal = Item(RevealFolderTitle, "F", () => hosting.RevealServerFolderAsync(server.Id),
-                hosting.HasServerFolder(server.Id), "Show its folder in File Explorer");
-            AutomationProperties.SetAutomationId(export, "HostingRowExport");
-            AutomationProperties.SetAutomationId(reveal, "HostingRowReveal");
-            menu.Items.Add(export);
-            menu.Items.Add(reveal);
-            menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(Item(DeleteTitle, "D", () => DeleteServerAsync(server), !hosting.IsActive(server.Id)));
+            menuServer = row.Content as HostedServer;
+            export.IsEnabled = menuServer is not null;
+            reveal.IsEnabled = menuServer is not null && hosting.HasServerFolder(menuServer.Id);
+            delete.IsEnabled = menuServer is not null && !hosting.IsActive(menuServer.Id);
         };
         row.ContextFlyout = menu;
 
-        MenuFlyoutItem Item(string title, string accessKey, Func<Task> action, bool enabled = true, string? automationName = null)
+        MenuFlyoutItem Item(string title, string accessKey, Func<HostedServer, Task> action, string? automationName = null)
         {
-            var item = new MenuFlyoutItem { Text = title, AccessKey = accessKey, IsEnabled = enabled };
+            var item = new MenuFlyoutItem { Text = title, AccessKey = accessKey };
             AutomationProperties.SetName(item, automationName ?? title);
-            item.Click += async (_, _) => await shell.RunAsync(action);
+            item.Click += async (_, _) =>
+            {
+                if (menuServer is { } server)
+                    await shell.RunAsync(() => action(server));
+            };
             return item;
         }
     }
