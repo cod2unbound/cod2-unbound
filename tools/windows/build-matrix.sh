@@ -2,8 +2,8 @@
 # Cross-compile the release matrix and check the resulting PE files.
 set -euo pipefail
 
-if [[ $# -gt 1 || ( $# -eq 1 && $1 != --ci ) ]]; then
-    echo "Usage: $0 [--ci]" >&2
+if [[ $# -gt 1 || ( $# -eq 1 && $1 != --source-checks ) ]]; then
+    echo "Usage: $0 [--source-checks]" >&2
     exit 2
 fi
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -24,14 +24,19 @@ fi
 
 checks=$(mktemp -d /out/checks-XXXXXXXX)
 trap 'rm -r "$checks"' EXIT
-if [[ $2 == --ci ]]; then
-    python3 -B /src/tools/ci/check-platform-guards.py
+if [[ $2 == --source-checks ]]; then
     # The checkout is mounted read-only and belongs to the runner user.
     export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/src
+    failed=0
+    python3 -B /src/tools/ci/check-platform-guards.py || failed=1
     for profile in plain codx; do
-        python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --quiet
-        python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --check --quiet
+        if python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --quiet; then
+            python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --check --quiet || failed=1
+        else
+            failed=1
+        fi
     done
+    exit "$failed"
 fi
 
 if cmake -S /src -B "$checks/stale-option" -G Ninja \

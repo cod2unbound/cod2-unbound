@@ -100,6 +100,7 @@ jobs:
           path: ${{ runner.temp }}/cod2-windows-image.tar
           key: windows-mingw-v1-${{ env.UBUNTU_AMD64_DIGEST }}-${{ hashFiles('tools/windows/Dockerfile') }}
       - name: Load or build the MinGW image
+        id: image
         if: steps.changes.outputs.run == 'true'
         run: |
           image_archive="$RUNNER_TEMP/cod2-windows-image.tar"
@@ -111,13 +112,18 @@ jobs:
               --tag "$WINDOWS_IMAGE_TAG" tools/windows
             docker save --output "$image_archive" "$WINDOWS_IMAGE_TAG"
           fi
-      - name: Build the seven targets and run data-free checks
+          image_id=$(docker image inspect --format '{{.Id}}' "$WINDOWS_IMAGE_TAG")
+          echo "image_id=$image_id" >> "$GITHUB_OUTPUT"
+      - name: Build and check the seven Windows targets
         if: steps.changes.outputs.run == 'true'
-        run: |
-          COD2_WINDOWS_IMAGE=$(docker image inspect --format '{{.Id}}' "$WINDOWS_IMAGE_TAG")
-          COD2_WINDOWS_JOBS=$(nproc)
-          export COD2_WINDOWS_IMAGE COD2_WINDOWS_JOBS
-          tools/windows/build-matrix.sh --ci
+        env:
+          COD2_WINDOWS_IMAGE: ${{ steps.image.outputs.image_id }}
+        run: COD2_WINDOWS_JOBS=$(nproc) tools/windows/build-matrix.sh
+      - name: Check platform guards and both source exports
+        if: ${{ !cancelled() && steps.image.outcome == 'success' }}
+        env:
+          COD2_WINDOWS_IMAGE: ${{ steps.image.outputs.image_id }}
+        run: tools/windows/build-matrix.sh --source-checks
       - name: Preserve Windows build diagnostics
         if: ${{ !cancelled() && steps.changes.outputs.run == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
