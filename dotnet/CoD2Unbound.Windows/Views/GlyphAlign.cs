@@ -84,6 +84,11 @@ public static class GlyphAlign
         // The 18-pixel plus draws high in the toolbar. At 16 pixels its shape already lands on centre.
         if (fluent && icon.Glyph is "\uF109" && size is >= 17.5 and < 18.5)
             ink -= 0.05;
+        // These drawn outlines have different optical centres at their small desktop sizes.
+        if (fluent && icon.Glyph is "\uF68F" && size is >= 17.5 and < 18.5)
+            ink -= 0.11;
+        if (fluent && icon.Glyph is "\uE305" && size is >= 13.5 and < 14.5)
+            ink += 0.06;
         return (fluent ? FluentLineEm : SystemLineEm, ink);
     }
 
