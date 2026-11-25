@@ -317,6 +317,10 @@ $Steps = @(
             Invoke-KitOpenDemo $step.Edition
         } -Edition $edition
     }
+    Add-KitStep 'match-cod2x-fullscreen-dx7' 'CoD2x exclusive DirectX 7 match and Alt+Tab' {
+        Stop-KitIfNoGame
+        Invoke-KitFullscreenMatch 'cod2x' 'dx7'
+    }
     Add-KitStep 'identity-cod2x' 'Compare the CoD2x identifier with the 1.4.6.8 algorithm on this PC' {
         Stop-KitIfNoGame
         Invoke-KitHwidCheck (Get-Binary 'cod2x') $GamePath

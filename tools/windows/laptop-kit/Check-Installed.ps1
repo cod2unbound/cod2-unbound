@@ -39,9 +39,9 @@ function Invoke-KitControl($Window, [string]$Value, [switch]$Name, [switch]$Allo
 
 function Wait-KitHome([IntPtr]$Window) {
     Wait-KitCondition {
-        (Find-KitControl $Window 'Find a server' -Name -AllowOffscreen) -or
+        (Find-KitControl $Window 'FindServerButton' -AllowOffscreen) -or
             (Find-KitControl $Window 'LaunchButton' -AllowOffscreen) -or
-            (Find-KitControl $Window 'Return to game' -Name -AllowOffscreen)
+            (Find-KitControl $Window 'OpenGameMenuButton' -AllowOffscreen)
     } 45 'Home to open' | Out-Null
 }
 
@@ -197,7 +197,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
                 Select-Object -First 1
         } 40 'the installed game process'
         $window = Get-KitGameWindow $game
-        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace -FromLauncher
+        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace $game -FromLauncher
     } finally {
         if ($game -and -not $game.HasExited) {
             if ($window -ne [IntPtr]::Zero) {

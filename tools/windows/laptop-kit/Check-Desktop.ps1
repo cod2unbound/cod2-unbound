@@ -9,16 +9,18 @@ function Initialize-KitDesktop {
     }
 }
 
-function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Description) {
+function Wait-KitCondition([scriptblock]$Condition, [int]$Seconds, [string]$Description,
+    [scriptblock]$OnTimeout, [switch]$SkipSecurity) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     do {
         $watch.Stop()
-        Wait-KitSecurity
+        if (-not $SkipSecurity) { Wait-KitSecurity }
         $watch.Start()
         $answer = & $Condition
         if ($answer) { return $answer }
         Start-Sleep -Milliseconds 250
     } while ($watch.Elapsed.TotalSeconds -lt $Seconds)
+    if ($OnTimeout) { & $OnTimeout }
     throw "Timed out waiting for $Description."
 }
 
@@ -119,25 +121,30 @@ function Save-KitWindow([IntPtr]$Window, [string]$Path) {
         Add-Content -LiteralPath (Join-Path (Split-Path $Path -Parent) 'window-pictures.txt') -Encoding UTF8
 }
 
-function Get-KitGameWindow($Process) {
+function Get-KitGameWindow($Process, [string]$ExclusiveEvidence) {
     Wait-KitCondition {
+        if ($ExclusiveEvidence) { Assert-KitExclusiveForeground ([IntPtr]::Zero) $ExclusiveEvidence -ModalOnly }
         $Process.Refresh()
         if ($Process.HasExited) { throw "The game closed with exit code $($Process.ExitCode)." }
         $window = $Process.MainWindowHandle
         if ($window -ne [IntPtr]::Zero -and [KitDesktop]::WindowClass($window) -eq 'SDL_app') { $window }
-    } 65 'the game window'
+    } 65 'the game window' -SkipSecurity:([bool]$ExclusiveEvidence)
 }
 
 function Save-KitFrame([IntPtr]$Window, [string]$GameHome, [string]$Evidence, [string]$Name, [switch]$NativeConsole) {
     $shot = Join-Path $GameHome "main\screenshots\$Name.jpg"
     if (Test-Path -LiteralPath $shot) { Remove-Item -LiteralPath $shot }
     if ($NativeConsole) {
+        Assert-KitExclusiveForeground $Window $Evidence
         $dumpName = "$Name-console.txt"
         [KitDesktop]::SendGameConsole($Window, "condump $dumpName; screenshotJpeg $Name")
     } else {
         Send-KitCommand $Window "/toggleconsole; screenshotJpeg $Name"
     }
-    Wait-KitCondition { Test-Path -LiteralPath $shot -PathType Leaf } 12 "$Name game picture" | Out-Null
+    Wait-KitCondition {
+        if ($NativeConsole) { Assert-KitExclusiveForeground $Window $Evidence }
+        Test-Path -LiteralPath $shot -PathType Leaf
+    } 12 "$Name game picture" -SkipSecurity:$NativeConsole | Out-Null
     Copy-Item -LiteralPath $shot -Destination $Evidence
     if ($NativeConsole) {
         Save-Text (Join-Path $GameHome "main\$dumpName") (Join-Path $Evidence $dumpName)
@@ -177,7 +184,43 @@ function Enable-KitGameConsole([IntPtr]$Window, [string]$GameHome, [string]$Evid
     $output
 }
 
-function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer, $Trace, [switch]$FromLauncher) {
+function Save-KitMapStall($Game, [string]$Log, [string]$Evidence, [string]$Label) {
+    if ($Game.HasExited) { return }
+    $privateDiagnostic = New-Folder (Join-Path $Evidence "private-map-stall-$Label")
+    try {
+        if (Test-Path -LiteralPath $Log -PathType Leaf) {
+            $tail = (Get-Content -LiteralPath $Log -Tail 80) -join "`r`n"
+            Protect-KitText $tail | Set-Content -LiteralPath (Join-Path $privateDiagnostic 'console-tail.txt') -Encoding UTF8
+        }
+    } catch { Write-Warning 'The kit game console tail could not be read.' }
+    $image = Join-Path $Kit 'probes\stack-probe.exe'
+    $argsText = "$($Game.Id) $($Game.StartTime.ToFileTimeUtc())"
+    $probe = Start-KitProcess $image $argsText (Split-Path -Parent $Log) -NoWindow
+    try {
+        if (-not $probe.Process.WaitForExit(8000)) {
+            $probe.Process.Kill()
+            [void]$probe.Process.WaitForExit(2000)
+            throw 'The stack probe timed out.'
+        }
+        $stacks = $probe.Output.GetAwaiter().GetResult()
+        if ($probe.Process.ExitCode -ne 0) { throw 'The stack probe found no readable game stacks.' }
+        Protect-KitText $stacks | Set-Content -LiteralPath (Join-Path $privateDiagnostic 'thread-stacks.txt') -Encoding UTF8
+    } finally { $probe.Process.Dispose() }
+}
+
+function Wait-KitMapLoad([scriptblock]$Loaded, [int]$Seconds, [string]$Label, $Game,
+    [string]$Log, [string]$Evidence, [switch]$Exclusive) {
+    Wait-KitCondition {
+        if ($Game.HasExited) { throw "The game closed with exit code $($Game.ExitCode) while loading $Label." }
+        & $Loaded
+    } $Seconds "$Label to load" -OnTimeout {
+        try { Save-KitMapStall $Game $Log $Evidence $Label }
+        catch { Write-Warning (Protect-KitText $_.Exception.Message) }
+    } -SkipSecurity:$Exclusive | Out-Null
+}
+
+function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer,
+    $Trace, $Game, [switch]$FromLauncher) {
     $log = Join-Path $GameHome 'main\console_mp.log'
     $boot = $log
     if ($FromLauncher) {
@@ -200,9 +243,9 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
         $count = @(Select-String -LiteralPath $log -SimpleMatch $marker).Count
         $command = if ($map -eq 'restart') { 'map_restart' } else { "devmap $map" }
         Send-KitCommand $Window "/toggleconsole; $command"
-        Wait-KitCondition {
+        Wait-KitMapLoad {
             @(Select-String -LiteralPath $log -SimpleMatch $marker).Count -gt $count
-        } 55 "$map to load" | Out-Null
+        } 55 $map $Game $log $Evidence
         if ($map -ne 'restart') {
             Start-Sleep -Seconds 2
             Enter-KitPlay $Window
@@ -235,32 +278,53 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
     }
 }
 
+function Assert-KitExclusiveForeground([IntPtr]$Window, [string]$Evidence, [switch]$ModalOnly, [switch]$AllowShell) {
+    $front = [KitDesktop]::GetForegroundWindow()
+    if ($front -eq [IntPtr]::Zero -or $front -eq $Window) { return }
+    $owner = [KitDesktop]::WindowPid($front)
+    if ($owner -in @([KitDesktop]::WindowPid($Window), [Diagnostics.Process]::GetCurrentProcess().Id)) { return }
+    $process = Get-Process -Id $owner -ErrorAction SilentlyContinue
+    if (-not $process) { return }
+    try {
+        $name = $process.ProcessName
+        if ($AllowShell -and $name -in 'explorer','ShellExperienceHost','StartMenuExperienceHost','SearchHost','dwm') { return }
+        if ($ModalOnly -and [KitDesktop]::WindowClass($front) -ne '#32770' -and -not [KitDesktop]::SecurityPrompt()) { return }
+        $message = "$name has the foreground. The full-screen check stopped. Dismiss or move that window yourself before retrying."
+        $message | Set-Content -LiteralPath (Join-Path $Evidence 'foreground-block.txt') -Encoding UTF8
+        throw [NotSupportedException]::new($message)
+    } finally { $process.Dispose() }
+}
+
 function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evidence, [string]$Label) {
     $switches = Join-Path $Evidence 'fullscreen-switch.txt'
     $mode = [KitDesktop]::CurrentMode()
+    Assert-KitExclusiveForeground $Window $Evidence
     [KitDesktop]::Chord(18, 9)
     Wait-KitCondition {
+        Assert-KitExclusiveForeground $Window $Evidence -ModalOnly
         $current = [KitDesktop]::GetForegroundWindow()
         $current -ne $Window -and $current -ne [IntPtr]::Zero -and
             [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
-    } 8 'Alt+Tab to switch away' | Out-Null
-    $foreground = [KitDesktop]::GetForegroundWindow()
-    "Away: foreground class $([KitDesktop]::WindowClass($foreground)); PID $([KitDesktop]::WindowPid($foreground)); game PID $([KitDesktop]::WindowPid($Window)); game minimized $([KitDesktop]::IsIconic($Window))" |
-        Set-Content -LiteralPath $switches -Encoding UTF8
+    } 8 'Alt+Tab to switch away' -SkipSecurity | Out-Null
+    "Alt+Tab switched away. Game minimized $([KitDesktop]::IsIconic($Window))." |
+         Set-Content -LiteralPath $switches -Encoding UTF8
     [KitDesktop]::Chord(18, 9)
     try {
-        Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $window } 8 'Alt+Tab to return' | Out-Null
+        Wait-KitCondition {
+            Assert-KitExclusiveForeground $Window $Evidence -ModalOnly
+            [KitDesktop]::GetForegroundWindow() -eq $window
+        } 8 'Alt+Tab to return' -OnTimeout { Assert-KitExclusiveForeground $Window $Evidence -AllowShell } -SkipSecurity | Out-Null
         'Alt+Tab returned foreground to the game.' | Add-Content -LiteralPath $switches
     } catch {
-        $foreground = [KitDesktop]::GetForegroundWindow()
-        "Alt+Tab selected $([KitDesktop]::WindowClass($foreground)); game minimized $([KitDesktop]::IsIconic($window)). Trying a direct window restore." |
-            Add-Content -LiteralPath $switches
+        if ($_.Exception -is [NotSupportedException]) { throw }
+        'Trying a direct restore from the Windows shell.' | Add-Content -LiteralPath $switches
         Focus-KitWindow $window
     }
     Wait-KitCondition {
+        Assert-KitExclusiveForeground $Window $Evidence
         [KitDesktop]::GetForegroundWindow() -eq $Window -and -not [KitDesktop]::IsIconic($Window) -and
             [KitDesktop]::CurrentMode() -eq $mode
-    } 8 'the game to restore its exclusive display mode' | Out-Null
+    } 8 'the game to restore its exclusive display mode' -SkipSecurity | Out-Null
     # During mode recovery Windows can discard console keystrokes. Ask the
     # running client for the picture through its own native console.
     Save-KitFrame $Window $HomePath $Evidence "$Label-return" -NativeConsole
@@ -270,6 +334,9 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
 function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode, [switch]$Borderless) {
     Initialize-KitDesktop
     $entry = New-RunContext 'game'
+    if ($DisplayMode -and -not $Borderless) {
+        Assert-KitExclusiveForeground ([IntPtr]::Zero) $entry.Evidence -ModalOnly
+    }
     $homePath = Join-Path $entry.Folder 'profile'
     New-TestProfile $homePath
     $argsText = (Get-EngineArgs $homePath $GamePath) +
@@ -285,12 +352,15 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
     $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder $settings
     $window = [IntPtr]::Zero
     try {
-        $window = Get-KitGameWindow $run.Process
+        $exclusive = if ($DisplayMode -and -not $Borderless) { $entry.Evidence }
+        $window = Get-KitGameWindow $run.Process $exclusive
         if ($DisplayMode) {
             $log = Join-Path $homePath 'main\console_mp.log'
             Wait-KitCondition {
+                if ($exclusive) { Assert-KitExclusiveForeground $window $entry.Evidence -ModalOnly }
                 (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
-            } 40 'the completed game startup' | Out-Null
+            } 40 'the completed game startup' -SkipSecurity:([bool]$exclusive) | Out-Null
+            if (-not $Borderless) { Assert-KitExclusiveForeground $window $entry.Evidence }
             Send-KitCommand $window '/toggleconsole; r_fullscreen; r_mode'
             $mode = [KitDesktop]::CurrentMode()
             if ($mode -ne $DisplayMode) { throw "The display reported $mode after requesting $DisplayMode." }
@@ -300,11 +370,13 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
                 if (-not [KitDesktop]::FillsMonitorWithoutFrame($window)) { throw "Borderless window geometry did not match the monitor. $facts" }
                 Save-KitFrame $window $homePath $entry.Evidence 'kit-borderless'
             } else {
+                "Menu cursor clip $([KitDesktop]::Clip())" |
+                    Set-Content -LiteralPath (Join-Path $entry.Evidence 'fullscreen-input.txt') -Encoding UTF8
                 Save-KitFrame $window $homePath $entry.Evidence 'kit-fullscreen'
                 Invoke-KitTaskSwitch $window $homePath $entry.Evidence 'kit-fullscreen'
             }
         } else {
-            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace
+            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace $run.Process
         }
     } finally {
         if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }

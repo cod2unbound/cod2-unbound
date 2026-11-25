@@ -552,10 +552,11 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
 }
 
-function Invoke-KitFullscreenMatch([string]$Edition) {
+function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') {
     Initialize-KitDesktop
     $serverEntry = New-RunContext 'fullscreen-server'
     $clientEntry = New-RunContext 'fullscreen-client'
+    Assert-KitExclusiveForeground ([IntPtr]::Zero) $clientEntry.Evidence -ModalOnly
     $desktop = [KitDesktop]::CurrentMode()
     $port = if ($Edition -eq 'original') { 29803 } else { 29804 }
     $admin = 'kit' + [guid]::NewGuid().ToString('N')
@@ -564,10 +565,11 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
     New-TestProfile $clientEntry.Folder
     'bind w "+forward"' | Add-Content -LiteralPath (Join-Path $clientEntry.Folder 'main\players\kit\config_mp.cfg') -Encoding ASCII
     $clientArgs = (Get-EngineArgs $clientEntry.Folder $GamePath -Port ($port+100)) +
-        " +set r_rendererPreference dx9 +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
+        " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
         " +set com_introPlayed 1 +set cl_allowDownload 0 +connect 127.0.0.1:$port"
     $run = $null
     $window = [IntPtr]::Zero
+    $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
     $trace = New-KitFrameTrace $clientEntry.Evidence
     $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder `
         @{ COD2_UNBOUND_HIDE_SERVER_CONSOLE='1' } -NoWindow
@@ -576,16 +578,23 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
             (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
         } 45 'the exclusive match server' | Out-Null
         $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder @{ COD2_FRAME_TRACE_FILE=$trace.Path }
-        $window = Get-KitGameWindow $run.Process
-        Wait-KitCondition { Get-KitNamedPlayer $port } 65 'Kit Player to join the exclusive match' | Out-Null
-        $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
-        Wait-KitCondition {
+        $window = Get-KitGameWindow $run.Process $clientEntry.Evidence
+        Wait-KitMapLoad {
+            Assert-KitExclusiveForeground $window $clientEntry.Evidence -ModalOnly
+            (Get-KitNamedPlayer $port) -and
             (Test-Path $log) -and (Select-String -LiteralPath $log -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
-        } 35 'the joined client to finish loading' | Out-Null
+        } 65 'exclusive-match' $run.Process $log $clientEntry.Evidence -Exclusive
+        if (-not (Select-String -LiteralPath $log -SimpleMatch "Using Direct3D $($Renderer.Substring(2)) code path" -Quiet)) {
+            throw "The exclusive match did not open in $(Get-GraphicsMode $Renderer) mode."
+        }
+        Assert-KitExclusiveForeground $window $clientEntry.Evidence
         Enter-KitPlay $window
+        $inputReceipt = Join-Path $clientEntry.Evidence 'fullscreen-input.txt'
+        "Play cursor clip before switch $([KitDesktop]::Clip())" | Set-Content -LiteralPath $inputReceipt
         Start-KitFrameSample $trace $window $log
         Save-KitFrame $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
         Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
+        "Play cursor clip after switch $([KitDesktop]::Clip())" | Add-Content -LiteralPath $inputReceipt
         $viewPattern = '(?m)^\( *-?\d+ +-?\d+ +-?\d+\) *: *-?\d+'
         Send-KitCommand $window '/toggleconsole; viewpos'
         $before = [regex]::Matches((Read-KitText $log), $viewPattern) | Select-Object -Last 1

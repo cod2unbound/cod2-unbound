@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import plistlib
 import re
 import secrets
@@ -322,10 +322,14 @@ def pack(folder):
     paths = [path for path in paths if path.name != "CoD2-Unbound-results.zip"]
     if not paths:
         raise ValueError("No step archives are available to pack.")
+    def shareable(item):
+        return not any(part.startswith("private-map-stall-") for part in PurePosixPath(item.filename).parts)
+
     for path in paths:
         with zipfile.ZipFile(path) as packet:
             for item in packet.infolist():
-                print(f"{item.filename} ({item.file_size} bytes)")
+                if shareable(item):
+                    print(f"{item.filename} ({item.file_size} bytes)")
     if input("Review the pictures, sound and test demos. Type PACK to make one ZIP.\n> ").strip() != "PACK":
         return
     result = folder / "CoD2-Unbound-results.zip"
@@ -334,7 +338,7 @@ def pack(folder):
         for path in paths:
             with zipfile.ZipFile(path) as packet:
                 for item in packet.infolist():
-                    if not item.is_dir():
+                    if not item.is_dir() and shareable(item):
                         with packet.open(item) as contents, combined.open(item.filename, "w", force_zip64=True) as dest:
                             shutil.copyfileobj(contents, dest)
     pending.replace(result)
