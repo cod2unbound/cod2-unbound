@@ -140,19 +140,20 @@ public sealed partial class SetupPage
         return row;
     }
 
-    private FrameworkElement Note(string text, string? symbol = null)
+    private Grid Note(string text, string? symbol = null)
     {
         var words = new TextBlock { Text = text, Style = StyleFor("SetupDetail") };
-        if (symbol is null)
-            return words;
-
-        var icon = Symbol(symbol, 11);
-        icon.Foreground = Token("secondary");
-        icon.VerticalAlignment = VerticalAlignment.Top;
-        var line = Columns(6, GridLength.Auto, new(1, GridUnitType.Star));
-        Put(line, 0, icon);
-        Put(line, 1, words);
-        GlyphAlign.SetIsEnabled(line, true);
+        var line = symbol is null ? new Grid() : Columns(6, GridLength.Auto, new(1, GridUnitType.Star));
+        if (symbol is not null)
+        {
+            var icon = Symbol(symbol, 11);
+            icon.Foreground = Token("secondary");
+            icon.VerticalAlignment = VerticalAlignment.Top;
+            line.Children.Add(icon);
+            Grid.SetColumn(words, 1);
+            GlyphAlign.SetIsEnabled(line, true);
+        }
+        line.Children.Add(words);
         AutomationProperties.SetName(line, text);
         return line;
     }
