@@ -226,6 +226,9 @@ $Steps = @(
             }
         }
     }
+    Add-KitStep 'launcher-windows10' 'Open Setup and Home in both appearances with Windows 10 behavior' {
+        Invoke-KitWindows10Startup
+    }
     foreach ($surface in 'home','jump','hosting','configs','library','settings') {
         Add-KitStep "launcher-$surface" "Launcher $surface controls and pictures" {
             param($step)

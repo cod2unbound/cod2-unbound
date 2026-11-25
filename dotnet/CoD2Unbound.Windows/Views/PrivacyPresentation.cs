@@ -126,7 +126,7 @@ internal static class PrivacyPresentation
             panel.Children.Add(row);
         }
         panel.Children.Add(Caption("No account, name or CD key goes with it, and a report that seems to hold a CD key is never sent. The launcher asks Sentry to leave your network address out of the report and keeps track of reports Sentry has accepted."));
-        bool useAcrylic = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)
+        bool useAcrylic = WindowsVersion.IsWindows11OrLater
             && DesktopAcrylicController.IsSupported();
         return new Flyout
         {

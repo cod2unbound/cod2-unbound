@@ -11,6 +11,59 @@ function Save-KitSurface([IntPtr]$Window, [string]$Name, [string[]]$Controls, [s
         Add-Content -LiteralPath (Join-Path $Results 'automation-controls.txt') -Encoding UTF8
 }
 
+function Invoke-KitWindows10Startup {
+    Initialize-KitDesktop
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    $exe = Get-KitStartTarget
+    [IO.File]::WriteAllText((Join-Path $KitProfile 'empty-releases.json'), '[]')
+    foreach ($appearance in 'dark','light') {
+        foreach ($route in 'setup','first-home','returning-home') {
+            $name = "$appearance-$route"
+            $LauncherHome = New-Folder (Join-Path $Private $name)
+            $profile = New-Folder (Join-Path $LauncherHome 'launcher')
+            [IO.File]::WriteAllText((Join-Path $profile 'launcher-settings.json'), "{`"appearance`":`"$appearance`"}")
+            if ($route -ne 'setup') {
+                [IO.File]::WriteAllText((Join-Path $profile '.launcher-setup-complete'), "prepared`n")
+            }
+            if ($GamePath) {
+                [IO.File]::WriteAllText((Join-Path $profile 'data-path.txt'), $GamePath)
+            }
+            if ($route -eq 'returning-home') {
+                [IO.File]::WriteAllText((Join-Path $profile 'launcher-library.json'), '{"recent":["127.0.0.1:9"]}')
+            }
+            $settings = Get-KitLauncherSettings
+            $settings.COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS = '0'
+            $settings.COD2_UNBOUND_TEST_FORCE_WINDOWS10 = '1'
+            $run = Start-KitProcess $exe '' $LauncherHome $settings
+            $trace = Join-Path $LauncherHome 'startup-timing.log'
+            try {
+                $app = Get-KitLauncherWindow $run.Process
+                $id = $run.Process.Id
+                Wait-KitCondition {
+                    if ($run.Process.HasExited) { throw "The launcher exited with $($run.Process.ExitCode)." }
+                    (Test-Path -LiteralPath $trace) -and
+                        (Select-String -LiteralPath $trace -SimpleMatch " $id first content frame" -Quiet)
+                } 45 "$name content" | Out-Null
+                if (-not (Select-String -LiteralPath $trace -SimpleMatch " $id Windows 10 acrylic fallback applied" -Quiet)) {
+                    throw 'The Windows 10 fallback did not apply to both themes.'
+                }
+                $control = switch ($route) {
+                    'setup' { 'SetupNext' }
+                    'first-home' { 'OpenGameMenuButton' }
+                    'returning-home' { 'LaunchButton' }
+                }
+                [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
+                Save-KitSurface $app $name @($control)
+            } finally {
+                if (-not $run.Process.HasExited) { [void]$run.Process.CloseMainWindow() }
+                $done = Complete-KitProcess $run (New-Folder (Join-Path $Results $name)) 12
+                Save-Text $trace (Join-Path $Results "$name-startup.log")
+                if ($done.TimedOut -or $done.ExitCode -ne 0) { throw "$name did not close cleanly." }
+            }
+        }
+    }
+}
+
 function Invoke-KitSurface([string]$Page) {
     if ($Page -ne 'home' -and $Page -ne 'hosting') {
         Invoke-KitSurfaceRun $Page

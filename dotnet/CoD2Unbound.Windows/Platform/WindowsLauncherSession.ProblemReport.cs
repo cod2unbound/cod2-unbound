@@ -64,8 +64,13 @@ internal sealed partial class WindowsLauncherSession
 
     private static string ReportWindowsVersion()
     {
+        string architecture = RuntimeInformation.OSArchitecture == Architecture.X64 ? "x64" :
+            $"{RuntimeInformation.OSArchitecture.ToString().ToLowerInvariant()} · {RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()} launcher";
+        if (WindowsVersion.ForceWindows10)
+            return $"Windows 10 22H2 (19045) · {architecture}";
+
         var version = Environment.OSVersion.Version;
-        string edition = version.Build >= 22000 ? "Windows 11" : "Windows 10";
+        string edition = WindowsVersion.IsWindows11OrLater ? "Windows 11" : "Windows 10";
         string? release = null;
         try
         {
@@ -76,8 +81,6 @@ internal sealed partial class WindowsLauncherSession
         if (release is { Length: 4 } && char.IsAsciiDigit(release[0]) && char.IsAsciiDigit(release[1]) &&
             release[2] is 'H' or 'h' && char.IsAsciiDigit(release[3]))
             edition += " " + release;
-        string architecture = RuntimeInformation.OSArchitecture == Architecture.X64 ? "x64" :
-            $"{RuntimeInformation.OSArchitecture.ToString().ToLowerInvariant()} · {RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()} launcher";
         return FormattableString.Invariant($"{edition} ({version.Build}) · {architecture}");
     }
 
