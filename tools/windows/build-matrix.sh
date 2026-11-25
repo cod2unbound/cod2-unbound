@@ -2,6 +2,10 @@
 # Cross-compile the release matrix and check the resulting PE files.
 set -euo pipefail
 
+if [[ $# -gt 1 || ( $# -eq 1 && $1 != --source-checks ) ]]; then
+    echo "Usage: $0 [--source-checks]" >&2
+    exit 2
+fi
 root=$(cd "$(dirname "$0")/../.." && pwd)
 output="${COD2_WINDOWS_OUTPUT:-$root/output/r05/builds}/matrix"
 mkdir -p "$output"
@@ -9,7 +13,7 @@ mkdir -p "$output"
 exec docker run --rm --init -i --pull=never --platform linux/amd64 \
     --label cod2.windows.check=matrix \
     -v "$root:/src:ro" -v "$output:/out" \
-    "${COD2_WINDOWS_IMAGE:-cod2-build-win}" bash -s -- "${COD2_WINDOWS_JOBS:-3}" <<'BASH'
+    "${COD2_WINDOWS_IMAGE:-cod2-build-win}" bash -s -- "${COD2_WINDOWS_JOBS:-3}" "${1:-}" <<'BASH'
 set -euo pipefail
 export LC_ALL=C
 jobs=$1
@@ -17,6 +21,34 @@ if [[ ! $jobs =~ ^[1-9][0-9]*$ ]]; then
     echo "COD2_WINDOWS_JOBS must be a positive integer" >&2
     exit 2
 fi
+
+checks=$(mktemp -d /out/checks-XXXXXXXX)
+trap 'rm -r "$checks"' EXIT
+if [[ $2 == --source-checks ]]; then
+    # The checkout is mounted read-only and belongs to the runner user.
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/src
+    failed=0
+    python3 -B /src/tools/ci/check-platform-guards.py || failed=1
+    for profile in plain codx; do
+        if python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --quiet; then
+            python3 -B /src/tools/export/export.py "$checks/$profile" --profile "$profile" --check --quiet || failed=1
+        else
+            failed=1
+        fi
+    done
+    exit "$failed"
+fi
+
+if cmake -S /src -B "$checks/stale-option" -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-mingw64.cmake \
+    -DCOD2_WIN32_CLIENT=ON -DCOD2_WIN32_REAL_D3D9=ON > /out/stale-option.log 2>&1 ||
+    ! grep -Fq 'COD2_WIN32_REAL_D3D9 was removed.' /out/stale-option.log ||
+    ! grep -Fq 'COD2_WIN32_D3D9=ON' /out/stale-option.log; then
+    echo "Expected the obsolete Direct3D 9 option to fail with its replacement" >&2
+    cat /out/stale-option.log >&2
+    exit 1
+fi
+echo "PASS obsolete Direct3D 9 option diagnostic"
 
 build() {
     local name=$1 arch=$2 edition=$3 renderer=$4
