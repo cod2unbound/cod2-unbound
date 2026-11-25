@@ -1,6 +1,5 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Views;
-using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -15,62 +14,65 @@ public sealed partial class MainWindow
 
     private void InitializeShellShortcuts()
     {
-        Root.PreviewKeyDown += OnShellLaunchKeyDown;
         Root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         foreach (var shortcut in LauncherShortcuts.All.Where(item => HasShellAccelerator(item.Command)))
+            AddShellAccelerators(Root, shortcut);
+        Root.GotFocus += OnHomeButtonFocused;
+    }
+
+    private void OnHomeButtonFocused(object sender, RoutedEventArgs args)
+    {
+        if (ContentFrame.Content is not HomePage || args.OriginalSource is not Button button)
+            return;
+
+        // A dismissed sheet restores focus to its opener. WinUI checks accelerators
+        // on the focused button before the button can consume Enter as a click.
+        button.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+        foreach (var shortcut in LauncherShortcuts.All.Where(item => item.Command is ShellCommand.Launch or ShellCommand.OpenGameMenu))
+            AddShellAccelerators(button, shortcut, scopeToOwner: true);
+    }
+
+    private void AddShellAccelerators(UIElement owner, LauncherShortcut shortcut, bool scopeToOwner = false)
+    {
+        foreach (string chord in shortcut.Chords)
         {
-            foreach (string chord in shortcut.Chords)
+            var key = chord.Split('+')[^1] switch
             {
-                var key = chord.Split('+')[^1] switch
+                "," => (VirtualKey)0xBC, // VK_OEM_COMMA
+                "/" => (VirtualKey)0xBF, // VK_OEM_2
+                "1" => VirtualKey.Number1, "2" => VirtualKey.Number2,
+                "3" => VirtualKey.Number3, "4" => VirtualKey.Number4,
+                var name => Enum.Parse<VirtualKey>(name)
+            };
+            var modifiers = VirtualKeyModifiers.None;
+            if (chord.Contains("Ctrl+", StringComparison.Ordinal))
+                modifiers |= VirtualKeyModifiers.Control;
+            if (chord.Contains("Shift+", StringComparison.Ordinal))
+                modifiers |= VirtualKeyModifiers.Shift;
+            if (scopeToOwner && owner.KeyboardAccelerators.Any(item => item.Key == key && item.Modifiers == modifiers))
+                continue;
+
+            var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
+            if (scopeToOwner)
+                accelerator.ScopeOwner = owner;
+            accelerator.Invoked += async (sender, args) =>
+            {
+                if (shortcut.Command == ShellCommand.FullScreen)
+                    OnFullScreen(sender, args);
+                else if (shortcut.Command == ShellCommand.Find)
+                    args.Handled = FocusPageSearch();
+                else if (scopeToOwner || CanRunShellCommand(shortcut.Command))
                 {
-                    "," => (VirtualKey)0xBC, // VK_OEM_COMMA
-                    "/" => (VirtualKey)0xBF, // VK_OEM_2
-                    "1" => VirtualKey.Number1, "2" => VirtualKey.Number2,
-                    "3" => VirtualKey.Number3, "4" => VirtualKey.Number4,
-                    var name => Enum.Parse<VirtualKey>(name)
-                };
-                var accelerator = new KeyboardAccelerator { Key = key, Modifiers = VirtualKeyModifiers.None };
-                if (chord.Contains("Ctrl+", StringComparison.Ordinal))
-                    accelerator.Modifiers |= VirtualKeyModifiers.Control;
-                if (chord.Contains("Shift+", StringComparison.Ordinal))
-                    accelerator.Modifiers |= VirtualKeyModifiers.Shift;
-                accelerator.Invoked += async (sender, args) =>
-                {
-                    if (shortcut.Command == ShellCommand.FullScreen)
-                        OnFullScreen(sender, args);
-                    else if (shortcut.Command == ShellCommand.Find)
-                        args.Handled = FocusPageSearch();
-                    else if (CanRunShellCommand(shortcut.Command))
-                    {
-                        args.Handled = true;
-                        await RunShellCommandAsync(shortcut.Command);
-                    }
-                };
-                Root.KeyboardAccelerators.Add(accelerator);
-            }
+                    args.Handled = true;
+                    await RunShellCommandAsync(shortcut.Command);
+                }
+            };
+            owner.KeyboardAccelerators.Add(accelerator);
         }
     }
 
-    private async void OnShellLaunchKeyDown(object sender, KeyRoutedEventArgs args)
-    {
-        // A dialog restores focus to the button that opened it. WinUI's button
-        // handles Enter before a keyboard accelerator on an ancestor sees it.
-        if (args.Key != VirtualKey.Enter || JumpPopup.IsOpen || !ControlKeyDown() ||
-            ShellKeyDown(VirtualKey.Menu) || ShellKeyDown(VirtualKey.LeftWindows) || ShellKeyDown(VirtualKey.RightWindows))
-            return;
-        var command = ShellKeyDown(VirtualKey.Shift) ? ShellCommand.OpenGameMenu : ShellCommand.Launch;
-        if (!CanRunShellCommand(command))
-            return;
-
-        args.Handled = true;
-        await RunShellCommandAsync(command);
-    }
-
-    private static bool ShellKeyDown(VirtualKey key) =>
-        (InputKeyboardSource.GetKeyStateForCurrentThread(key) & global::Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
-
     private static bool HasShellAccelerator(ShellCommand command) => command is
-        ShellCommand.Home or ShellCommand.Servers or
+        ShellCommand.Launch or ShellCommand.OpenGameMenu or ShellCommand.Home or ShellCommand.Servers or
         ShellCommand.Library or ShellCommand.Configs or ShellCommand.Settings or ShellCommand.Jump or ShellCommand.Find or
         ShellCommand.RefreshServers or ShellCommand.Connect or ShellCommand.Favorite or ShellCommand.CopyAddress or
         ShellCommand.FilterServers or ShellCommand.Import or ShellCommand.Paste or ShellCommand.NewLoadout or

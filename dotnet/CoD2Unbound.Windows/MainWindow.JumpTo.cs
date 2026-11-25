@@ -286,7 +286,9 @@ public sealed partial class MainWindow
         }
     }
 
-    private static bool ControlKeyDown() => ShellKeyDown(VirtualKey.Control);
+    private static bool ControlKeyDown() =>
+        (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) &
+         global::Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
 
     private IEnumerable<JumpTarget> AppJumpTargets()
     {
