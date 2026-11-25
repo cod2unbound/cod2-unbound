@@ -35,11 +35,11 @@ inspection. The compiler controls establish which objects change.
 
 ## Native Original 1.3 client
 
-Retail 1.3 starts fetching missing server archives automatically when Download
-Mods is enabled. The native Original edition asks before requesting the first
-file. Allow applies to the files needed for that join. Cancel disconnects
-and returns to the main menu. Stock servers and servers whose files are
-already installed join directly. [Issue 143](https://github.com/cod2unbound/cod2-unbound/issues/143)
+Retail 1.3 starts fetching missing server archives automatically when
+**Allow Downloading** is enabled. The native Original edition asks before
+requesting the first file. Allow applies to the files needed for that join.
+Cancel disconnects and returns to the main menu. Stock servers and servers
+whose files are already installed join directly. [Issue 143](https://github.com/cod2unbound/cod2-unbound/issues/143)
 
 ## Native dedicated server privacy
 
