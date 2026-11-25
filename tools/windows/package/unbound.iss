@@ -32,7 +32,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 SetupArchitecture=x64
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-MinVersion=10.0.19041
+MinVersion=10.0.19045
 OutputDir={#Artifacts}
 OutputBaseFilename=CoD2-Unbound-{#ReleaseVersion}-windows-x64-setup
 SignedUninstaller=yes
@@ -51,7 +51,7 @@ UninstallDisplayIcon={app}\launcher\{#Launcher}
 #endif
 
 [Messages]
-WinVersionTooLowError=CoD2 Unbound requires Windows 10 (22H2) or Windows 11. The minimum Windows build is 19041.
+WinVersionTooLowError=CoD2 Unbound requires Windows 10 (22H2) or Windows 11.
 WindowsVersionNotSupported=CoD2 Unbound Setup needs an x64-compatible PC running Windows 10 (22H2) or Windows 11.
 ConfirmUninstall=Remove %1 and its installed files? Your loadouts, settings, screenshots, demos and CD key will stay in place.
 
@@ -241,7 +241,7 @@ begin
     'if ($image -in $paths -and !$p.HasExited) { $p.Kill(); $null=$p.WaitForExit(8000) } ' +
     '} catch {} finally { $p.Dispose() } }';
   if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
-    '-NoProfile -NonInteractive -Command "' + Script + '"', '', SW_HIDE, ewWaitUntilTerminated, Code) then
+    '-NoProfile -NonInteractive -Command "' + Script + '"', ExpandConstant('{sys}'), SW_HIDE, ewWaitUntilTerminated, Code) then
     Log('Could not start the dedicated-server shutdown helper.')
   else
     Log(Format('Dedicated-server shutdown helper exited with %d.', [Code]));
@@ -598,7 +598,7 @@ begin
   end;
   Backup := Root + '.previous-install';
   if not MoveInstall(Root, Backup) then begin
-    Result := 'Setup could not save the previous installation.';
+    Result := 'Setup could not move the previous installation. Close CoD2 Unbound and any programs using its installation folder, then try again.';
     Exit;
   end;
   TransactionRoot := Root;
@@ -658,7 +658,9 @@ begin
     AllowCod2 := CanClaimLink('cod2');
     AllowSetupLinks := CanClaimLink('cod2unbound');
   end;
-  if (CurStep = ssDone) and (TransactionRoot <> '') then begin
+  { The Finish page can launch the app before ssDone. Commit before offering
+    that action so startup cannot mistake an active update for an interruption. }
+  if (CurStep = ssPostInstall) and (TransactionRoot <> '') then begin
     UpdateCommitted := MoveInstall(TransactionRoot + '.previous-install', TransactionRoot + '.completed-install');
     if UpdateCommitted then begin
       ClearTransaction();
@@ -666,7 +668,7 @@ begin
       if not DelTree(TransactionRoot + '.completed-install', True, True, True) then
         Log('Setup will clear the completed backup on the next run.');
     end else
-      Log('Could not commit the update. The previous copy will be restored.');
+      RaiseException('Setup could not finish the update. The previous copy will be restored.');
   end;
 end;
 

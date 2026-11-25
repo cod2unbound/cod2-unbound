@@ -280,10 +280,8 @@ def verify_installer(artifacts, work, previous, run):
         if len(list(user_start.glob("*.lnk"))) != old_shortcuts:
             raise ValueError("Missing per-user Start menu entries")
 
-        # Earlier fixtures require Windows 11. Exercise the current Setup and its
-        # maintenance paths at Wine's Windows 10 setting after seeding that install.
-        wine(env, "winecfg.exe", "-v", "win10")
-        print(wine(env, "cmd", "/c", "ver").stdout.strip(), flush=True)
+        # Wine 9's Windows 10 preset reports 19043. Keep the upgrade checks on
+        # its supported Windows 11 preset and check 22H2 on native Windows.
 
         existing_scheme = USER_CLASSES + r"\cod2\shell\open\command"
         wine(env, "reg", "add", existing_scheme, "/ve", "/d", "Third-party link handler",
@@ -294,7 +292,7 @@ def verify_installer(artifacts, work, previous, run):
         else:
             expired = re.search(r"MoveFileExW retry window expired after (\d+) ms", receipt)
             if (status == 0 or len(refusals) < 2 or not expired or int(expired[1]) < 15000
-                    or "Setup could not save the previous installation." not in receipt):
+                    or "Close CoD2 Unbound and any programs using its installation folder" not in receipt):
                 raise ValueError("Setup did not exhaust its rename retry window and report the previous-install failure")
             assert_version(env, root, "HKCU", old_version)
             if root.with_name(f"{root.name}.previous-install").exists():
