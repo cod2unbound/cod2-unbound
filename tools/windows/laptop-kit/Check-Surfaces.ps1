@@ -242,6 +242,58 @@ function Save-KitHostingExportPeers($Root, [string]$Route, [string]$Kind) {
         Add-Content -LiteralPath (Join-Path $Results 'hosting-export-peers.txt') -Encoding UTF8
 }
 
+function Select-KitExportFolder($Picker, [string]$Destination) {
+    $window = [IntPtr]$Picker.Current.NativeWindowHandle
+    if ($window -eq [IntPtr]::Zero -or [KitDesktop]::GetForegroundWindow() -ne $window) {
+        throw 'The launcher folder picker is no longer in front.'
+    }
+    # Alt+D is the native folder picker's address shortcut on both Windows versions.
+    [KitDesktop]::Chord(18, 68)
+    $keys = [regex]::Replace($Destination, '[+^%~(){}\[\]]', [Text.RegularExpressions.MatchEvaluator]{
+        param($match)
+        '{' + $match.Value + '}'
+    })
+    [Windows.Forms.SendKeys]::SendWait($keys)
+    [KitDesktop]::Tap(13)
+    [KitDesktop]::Tap(9)
+    [KitDesktop]::Chord(18, 68)
+    Wait-KitCondition {
+        if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'The folder picker lost foreground.' }
+        $edit = [Windows.Automation.AutomationElement]::FocusedElement
+        $value = $null
+        if ($edit -and $edit.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern, [ref]$value)) {
+            $value.Current.Value.TrimEnd([char]92) -ieq $Destination.TrimEnd([char]92)
+        }
+    } 10 'the folder picker to show the private export path' | Out-Null
+    [KitDesktop]::Tap(9)
+    $commit = Wait-KitCondition {
+        $button = Find-KitControl $Picker '1'
+        if ($button -and $button.Current.ControlType -eq [Windows.Automation.ControlType]::Button) { return $button }
+        foreach ($name in 'Select Folder', 'Open') {
+            $button = Find-KitControl $Picker $name -Name
+            if ($button -and $button.Current.ControlType -eq [Windows.Automation.ControlType]::Button) { return $button }
+        }
+    } 10 'the folder picker to expose its selection button'
+    if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'The folder picker lost foreground.' }
+    "picker commit=$($commit.Current.ControlType.ProgrammaticName)/$($commit.Current.AutomationId)" |
+        Add-Content -LiteralPath (Join-Path $Results 'hosting-export-peers.txt') -Encoding UTF8
+    $action = $null
+    if ($commit.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$action)) {
+        $action.Invoke()
+    } else {
+        $bounds = $commit.Current.BoundingRectangle
+        if ($bounds.IsEmpty) { throw 'The folder picker selection button has no visible bounds.' }
+        $cursor = [Windows.Forms.Cursor]::Position
+        try {
+            [Windows.Forms.Cursor]::Position = [Drawing.Point]::new([int]($bounds.X + $bounds.Width / 2),
+                [int]($bounds.Y + $bounds.Height / 2))
+            if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'The folder picker lost foreground.' }
+            [KitDesktop]::ClickButton($false)
+            [KitDesktop]::ClickButton($true)
+        } finally { [Windows.Forms.Cursor]::Position = $cursor }
+    }
+}
+
 function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
     $row = Wait-KitCondition { Find-KitControl $App 'Kit Export' -Name } 12 'the saved Hosting row'
     $row.SetFocus()
@@ -261,7 +313,8 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
         Invoke-KitControl $surface.Root 'CloseButton'
         Wait-KitCondition { -not (Find-KitHostingExportDialog $App) } 12 'the export dialog to close' | Out-Null
     } else {
-        Invoke-KitControl $surface.Root '2'
+        if (-not (Find-KitExportPicker $App)) { throw 'The folder picker lost foreground.' }
+        [KitDesktop]::Tap(27)
         Wait-KitCondition { -not (Find-KitExportPicker $App) } 12 'the export picker to close' | Out-Null
     }
     if (@(Get-ChildItem -LiteralPath $Destination -Force).Count) { throw 'Cancel wrote export files.' }
@@ -285,17 +338,7 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
     } else {
         $surface = $surface.Root
     }
-    # The Windows file dialog accepts an absolute folder path in its filename
-    # edit. Resolve the ValuePattern edit beneath the native filename control.
-    $fileName = Wait-KitCondition { Find-KitControl $surface '1148' } 12 'the folder picker filename field'
-    $edit = if ($fileName.Current.ControlType -eq [Windows.Automation.ControlType]::Edit) { $fileName }
-        else {
-            $fileName.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new(
-                [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit))
-        }
-    if (-not $edit) { throw 'The native folder picker did not expose a filename edit.' }
-    $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Destination)
-    Invoke-KitControl $surface '1'
+    Select-KitExportFolder $surface $Destination
     $config = Wait-KitCondition {
         Get-ChildItem -LiteralPath $Destination -Recurse -File -Filter 'server.cfg' | Select-Object -First 1
     } 15 'server.cfg in the private export folder'
