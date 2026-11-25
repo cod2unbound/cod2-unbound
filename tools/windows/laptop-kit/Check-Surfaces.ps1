@@ -349,17 +349,16 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
     $row.SetFocus()
     [KitDesktop]::Chord(16, 121)
     Wait-KitCondition { Find-KitControl $App 'HostingRowExport' } 12 'the Hosting row menu' | Out-Null
-    # Keep the flyout in place and use the same click as the manual export check.
+    # Keep focus in the keyboard-opened menu for the arrow and Enter input.
     Save-KitWindow $App (Join-Path $Results 'hosting-row-menu.png')
-    $bounds = Wait-KitCondition {
-        $item = Find-KitControl $App 'HostingRowExport'
-        if ($item -and -not $item.Current.BoundingRectangle.IsEmpty) { $item.Current.BoundingRectangle }
-    } 12 'the Hosting row export action'
-    if ([KitDesktop]::GetForegroundWindow() -ne $App) { throw 'The Hosting menu lost foreground.' }
-    [Windows.Forms.Cursor]::Position = [Drawing.Point]::new([int]($bounds.X + $bounds.Width / 2),
-        [int]($bounds.Y + $bounds.Height / 2))
-    [KitDesktop]::ClickButton($false)
-    [KitDesktop]::ClickButton($true)
+    Wait-KitCondition {
+        if ([KitDesktop]::GetForegroundWindow() -ne $App) { throw 'The Hosting menu lost foreground.' }
+        if (Find-KitControl $App 'HostingRowExport') {
+            if ([Windows.Automation.AutomationElement]::FocusedElement.Current.AutomationId -eq 'HostingRowExport') { return $true }
+            [KitDesktop]::Tap(40)
+        }
+    } 12 'keyboard focus on the Hosting row export action' | Out-Null
+    [KitDesktop]::Tap(13)
 
     $surface = Wait-KitHostingExport $App 'row'
     if ($surface.Kind -eq 'dialog') {
