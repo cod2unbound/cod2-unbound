@@ -44,6 +44,8 @@ try {
 } finally { $env:COD2_FRAME_TRACE_FILE = $originalTrace }
 if ((Get-KitPublicAnsweredCount '1 server answered.') -ne 1 -or
     (Get-KitPublicAnsweredCount '2 servers answered. Updated just now.') -ne 2 -or
+    (Get-KitPublicAnsweredCount ("246 servers " + [char]0x00b7 + ' just now')) -ne 246 -or
+    $null -ne (Get-KitPublicAnsweredCount '83 of 252 answered') -or
     $null -ne (Get-KitPublicAnsweredCount 'Refresh stopped. 2 servers answered.')) {
     throw 'The public refresh must use the launcher completion text.'
 }

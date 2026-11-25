@@ -55,16 +55,16 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings -WorkingDirectory (Join-Path $env:SystemRoot 'System32')
         $window = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $window
-        Invoke-KitControl $window 'Settings' -Name
-        Invoke-KitControl $window 'Updates' -Name
+        $window = Open-KitSettings $window
+        Invoke-KitControl (Find-KitControl $window 'Panes') 'Updates' -Name
         $action = Wait-KitCondition {
-            foreach ($title in 'Install and relaunch','Check now','Try again') {
+            foreach ($title in 'Install and Relaunch','Check Now','Try Again') {
                 if (Find-KitControl $window $title -Name) { return $title }
             }
         } 45 'the update check'
-        if ($action -ne 'Install and relaunch') { Invoke-KitControl $window $action -Name }
-        Wait-KitCondition { Find-KitControl $window 'Install and relaunch' -Name } 30 'an update offer' | Out-Null
-        Invoke-KitControl $window 'Install and relaunch' -Name
+        if ($action -ne 'Install and Relaunch') { Invoke-KitControl $window $action -Name }
+        Wait-KitCondition { Find-KitControl $window 'Install and Relaunch' -Name } 30 'an update offer' | Out-Null
+        Invoke-KitControl $window 'Install and Relaunch' -Name
         $expected = $current.Name.Split('-')[2]
         if ($Interrupt) {
             $pending = Join-Path $LauncherHome 'launcher\updates\pending.txt'

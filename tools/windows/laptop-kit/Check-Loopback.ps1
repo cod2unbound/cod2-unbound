@@ -15,7 +15,7 @@ function Request-KitServer([int]$Port, [string]$Command, [int]$Timeout = 600) {
     } finally { $udp.Dispose() }
 }
 
-function Set-KitEdit([IntPtr]$Window, [string]$Value, [string]$Text, [switch]$Name) {
+function Set-KitEdit($Window, [string]$Value, [string]$Text, [switch]$Name) {
     $node = Wait-KitCondition { Find-KitControl $Window $Value -Name:$Name } 12 "edit field $Value"
     $action = $node.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)
     $action.SetValue($Text)
@@ -204,7 +204,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         $since = Get-Date
         switch ($Route) {
             'connect' {
-                Invoke-KitControl $app ('Connect to address' + [char]0x2026) -Name
+                Open-KitConnect $app
                 Set-KitEdit $app 'AddressBox' "127.0.0.1:$port"
                 Invoke-KitControl $app 'PrimaryButton'
             }
@@ -335,7 +335,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             Focus-KitWindow $app
             [void][KitDesktop]::ShowWindow($app, 3)
             Wait-KitCondition {
-                if ($history = Find-KitControl $app 'All matches' -Name -AllowOffscreen) { return $history }
+                if ($history = Find-KitControl $app 'AllMatches' -AllowOffscreen) { return $history }
                 if (-not (Find-KitControl $app 'LaunchButton' -AllowOffscreen)) {
                     Invoke-KitControl $app 'HomeItem'
                 }
@@ -348,8 +348,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Wait-KitCondition {
                     if ($row = Find-KitControl $app $title -Name) { return $row }
                     if ($navigation.Attempts -lt 3 -and [DateTime]::UtcNow -ge $navigation.RetryAt -and
-                        (Find-KitControl $app 'All matches' -Name -AllowOffscreen)) {
-                        Invoke-KitControl $app 'All matches' -Name -AllowOffscreen
+                        (Find-KitControl $app 'AllMatches' -AllowOffscreen)) {
+                        Invoke-KitControl $app 'AllMatches' -AllowOffscreen
                         $navigation.Attempts++
                         $navigation.RetryAt = [DateTime]::UtcNow.AddSeconds(4)
                     }

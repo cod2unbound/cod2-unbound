@@ -110,7 +110,8 @@ function Start-KitPublicRefresh([IntPtr]$App) {
 }
 
 function Get-KitPublicAnsweredCount([string]$Message) {
-    if ($Message -match '^(\d+) servers? answered\.') { [int]$Matches[1] }
+    if ($Message -match '^(\d+) servers? answered\.' -or
+        $Message -match ('^(\d+) servers? ' + [char]0x00b7 + ' just now$')) { [int]$Matches[1] }
 }
 
 function Get-KitPublicMatchTiming([string]$HomePath, [DateTimeOffset]$Since, [string[]]$Addresses) {
@@ -282,7 +283,7 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
         $rows = @(Get-KitPublicRows $App)
         $status = Find-KitControl $App 'RefreshStatus' -AllowOffscreen
         $answered = if ($status) { Get-KitPublicAnsweredCount $status.Current.Name }
-        if ($null -eq $answered) {
+        if ($null -eq $answered -or (Find-KitControl $App 'OfflineBanner')) {
             throw 'The public masters did not confirm a completed refresh.'
         }
         Protect-KitText "$($status.Current.Name) Accessible rows: $($rows.Count)." |
@@ -410,13 +411,16 @@ function Invoke-KitPublicPlay {
     try {
         $window = Get-KitLauncherWindow $app
         Wait-KitHome $window
-        Invoke-KitControl $window 'Settings' -Name
-        Invoke-KitControl $window 'Game data' -Name
-        Wait-KitCondition { Find-KitControl $window ("Verified " + [char]0x00b7 + ' Stored only on this PC') -Name -AllowOffscreen } 12 'a verified CD key reported by the launcher' | Out-Null
-        Invoke-KitControl $window 'Updates' -Name
-        if (Find-KitControl $window 'Check now' -Name) { Invoke-KitControl $window 'Check now' -Name }
-        $version = (Read-InstalledVersion 'HKCU' $InstallRoot)
-        Save-KitSurface $window 'public-launcher-update' @("CoD2 Unbound $version is up to date")
+        $settingsWindow = Open-KitSettings $window
+        try {
+            $panes = Find-KitControl $settingsWindow 'Panes'
+            Invoke-KitControl $panes 'Game Data' -Name
+            Wait-KitCondition { Find-KitControl $settingsWindow ("Verified " + [char]0x00b7 + ' Stored only on this PC') -Name -AllowOffscreen } 12 'a verified CD key reported by the launcher' | Out-Null
+            Invoke-KitControl $panes 'Updates' -Name
+            if (Find-KitControl $settingsWindow 'Check Now' -Name) { Invoke-KitControl $settingsWindow 'Check Now' -Name }
+            $version = Read-InstalledVersion 'HKCU' $InstallRoot
+            Save-KitSurface $settingsWindow 'public-launcher-update' @() @("CoD2 Unbound $version is up to date")
+        } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
         foreach ($edition in 'original','cod2x') {
             if ($edition -eq 'cod2x') {
                 $binary = Get-Binary $edition -Root $InstallRoot

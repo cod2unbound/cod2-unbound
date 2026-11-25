@@ -6,8 +6,9 @@ function Get-KitLauncherWindow($Process) {
     } 55 'the launcher window'
 }
 
-function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
-    $root = [Windows.Automation.AutomationElement]::FromHandle($Window)
+function Get-KitControls($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    $root = if ($Window -is [Windows.Automation.AutomationElement]) { $Window }
+        else { [Windows.Automation.AutomationElement]::FromHandle($Window) }
     $property = if ($Name) { [Windows.Automation.AutomationElement]::NameProperty }
         else { [Windows.Automation.AutomationElement]::AutomationIdProperty }
     $condition = [Windows.Automation.PropertyCondition]::new($property, $Value)
@@ -17,11 +18,11 @@ function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch
     }
 }
 
-function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+function Find-KitControl($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen | Select-Object -First 1
 }
 
-function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+function Invoke-KitControl($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     if ($Value -match '^(?:Use key from disc install|UseDiscKey|ImportInstall|Import.*(?:install|disc|retail)|From your Call of Duty 2 install)') {
         throw [ArgumentException]::new('Retail action is forbidden during kit automation.')
     }
@@ -49,9 +50,38 @@ function Open-KitGameMenu([IntPtr]$Window) {
     if (Find-KitControl $Window 'OpenGameMenuButton') {
         Invoke-KitControl $Window 'OpenGameMenuButton'
     } else {
-        Invoke-KitControl $Window 'More ways to launch' -Name
-        Invoke-KitControl $Window 'Open the game menu' -Name
+        Focus-KitWindow $Window
+        [KitDesktop]::Chord(17, 16, 13)
     }
+}
+
+function Open-KitConnect([IntPtr]$Window) {
+    Focus-KitWindow $Window
+    [KitDesktop]::Chord(17, 76)
+    Wait-KitCondition { Find-KitControl $Window 'AddressBox' } 12 'the Connect to Address sheet' | Out-Null
+}
+
+function Open-KitJump([IntPtr]$Window, [string]$Query, [string]$Result) {
+    Focus-KitWindow $Window
+    [KitDesktop]::Chord(17, 75)
+    Set-KitEdit $Window 'JumpBox' $Query
+    Wait-KitCondition {
+        $list = Find-KitControl $Window 'JumpList'
+        if ($list) {
+            $pattern = $list.GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern)
+            $pattern.Current.GetSelection() | Where-Object { $_.Current.Name -eq $Result } | Select-Object -First 1
+        }
+    } 12 "the selected Jump result $Result" | Out-Null
+}
+
+function Open-KitSettings([IntPtr]$Window) {
+    Invoke-KitControl $Window 'SettingsItem'
+    $owner = [KitDesktop]::WindowPid($Window)
+    Wait-KitCondition {
+        foreach ($handle in [KitDesktop]::VisibleProcessWindows($owner)) {
+            if ($handle -ne $Window -and (Find-KitControl $handle 'Panes')) { return $handle }
+        }
+    } 12 'the separate Settings window'
 }
 
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
