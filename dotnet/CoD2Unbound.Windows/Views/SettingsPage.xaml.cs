@@ -130,6 +130,8 @@ public sealed partial class SettingsPage : Page
             if (await shell.PickFolderAsync() is { } path)
             {
                 await model.ChooseAsync(path);
+                retryDirectSaves.Remove(SaveGameData);
+                RefreshSaveFailure();
                 Render();
             }
         });
@@ -534,9 +536,12 @@ public sealed partial class SettingsPage : Page
         AutomationProperties.SetName(draft, "Additional game options");
         var problem = Caption(advancedProblem ?? "");
         problem.Style = StyleFor("NegativeText");
-        var help = Caption("Passed to the game when it starts, one setting and its value per line.");
+        problem.Visibility = IsVisible(problem.Text.Length > 0);
+        const string optionsHelp = "Passed to the game when it starts, one setting and its value per line.";
+        var help = Caption(optionsHelp);
+        help.VerticalAlignment = VerticalAlignment.Center;
         string? cleared = null;
-        var clear = new Button { Content = "Clear", IsEnabled = draft.Text.Length > 0 };
+        var clear = new Button { Content = "Clear", IsEnabled = draft.Text.Length > 0, VerticalAlignment = VerticalAlignment.Center };
         clear.Click += (_, _) =>
         {
             if (cleared is { } previous)
@@ -565,21 +570,24 @@ public sealed partial class SettingsPage : Page
                 advancedProblem = review.Problem;
                 problem.Text = review.Problem ?? (review.LoadoutOwnedLines.IsEmpty ? "" :
                     $"These lines are controlled by your loadout: {string.Join(", ", review.LoadoutOwnedLines)}.");
+                problem.Visibility = IsVisible(problem.Text.Length > 0);
                 if (review.Candidate is not null)
                     await ChangeAsync(Current with { Advanced = text }, draft);
             });
         };
         var editor = new StackPanel { Spacing = 8 };
-        editor.Children.Add(help);
         editor.Children.Add(draft);
         editor.Children.Add(problem);
-        editor.Children.Add(clear);
+        var actions = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        Put(actions, 0, help);
+        Put(actions, 1, clear);
+        editor.Children.Add(actions);
         Fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = editor });
 
         void SetUndo(string? previous)
         {
             cleared = previous;
-            help.Text = previous is null ? "Passed to the game when it starts, one setting and its value per line." : "Cleared.";
+            help.Text = previous is null ? optionsHelp : "Cleared.";
             clear.Content = previous is null ? "Clear" : "Undo";
         }
 

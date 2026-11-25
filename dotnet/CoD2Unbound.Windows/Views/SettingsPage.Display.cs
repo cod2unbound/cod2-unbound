@@ -59,7 +59,7 @@ public sealed partial class SettingsPage
         container.Children.Add(layout);
 
         var displays = WindowsDisplayInventory.ReadForGame();
-        var monitors = new ComboBox { MinWidth = 160, MaxWidth = 270, IsEnabled = !displays.IsEmpty };
+        var monitors = new ComboBox { MinWidth = 160, MaxWidth = 300, IsEnabled = !displays.IsEmpty };
         var selectedDisplay = WindowsDisplays.Selected(displays, Current.WindowsMonitor);
         foreach (var display in displays)
             monitors.Items.Add(new ComboBoxItem { Content = $"{display.Name} · {SizeText(display.Native ?? display.Current)}", Tag = display });
