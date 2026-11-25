@@ -87,6 +87,11 @@ function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe) {
     }
 }
 
+function Find-KitLoopbackDialog([IntPtr]$App, [string]$Title) {
+    Get-KitControls $App $Title -Name |
+        Where-Object { Find-KitControl $_ 'PrimaryButton' } | Select-Object -First 1
+}
+
 function Invoke-KitOpenDemo([string]$Edition) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
@@ -108,8 +113,9 @@ function Invoke-KitOpenDemo([string]$Edition) {
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
         Open-KitAssociation $demo 'CoD2Unbound.Demo' $exe
+        $dialog = Wait-KitCondition { Find-KitLoopbackDialog $app 'Play this demo?' } 12 'the demo playback confirmation'
         $since = Get-Date
-        Invoke-KitControl $app 'Play demo' -Name
+        Invoke-KitControl $dialog 'PrimaryButton'
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
         Wait-KitCondition {
@@ -525,8 +531,8 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
         [KitDesktop]::Chord(17, 49)
         try {
             Wait-KitCondition {
-                (Find-KitControl $App 'Return to game' -Name -AllowOffscreen) -and
-                    (Find-KitControl $App 'Close game' -Name -AllowOffscreen)
+                (Find-KitControl $App 'ReturnGameButton' -AllowOffscreen) -and
+                    (Find-KitControl $App 'CloseGameButton' -AllowOffscreen)
             } 5 'the Home controls for the running game' | Out-Null
             $ready = $true
             break
@@ -540,13 +546,16 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     }
     Save-KitWindow $App (Join-Path $Results 'launcher-playing.png')
     [KitDesktop]::Chord(18, 115)
-    foreach ($name in 'Close launcher only','Close both','Cancel') {
-        Wait-KitCondition { Find-KitControl $App $name -Name } 15 $name | Out-Null
+    $title = 'Call of Duty 2 is still running'
+    $dialog = Wait-KitCondition { Find-KitLoopbackDialog $App $title } 15 'the running-game close question'
+    foreach ($id in 'SecondaryButton','CloseButton') {
+        Wait-KitCondition { Find-KitControl $dialog $id } 12 $id | Out-Null
     }
     Save-KitWindow $App (Join-Path $Results 'launcher-close-question.png')
-    Invoke-KitControl $App 'Cancel' -Name
-    Invoke-KitControl $App 'Return to game' -Name
     $gameWindow = Get-KitGameWindow $Game
+    Invoke-KitControl $dialog 'CloseButton'
+    Wait-KitCondition { -not (Find-KitLoopbackDialog $App $title) } 12 'the running-game close question to dismiss' | Out-Null
+    Invoke-KitControl $App 'ReturnGameButton'
     Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $gameWindow } 8 'Return to game to bring the game forward' | Out-Null
     Close-KitRunningGame $App $Game
     'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
