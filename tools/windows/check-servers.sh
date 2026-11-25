@@ -16,14 +16,29 @@ for edition in original cod2x; do
     fi
 done
 mkdir -p "$output/wine"
-run=$(mktemp -d "$output/wine/headless-XXXXXXXX")
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+run=$(mktemp -d "$output/wine/headless-$stamp-XXXXXXXX")
+receipt="$run/receipt.txt"
+image=$(docker image inspect --format '{{.Id}}' "${COD2_WINDOWS_IMAGE:-cod2-build-win}")
+revision=$(git -C "$root" rev-parse HEAD)
 echo "Evidence in $run"
+printf 'Started (UTC): %s\nFixture checkout: %s\nDocker image: %s\n' \
+    "$stamp" "$revision" "$image" | tee "$receipt"
 
+status=0
 docker run --rm --init --pull=never --platform linux/amd64 --network none \
     --label cod2.windows.check=wine \
     -v "$root:/src:ro" -v "$data:/data:ro" \
     -v "$output/matrix:/matrix:ro" -v "$output/wine:/out" \
-    "${COD2_WINDOWS_IMAGE:-cod2-build-win}" python3 -B /src/tools/windows/check-servers.py "/out/${run##*/}"
+    "$image" bash -ec '
+        sha256sum /matrix/ded64-{original,cod2x}/cod2_win32_ded.exe
+        exec python3 -B /src/tools/windows/check-servers.py "$1"
+    ' bash "/out/${run##*/}" 2>&1 | tee -a "$receipt" || status=$?
+printf 'Finished (UTC): %s\nWine checks exit status: %s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$status" | tee -a "$receipt"
+if (( status != 0 )); then
+    exit "$status"
+fi
 
 if [[ -n ${COD2_WINDOWS_RETAIL_DIR:-} ]]; then
     exec "$root/tools/windows/check-retail.sh" "$data" "$COD2_WINDOWS_RETAIL_DIR" "$run/original/replay"

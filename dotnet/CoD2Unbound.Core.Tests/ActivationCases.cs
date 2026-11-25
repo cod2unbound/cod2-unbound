@@ -62,6 +62,27 @@ internal static partial class Program
         Check("oversized packet", () => Equal<GameEdition?>(null, DemoEdition(Original[..8] + "01000200" + Original[16..])));
         Check("invalid game-state command", () => Equal<GameEdition?>(null, DemoEdition(Original[..24] + "00" + Original[26..])));
 
+        const string FirstSnapshot = "0b000000090000000000000090245bf507";
+        const string LastSnapshot = "0c0000001000000000000000866e350bcbcb0a014c53fd01";
+        string WithSnapshots(string gameState) => gameState[..^16] + FirstSnapshot + LastSnapshot + gameState[^16..];
+        Check("Original demo uses the elapsed snapshot time", () =>
+            Equal<TimeSpan?>(TimeSpan.FromMilliseconds(1450), Duration(WithSnapshots(Original))));
+        Check("CoD2x demo skips server commands before a snapshot", () =>
+            Equal<TimeSpan?>(TimeSpan.FromMilliseconds(1450), Duration(WithSnapshots(Cod2x))));
+        Check("Demo length is unknown without an elapsed snapshot time", () =>
+        {
+            Equal<TimeSpan?>(null, Duration(Original));
+            Equal<TimeSpan?>(null, Duration(Original[..^16] + FirstSnapshot + Original[^16..]));
+        });
+        Check("Demo length is unknown when the recording is truncated", () =>
+            Equal<TimeSpan?>(null, Duration(WithSnapshots(Original)[..^20])));
+
+        static TimeSpan? Duration(string hex)
+        {
+            using var file = new MemoryStream(Convert.FromHexString(hex));
+            return DemoRecording.ReadDuration(file);
+        }
+
         static GameEdition? DemoEdition(string hex)
         {
             using var file = new MemoryStream(Convert.FromHexString(hex));

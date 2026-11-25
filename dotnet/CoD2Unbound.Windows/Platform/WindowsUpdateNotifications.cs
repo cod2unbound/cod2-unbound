@@ -15,7 +15,8 @@ internal sealed class WindowsUpdateNotifications : IDisposable
 #else
         "CoD2Unbound.Launcher";
 #endif
-    internal const string ActivationPrefix = "cod2unbound:release-notes:";
+    private const string UpdateAction = "updates";
+    internal const string ActivationPrefix = "cod2unbound:updates:";
     private AppNotificationManager? manager;
     private TypedEventHandler<AppNotificationManager, AppNotificationActivatedEventArgs>? handler;
 
@@ -47,7 +48,7 @@ internal sealed class WindowsUpdateNotifications : IDisposable
     }
 
     internal static string[] ReadArguments(AppNotificationActivatedEventArgs args) =>
-        args.Arguments.TryGetValue("action", out string? action) && action == "release-notes" &&
+        args.Arguments.TryGetValue("action", out string? action) && action is UpdateAction or "release-notes" &&
         args.Arguments.TryGetValue("version", out string? version) && UpdateNotification.IsVersion(version)
             ? [ActivationPrefix + version] : [];
 
@@ -67,10 +68,10 @@ internal sealed class WindowsUpdateNotifications : IDisposable
         try
         {
             var notification = new AppNotificationBuilder()
-                .AddArgument("action", "release-notes")
+                .AddArgument("action", UpdateAction)
                 .AddArgument("version", version)
                 .AddText($"CoD2 Unbound {version} is ready")
-                .AddText("Select to see what’s new.")
+                .AddText("Select to open Updates.")
                 .BuildNotification();
             notification.Tag = UpdateNotification.Tag(version);
             notifications.Show(notification);

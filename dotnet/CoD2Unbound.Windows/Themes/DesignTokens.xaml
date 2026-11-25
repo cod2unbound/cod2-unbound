@@ -82,7 +82,7 @@
             <SolidColorBrush x:Key="sidebarGlyph" Color="#D3AE60" />
             <SolidColorBrush x:Key="sidebarGlyphSelected" Color="#E1BD6F" />
             <SolidColorBrush x:Key="sidebarStar" Color="#D3BF7E" />
-            <SolidColorBrush x:Key="sidebarCaption" Color="#3AFFFFFF" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#74FFFFFF" />
             <SolidColorBrush x:Key="sidebarQuiet" Color="#D8FFFFFF" />
             <SolidColorBrush x:Key="sidebarSelection" Color="#22FFFFFF" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#BFE2BD72" />
@@ -485,7 +485,7 @@
             <SolidColorBrush x:Key="sidebarGlyph" Color="#818D4E" />
             <SolidColorBrush x:Key="sidebarGlyphSelected" Color="#768244" />
             <SolidColorBrush x:Key="sidebarStar" Color="#5F4C1F" />
-            <SolidColorBrush x:Key="sidebarCaption" Color="#54000000" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#8B000000" />
             <SolidColorBrush x:Key="sidebarQuiet" Color="#D8000000" />
             <SolidColorBrush x:Key="sidebarSelection" Color="#18000000" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#BF6B4A12" />

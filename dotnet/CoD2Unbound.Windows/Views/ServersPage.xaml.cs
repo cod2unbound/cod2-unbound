@@ -34,6 +34,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     private ImmutableArray<ServerPlayer> shownRoster = [];
     private bool ready;
     private bool renderingRows;
+    private bool compactRows;
 
     internal ServersPage(MainWindow shell, WindowsLauncherSession session)
     {
@@ -186,6 +187,10 @@ public sealed partial class ServersPage : Page, IShellBackdrop
 
     internal void UpdateContrast()
     {
+        // Use the same native pointer states and local brush overrides as Home's recent rows.
+        bool contrast = shell.IsHighContrast;
+        ServerList.Resources["ListViewItemBackgroundPointerOver"] = ThemeBrush("ListViewItemBackgroundPointerOver", ActualTheme, contrast);
+        ServerList.Resources["ListViewItemBackgroundPressed"] = ThemeBrush("ListViewItemBackgroundPressed", ActualTheme, contrast);
         foreach (var row in rows)
             if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid })
                 ApplyServerRow(grid, assignMenu: false);
@@ -236,10 +241,42 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     private void OnServerRowLoaded(object sender, RoutedEventArgs args) => ApplyServerRow((Grid)sender);
     private void OnServerRowChanged(FrameworkElement sender, DataContextChangedEventArgs args) => ApplyServerRow((Grid)sender);
 
+    private int RowColumnSpacing => compactRows ? 8 : 16;
+    private GridLength RowMapWidth => new(compactRows ? 64 : 80);
+    private GridLength RowPlayersWidth => new(compactRows ? 48 : 80);
+    private GridLength RowPingWidth => new(compactRows ? 72 : 84);
+
+    private void OnServerListSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        // Protect the name column when the details panel and sidebar leave a narrow list.
+        bool compact = args.NewSize.Width is > 0 and < 550;
+        if (compact == compactRows)
+            return;
+        compactRows = compact;
+        ColumnHeaders.ColumnSpacing = RowColumnSpacing;
+        ColumnHeaders.ColumnDefinitions[0].Width = RowMapWidth;
+        ColumnHeaders.ColumnDefinitions[2].Width = RowPlayersWidth;
+        ColumnHeaders.ColumnDefinitions[3].Width = RowPingWidth;
+        foreach (var entry in rows)
+            if (ServerList.ContainerFromItem(entry) is ListViewItem { ContentTemplateRoot: Grid row })
+                ApplyServerRowLayout(row);
+    }
+
+    private void ApplyServerRowLayout(Grid row)
+    {
+        if (row.FindName("RowIdentity") is not Grid identity)
+            return;
+        row.ColumnSpacing = identity.ColumnSpacing = RowColumnSpacing;
+        identity.ColumnDefinitions[0].Width = RowMapWidth;
+        row.ColumnDefinitions[1].Width = RowPlayersWidth;
+        row.ColumnDefinitions[2].Width = RowPingWidth;
+    }
+
     private void ApplyServerRow(Grid row, bool assignMenu = true)
     {
         if (row.DataContext is not ServerRow entry || row.FindName("RowName") is not TextBlock name)
             return;
+        ApplyServerRowLayout(row);
         var server = entry.Server;
         if (ServerList.ContainerFromItem(entry) is ListViewItem item)
         {
@@ -525,7 +562,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         if (active)
         {
             RefreshMessage.Text = state is { Asked: > 0 }
-                ? $"Asking {state.Asked} servers. {state.Answered} {(state.Answered == 1 ? "has" : "have")} answered."
+                ? $"Checked {state.Finished} of {state.Asked} servers. {state.Answered} answered."
                 : "Asking the master servers for the list…";
             RefreshProgressBar.IsIndeterminate = state is not { Asked: > 0 };
             RefreshProgressBar.Value = state is { Asked: > 0 } ? 100d * state.Finished / state.Asked : 0;

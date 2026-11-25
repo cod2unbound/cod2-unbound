@@ -8,30 +8,60 @@ public static class DemoRecording
     private const int MaximumPacket = 0x20000;
     private const int ReliableAckBytes = 4;
 
+    public static GameEdition? ReadEdition(Stream recording) => Inspect(recording, readDuration: false).Edition;
+
+    public static TimeSpan? ReadDuration(Stream recording, CancellationToken cancellationToken = default) =>
+        Inspect(recording, readDuration: true, cancellationToken).Duration;
+
     // CL_Record_f writes a compressed game state first; CL_WriteDemoMessage appends
     // sequence/length/payload records and CL_StopRecord_f writes two -1 integers.
-    public static GameEdition? ReadEdition(Stream recording)
+    private static (GameEdition? Edition, TimeSpan? Duration) Inspect(Stream recording, bool readDuration,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Span<byte> header = stackalloc byte[8];
         if (recording.ReadAtLeast(header, header.Length, false) != header.Length ||
             !ValidLength(header, recording, out int length))
-            return null;
+            return default;
 
-        var first = new byte[length];
-        if (recording.ReadAtLeast(first, first.Length, false) != first.Length ||
-            GameStateEdition(first.AsSpan(ReliableAckBytes)) is not { } edition)
-            return null;
+        var packet = new byte[readDuration ? MaximumPacket : length];
+        var decoded = new byte[MaximumPacket];
+        if (recording.ReadAtLeast(packet.AsSpan(0, length), length, false) != length ||
+            GameStateEdition(packet.AsSpan(ReliableAckBytes, length - ReliableAckBytes), decoded) is not { } edition)
+            return default;
 
+        int? previous = null;
+        long elapsed = 0;
         while (recording.ReadAtLeast(header, header.Length, false) == header.Length)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (BinaryPrimitives.ReadInt32LittleEndian(header[4..]) == -1)
                 return BinaryPrimitives.ReadInt32LittleEndian(header) == -1 && recording.Position == recording.Length
-                    ? edition : null;
+                    ? (edition, elapsed > 0 ? TimeSpan.FromMilliseconds(elapsed) : null) : default;
             if (!ValidLength(header, recording, out length))
-                return null;
-            recording.Seek(length, SeekOrigin.Current);
+                return default;
+            if (!readDuration)
+            {
+                recording.Seek(length, SeekOrigin.Current);
+                continue;
+            }
+            if (recording.ReadAtLeast(packet.AsSpan(0, length), length, false) != length)
+                return default;
+            if (SnapshotTime(packet.AsSpan(ReliableAckBytes, length - ReliableAckBytes), decoded) is not { } time)
+                continue;
+            if (previous is { } last)
+            {
+                // Server time is a 32-bit millisecond clock. A forward wrap still produces a positive delta.
+                int delta = unchecked(time - last);
+                if (delta < 0)
+                    return default;
+                elapsed += delta;
+                if (elapsed > TimeSpan.MaxValue.Ticks / TimeSpan.TicksPerMillisecond)
+                    return default;
+            }
+            previous = time;
         }
-        return null;
+        return default;
     }
 
     private static bool ValidLength(ReadOnlySpan<byte> header, Stream recording, out int length)
@@ -40,10 +70,39 @@ public static class DemoRecording
         return length is > ReliableAckBytes and <= MaximumPacket && length <= recording.Length - recording.Position;
     }
 
-    private static GameEdition? GameStateEdition(ReadOnlySpan<byte> compressed)
+    private static int? SnapshotTime(ReadOnlySpan<byte> compressed, Span<byte> buffer)
     {
-        var buffer = new byte[MaximumPacket];
-        var state = buffer.AsSpan(0, DemoHuffman.Decode(compressed, buffer));
+        const byte nop = 0, serverCommand = 4, snapshot = 6;
+        const int snapshotHeader = 7; // opcode, server time, delta number and flags
+        var message = buffer[..DemoHuffman.Decode(compressed, buffer[..snapshotHeader])];
+        // Most packets start with the snapshot. Only preceding commands need further decoding.
+        if (!message.IsEmpty && message[0] is nop or serverCommand)
+            message = buffer[..DemoHuffman.Decode(compressed, buffer)];
+        while (!message.IsEmpty)
+        {
+            switch (message[0])
+            {
+                case snapshot:
+                    return message.Length >= snapshotHeader ? BinaryPrimitives.ReadInt32LittleEndian(message[1..]) : null;
+                case nop:
+                    message = message[1..];
+                    break;
+                case serverCommand when message.Length >= 6:
+                    int terminator = message[5..].IndexOf((byte)0); // skip opcode and command sequence
+                    if (terminator < 0)
+                        return null;
+                    message = message[(6 + terminator)..];
+                    break;
+                default:
+                    return null;
+            }
+        }
+        return null;
+    }
+
+    private static GameEdition? GameStateEdition(ReadOnlySpan<byte> compressed, Span<byte> buffer)
+    {
+        var state = buffer[..DemoHuffman.Decode(compressed, buffer)];
         const byte gameState = 1, configString = 2, baseline = 3, end = 7;
         if (state.Length < 6 || state[0] != gameState)
             return null;

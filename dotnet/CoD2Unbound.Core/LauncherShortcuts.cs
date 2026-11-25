@@ -9,7 +9,8 @@ public enum ShellCommand
     NewLoadout, DuplicateLoadout, ExportLoadout, Rename, Delete, CopyFile, ContextMenu, FullScreen, Help, Close,
     Checkup, History, GameDataFolder, MyFilesFolder, LogsFolder, CheckUpdates, ShortcutHelp, ReleaseNotes,
     ReportProblem, ClearRecent, SaveLoadoutText, ReturnToGame, CloseGame,
-    ExportHostedServer, RevealHostedServer, DeleteHostedServer, RevealHostedExport, RetryHostedExport
+    ExportHostedServer, RevealHostedServer, DeleteHostedServer, RevealHostedExport, RetryHostedExport,
+    ToggleSidebar, PreviewMedia
 }
 
 public sealed record LauncherShortcut(ShellCommand Command, string Title, ImmutableArray<string> Chords)
@@ -29,6 +30,7 @@ public static class LauncherShortcuts
         new(ShellCommand.Configs, "Configs", ["Ctrl+4"]),
         new(ShellCommand.Settings, "Settings", ["Ctrl+,"]),
         new(ShellCommand.Jump, "Jump to…", ["Ctrl+K"]),
+        new(ShellCommand.ToggleSidebar, "Toggle sidebar", ["Ctrl+Shift+S"]),
         new(ShellCommand.ShortcutHelp, "Keyboard shortcuts", ["Ctrl+/"]),
         new(ShellCommand.Find, "Find", ["Ctrl+F"]),
         new(ShellCommand.RefreshServers, "Refresh servers", ["Ctrl+R", "F5"]),
@@ -38,6 +40,7 @@ public static class LauncherShortcuts
         new(ShellCommand.Paste, "Paste config", ["Ctrl+Shift+V"]),
         new(ShellCommand.Undo, "Undo config import", ["Ctrl+Z"]),
         new(ShellCommand.Open, "Launch server or open Library item", ["Enter"]),
+        new(ShellCommand.PreviewMedia, "Preview Library item", ["Space"]),
         new(ShellCommand.CopyAddress, "Copy server address", ["Ctrl+Shift+C"]),
         new(ShellCommand.FilterServers, "Server filters", ["Ctrl+Shift+F"]),
         new(ShellCommand.NewLoadout, "New loadout", ["Ctrl+N"]),

@@ -25,6 +25,17 @@ tools/windows/check-paths.sh "/path/to/CoD2"
 
 On Apple silicon, allow about 10–15 minutes for a clean matrix and 2–3 minutes
 for the headless checks. Incremental matrix runs reuse the build directories.
+Run `tools/windows/check-servers.sh "/path/to/CoD2"` before every release
+candidate and after any change under `src/`. Build the server binaries from
+that checkout with the matrix first.
+
+**CI.** The CI workflow runs the data-free Windows checks on pushes and pull
+requests that touch the engine, CMake, Windows tools, export tools, platform
+guard checker or workflow. It caches the MinGW image built from the pinned
+Ubuntu 24.04 image. From a normal clone, run
+`tools/windows/build-matrix.sh --source-checks` for the platform guards and
+both source exports. CI uses public build dependencies and needs no game data
+or secrets.
 
 **Build matrix.** The script builds x64 Original 1.3 and CoD2x dedicated, Direct3D 9,
 and diagnostic OpenGL binaries, plus the i686 Original 1.3 Direct3D 9 probe.
@@ -36,17 +47,20 @@ from the default of three. Both scripts accept a locally built image name via
 Each target directory under `output/r05/builds/matrix/` contains the executable,
 `configure.log`, `build.log`, `pe-header.txt` and `imports.txt`. The build checks
 the PE architecture and looks for the system Direct3D 9 entry point on the
-selected renderer path. It fails on a DLL import outside
-[`pe-imports/`](pe-imports/). Review the reason for a new dependency before
+selected renderer path. It checks that CMake rejects the obsolete
+`COD2_WIN32_REAL_D3D9` option and names its replacement. It fails on a DLL
+import outside [`pe-imports/`](pe-imports/). Review the reason for a new dependency before
 updating its list. Direct3D 9 and its shader compiler are loaded dynamically.
 
 **Headless Wine checks.** Pass a clean licensed game folder containing `main/*.iwd`.
 Omit the path to use `~/Games/CoD2`. The check mounts those files read-only, boots
 a fresh Wine prefix and private home for each server start in a container with
 loopback networking only. Every start sets `developer 0` and points
-the three `COD2X_TEST_*` service settings at `127.0.0.1:9`. Logs and traces stay in
-a new directory under `output/r05/builds/wine/`. The temporary prefixes are
-removed after use.
+the three `COD2X_TEST_*` service settings at `127.0.0.1:9`. The command writes
+`receipt.txt` under `output/r05/builds/wine/headless-<UTC date and time>-*/`,
+alongside the logs and traces. It records the fixture revision, image ID,
+server binary hashes and both results. The temporary prefixes are removed
+after use.
 
 Each edition loads `mp_toujane` in DM, answers local `getinfo` and `getstatus`
 queries, and then replays the same two synthetic clients for 600 simulation
@@ -100,15 +114,26 @@ Windows 1.3 does, with no OpenGL context. It compiles the game's own HLSL from `
 load with `D3DCompile` from `d3dcompiler_47.dll`, which Windows 10 (22H2) and Windows 11 ship. The loader
 also tries `d3dcompiler_46.dll` and `d3dcompiler_43.dll` when present.
 
-Previous x86_64 runtime checks covered these configurations.
+Previous runtime checks covered these configurations.
 
-- **Windows 11 in a virtual machine**, with Microsoft's `d3d9.dll` and compiler and software
-  rendering: the menu, a map, `vid_restart`, a mode change and exclusive fullscreen. Every shader
-  the menu and `mp_toujane` need compiled. No machine with a graphics card has run it.
+- **An Intel integrated chip on Windows 10 (22H2):** both editions loaded Toujane,
+  Harbor, Carentan and Burgundy and restarted the renderer in Direct3D 9 and DirectX 7
+  modes, both directly and from the launcher. Windowed loopback matches also ran.
+- **An AMD Radeon discrete chip on Windows 10 (22H2):** both editions rendered
+  on the Radeon in Direct3D 9 and DirectX 7 modes in earlier windowed and fullscreen trials.
+- **Windows 11 in a virtual machine:** Microsoft's `d3d9.dll` and shader compiler
+  ran with software rendering. The menu, Toujane, `vid_restart`, a mode change and
+  exclusive fullscreen ran, and the menu and map shaders compiled.
 - **Wine with DXVK:** four maps in the default and Direct3D 7 paths. Wine's own HLSL compiler
   rejects a few of the game's shaders (which ones depends on the Wine version), so those runs used
   bytecode compiled from the same HLSL with vkd3d-shader. Expect missing materials under Wine
   without that.
+
+Remaining physical checks for the release candidate include a Windows 11 x64 PC,
+repeating the checks on the Radeon, exclusive fullscreen recovery after Alt+Tab,
+Harbor water before and after a renderer restart in both modes and editions, and
+startup and renderer restart on a selected second monitor in windowed and
+exclusive modes.
 
 ### Previous Wine client diagnostics
 
@@ -144,17 +169,29 @@ needs `sh`, `curl`, `sha256sum` and `tar`, which an MSYS2 shell has.
 this engine path: `cmake/win32-msvc.cmake` compiles the older plain path, and its x64 preset is
 compile-only.
 
-## What is missing
+## Online downloads and player data
 
-- **Downloading from a server** is in, but only half tested. The client links a static libcurl
-  that configure builds from pinned, checksummed source (`tools/windows/fetch-curl.sh`), with
-  Windows' own TLS. Under Wine the library fetched a file over HTTP and HTTPS and reported a
-  missing one, using the calls the game makes. A download through the game itself needs a
-  Windows install with a CD key to join a server, and was tested on macOS only.
-- **The original launcher behaviour:** the safe-mode prompt after a crash, the second-copy check,
-  the auto-update check and IPX.
-- **The CD key** comes from the registry as on Windows 1.3 (the 32-bit view and the
-  VirtualStore), then from the preferences file. **Preferences** use a file under `%HOME%`.
+A Windows client downloaded files from a modded server online and restarted
+into the mod. Asking before the first transfer, canceling safely and completing
+an approved download and rejoin in both editions are tracked in
+[issue #143](https://github.com/cod2unbound/cod2-unbound/issues/143).
+
+Both editions store writable files under `%LOCALAPPDATA%\CoD2 Unbound` by default.
+Profiles live under `main\players` there. Configs, mods, downloads, demos,
+screenshots and logs use the writable game home, which is separate from the
+licensed installation. Launcher settings live in the `launcher` subdirectory.
+
+Both editions prefer the explicit `CoD2 Unbound/CD Key` credential in Windows
+Credential Manager. If that credential is absent, the first valid key from the
+legacy VirtualStore entries or retail registry wins, in that order. The launcher
+can copy a valid installed key into Credential Manager with the player's approval.
+See the [Windows game data and user files contract](../../docs/windows-game-data.md)
+for discovery, instance paths and the full key lookup order.
+
+Original 1.3's safe-mode prompt after an unclean direct start and its
+handling of a second copy still need work. The Windows port uses IP
+networking.
+
 ## Sound
 
 Windows uses the same mixer as macOS, `src/platform/macos_audio.c`, with SDL playing the output and

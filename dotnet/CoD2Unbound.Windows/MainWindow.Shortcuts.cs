@@ -54,7 +54,7 @@ public sealed partial class MainWindow
         ShellCommand.Library or ShellCommand.Configs or ShellCommand.Settings or ShellCommand.Jump or ShellCommand.Find or
         ShellCommand.RefreshServers or ShellCommand.Connect or ShellCommand.Favorite or ShellCommand.CopyAddress or
         ShellCommand.FilterServers or ShellCommand.Import or ShellCommand.Paste or ShellCommand.NewLoadout or
-        ShellCommand.FullScreen or ShellCommand.Help or ShellCommand.ShortcutHelp;
+        ShellCommand.FullScreen or ShellCommand.Help or ShellCommand.ShortcutHelp or ShellCommand.ToggleSidebar;
 
     private GameServer? LastJumpServer => session.Library.Recent.FirstOrDefault() is { } address
         ? session.ServerForAddress(address) : null;
@@ -74,6 +74,7 @@ public sealed partial class MainWindow
         {
             ShellCommand.Launch or ShellCommand.OpenGameMenu => !session.Game.State.Running && session.Setup.DataPath.Length != 0,
             ShellCommand.ReturnToGame => session.Game.State.Running,
+            ShellCommand.ToggleSidebar => Nav.IsPaneVisible && Nav.IsPaneToggleButtonVisible,
             ShellCommand.CloseGame => session.Game.State is { Running: true, Quitting: false },
             ShellCommand.Import or ShellCommand.Paste => !session.Game.State.Running && (configs?.CanImportFromShell ?? true),
             ShellCommand.Favorite or ShellCommand.CopyAddress => servers is { CanRunRowShortcut: true },
@@ -151,6 +152,11 @@ public sealed partial class MainWindow
         if (command == ShellCommand.Jump)
         {
             OpenJumpTo();
+            return;
+        }
+        if (command == ShellCommand.ToggleSidebar)
+        {
+            Nav.IsPaneOpen = !Nav.IsPaneOpen;
             return;
         }
         if (command == ShellCommand.Settings)
