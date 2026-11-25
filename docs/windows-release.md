@@ -1,6 +1,11 @@
 # Windows release and updates
 
-## Build and sign
+## Prepare the release commit
+
+The Windows release targets x64 PCs running Windows 10 (22H2) or Windows 11.
+Setup enforces build 19045. Check that `RELEASE_VERSION` and the Windows
+launcher's project `Version` match before publishing. The updater uses the
+launcher assembly's version and Setup uses `RELEASE_VERSION`.
 
 Run the commands from the Windows release checkout. The project uses its
 local x86-64 MinGW and Wine image at
@@ -26,8 +31,12 @@ Use the following local package image for the compiler, signer and verifier.
 Check the base image ID before building and retain the resulting image ID for
 subsequent builds and tests.
 
-From the release checkout, run `sh tools/windows/vm-build.sh --export-x64`
-with the Windows build VM already running. It runs the portable core tests,
+From the clean release commit, run `sh tools/windows/vm-build.sh --export-x64`
+with the Windows build VM already running. Pass
+`--publisher-rules "$(cat /path/to/publisher-rules.txt)"` when publishing the
+Public launcher with self-update enabled. The rules pin the accepted trust
+root and the publisher's certificate-profile EKU. Use the same rules in the
+publisher verification step below. The wrapper runs the portable core tests,
 publishes x64 and ARM64, and prints the path of `launcher-win-x64.zip` on the
 Mac. Give that ZIP directly to the Docker release command. The wrapper
 compares its SHA-256 before and after transfer. Docker verifies every file
@@ -42,7 +51,9 @@ mkdir -p output/r05/package
 DOCKER_BUILDKIT=0 docker build --pull=false --platform linux/amd64 \
   --iidfile output/r05/package/image.id tools/windows/package
 export COD2_WINDOWS_PACKAGE_IMAGE="$(cat output/r05/package/image.id)"
-tools/windows/release.sh test /path/to/launcher-win-x64.zip
+pack_mode=test
+launcher=/path/to/launcher-win-x64.zip
+tools/windows/release.sh "$pack_mode" "$launcher"
 ```
 
 The test mode creates disposable self-signed code-signing and local RFC 3161
@@ -57,8 +68,11 @@ verify the catalog's Authenticode signature with `signtool verify /pa /v archive
 `certutil -dump archive.cat` to `Get-FileHash archive.zip -Algorithm SHA256`.
 The ZIP also contains per-file checksums for use after extraction.
 
-For production, use `tools/windows/release.sh azure /path/to/launcher-win-x64.zip`
-with these environment variables.
+## Switch to the production signer
+
+In the authorized release environment, set `pack_mode=azure` for the same
+release command and supply the Artifact Signing configuration below. Keep the
+access token out of the launcher, the ZIP and release logs.
 
 | Variable | Required value |
 | --- | --- |
@@ -72,8 +86,8 @@ Artifact Signing token audience documented by Jsign. Jsign reads it directly
 from the environment and performs RFC 3161 timestamping. The verification
 step uses the pinned Microsoft Public Trust root and checks both certificate
 chains, the timestamp and the payload digests. Refresh the token before a
-release run so it remains valid through signing. Publish the files in
-`artifacts/` only after the command and the Windows verification pass.
+release run so it remains valid through signing. The `azure` mode requires
+a Public launcher with publisher rules and refuses fixture launchers.
 [Artifact Signing integrations](https://learn.microsoft.com/en-us/azure/artifact-signing/how-to-signing-integrations) · [Jsign Artifact Signing](https://ebourg.github.io/jsign/#trusted-signing) · [Microsoft Public Trust model](https://learn.microsoft.com/en-us/azure/artifact-signing/concept-trust-models)
 
 The package pins Inno Setup 7.1.1 x64 and Jsign 7.6 by SHA-256. ISCC runs under
@@ -83,6 +97,31 @@ and retains Inno's internal FileVersion for its replacement logic.
 Authenticode timestamps apply to signed releases,
 so use the unsigned `layout/` when comparing reproducibility.
 [Inno signed uninstaller workflow](https://jrsoftware.org/inno-setup/documentation/topic_setup_signeduninstaller.htm) · [Jsign 7.6](https://github.com/ebourg/jsign/releases/tag/7.6)
+
+## Verify and stage the downloads
+
+1. Take the four files from the run's `artifacts/` folder. Record each
+   filename, byte count and SHA-256. Run `shasum -a 256 -c SHA256SUMS` from
+   that folder to verify Setup, the server ZIP and its catalogue.
+2. On Windows with default protection, use
+   `signtool verify /pa /v /tw <file>` on Setup and the server catalogue.
+   Verify the publisher rule using the Windows .NET 10 SDK and
+   `tools/windows/package/verify-publishers.ps1 --setup <Setup.exe> --rules-file <rules.txt> --other-publisher <reference.cer>`.
+   Include each retained Setup needed to exercise certificate renewal and a
+   certificate from an independent publisher on the same service. Compare
+   the catalogue's SHA-256 member with the exact ZIP bytes.
+3. On Windows 10 (22H2) and Windows 11 x64, use a standard account to
+   install from the previous public release, update from the launcher,
+   repeat Setup to repair, and uninstall. Use the Start shortcut and
+   Setup's final Launch option. Check Settings, loadouts, screenshots,
+   demos, the CD key and licensed game files after uninstall. Check the
+   default-app choices and launches for both editions. Record the publisher
+   and any Windows security prompts.
+4. After sign-off, stage the exact same four files on both release
+   origins. Put the website copy under `/releases/v<version>/` and update
+   `/update/releases.json` after the files are in place. Verify the listed
+   byte sizes and the download hashes against the staged files on each
+   origin before announcing the release.
 
 ## Installation and launcher integration
 
@@ -103,7 +142,10 @@ CoD2-Unbound-<version>-windows-x64-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORE
 Stop the launcher, all clients and all installed dedicated servers before
 repair, update or uninstall. Setup checks the installed process images for
 exclusive write access before it starts replacing files. This also catches
-a second process that locks a managed engine image. A user can always
+a second process that locks a managed engine image. If Setup cannot move
+the previous installation after retrying, close programs using its
+installation folder and try again. The previous installation stays in place
+when that first move fails. A user can always
 resume a hosted server after the operation using its original writable home.
 
 Setup places the x64 publish under `layout/launcher` during packaging and
@@ -128,28 +170,25 @@ registration, and the server ZIP is independently deployable.
 
 ## Launcher updater contract
 
-The Mac launcher checks GitHub Releases on demand and at most daily when
-automatic checks are on. It matches the Mac asset with its SHA-256, downloads on
-request, checks the signature, swaps the bundle and restarts. It defers while
-a game runs and sends the player to the release page when the install cannot
-be replaced.
+The launcher checks on demand and at most daily when automatic checks are
+on. It checks GitHub first and uses cod2unbound.com for release lists, Setup
+and SHA256SUMS when the primary transfer fails. Home's news also uses the
+website on a transport failure. A GitHub news 404 clears news. The launcher
+checks the release size, SHA-256, Authenticode trust, timestamp, publisher
+and Setup version from either source before launching the staged copy.
 
-- Use the same check cadence and consent on Windows. Select the installer for
-  x64 PCs running Windows 10 (22H2) or Windows 11 and compare its numeric version with the installed
-  `RELEASE_VERSION`. The Add/Remove Programs entry exposes the same version.
-  Check the release asset's SHA-256 and Authenticode trust, timestamp, and
-  expected publisher before running it. Keep downloads in private staging.
-- Defer while the launcher owns a running client or hosted server, and combine
-  that state with a check for separately started processes using the install.
-  Let players stop sessions in the normal way. Disable starting new sessions
-  once an update has been handed off. For a machine-wide install, hand off to
-  Setup with the existing scope and let Windows request elevation.
-- Have a helper outside the install directory wait for the launcher to exit,
-  run the staged installer with the silent options above and wait for it to
-  finish. Re-read the installation version and start the launcher only on
-  success. On failure show the Setup log and offer a fresh run of the same
-  signed installer as repair. An explicit downgrade, if offered later, must
-  use a previously verified artifact and require the player's choice.
+- Stop any running game or hosted server before installing an update. The
+  launcher also checks separately started processes from the installation.
+  In-app installation supports the default per-user location. For a
+  machine-wide installation, download Setup and run it in the existing
+  all-users scope.
+- Verified Setup starts from the private staging folder, waits for the
+  launcher process to exit, and takes a copy of the old installation before
+  replacing files. Setup reopens the launcher after a successful upgrade or
+  a handled failure. If Setup is interrupted, the next launcher startup can
+  use the verified installer to restore the old version. If the launcher
+  cannot start or verified Setup is gone, download and run Setup again in
+  the existing scope. Keep the Setup log for troubleshooting.
 - Update a portable server independently by verifying and extracting the new
   ZIP beside the old binaries, stopping the server, and starting the updated
   edition with the same game-data and instance paths. Retain the prior
@@ -168,6 +207,8 @@ Pass a fresh directory produced by `release.sh test`, a lower-version
 test-signed installer, and optionally the licensed data directory to
 `tools/windows/check-package.sh`. Keep the resulting logs with the release.
 Wine exercises installer behavior, loopback server queries and file
-preservation. Windows 10 (22H2) and Windows 11 still need native x64
+preservation. Wine 9's Windows 10 preset reports build 19043, below the
+installer floor. Run package maintenance in Wine with its Windows 11
+preset. Windows 10 (22H2) and Windows 11 still need native x64
 checks for actual elevation, default handlers, publisher trust, SmartScreen and
 Defender. Check Smart App Control on Windows 11 where available.
