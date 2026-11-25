@@ -1,5 +1,6 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Views;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -9,17 +10,48 @@ namespace CoD2Unbound.Windows;
 
 public sealed partial class MainWindow
 {
+    private (UIElement Page, bool PaneOpen)? setupReturnPage;
+
     internal async Task OpenSetupAgainAsync(LauncherPlace returnTo)
     {
-        if (session.ClientIsRunning || session.SetupUpdating)
+        if (session.ClientIsRunning || session.SetupUpdating || session.ReviewingSetup)
             return;
+        var previousPage = ContentFrame.Content as UIElement;
+        bool paneOpen = Nav.IsPaneOpen;
         await session.StartSetupAgainAsync();
-        if (returnTo == LauncherPlace.GameDataSettings)
-        {
-            settingsWindow?.Close();
-            Activate();
-        }
+        if (previousPage is not null)
+            setupReturnPage = (previousPage, paneOpen);
+        if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+            presenter.Restore();
+        Activate();
+        settingsWindow?.AppWindow.Hide();
         await NavigateAsync(LauncherPlace.Setup, cancelSetupTo: returnTo);
+    }
+
+    internal async Task ReturnFromSetupAsync(LauncherPlace destination)
+    {
+        if (setupReturnPage is { } previous)
+        {
+            setupReturnPage = null;
+            Nav.IsPaneVisible = jumpEnabled = true;
+            Nav.IsPaneOpen = previous.PaneOpen;
+            OnPaneChanged(Nav, EventArgs.Empty);
+            ContentFrame.Content = previous.Page;
+            if (destination == LauncherPlace.GameDataSettings)
+                OpenSettingsWindow(SettingsPage.GameDataPane);
+            else
+                settingsWindow?.AppWindow.Show(activateWindow: false);
+        }
+        else
+            await NavigateAsync(destination);
+    }
+
+    internal void FinishSetupReview()
+    {
+        if (setupReturnPage is null)
+            return;
+        setupReturnPage = null;
+        settingsWindow?.Close();
     }
 
     internal async Task<GameStartState?> RunGameStartAsync(GameEdition edition, Func<Task<GameStartState>> start)

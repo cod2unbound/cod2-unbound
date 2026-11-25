@@ -12,11 +12,13 @@ public sealed partial class MainWindow
     /// Opens the one Settings window, or brings it forward on the given pane (a pane's visible name).
     internal void OpenSettingsWindow(string? pane)
     {
-        if (closing || flushedForClose || !initialized)
+        if (closing || flushedForClose || !initialized || session.ReviewingSetup)
             return;
         CloseJumpTo(restoreFocus: false);
         if (settingsWindow is { } open)
         {
+            if (!open.AppWindow.IsVisible)
+                open.AppWindow.Show();
             open.Show(pane);
             return;
         }

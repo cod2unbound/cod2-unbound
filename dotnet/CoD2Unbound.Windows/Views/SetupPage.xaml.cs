@@ -491,6 +491,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
                 {
                     if (await session.CommitSetupAsync())
                     {
+                        shell.FinishSetupReview();
                         await shell.NavigateAsync(findServer ? LauncherPlace.Servers : LauncherPlace.Home);
                         return;
                     }
@@ -544,7 +545,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
         StopSteamWatch();
         if (keyEditor is not null)
             keyEditor.Value = "";
-        await shell.NavigateAsync(cancelDestination);
+        await shell.ReturnFromSetupAsync(cancelDestination);
     });
 
     private async void OnDefaultAction(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
