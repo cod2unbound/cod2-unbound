@@ -331,6 +331,20 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
     "The restored game rendered at $([KitDesktop]::CurrentMode())." | Add-Content -LiteralPath $switches
 }
 
+function Start-KitTaskSwitchWindow([string]$Folder) {
+    # An otherwise empty desktop gives Alt+Tab no window to switch to.
+    $script = @'
+Add-Type -AssemblyName System.Windows.Forms
+$form = [Windows.Forms.Form]::new()
+$form.Text = 'CoD2 Unbound full-screen test'
+try { [Windows.Forms.Application]::Run($form) }
+finally { $form.Dispose() }
+'@
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+    $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    Start-KitProcess $powershell "-NoProfile -NonInteractive -STA -EncodedCommand $encoded" $Folder -NoWindow
+}
+
 function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode, [switch]$Borderless) {
     Initialize-KitDesktop
     $entry = New-RunContext 'game'
@@ -349,10 +363,19 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
         $trace = New-KitFrameTrace $entry.Evidence
         $settings.COD2_FRAME_TRACE_FILE = $trace.Path
     }
-    $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder $settings
+    $run = $switchWindow = $null
     $window = [IntPtr]::Zero
     try {
         $exclusive = if ($DisplayMode -and -not $Borderless) { $entry.Evidence }
+        if ($exclusive) {
+            $switchWindow = Start-KitTaskSwitchWindow $entry.Folder
+            Wait-KitCondition {
+                $switchWindow.Process.Refresh()
+                if ($switchWindow.Process.HasExited) { throw 'The task-switch window exited during startup.' }
+                $switchWindow.Process.MainWindowHandle -ne [IntPtr]::Zero
+            } 10 'the task-switch window' | Out-Null
+        }
+        $run = Start-KitProcess (Get-Binary $Edition) $argsText $entry.Folder $settings
         $window = Get-KitGameWindow $run.Process $exclusive
         if ($DisplayMode) {
             $log = Join-Path $homePath 'main\console_mp.log'
@@ -379,10 +402,19 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
             Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace $run.Process
         }
     } finally {
-        if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
-        $done = Complete-KitProcess $run $entry.Evidence 12
-        Save-GameEvidence $homePath $entry.Evidence
-        Save-KitFrameTrace $trace $entry.Evidence (Join-Path $homePath 'main\console_mp.log')
+        try {
+            if ($run) {
+                if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
+                $done = Complete-KitProcess $run $entry.Evidence 12
+                Save-GameEvidence $homePath $entry.Evidence
+                Save-KitFrameTrace $trace $entry.Evidence (Join-Path $homePath 'main\console_mp.log')
+            }
+        } finally {
+            if ($switchWindow) {
+                if (-not $switchWindow.Process.HasExited) { [void]$switchWindow.Process.CloseMainWindow() }
+                Complete-KitProcess $switchWindow (New-Folder (Join-Path $entry.Evidence 'switch-window')) 5 | Out-Null
+            }
+        }
     }
     if ($done.TimedOut -or $done.ExitCode -ne 0) { throw 'The game did not close cleanly.' }
 }
