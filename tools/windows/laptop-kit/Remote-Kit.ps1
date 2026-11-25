@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 param([string]$Stage, [string]$Operation, [string]$Step, [string]$Answer, [string]$GamePath,
     [string]$Sid, [switch]$ArmRehearsal, [switch]$Online, [switch]$InternetPlay,
-    [string]$ProfileName,
+    [string]$ProfileName, [switch]$CoolDown,
     [ValidateSet('Default','Intel','Radeon')][string]$GraphicsLabel = 'Default', [string]$DriverUtc)
 $ErrorActionPreference = 'Stop'
 $kit = Join-Path $Stage 'CoD2-Unbound-Windows-Kit'
@@ -66,7 +66,8 @@ if ($Operation -eq 'queue') {
     $definition.Settings.DisallowStartIfOnBatteries = $false
     $definition.Settings.StopIfGoingOnBatteries = $false
     @{ Step=$Step; Answer=$Answer; GamePath=$GamePath; ArmRehearsal=$ArmRehearsal.IsPresent; Online=$Online.IsPresent
-        GraphicsLabel=$GraphicsLabel; DriverUtc=$DriverUtc; InternetPlay=$InternetPlay.IsPresent; ProfileName=$ProfileName } |
+        GraphicsLabel=$GraphicsLabel; DriverUtc=$DriverUtc; InternetPlay=$InternetPlay.IsPresent; ProfileName=$ProfileName
+        CoolDown=$CoolDown.IsPresent } |
         ConvertTo-Json -Compress | Set-Content -LiteralPath $reply -Encoding UTF8
     $workerLog = Join-Path $Stage 'worker-error.txt'
     if (Test-Path -LiteralPath $workerLog) { Remove-Item -LiteralPath $workerLog }
@@ -79,6 +80,7 @@ if ($Operation -eq 'worker') {
     $request = Get-Content -LiteralPath $reply -Raw | ConvertFrom-Json
     if ($request.ArmRehearsal) { $env:COD2_KIT_ARM_REHEARSAL = '1' }
     if ($request.Online) { $env:COD2_KIT_ONLINE = '1' }
+    if ($request.CoolDown) { $env:COD2_KIT_COOL_DOWN = '1' }
     try {
         & $runner -RunId $runName -Mode Step -ExpectedStep $request.Step -Answer $request.Answer -GamePath $request.GamePath `
             -GraphicsLabel $request.GraphicsLabel -DriverUtc $request.DriverUtc -InternetPlay:([bool]$request.InternetPlay) `

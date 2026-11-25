@@ -159,6 +159,7 @@ $Steps = @(
             $extracted = Expand-ServerPackage
             try {
                 Invoke-ServerCheck $step.Edition $GamePath $extracted 'server'
+                Wait-KitCooling
                 Invoke-Replay $step.Edition $GamePath 'standing' 'mp_toujane' 'dm' 12345 600 2 (Join-Path $Kit 'replays\standing\usercmds.txt') ''
             } finally { [void](Save-KitFirewall 'after-server') }
         } -Edition $edition
@@ -230,6 +231,9 @@ $Steps = @(
             param($step)
             Invoke-KitSurface $step.Variant
         } -Variant $surface
+    }
+    Add-KitStep 'servers-refresh-navigation' 'Navigate away and preserve the selected server during a 252-address refresh' {
+        Invoke-KitRefreshNavigation
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
@@ -317,6 +321,10 @@ $Steps = @(
             Invoke-KitOpenDemo $step.Edition
         } -Edition $edition
     }
+    Add-KitStep 'match-cod2x-fullscreen-dx7' 'CoD2x exclusive DirectX 7 match and Alt+Tab' {
+        Stop-KitIfNoGame
+        Invoke-KitFullscreenMatch 'cod2x' 'dx7'
+    }
     Add-KitStep 'identity-cod2x' 'Compare the CoD2x identifier with the 1.4.6.8 algorithm on this PC' {
         Stop-KitIfNoGame
         Invoke-KitHwidCheck (Get-Binary 'cod2x') $GamePath
@@ -345,15 +353,7 @@ $Steps = @(
         $failures = @()
         if (Test-Path -LiteralPath $InstallMarker) {
             try {
-                $entry = Get-ItemProperty -LiteralPath $InstallKey -ErrorAction SilentlyContinue
-                $uninstaller = Join-Path $InstallRoot 'unins000.exe'
-                if ($entry) {
-                    if ($entry.UninstallString.Trim('"') -ine $uninstaller) { throw 'The registered uninstaller changed.' }
-                    $code = Invoke-Setup $uninstaller 'uninstall' '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
-                    if ($code -ne 0) { throw "Uninstaller exit $code." }
-                }
-                if ((Test-Path -LiteralPath $InstallRoot) -or (Test-Path -LiteralPath $StartGroup) -or
-                        (Test-Path -LiteralPath $InstallKey)) { throw 'Windows kept install files, shortcuts or registration.' }
+                Invoke-KitDemoUninstall
                 Remove-Item -LiteralPath $InstallMarker
             } catch { $failures += $_.Exception.Message }
         }
@@ -371,5 +371,5 @@ $Steps = @(
         if (-not $ProfileName -and (Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
             [IO.Directory]::Delete($parent)
         }
-    } 'Type YES to uninstall the test copy and clear its sample data, or press Enter to keep it' -Consent
+    } 'Type YES to test uninstall twice and clear the sample data, or press Enter to keep the test copy' -Consent
 )

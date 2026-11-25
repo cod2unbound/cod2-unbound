@@ -30,7 +30,11 @@ public static class KitDesktop {
     [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr window, int mode);
     [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
     [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll", SetLastError = true)] static extern bool SetWindowPos(IntPtr window, IntPtr after,
+        int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumWindow callback, IntPtr state);
+    delegate bool EnumWindow(IntPtr window, IntPtr state);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr window);
@@ -55,6 +59,23 @@ public static class KitDesktop {
         uint pid;
         GetWindowThreadProcessId(window, out pid);
         return pid;
+    }
+
+    public static IntPtr[] VisibleProcessWindows(uint pid)
+    {
+        var windows = new List<IntPtr>();
+        EnumWindows((window, state) => {
+            if (IsWindowVisible(window) && WindowPid(window) == pid) windows.Add(window);
+            return true;
+        }, IntPtr.Zero);
+        return windows.ToArray();
+    }
+
+    public static bool IsOwnedWindow(IntPtr window, IntPtr owner)
+    {
+        for (IntPtr parent = GetWindow(window, 4); parent != IntPtr.Zero; parent = GetWindow(parent, 4))
+            if (parent == owner) return true;
+        return false;
     }
 
     public static void CloseOwnedWindow(IntPtr window)
@@ -108,6 +129,29 @@ public static class KitDesktop {
             && !GetWindowRect(window, out rect))
             throw new InvalidOperationException("Windows did not report the visible frame.");
         return Rectangle.FromLTRB(rect.L, rect.T, rect.R, rect.B);
+    }
+
+    public static void SizeSurfaceWindow(IntPtr window, int width, int height)
+    {
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            Rectangle work = Screen.FromHandle(window).WorkingArea;
+            Rectangle visible = Frame(window);
+            Rect outer;
+            if (!GetWindowRect(window, out outer))
+                throw new InvalidOperationException("Windows did not report the test window bounds.");
+            double scale = GetDpiForWindow(window) / 96.0;
+            int w = Math.Min(work.Width, (int)Math.Round(width * scale));
+            int h = Math.Min(work.Height, (int)Math.Round(height * scale));
+            int left = work.Left + (work.Width - w) / 2 + outer.L - visible.Left;
+            int top = work.Top + (work.Height - h) / 2 + outer.T - visible.Top;
+            const uint keepZOrderAndFocus = 0x0004 | 0x0010;
+            if (!SetWindowPos(window, IntPtr.Zero, left, top,
+                w + outer.R - outer.L - visible.Width, h + outer.B - outer.T - visible.Height, keepZOrderAndFocus))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        } finally {
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
     }
 
     public static string WindowFacts(IntPtr window)
@@ -293,6 +337,10 @@ public static class KitDesktop {
     public static void Tap(ushort code) { KeyEvent(code,false); Thread.Sleep(85); KeyEvent(code,true); }
     public static void Chord(ushort mod,ushort key) {
         KeyEvent(mod,false); try { Tap(key); } finally { KeyEvent(mod,true); }
+    }
+    public static void Chord(ushort first, ushort second, ushort key) {
+        KeyEvent(first, false);
+        try { Chord(second, key); } finally { KeyEvent(first, true); }
     }
     public static void Move(int x,int y) {
         Send(new Input { value=new Payload { mouse=new Mouse { x=x,y=y,flags=1 } } });

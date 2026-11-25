@@ -179,6 +179,13 @@ function Save-KitEngineAudit([string]$Text, [string]$Evidence) {
     }
 }
 
+function Wait-KitCooling {
+    if ($env:COD2_KIT_COOL_DOWN -ne '1') { return }
+    'Two-minute idle pause before the next game or dedicated server.' |
+        Add-Content -LiteralPath (Join-Path $Results 'cooling.txt') -Encoding UTF8
+    Start-Sleep -Seconds 120
+}
+
 function Start-KitProcess {
     param([string]$Exe, [string]$Arguments, [string]$Folder, [hashtable]$Settings = @{}, [switch]$NoWindow, [string]$WorkingDirectory)
     Assert-Offline

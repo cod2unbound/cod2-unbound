@@ -6,8 +6,9 @@ function Get-KitLauncherWindow($Process) {
     } 55 'the launcher window'
 }
 
-function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
-    $root = [Windows.Automation.AutomationElement]::FromHandle($Window)
+function Get-KitControls($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+    $root = if ($Window -is [Windows.Automation.AutomationElement]) { $Window }
+        else { [Windows.Automation.AutomationElement]::FromHandle($Window) }
     $property = if ($Name) { [Windows.Automation.AutomationElement]::NameProperty }
         else { [Windows.Automation.AutomationElement]::AutomationIdProperty }
     $condition = [Windows.Automation.PropertyCondition]::new($property, $Value)
@@ -17,11 +18,11 @@ function Get-KitControls([IntPtr]$Window, [string]$Value, [switch]$Name, [switch
     }
 }
 
-function Find-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+function Find-KitControl($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     Get-KitControls $Window $Value -Name:$Name -AllowOffscreen:$AllowOffscreen | Select-Object -First 1
 }
 
-function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
+function Invoke-KitControl($Window, [string]$Value, [switch]$Name, [switch]$AllowOffscreen) {
     if ($Value -match '^(?:Use key from disc install|UseDiscKey|ImportInstall|Import.*(?:install|disc|retail)|From your Call of Duty 2 install)') {
         throw [ArgumentException]::new('Retail action is forbidden during kit automation.')
     }
@@ -38,20 +39,55 @@ function Invoke-KitControl([IntPtr]$Window, [string]$Value, [switch]$Name, [swit
 
 function Wait-KitHome([IntPtr]$Window) {
     Wait-KitCondition {
-        (Find-KitControl $Window 'Find a server' -Name -AllowOffscreen) -or
+        (Find-KitControl $Window 'FindServerButton' -AllowOffscreen) -or
             (Find-KitControl $Window 'LaunchButton' -AllowOffscreen) -or
-            (Find-KitControl $Window 'Return to game' -Name -AllowOffscreen)
+            (Find-KitControl $Window 'OpenGameMenuButton' -AllowOffscreen)
     } 45 'Home to open' | Out-Null
 }
 
-function Open-KitGameMenu([IntPtr]$Window) {
+function Open-KitGameMenu([IntPtr]$Window, [switch]$UseJump) {
     Wait-KitHome $Window
     if (Find-KitControl $Window 'OpenGameMenuButton') {
         Invoke-KitControl $Window 'OpenGameMenuButton'
+        'First-run OpenGameMenuButton' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
+    } elseif ($UseJump) {
+        Open-KitJump $Window 'open game menu' 'Open Game Menu'
+        [KitDesktop]::Tap(13)
+        'Returning Home Jump to > Open Game Menu' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     } else {
-        Invoke-KitControl $Window 'More ways to launch' -Name
-        Invoke-KitControl $Window 'Open the game menu' -Name
+        Focus-KitWindow $Window
+        [KitDesktop]::Chord(17, 16, 13)
+        'Returning Home Ctrl+Shift+Enter' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     }
+}
+
+function Open-KitConnect([IntPtr]$Window) {
+    Focus-KitWindow $Window
+    [KitDesktop]::Chord(17, 76)
+    Wait-KitCondition { Find-KitControl $Window 'AddressBox' } 12 'the Connect to Address sheet' | Out-Null
+}
+
+function Open-KitJump([IntPtr]$Window, [string]$Query, [string]$Result) {
+    Focus-KitWindow $Window
+    [KitDesktop]::Chord(17, 75)
+    Set-KitEdit $Window 'JumpBox' $Query
+    Wait-KitCondition {
+        $list = Find-KitControl $Window 'JumpList'
+        if ($list) {
+            $pattern = $list.GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern)
+            $pattern.Current.GetSelection() | Where-Object { $_.Current.Name -eq $Result } | Select-Object -First 1
+        }
+    } 12 "the selected Jump result $Result" | Out-Null
+}
+
+function Open-KitSettings([IntPtr]$Window) {
+    Invoke-KitControl $Window 'SettingsItem'
+    $owner = [KitDesktop]::WindowPid($Window)
+    Wait-KitCondition {
+        foreach ($handle in [KitDesktop]::VisibleProcessWindows($owner)) {
+            if ($handle -ne $Window -and (Find-KitControl $handle 'Panes')) { return $handle }
+        }
+    } 12 'the separate Settings window'
 }
 
 function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
@@ -80,7 +116,7 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
                 } 12 'personalization choices' | Out-Null
                 Focus-KitWindow $Window
                 Save-KitWindow $Window (Join-Path $Evidence 'setup-personalize.png')
-                Invoke-KitControl $Window 'SetupAlternate'
+                Invoke-KitControl $Window 'SetupNext'
             }
             { $_ -in 'usage','crash' } {
                 Wait-KitCondition { Find-KitControl $Window 'DeclineReport' } 12 'the reporting choice' | Out-Null
@@ -143,6 +179,11 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
     Set-KitLauncherProfile $Edition $Renderer
+    $useJump = $Edition -eq 'original' -and $Renderer -eq 'dx7'
+    if ($useJump -or ($Edition -eq 'cod2x' -and $Renderer -eq 'dx9')) {
+        [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
+            '{"recent":["127.0.0.1:9"]}')
+    }
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
     $screens = Join-Path $LauncherHome 'main\screenshots'
@@ -160,14 +201,14 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
         Complete-KitLauncherSetup $launcher $Results
         $binary = Get-Binary $Edition -Root $InstallRoot
         $start = Get-Date
-        Open-KitGameMenu $launcher
+        Open-KitGameMenu $launcher -UseJump:$useJump
         $game = Wait-KitCondition {
             Get-Process -Name 'cod2_win32' -ErrorAction SilentlyContinue |
                 Where-Object { $_.Path -ieq $binary -and $_.StartTime -ge $start -and $_.SessionId -eq $run.Process.SessionId } |
                 Select-Object -First 1
         } 40 'the installed game process'
         $window = Get-KitGameWindow $game
-        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace -FromLauncher
+        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace $game -FromLauncher
     } finally {
         if ($game -and -not $game.HasExited) {
             if ($window -ne [IntPtr]::Zero) {

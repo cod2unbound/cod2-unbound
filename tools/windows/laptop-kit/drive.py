@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import plistlib
 import re
 import secrets
@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent
 SCRATCH = "50586ED7-B2DA-47BC-BED5-F7D3919DE097"
 UTM = "/Applications/UTM.app/Contents/MacOS/utmctl"
 BUNDLE = Path.home() / "Library/Containers/com.utmapp.UTM/Data/Documents/cod2-scratch.utm"
+GAME_STEPS = re.compile(r"^(server-|direct-|installed-(?:original|cod2x)-|demo-|full-|borderless-|match-|open-demo-|firewall-first-start$|launcher-hosting$|identity-cod2x$|faults$)")
 
 
 def powershell_literal(value):
@@ -135,7 +136,7 @@ class UtmTransport:
 
 class Kit:
     def __init__(self, transport, name, output, game_path, arm_rehearsal, online=False, graphics_label="Default",
-                 internet_play=False, stage_parent=None, profile_name=None):
+                 internet_play=False, stage_parent=None, profile_name=None, cool_down=False):
         self.transport = transport
         self.name = name
         self.output = output
@@ -147,6 +148,7 @@ class Kit:
         self.internet_play = internet_play
         self.stage_parent = stage_parent
         self.profile_name = profile_name
+        self.cool_down = cool_down
         if internet_play and (not online or self.arm_rehearsal or
                               getattr(transport, "host", "") in ("localhost", "127.0.0.1", "::1")):
             raise ValueError("Internet play requires an online physical laptop run.")
@@ -219,6 +221,8 @@ class Kit:
         if self.profile_name:
             args += f" -ProfileName {powershell_literal(self.profile_name)}"
         if operation == "queue":
+            if self.cool_down:
+                args += " -CoolDown"
             args += f" -GraphicsLabel {powershell_literal(self.graphics_label)}"
             args += f" -DriverUtc {powershell_literal(datetime.now(timezone.utc).isoformat())}"
         return self.exec("& (Join-Path $stage 'CoD2-Unbound-Windows-Kit\\Remote-Kit.ps1') -Stage $stage" + args)
@@ -270,6 +274,13 @@ class Kit:
                 pack(self.output)
                 return
             step = next_step["Id"]
+            if self.cool_down and GAME_STEPS.match(step):
+                last_game = max((path.stat().st_mtime for path in self.output.glob("*.zip")
+                                 if GAME_STEPS.match(path.stem)), default=0)
+                remaining = 120 - (time.time() - last_game)
+                if remaining > 0:
+                    print(f"Cooling pause before {next_step['Title']} ({remaining:.0f} s)", flush=True)
+                    time.sleep(remaining)
             response = ""
             restart_recovery = pending == step == "interrupt" and next_step["Prompt"]
             if restart_recovery:
@@ -322,10 +333,14 @@ def pack(folder):
     paths = [path for path in paths if path.name != "CoD2-Unbound-results.zip"]
     if not paths:
         raise ValueError("No step archives are available to pack.")
+    def shareable(item):
+        return not any(part.startswith("private-map-stall-") for part in PurePosixPath(item.filename).parts)
+
     for path in paths:
         with zipfile.ZipFile(path) as packet:
             for item in packet.infolist():
-                print(f"{item.filename} ({item.file_size} bytes)")
+                if shareable(item):
+                    print(f"{item.filename} ({item.file_size} bytes)")
     if input("Review the pictures, sound and test demos. Type PACK to make one ZIP.\n> ").strip() != "PACK":
         return
     result = folder / "CoD2-Unbound-results.zip"
@@ -334,7 +349,7 @@ def pack(folder):
         for path in paths:
             with zipfile.ZipFile(path) as packet:
                 for item in packet.infolist():
-                    if not item.is_dir():
+                    if not item.is_dir() and shareable(item):
                         with packet.open(item) as contents, combined.open(item.filename, "w", force_zip64=True) as dest:
                             shutil.copyfileobj(contents, dest)
     pending.replace(result)
@@ -358,11 +373,14 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--game-path")
     parser.add_argument("--graphics-label", choices=("Default", "Intel", "Radeon"), default="Default")
+    parser.add_argument("--cool-down", action="store_true", help="allow two idle minutes between local engine runs")
     parser.add_argument("--pack-only", action="store_true")
     parser.add_argument("--steps", type=int, default=0, help="pause after pulling this many steps")
     args = parser.parse_args()
     if args.internet_play and (not args.online or args.utm_sid or args.arm_rehearsal):
         parser.error("--internet-play requires --online on the physical laptop")
+    if args.cool_down and (args.internet_play or args.utm_sid or args.arm_rehearsal):
+        parser.error("--cool-down is for local Fixture checks on a physical laptop")
     if args.pack_only or (args.output / "completed.txt").exists():
         pack(args.output)
         return
@@ -392,7 +410,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     driver = Kit(transport, f"CoD2-Kit-{args.run}", args.output.resolve(), args.game_path,
                  args.arm_rehearsal, args.online, args.graphics_label, args.internet_play,
-                 args.stage_parent, args.profile_name)
+                 args.stage_parent, args.profile_name, cool_down=args.cool_down)
     driver.deploy(args.kit.resolve(), digest)
     driver.run(args.steps)
 

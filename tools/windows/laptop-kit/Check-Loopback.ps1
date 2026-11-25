@@ -15,7 +15,7 @@ function Request-KitServer([int]$Port, [string]$Command, [int]$Timeout = 600) {
     } finally { $udp.Dispose() }
 }
 
-function Set-KitEdit([IntPtr]$Window, [string]$Value, [string]$Text, [switch]$Name) {
+function Set-KitEdit($Window, [string]$Value, [string]$Text, [switch]$Name) {
     $node = Wait-KitCondition { Find-KitControl $Window $Value -Name:$Name } 12 "edit field $Value"
     $action = $node.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)
     $action.SetValue($Text)
@@ -87,6 +87,11 @@ function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe) {
     }
 }
 
+function Find-KitLoopbackDialog([IntPtr]$App, [string]$Title) {
+    Get-KitControls $App $Title -Name |
+        Where-Object { Find-KitControl $_ 'PrimaryButton' } | Select-Object -First 1
+}
+
 function Invoke-KitOpenDemo([string]$Edition) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
@@ -108,8 +113,9 @@ function Invoke-KitOpenDemo([string]$Edition) {
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
         Open-KitAssociation $demo 'CoD2Unbound.Demo' $exe
+        $dialog = Wait-KitCondition { Find-KitLoopbackDialog $app 'Play this demo?' } 12 'the demo playback confirmation'
         $since = Get-Date
-        Invoke-KitControl $app 'Play demo' -Name
+        Invoke-KitControl $dialog 'PrimaryButton'
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $window = Get-KitGameWindow $game
         Wait-KitCondition {
@@ -204,7 +210,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         $since = Get-Date
         switch ($Route) {
             'connect' {
-                Invoke-KitControl $app ('Connect to address' + [char]0x2026) -Name
+                Open-KitConnect $app
                 Set-KitEdit $app 'AddressBox' "127.0.0.1:$port"
                 Invoke-KitControl $app 'PrimaryButton'
             }
@@ -215,7 +221,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             { $_ -in 'list','handoff' } {
                 Invoke-KitControl $app 'All' -Name
-                Invoke-KitControl $app 'RefreshButton'
+                Start-KitPublicRefresh $app
                 # The only fixture result is selected by the browser. Its TextBlock has no action.
                 Wait-KitCondition { Find-KitControl $app 'Kit-Loopback' -Name } 25 'the loopback server in the list' | Out-Null
                 if ($Route -eq 'handoff') {
@@ -335,7 +341,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             Focus-KitWindow $app
             [void][KitDesktop]::ShowWindow($app, 3)
             Wait-KitCondition {
-                if ($history = Find-KitControl $app 'All matches' -Name -AllowOffscreen) { return $history }
+                if ($history = Find-KitControl $app 'AllMatches' -AllowOffscreen) { return $history }
                 if (-not (Find-KitControl $app 'LaunchButton' -AllowOffscreen)) {
                     Invoke-KitControl $app 'HomeItem'
                 }
@@ -348,8 +354,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Wait-KitCondition {
                     if ($row = Find-KitControl $app $title -Name) { return $row }
                     if ($navigation.Attempts -lt 3 -and [DateTime]::UtcNow -ge $navigation.RetryAt -and
-                        (Find-KitControl $app 'All matches' -Name -AllowOffscreen)) {
-                        Invoke-KitControl $app 'All matches' -Name -AllowOffscreen
+                        (Find-KitControl $app 'AllMatches' -AllowOffscreen)) {
+                        Invoke-KitControl $app 'AllMatches' -AllowOffscreen
                         $navigation.Attempts++
                         $navigation.RetryAt = [DateTime]::UtcNow.AddSeconds(4)
                     }
@@ -525,8 +531,8 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
         [KitDesktop]::Chord(17, 49)
         try {
             Wait-KitCondition {
-                (Find-KitControl $App 'Return to game' -Name -AllowOffscreen) -and
-                    (Find-KitControl $App 'Close game' -Name -AllowOffscreen)
+                (Find-KitControl $App 'ReturnGameButton' -AllowOffscreen) -and
+                    (Find-KitControl $App 'CloseGameButton' -AllowOffscreen)
             } 5 'the Home controls for the running game' | Out-Null
             $ready = $true
             break
@@ -540,22 +546,26 @@ function Invoke-KitSecondServer([IntPtr]$App, $Game, [int]$FirstPort, [int]$Seco
     }
     Save-KitWindow $App (Join-Path $Results 'launcher-playing.png')
     [KitDesktop]::Chord(18, 115)
-    foreach ($name in 'Close launcher only','Close both','Cancel') {
-        Wait-KitCondition { Find-KitControl $App $name -Name } 15 $name | Out-Null
+    $title = 'Call of Duty 2 is still running'
+    $dialog = Wait-KitCondition { Find-KitLoopbackDialog $App $title } 15 'the running-game close question'
+    foreach ($id in 'SecondaryButton','CloseButton') {
+        Wait-KitCondition { Find-KitControl $dialog $id } 12 $id | Out-Null
     }
     Save-KitWindow $App (Join-Path $Results 'launcher-close-question.png')
-    Invoke-KitControl $App 'Cancel' -Name
-    Invoke-KitControl $App 'Return to game' -Name
     $gameWindow = Get-KitGameWindow $Game
+    Invoke-KitControl $dialog 'CloseButton'
+    Wait-KitCondition { -not (Find-KitLoopbackDialog $App $title) } 12 'the running-game close question to dismiss' | Out-Null
+    Invoke-KitControl $App 'ReturnGameButton'
     Wait-KitCondition { [KitDesktop]::GetForegroundWindow() -eq $gameWindow } 8 'Return to game to bring the game forward' | Out-Null
     Close-KitRunningGame $App $Game
     'Return to game brought the same game to the foreground. Close game stopped it.' | Add-Content -LiteralPath $evidence
 }
 
-function Invoke-KitFullscreenMatch([string]$Edition) {
+function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') {
     Initialize-KitDesktop
     $serverEntry = New-RunContext 'fullscreen-server'
     $clientEntry = New-RunContext 'fullscreen-client'
+    Assert-KitExclusiveForeground ([IntPtr]::Zero) $clientEntry.Evidence -ModalOnly
     $desktop = [KitDesktop]::CurrentMode()
     $port = if ($Edition -eq 'original') { 29803 } else { 29804 }
     $admin = 'kit' + [guid]::NewGuid().ToString('N')
@@ -564,10 +574,11 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
     New-TestProfile $clientEntry.Folder
     'bind w "+forward"' | Add-Content -LiteralPath (Join-Path $clientEntry.Folder 'main\players\kit\config_mp.cfg') -Encoding ASCII
     $clientArgs = (Get-EngineArgs $clientEntry.Folder $GamePath -Port ($port+100)) +
-        " +set r_rendererPreference dx9 +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
+        " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
         " +set com_introPlayed 1 +set cl_allowDownload 0 +connect 127.0.0.1:$port"
     $run = $null
     $window = [IntPtr]::Zero
+    $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
     $trace = New-KitFrameTrace $clientEntry.Evidence
     $server = Start-KitProcess (Get-Binary $Edition -Server) $serverArgs $serverEntry.Folder `
         @{ COD2_UNBOUND_HIDE_SERVER_CONSOLE='1' } -NoWindow
@@ -576,16 +587,23 @@ function Invoke-KitFullscreenMatch([string]$Edition) {
             (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
         } 45 'the exclusive match server' | Out-Null
         $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder @{ COD2_FRAME_TRACE_FILE=$trace.Path }
-        $window = Get-KitGameWindow $run.Process
-        Wait-KitCondition { Get-KitNamedPlayer $port } 65 'Kit Player to join the exclusive match' | Out-Null
-        $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
-        Wait-KitCondition {
+        $window = Get-KitGameWindow $run.Process $clientEntry.Evidence
+        Wait-KitMapLoad {
+            Assert-KitExclusiveForeground $window $clientEntry.Evidence -ModalOnly
+            (Get-KitNamedPlayer $port) -and
             (Test-Path $log) -and (Select-String -LiteralPath $log -SimpleMatch 'dvar set cl_ingame 1' -Quiet)
-        } 35 'the joined client to finish loading' | Out-Null
+        } 65 'exclusive-match' $run.Process $log $clientEntry.Evidence -Exclusive
+        if (-not (Select-String -LiteralPath $log -SimpleMatch "Using Direct3D $($Renderer.Substring(2)) code path" -Quiet)) {
+            throw "The exclusive match did not open in $(Get-GraphicsMode $Renderer) mode."
+        }
+        Assert-KitExclusiveForeground $window $clientEntry.Evidence
         Enter-KitPlay $window
+        $inputReceipt = Join-Path $clientEntry.Evidence 'fullscreen-input.txt'
+        "Play cursor clip before switch $([KitDesktop]::Clip())" | Set-Content -LiteralPath $inputReceipt
         Start-KitFrameSample $trace $window $log
         Save-KitFrame $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
         Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
+        "Play cursor clip after switch $([KitDesktop]::Clip())" | Add-Content -LiteralPath $inputReceipt
         $viewPattern = '(?m)^\( *-?\d+ +-?\d+ +-?\d+\) *: *-?\d+'
         Send-KitCommand $window '/toggleconsole; viewpos'
         $before = [regex]::Matches((Read-KitText $log), $viewPattern) | Select-Object -Last 1

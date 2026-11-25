@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -81,6 +82,7 @@ def assemble(args):
         copy_file(source_root / "tests/launcher/fixtures/core-parity/directory.json",
                   kit / "launcher-fixtures/directory.json")
         copy_file(args.probe, kit / "probes/media-probe.exe")
+        copy_file(args.stack_probe, kit / "probes/stack-probe.exe")
         if args.wine:
             copy_fixtures(args, kit)
         for path in (args.release / "artifacts").iterdir():
@@ -98,11 +100,14 @@ def assemble(args):
         revision_time = subprocess.check_output(
             ["git", "-C", str(source_root), "show", "-s", "--format=%ct", kit_revision], text=True)
         build_date = datetime.fromtimestamp(int(revision_time), timezone.utc).date()
+        previous_provenance = ("Both test packages use the same product source.\n" if not args.previous_source else
+                               f"Upgrade fixture engine source {args.previous_source[0]}\n"
+                               f"Upgrade fixture launcher source {args.previous_source[1]}\n")
         (kit / "BUILD.txt").write_text(
             f"Engine source {args.engine}\nLauncher source {launcher_revision}\n"
             f"Kit scripts and guides {kit_revision}\nKit date {build_date}\n"
             f"Package version {(layout / 'RELEASE_VERSION').read_text().strip()}\n"
-            "Upgrade fixture version 0.3.9. Both test packages use the same product source.\n",
+            "Upgrade fixture version 0.3.9.\n" + previous_provenance,
             encoding="ascii",
         )
         write_manifest(kit, "SHA256SUMS.txt")
@@ -128,12 +133,16 @@ def assemble(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for argument in ("baseline", "release", "previous", "probe", "frame-python", "output"):
+    for argument in ("baseline", "release", "previous", "probe", "stack-probe", "frame-python", "output"):
         parser.add_argument(f"--{argument}", required=True, type=Path)
     for argument in ("wine", "windows-original", "windows-cod2x"):
         parser.add_argument(f"--{argument}", type=Path)
     parser.add_argument("--engine", required=True)
+    parser.add_argument("--previous-source", nargs=2, metavar=("ENGINE_REVISION", "LAUNCHER_REVISION"))
     arguments = parser.parse_args()
+    if arguments.previous_source and not all(re.fullmatch(r"[a-f0-9]{40}", revision)
+                                             for revision in arguments.previous_source):
+        parser.error("--previous-source requires full engine and launcher Git revisions")
     reference_overrides = (arguments.wine, arguments.windows_original, arguments.windows_cod2x)
     if any(reference_overrides) and not all(reference_overrides):
         parser.error("--wine, --windows-original and --windows-cod2x must be supplied together")

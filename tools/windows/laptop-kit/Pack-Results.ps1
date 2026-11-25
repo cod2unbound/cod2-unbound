@@ -12,7 +12,9 @@ foreach ($item in $files) {
         throw 'Remove links, programs and game archives from results.'
     }
 }
-$files = @($files | Where-Object { -not $_.PSIsContainer })
+$files = @($files | Where-Object {
+    -not $_.PSIsContainer -and $_.DirectoryName -notmatch '[\\/]private-map-stall-[^\\/]+(?:[\\/]|$)'
+})
 $script:KitSerials = Get-KitSerials
 $stage = Join-Path $LocalData ('CoD2-Kit-Pack-' + [guid]::NewGuid().ToString('N'))
 try {

@@ -58,6 +58,7 @@ function Invoke-KitDemoFrames([string]$Edition, [string]$Renderer) {
     $inputRoot = Join-Path $Kit "frame-references\$Edition\$Renderer"
     Stop-KitIfMissing $inputRoot 'This kit has no reference pictures for this edition and mode.'
     foreach ($map in 'mp_toujane','mp_harbor') {
+        if ($map -eq 'mp_harbor') { Wait-KitCooling }
         $entry = New-RunContext $map
         $gameHome = Join-Path $entry.Folder 'profile'
         New-TestProfile $gameHome
