@@ -82,26 +82,23 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             'home' {
                 if ($Variant -eq 'first') {
                     Save-KitSurface $app 'first-home' @('OpenGameMenuButton', 'FindServerButton')
+                    $news = Wait-KitCondition {
+                        foreach ($id in 'SeeAllNews', 'NewsChip') {
+                            if (Find-KitControl $app $id) { return $id }
+                        }
+                    } 12 'the visible Home news action'
+                    Invoke-KitControl $app $news
+                    Save-KitSurface $app 'news' @('CloseButton')
+                    Invoke-KitControl $app 'CloseButton'
                 } else {
                     Save-KitSurface $app 'returning-home' @('LaunchButton')
                     Open-KitJump $app 'open game menu' 'Open Game Menu'
                     Save-KitSurface $app 'game-menu-jump' @('JumpBox', 'JumpList')
                     [KitDesktop]::Tap(27)
+                    Open-KitConnect $app
+                    Save-KitSurface $app 'connect' @('AddressBox', 'CloseButton')
+                    Invoke-KitControl $app 'CloseButton'
                 }
-                Open-KitConnect $app
-                Save-KitSurface $app 'connect' @('AddressBox', 'CloseButton')
-                Invoke-KitControl $app 'CloseButton'
-                Wait-KitCondition { -not (Find-KitControl $app 'AddressBox') } 12 'Connect to close' | Out-Null
-                Invoke-KitControl $app 'HomeItem'
-                Wait-KitHome $app
-                $news = Wait-KitCondition {
-                    foreach ($id in 'SeeAllNews', 'NewsChip') {
-                        if (Find-KitControl $app $id) { return $id }
-                    }
-                } 12 'the visible Home news action'
-                Invoke-KitControl $app $news
-                Save-KitSurface $app 'news' @('CloseButton')
-                Invoke-KitControl $app 'CloseButton'
             }
             'jump' {
                 Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts'
