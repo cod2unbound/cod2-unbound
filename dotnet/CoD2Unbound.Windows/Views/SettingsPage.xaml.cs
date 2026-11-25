@@ -609,10 +609,10 @@ public sealed partial class SettingsPage : Page
         });
         warnings.IsEnabled = !Current.DismissedWarnings.IsEmpty;
         Row("Warnings", null, warnings);
-        Row("Launcher settings", null, Action("Reset Settings…", async () =>
+        var reset = Action("Reset Settings…", async () =>
         {
             if (!await ConfirmAsync("Reset launcher settings?",
-                "Restore the original settings and keep your loadouts, demos, screenshots and CD key.", "Reset Settings"))
+                "Everything in the Settings window goes back to how it started. Loadouts, demos, screenshots and your CD key stay.", "Reset Settings"))
                 return;
             advancedDraft = advancedProblem = null;
             previousDisplay = null;
@@ -621,7 +621,9 @@ public sealed partial class SettingsPage : Page
             Render();
             if (!settingsSaveFailed)
                 ShowFeedback("Settings are back to how they started.", InfoBarSeverity.Success);
-        }));
+        });
+        reset.Style = StyleFor("NegativeButton");
+        Row("Launcher settings", "Returns everything in this window to how it started. Loadouts, demos, screenshots and your CD key stay.", reset);
     }
 
     private string? LatestGameLog()
@@ -794,6 +796,10 @@ public sealed partial class SettingsPage : Page
     };
 
     // A single decision is the Mac's alert, not a sheet (AllSheets, Alerts).
-    private async Task<bool> ConfirmAsync(string title, string message, string primary) =>
-        await Dialog(title, Caption(message), primary).AsAlert().ShowAsync() == ContentDialogResult.Primary;
+    private async Task<bool> ConfirmAsync(string title, string message, string primary)
+    {
+        var dialog = Dialog(title, Caption(message), primary).AsAlert(destructive: true);
+        dialog.DefaultButton = ContentDialogButton.Close;
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
 }
