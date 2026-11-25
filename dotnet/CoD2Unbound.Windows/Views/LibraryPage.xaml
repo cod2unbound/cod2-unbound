@@ -184,6 +184,20 @@
                 </Grid>
                 <ListView x:Name="Files" Grid.Row="1" SelectionMode="Single" TabNavigation="Once" IsSwipeEnabled="False"
                           ItemContainerStyle="{StaticResource LibraryListItem}" AutomationProperties.Name="Files">
+                    <ListView.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Default">
+                                    <Style x:Key="DemoRowTitle" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+                                        <Setter Property="Foreground" Value="{ThemeResource heading}" />
+                                    </Style>
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="HighContrast">
+                                    <Style x:Key="DemoRowTitle" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </ListView.Resources>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="10,10,22,10" ColumnSpacing="16" ColumnDefinitions="80,*,130,70,118"
@@ -194,8 +208,8 @@
                                            AutomationProperties.AccessibilityView="Raw" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Style="{StaticResource Mono}"
-                                               FontSize="14" FontWeight="Bold" Foreground="{ThemeResource heading}" />
+                                    <TextBlock x:Name="DemoTitle" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                               Style="{ThemeResource DemoRowTitle}" FontSize="14" FontWeight="Bold" />
                                     <TextBlock Text="{Binding DemoDetail}" TextTrimming="CharacterEllipsis" FontSize="12"
                                                Foreground="{ThemeResource secondary}" />
                                 </StackPanel>
@@ -215,9 +229,10 @@
                                     <Button Style="{StaticResource IconAction}" Click="OnFileMenu" Tag="{Binding}"
                                             Width="{StaticResource ButtonRegularHeight}" Height="{StaticResource ButtonRegularHeight}"
                                             MinWidth="{StaticResource ButtonRegularHeight}" MinHeight="{StaticResource ButtonRegularHeight}"
-                                            CornerRadius="{StaticResource ButtonRegularRadius}" Foreground="{ThemeResource chipIcon}"
+                                            CornerRadius="{StaticResource ButtonRegularRadius}"
                                             AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="More actions">
-                                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="17" />
+                                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="17"
+                                                  Foreground="{Binding Foreground, ElementName=DemoTitle}" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
