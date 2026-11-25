@@ -89,6 +89,8 @@ public static class GlyphAlign
             ink -= 0.11;
         if (fluent && icon.Glyph is "\uE305" && size is >= 13.5 and < 14.5)
             ink += 0.06;
+        if (fluent && icon.Glyph is "\uE305" && size is >= 20.5 and < 21.5)
+            ink -= 0.06;
         return (fluent ? FluentLineEm : SystemLineEm, ink);
     }
 
