@@ -77,9 +77,13 @@ public static class GlyphAlign
         bool fluent = icon.FontFamily?.Source?.Contains("FluentSystemIcons", StringComparison.Ordinal) == true;
         var raise = fluent ? FluentInkRaise : SystemInkRaise;
         double ink = (fluent ? FluentInkCentreEm : SystemInkCentreEm) - raise.GetValueOrDefault(icon.Glyph ?? "");
+        double size = icon.FontSize * (icon.XamlRoot?.RasterizationScale ?? 1);
         // The small filled Play outline rounds high at 100% and draws on centre from its 150% size onward.
-        if (fluent && icon.Glyph is "\uE9A2" && icon.FontSize * (icon.XamlRoot?.RasterizationScale ?? 1) <= 12)
+        if (fluent && icon.Glyph is "\uE9A2" && size <= 12)
             ink -= 0.07;
+        // The 18-pixel plus draws high in the toolbar. At 16 pixels its shape already lands on centre.
+        if (fluent && icon.Glyph is "\uF109" && size is >= 17.5 and < 18.5)
+            ink -= 0.05;
         return (fluent ? FluentLineEm : SystemLineEm, ink);
     }
 
@@ -215,7 +219,9 @@ public static class GlyphAlign
         // The icon draws its line box centred in its own box; the label draws its first line from its top.
         double lineHeight = lineEm * icon.FontSize;
         double inkCentre = iconY + (icon.ActualHeight - lineHeight) / 2 + inkEm * icon.FontSize;
-        double capCentre = textY + text.BaselineOffset - CapHalfEm * text.FontSize;
+        // A realized row can have a line box before its text layout reports a baseline.
+        double baseline = text.BaselineOffset > 0 ? text.BaselineOffset : TextAscentEm * text.FontSize;
+        double capCentre = textY + baseline - CapHalfEm * text.FontSize;
         if (!Move(icon, capCentre - inkCentre))
             return;
 #if UPDATE_FIXTURES
