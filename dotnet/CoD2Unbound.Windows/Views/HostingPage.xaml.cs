@@ -161,6 +161,7 @@ public sealed partial class HostingPage : Page
             note.TextAlignment = TextAlignment.Center;
             var create = Action("New Server", NewAsync);
             AutomationProperties.SetName(create, "New server");
+            AutomationProperties.SetAutomationId(create, "HostingEmptyNewServer");
             create.Content = IconLabel("Add", "New Server", 16);
             create.Style = StyleFor("LauncherAccentButton");
             var write = Action("Write a server.cfg…", ExportSelectedAsync, "X");

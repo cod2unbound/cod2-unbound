@@ -60,6 +60,7 @@ internal sealed class ProblemReportDialog : ContentDialog
 
         var copyStyle = new Style(typeof(Button)) { BasedOn = StyleFor("SheetButton") };
         copyStyle.Setters.Add(new Setter(AutomationProperties.NameProperty, "Copy details"));
+        copyStyle.Setters.Add(new Setter(AutomationProperties.AutomationIdProperty, "ProblemReportCopyDetails"));
         SecondaryButtonStyle = copyStyle;
 
         int copyGeneration = 0;

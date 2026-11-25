@@ -70,11 +70,13 @@ public sealed partial class ConfigsPage : Page
         {
             args.ItemContainer.ContextFlyout = null;
             args.ItemContainer.ClearValue(AutomationProperties.NameProperty);
+            args.ItemContainer.ClearValue(AutomationProperties.AutomationIdProperty);
         }
         else if (args.Item is LoadoutRow row)
         {
             args.ItemContainer.ContextFlyout = LoadoutMenu(row.Profile, includeNew: false);
             AutomationProperties.SetName(args.ItemContainer, row.Name);
+            AutomationProperties.SetAutomationId(args.ItemContainer, $"ConfigsLoadout-{row.Profile.Id}");
             AutomationProperties.SetHelpText(args.ItemContainer, row.Status);
         }
     }
@@ -245,6 +247,8 @@ public sealed partial class ConfigsPage : Page
         model.Opened(pages[studioTab]);
         SelectorBar tabs = null!;
         tabs = Tabs(["Settings", "Binds", "Check-up", "History"], studioTab, ChangeTab);
+        AutomationProperties.SetAutomationId(tabs.Items[1], "ConfigsBinds");
+        AutomationProperties.SetAutomationId(tabs.Items[3], "ConfigsHistory");
         async void ChangeTab(int index)
         {
             if (restoringStudioChoice || index == studioTab)

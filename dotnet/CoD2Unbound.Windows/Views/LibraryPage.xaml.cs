@@ -267,6 +267,7 @@ public sealed partial class LibraryPage : Page
                 XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Play this demo?", Content = details,
                 PrimaryButtonText = "Play Demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
             };
+            AutomationProperties.SetAutomationId(dialog, "LibraryDemoPlaybackDialog");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
                 return;
         }

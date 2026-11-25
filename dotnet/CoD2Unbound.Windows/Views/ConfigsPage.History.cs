@@ -35,6 +35,7 @@ public sealed partial class ConfigsPage
         snapshot.Style = StyleFor("ToolbarPill");
         snapshot.Content = IconLabel("History", "Save a Snapshot Now", 18);
         AutomationProperties.SetName(snapshot, "Save a snapshot now");
+        AutomationProperties.SetAutomationId(snapshot, "ConfigsSaveSnapshot");
         snapshot.HorizontalAlignment = HorizontalAlignment.Right;
         historySnapshotButton = snapshot;
         var target = new Border { Child = snapshot, Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent),

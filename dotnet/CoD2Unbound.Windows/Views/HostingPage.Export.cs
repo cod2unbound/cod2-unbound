@@ -45,9 +45,13 @@ public sealed partial class HostingPage
             menu.Items.Clear();
             if (row.Content is not HostedServer server)
                 return;
-            menu.Items.Add(Item(ExportTitle, "X", () => ExportSavedAsync(server.Id), automationName: "Export for another machine…"));
-            menu.Items.Add(Item(RevealFolderTitle, "F", () => hosting.RevealServerFolderAsync(server.Id),
-                hosting.HasServerFolder(server.Id), "Show its folder in File Explorer"));
+            var export = Item(ExportTitle, "X", () => ExportSavedAsync(server.Id), automationName: "Export for another machine…");
+            var reveal = Item(RevealFolderTitle, "F", () => hosting.RevealServerFolderAsync(server.Id),
+                hosting.HasServerFolder(server.Id), "Show its folder in File Explorer");
+            AutomationProperties.SetAutomationId(export, "HostingRowExport");
+            AutomationProperties.SetAutomationId(reveal, "HostingRowReveal");
+            menu.Items.Add(export);
+            menu.Items.Add(reveal);
             menu.Items.Add(new MenuFlyoutSeparator());
             menu.Items.Add(Item(DeleteTitle, "D", () => DeleteServerAsync(server), !hosting.IsActive(server.Id)));
         };
@@ -92,6 +96,7 @@ public sealed partial class HostingPage
     private async Task ExportAsync(HostedServer server, bool running)
     {
         var passwords = ExportToggle("Passwords", isOn: false);
+        AutomationProperties.SetAutomationId(passwords, "HostingExportPasswords");
         var match = ExportToggle("zPAM match settings", isOn: true);
         string edition = server.Engine == GameEdition.Cod2x ? "CoD2x" : "the original 1.3";
         const string explanation = "Writes a folder you can copy to a Linux or Windows server. Nothing is uploaded.";
@@ -113,6 +118,7 @@ public sealed partial class HostingPage
         content.Children.Add(Caption("Game files are never included."));
         var dialog = Dialog($"Export “{server.Name}” for another PC", content, "Export…")
             .WithSymbol("FluentDocument", explanation);
+        AutomationProperties.SetAutomationId(dialog, "HostingExportDialog");
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             await WriteExportAsync(server, passwords.IsOn, match.IsOn);
 

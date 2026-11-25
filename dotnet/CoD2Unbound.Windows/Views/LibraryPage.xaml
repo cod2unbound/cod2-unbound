@@ -102,7 +102,7 @@
                                            AutomationProperties.AccessibilityView="Raw" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                                    <TextBlock Text="{Binding Title}" AutomationProperties.AutomationId="LibraryMatchTitle" TextTrimming="CharacterEllipsis"
                                                FontSize="15" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Stamp}" Style="{StaticResource Mono}" FontSize="12"
                                                Foreground="{ThemeResource secondary}" TextTrimming="CharacterEllipsis" />
