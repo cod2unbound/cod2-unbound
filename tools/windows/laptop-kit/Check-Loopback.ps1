@@ -215,7 +215,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             { $_ -in 'list','handoff' } {
                 Invoke-KitControl $app 'All' -Name
-                Invoke-KitControl $app 'RefreshButton'
+                Start-KitPublicRefresh $app
                 # The only fixture result is selected by the browser. Its TextBlock has no action.
                 Wait-KitCondition { Find-KitControl $app 'Kit-Loopback' -Name } 25 'the loopback server in the list' | Out-Null
                 if ($Route -eq 'handoff') {

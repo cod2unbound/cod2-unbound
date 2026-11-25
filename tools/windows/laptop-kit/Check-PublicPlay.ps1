@@ -105,8 +105,18 @@ function Get-KitPublicHostResult([IntPtr]$App, [string]$RoomName) {
 }
 
 function Start-KitPublicRefresh([IntPtr]$App) {
-    $button = Wait-KitCondition { Find-KitControl $App 'RefreshButton' } 12 'Refresh server list'
-    if ($button.Current.Name -ne 'Stop refresh') { Invoke-KitControl $App 'RefreshButton' }
+    Wait-KitCondition { Find-KitControl $App 'ServerList' } 12 'the server list' | Out-Null
+    if (-not (Find-KitControl $App 'RefreshMessage')) {
+        Focus-KitWindow $App
+        [KitDesktop]::Chord(17, 82)
+    }
+}
+
+function Get-KitRefreshStatus([IntPtr]$App) {
+    $status = Find-KitControl $App 'RefreshStatus'
+    if ($status) { return $status.Current.Name }
+    $overflow = Find-KitControl $App 'ToolbarOverflow'
+    if ($overflow) { $overflow.Current.HelpText }
 }
 
 function Get-KitPublicAnsweredCount([string]$Message) {
@@ -277,16 +287,15 @@ function Invoke-KitPublicEdition([IntPtr]$App, $Launcher, [string]$Edition, [str
         "First server after $($watch.ElapsedMilliseconds) ms." |
             Set-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt') -Encoding UTF8
         Wait-KitCondition {
-            $refresh = Find-KitControl $App 'RefreshButton'
-            $refresh -and $refresh.Current.Name -ne 'Stop refresh'
+            (Get-KitRefreshStatus $App) -and -not (Find-KitControl $App 'RefreshMessage')
         } 65 'the server refresh to finish' | Out-Null
         $rows = @(Get-KitPublicRows $App)
-        $status = Find-KitControl $App 'RefreshStatus' -AllowOffscreen
-        $answered = if ($status) { Get-KitPublicAnsweredCount $status.Current.Name }
+        $status = Get-KitRefreshStatus $App
+        $answered = Get-KitPublicAnsweredCount $status
         if ($null -eq $answered -or (Find-KitControl $App 'OfflineBanner')) {
             throw 'The public masters did not confirm a completed refresh.'
         }
-        Protect-KitText "$($status.Current.Name) Accessible rows: $($rows.Count)." |
+        Protect-KitText "$status Accessible rows: $($rows.Count)." |
             Add-Content -LiteralPath (Join-Path $entry.Evidence 'server-list.txt') -Encoding UTF8
         Save-KitWindow $App (Join-Path $entry.Evidence 'public-list.png')
         $candidates = @(Get-KitJoinCandidates $rows $Edition)

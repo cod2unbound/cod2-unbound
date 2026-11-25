@@ -10,10 +10,7 @@ function Get-KitSelectedServerRow([IntPtr]$App) {
 
 function Wait-KitFixtureRefreshComplete([IntPtr]$App) {
     Wait-KitCondition {
-        $status = Find-KitControl $App 'RefreshStatus' -AllowOffscreen
-        $button = Find-KitControl $App 'RefreshButton'
-        $status -and $button -and $button.Current.Name -eq 'Refresh server list' -and
-            $status.Current.Name -match '^246 servers\s'
+        (Get-KitRefreshStatus $App) -match '^246 servers\s'
     } 45 '246 replies and a completed fixture refresh' | Out-Null
 }
 
@@ -54,17 +51,15 @@ function Invoke-KitRefreshNavigation {
         $receipt = Join-Path $Results 'refresh-row-identity.txt'
         "before: $($original.Name) [$($original.RuntimeId)]" | Set-Content -LiteralPath $receipt -Encoding UTF8
 
-        Invoke-KitControl $app 'RefreshButton'
+        Start-KitPublicRefresh $app
         Wait-KitCondition {
-            $status = Find-KitControl $app 'RefreshStatus' -AllowOffscreen
-            $status -and $status.Current.Name -match '^\d+ of 252 answered$'
+            (Get-KitRefreshStatus $app) -match '^\d+ of 252 answered$'
         } 10 '252 addresses to be in the refresh' | Out-Null
         Invoke-KitControl $app 'HomeItem'
         Wait-KitCondition { Find-KitControl $app 'HeroTitle' } 5 'Home to open during the refresh' | Out-Null
         Invoke-KitControl $app 'ServersItem'
         Wait-KitCondition { Find-KitControl $app 'ServerList' } 5 'Servers to reopen' | Out-Null
-        $button = Find-KitControl $app 'RefreshButton'
-        if ($button.Current.Name -ne 'Stop refresh') {
+        if (-not (Find-KitControl $app 'RefreshMessage')) {
             throw 'Home and Servers were reached only after the refresh stopped.'
         }
         'Home and Servers opened while the refresh was still running.' | Add-Content -LiteralPath $receipt
@@ -77,7 +72,7 @@ function Invoke-KitRefreshNavigation {
             }
         }
         '246 of 252 fixture addresses answered.' | Add-Content -LiteralPath $receipt
-        Save-KitSurface $app 'refresh-complete' @('ServerList','RefreshStatus')
+        Save-KitSurface $app 'refresh-complete' @('ServerList')
     } finally {
         try { if ($run) { Stop-KitLauncher $run $Results } }
         finally {
