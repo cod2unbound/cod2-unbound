@@ -98,7 +98,7 @@ public sealed partial class MainWindow
             PrimaryButtonText = primary, SecondaryButtonText = secondary, CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary
         }.AsAlert();
-        return await dialog.ShowAsync();
+        return await ShowShellSheetAsync(dialog);
     }
 
     private void EndWindowsSession()

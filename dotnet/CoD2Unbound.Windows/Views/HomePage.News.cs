@@ -169,7 +169,7 @@ public sealed partial class HomePage
             Spacing = 14,
             Children = { new TextBlock { Text = model.NewsFoot, Style = StyleFor("SecondaryText") }, well }
         };
-        var result = await dialog.ShowAsync();
+        var result = await shell.ShowShellSheetAsync(dialog);
         if (result == ContentDialogResult.Primary)
             await shell.ShowReleaseNotesAsync(session.Updates.State.AvailableVersion ?? session.Version);
         else if (selected is not null)

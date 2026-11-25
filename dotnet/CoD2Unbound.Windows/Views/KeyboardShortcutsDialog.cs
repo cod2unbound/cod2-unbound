@@ -37,7 +37,7 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
         };
     }
 
-    internal static async Task ShowAsync(MainWindow shell) => await new KeyboardShortcutsDialog(shell).ShowAsync();
+    internal static async Task ShowAsync(MainWindow shell) => await shell.ShowShellSheetAsync(new KeyboardShortcutsDialog(shell));
 
     private static StackPanel ShortcutColumn(IEnumerable<LauncherShortcut> shortcuts)
     {

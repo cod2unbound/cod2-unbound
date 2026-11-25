@@ -11,6 +11,8 @@ namespace CoD2Unbound.Windows;
 public sealed partial class MainWindow
 {
     internal const string HelpUrl = "https://cod2unbound.com/help";
+    private bool closingHomeSheet;
+    private (HomePage Page, ShellCommand Command)? homeShortcutAfterSheet;
 
     private void InitializeShellShortcuts()
     {
@@ -61,6 +63,8 @@ public sealed partial class MainWindow
                     OnFullScreen(sender, args);
                 else if (shortcut.Command == ShellCommand.Find)
                     args.Handled = FocusPageSearch();
+                else if (DeferHomeShortcut(shortcut.Command))
+                    args.Handled = true;
                 else if (scopeToOwner || CanRunShellCommand(shortcut.Command))
                 {
                     args.Handled = true;
@@ -69,6 +73,42 @@ public sealed partial class MainWindow
             };
             owner.KeyboardAccelerators.Add(accelerator);
         }
+    }
+
+    internal async Task<ContentDialogResult> ShowShellSheetAsync(ContentDialog sheet)
+    {
+        if (!busy || ContentFrame.Content is not HomePage)
+            return await sheet.ShowAsync();
+
+        closingHomeSheet = false;
+        homeShortcutAfterSheet = null;
+        sheet.Closing += OnClosing;
+        try { return await sheet.ShowAsync(); }
+        finally { sheet.Closing -= OnClosing; }
+
+        void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
+        {
+            if (!args.Cancel && args.Result == ContentDialogResult.None)
+                closingHomeSheet = true;
+        }
+    }
+
+    private bool DeferHomeShortcut(ShellCommand command)
+    {
+        // WinUI can restore Home focus before the sheet's owning action releases busy.
+        if (!busy || !closingHomeSheet || ContentFrame.Content is not HomePage home)
+            return false;
+        homeShortcutAfterSheet ??= (home, command);
+        return true;
+    }
+
+    private Task ResumeHomeShortcutAsync()
+    {
+        var pending = homeShortcutAfterSheet;
+        closingHomeSheet = false;
+        homeShortcutAfterSheet = null;
+        return pending is { } shortcut && ReferenceEquals(shortcut.Page, ContentFrame.Content)
+            ? RunShellCommandAsync(shortcut.Command) : Task.CompletedTask;
     }
 
     private static bool HasShellAccelerator(ShellCommand command) => command is

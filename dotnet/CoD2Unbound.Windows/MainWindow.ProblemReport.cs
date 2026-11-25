@@ -38,7 +38,7 @@ public sealed partial class MainWindow
         {
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await ShowShellSheetAsync(dialog) != ContentDialogResult.Primary)
             return;
 
         if (dialog.IncludeGame || dialog.IncludeServer)

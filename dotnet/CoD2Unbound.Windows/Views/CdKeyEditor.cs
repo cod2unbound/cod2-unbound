@@ -169,7 +169,7 @@ internal sealed class CdKeyEditor : StackPanel
         }.WithSymbol("SystemPermissions");
         editor.Edited += () => dialog.IsPrimaryButtonEnabled = editor.Verified;
         dialog.Opened += (_, _) => editor.FocusInput();
-        try { return await dialog.ShowAsync() == ContentDialogResult.Primary && await save(editor.Value); }
+        try { return await shell.ShowShellSheetAsync(dialog) == ContentDialogResult.Primary && await save(editor.Value); }
         finally { editor.Value = ""; }
     }
 }
