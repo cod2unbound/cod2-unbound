@@ -39,6 +39,12 @@
             <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,26" VerticalAlignment="Top">
                 <InfoBar x:Name="Running" IsClosable="False" Severity="Informational"
                          Message="Call of Duty 2 is running. Changes you make here apply the next time it starts." />
+                <InfoBar x:Name="SaveFailure" IsClosable="False" Severity="Error"
+                         Message="Your changes couldn’t be saved. Check that your CoD2 Unbound folder is writable, then try again.">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="RetrySave" Content="Try Again" Click="OnRetrySave" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
                 <InfoBar x:Name="Feedback" IsClosable="False" />
                 <StackPanel x:Name="Fields" Spacing="4" />
             </StackPanel>

@@ -18,6 +18,9 @@ public sealed partial class SettingsPage : Page
     private readonly WindowsLauncherSession session;
     private readonly SettingsViewModel model;
     private CancellationTokenSource? saveDelay;
+    private bool settingsSaveFailed;
+    private readonly Dictionary<string, Func<Task>> retryDirectSaves = [];
+    private Control? saveEditor;
     private Border? updateCard;
     private TextBlock? updateMessage;
     private ProgressBar? updateProgress;
@@ -25,9 +28,11 @@ public sealed partial class SettingsPage : Page
     private GameSettings? previousDisplay;
     private string? advancedDraft;
     private string? advancedProblem;
+    private int advancedReview;
     private int lastPane = -1;
 
     internal const string GameDataPane = "Game Data", UpdatesPane = "Updates";
+    private const string SaveGameData = "Use This Folder";
 
     /// The chosen pane's name; the Settings window takes it as its title, as the Mac's does.
     internal event Action<string>? PaneChanged;
@@ -66,7 +71,7 @@ public sealed partial class SettingsPage : Page
         PaneChanged?.Invoke(PaneTitle);
         int pane = Panes.Items.IndexOf(Panes.SelectedItem);
         if (pane >= 0 && Current.LastSettingsPane != pane)
-            await ChangeAsync(Current with { LastSettingsPane = pane }, display: pane == 1);
+            await ChangeAsync(Current with { LastSettingsPane = pane });
     }
 
     private void Render()
@@ -134,15 +139,17 @@ public sealed partial class SettingsPage : Page
         var dataActions = Buttons(reveal, choose);
         if (model.HasPendingData)
         {
-            var use = Action("Use This Folder", async () =>
+            var use = Action(SaveGameData, () => SaveDirectAsync(SaveGameData, async () =>
             {
                 await model.SaveDataAsync();
                 session.Record(new(UsageKind.SettingChanged, (int)UsageSetting.GameDataFolder));
                 Render();
-            });
+            }));
             use.IsEnabled = data.State == SetupDataState.Found && !session.Game.State.Running;
             dataActions = Buttons(use, Action("Cancel", () =>
             {
+                retryDirectSaves.Remove(SaveGameData);
+                RefreshSaveFailure();
                 model.CancelDataChange();
                 Render();
                 return Task.CompletedTask;
@@ -230,7 +237,12 @@ public sealed partial class SettingsPage : Page
                 number.VerticalAlignment = VerticalAlignment.Center;
                 AutomationProperties.SetName(number, "Install number " + full);
                 ToolTipService.SetToolTip(number, full);
-                var reset = Action("Reset Number", async () => { await session.ResetUsageAsync(); Render(); });
+                const string resetNumber = "Reset Number";
+                var reset = Action(resetNumber, () => SaveDirectAsync(resetNumber, async () =>
+                {
+                    await session.ResetUsageAsync();
+                    Render();
+                }));
                 reset.Style = StyleFor("SubtleAction");
                 reset.AccessKey = "R";
                 AutomationProperties.SetName(reset, "Reset number");
@@ -268,10 +280,12 @@ public sealed partial class SettingsPage : Page
             ("Game servers", "The launcher asks listed servers, favorites and recent servers for their status when the list refreshes. The one you join gets your player name and game settings, and any server password you supplied. When you play with CoD2x, the server also gets a hash of your CD key, the CoD2x protocol version and CoD2x’s IDs for this PC."),
             ("Addresses a server names", "A server can name a web address for the game to download maps and mods from, and with CoD2x, one to upload the match recording to."),
             ("The CoD2x project", "CoD2x checks for updates when the game’s menu opens. It sends your CoD2x version, a hash of your CD key if available, CoD2x’s own install number and IDs for this PC, and a short description of the system: its version, edition and build, its compatibility-mode settings, the country in its region settings, and whether it runs in a virtual machine or as administrator. It also sends how many times the hardware has changed and, after a change, the previous hardware ID and the old and new hardware details, serial numbers included. This is how CoD2x’s own update check works. CoD2x can also download missing zPAM files a server needs from the project’s site."),
-            ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Nothing about you."),
+            ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Report a Problem opens a GitHub form in your browser with your app and game versions, Windows version, graphics and display mode, graphics adapters and the adapter attached to the display already filled in."),
+            ("Steam", "When you choose Install with Steam in Setup, the launcher opens the Steam app for Call of Duty 2. Steam handles sign-in and downloads the game you own."),
+            ("Config links", "Only a link you paste into Configs to import from it."),
             ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you. When you choose Share setup: the cleaned config, the name you type, the game and app versions, and how many lines were left out and why. The setup is posted publicly on GitHub. Stop sharing sends the request number and its private token."),
             ("The certificate’s issuer", "When an update’s signature is verified, Windows asks whether it is still valid. Nothing about you."),
-            ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers, and its replies to status requests can include server details and the names, scores and pings of its players. When a player joins, it asks Activision’s key server to check their key, sending the player’s network address, the mod it runs, a one-time number for the check, whether anonymous checks are allowed, and the player’s key hash if it has one. A CoD2x server, even one for your network only, can ask the CoD2x project about new versions, with its CoD2x version and platform; one of these checks also lists any zPAM versions installed.")
+            ("Servers you host", "Only while one runs. Set to The Internet, it lists itself on the master servers, with its settings and the names, scores and pings of the players on it. When a player joins an internet server you host, it asks Activision’s key server to check their key, sending the player’s network address, the mod it runs, a one-time number for the check, whether anonymous checks are allowed, and the player’s key hash if it has one. A CoD2x server set to The Internet can ask the CoD2x project about new versions, with its CoD2x version and platform. Its periodic check also lists any zPAM versions installed.")
         })
             PrivacyPresentation.AddContact(contacts, who, when);
         if (reports.CrashAvailable)
@@ -304,7 +318,8 @@ public sealed partial class SettingsPage : Page
             await shell.RunAsync(async () =>
             {
                 control.IsEnabled = false;
-                try { await save(control.IsOn); }
+                bool requested = control.IsOn;
+                try { await SaveDirectAsync(name, () => save(requested)); }
                 finally
                 {
                     control.IsEnabled = true;
@@ -519,33 +534,63 @@ public sealed partial class SettingsPage : Page
         AutomationProperties.SetName(draft, "Additional game options");
         var problem = Caption(advancedProblem ?? "");
         problem.Style = StyleFor("NegativeText");
-        var clear = Action("Clear", () => { draft.Text = ""; return Task.CompletedTask; }, exclusive: false);
-        clear.IsEnabled = draft.Text.Length > 0;
+        var help = Caption("Passed to the game when it starts, one setting and its value per line.");
+        string? cleared = null;
+        var clear = new Button { Content = "Clear", IsEnabled = draft.Text.Length > 0 };
+        clear.Click += (_, _) =>
+        {
+            if (cleared is { } previous)
+            {
+                draft.Text = previous;
+                SetUndo(null);
+            }
+            else
+            {
+                SetUndo(draft.Text);
+                draft.Text = "";
+            }
+        };
         draft.TextChanged += async (_, _) =>
         {
-            clear.IsEnabled = draft.Text.Length > 0;
+            if (draft.Text.Length > 0)
+                SetUndo(null);
+            clear.IsEnabled = cleared is not null || draft.Text.Length > 0;
+            int reviewId = ++advancedReview;
             string text = advancedDraft = draft.Text.ReplaceLineEndings("\n");
             await shell.ShowProblemAsync(async () =>
             {
                 var review = await session.ReviewAdvancedAsync(text, Current);
-                if (advancedDraft != text)
+                if (reviewId != advancedReview || advancedDraft != text)
                     return;
                 advancedProblem = review.Problem;
                 problem.Text = review.Problem ?? (review.LoadoutOwnedLines.IsEmpty ? "" :
                     $"These lines are controlled by your loadout: {string.Join(", ", review.LoadoutOwnedLines)}.");
                 if (review.Candidate is not null)
-                    await ChangeAsync(Current with { Advanced = text });
+                    await ChangeAsync(Current with { Advanced = text }, draft);
             });
         };
         var editor = new StackPanel { Spacing = 8 };
-        editor.Children.Add(Caption("Passed to the game when it starts, one setting and its value per line."));
+        editor.Children.Add(help);
         editor.Children.Add(draft);
         editor.Children.Add(problem);
         editor.Children.Add(clear);
         Fields.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = editor });
+
+        void SetUndo(string? previous)
+        {
+            cleared = previous;
+            help.Text = previous is null ? "Passed to the game when it starts, one setting and its value per line." : "Cleared.";
+            clear.Content = previous is null ? "Clear" : "Undo";
+        }
+
         Group("Logs and reset");
-        var logs = Action("Show in File Explorer", () => OpenAsync(session.LogsPath));
-        logs.IsEnabled = Directory.Exists(session.LogsPath);
+        var logs = Action("Open Last Game Log", async () =>
+        {
+            if (LatestGameLog() is { } path)
+                await OpenAsync(path);
+            else
+                ShowFeedback("There’s no game log yet.", InfoBarSeverity.Informational);
+        });
         var copyLog = Action("Copy Last Game Log", async () =>
         {
             if (await session.ReadLatestLogAsync() is { } log)
@@ -556,8 +601,7 @@ public sealed partial class SettingsPage : Page
                 ShowFeedback("Copied the game log.", InfoBarSeverity.Success);
             }
         });
-        copyLog.IsEnabled = logs.IsEnabled;
-        Row("Logs", "Game logs stay on this PC.", Buttons(logs, copyLog));
+        Row("Logs", "The last 10 game sessions, up to 20 MiB on this PC.", Buttons(logs, copyLog));
         var warnings = Action("Reset Warnings", async () =>
         {
             await ChangeAsync(Current with { DismissedWarnings = [] });
@@ -575,43 +619,111 @@ public sealed partial class SettingsPage : Page
             model.Settings.Reset(new GameSettings());
             await ChangeAsync(Current);
             Render();
-            ShowFeedback("Settings are back to how they started.", InfoBarSeverity.Success);
+            if (!settingsSaveFailed)
+                ShowFeedback("Settings are back to how they started.", InfoBarSeverity.Success);
         }));
     }
 
-    private async Task ChangeAsync(GameSettings settings, bool display = false)
+    private string? LatestGameLog()
     {
-        var before = model.Settings.Saved;
+        string folder = session.LogsPath;
+        if (!Directory.Exists(folder))
+            return null;
+        using var root = new WindowsFiles.DirectoryHandles(folder);
+        return new DirectoryInfo(folder).EnumerateFiles("engine-*.log")
+            .Where(file => (file.Attributes & FileAttributes.ReparsePoint) == 0)
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .ThenByDescending(file => file.Name, StringComparer.Ordinal)
+            .FirstOrDefault()?.FullName;
+    }
+
+    private Task ChangeAsync(GameSettings settings, Control? editor = null)
+    {
         model.Settings.Replace(settings);
         shell.ApplyAppearance(settings.Appearance);
+        if (editor is not null)
+            saveEditor = editor;
+        return SaveChangesAsync();
+    }
+
+    private async Task SaveChangesAsync(bool immediately = false)
+    {
+        var before = model.Settings.Saved;
         saveDelay?.Cancel();
         using var delay = new CancellationTokenSource();
         saveDelay = delay;
         try
         {
-            await shell.ShowProblemAsync(async () =>
-            {
-                try { await model.Settings.SaveAfterQuietAsync(delay.Token); }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-                {
-                    session.ShowError(UsageProblem.SaveSettings);
-                    if (!display)
-                        throw;
-                    RefreshDisplaySave(failed: true);
-                    return;
-                }
-                if (display)
-                    RefreshDisplaySave(failed: false);
-                foreach (var item in UsageEvent.Changed(before, model.Settings.Saved))
-                    session.Record(item);
-            });
+            if (immediately)
+                await model.Settings.FlushAsync(delay.Token);
+            else
+                await model.Settings.SaveAfterQuietAsync(delay.Token);
+            foreach (var item in UsageEvent.Changed(before, model.Settings.Saved))
+                session.Record(item);
+            if (ReferenceEquals(saveDelay, delay))
+                settingsSaveFailed = false;
         }
         catch (OperationCanceledException) when (delay.IsCancellationRequested) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            if (ReferenceEquals(saveDelay, delay))
+            {
+                settingsSaveFailed = true;
+                session.ShowError(UsageProblem.SaveSettings);
+            }
+        }
         finally
         {
             if (ReferenceEquals(saveDelay, delay))
+            {
                 saveDelay = null;
+                RefreshSaveFailure();
+            }
         }
+    }
+
+    private async Task SaveDirectAsync(string name, Func<Task> save)
+    {
+        try
+        {
+            await save();
+            retryDirectSaves.Remove(name);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            retryDirectSaves[name] = save;
+            session.ShowError(UsageProblem.SaveSettings);
+        }
+        RefreshSaveFailure();
+    }
+
+    private void RefreshSaveFailure()
+    {
+        bool failed = settingsSaveFailed || retryDirectSaves.Count > 0;
+        bool reveal = failed && !SaveFailure.IsOpen;
+        SaveFailure.IsOpen = failed;
+        if (lastPane == 1 && displaySaved is { } saved)
+            saved.Visibility = IsVisible(!failed && Current == model.Settings.Saved);
+        if (reveal && SaveFailure.IsLoaded)
+            SaveFailure.StartBringIntoView();
+    }
+
+    private async void OnRetrySave(object sender, RoutedEventArgs args)
+    {
+        await shell.RunAsync(async () =>
+        {
+            if (settingsSaveFailed)
+                await SaveChangesAsync(immediately: true);
+            if (!settingsSaveFailed && retryDirectSaves.Count > 0)
+            {
+                foreach (var (name, retry) in retryDirectSaves.ToArray())
+                    await SaveDirectAsync(name, retry);
+                if (lastPane == 3)
+                    Render();
+            }
+            if (!SaveFailure.IsOpen && saveEditor is { IsLoaded: true } editor)
+                editor.Focus(FocusState.Programmatic);
+        });
     }
 
     private void Group(string name) => Fields.Children.Add(new TextBlock

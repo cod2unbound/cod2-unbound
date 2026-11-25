@@ -180,7 +180,8 @@ public sealed partial class HomePage
     {
         Toast.Severity = warning ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
         Toast.Message = message;
-        ToastReport.Content = report is not null && System.IO.Path.GetFileName(report).StartsWith("game-", StringComparison.Ordinal)
+        string fileName = System.IO.Path.GetFileName(report) ?? "";
+        ToastReport.Content = fileName.StartsWith("engine-", StringComparison.Ordinal) || fileName.StartsWith("game-", StringComparison.Ordinal)
             ? "Show Game Log" : "Show Crash Report";
         ToastReport.Visibility = IsVisible(report is not null);
         Toast.IsOpen = true;
@@ -197,8 +198,14 @@ public sealed partial class HomePage
 
     private async void OnShowCrashReport(object sender, RoutedEventArgs args)
     {
-        if (crashReport is { } report && System.IO.Path.GetDirectoryName(report) is { } folder)
-            await shell.RunAsync(() => OpenAsync(folder));
+        if (crashReport is not { } report)
+            return;
+        await shell.RunAsync(() =>
+        {
+            if ((File.GetAttributes(report) & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)
+                throw new IOException("This report isn’t a regular file.");
+            return OpenAsync(report);
+        });
     }
 
     // MARK: Actions

@@ -10,7 +10,6 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class SettingsPage
 {
-    private InfoBar? displaySave;
     private TextBlock? displaySaved;
 
     private void Display()
@@ -69,7 +68,7 @@ public sealed partial class SettingsPage
         else
             monitors.PlaceholderText = "Display unavailable";
         AutomationProperties.SetName(monitors, "Display");
-        var monitorHint = Caption("Your next game’s loadout can choose a different display.");
+        var monitorHint = Caption("");
         AddRow("Display", monitors, monitorHint);
 
         string[] modes = ["borderless", "exclusive", "windowed"];
@@ -90,35 +89,32 @@ public sealed partial class SettingsPage
         var resolution = Body("");
         var choose = Action("Choose in Configs", shell.OpenResolutionAsync);
         choose.Style = StyleFor("SubtleLinkAction");
-        AddRow("Resolution", choose, resolution);
+        var resolutionPicker = new ComboBox { MinWidth = 160, Visibility = Visibility.Collapsed };
+        AutomationProperties.SetName(resolutionPicker, "Resolution");
+        choose.Visibility = Visibility.Collapsed;
+        AddRow("Resolution", new Grid { Children = { choose, resolutionPicker } }, resolution);
 
-        container.Children.Add(new InfoBar
+        var loadoutNote = new InfoBar
         {
             IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational, Style = StyleFor("SettingsNote"),
+            Visibility = Visibility.Collapsed,
             Message = "Your loadouts keep their own resolution and picture settings.",
             ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
-        });
-        Control retryFocus = mode;
-        displaySave = new InfoBar
-        {
-            Severity = InfoBarSeverity.Error, IsClosable = false,
-            Message = "Your changes couldn't be saved. Check that your CoD2 Unbound folder is writable, then try again.",
-            ActionButton = Action("Try Again", async () =>
-            {
-                await ChangeAsync(Current, display: true);
-                if (Current == model.Settings.Saved && retryFocus.IsLoaded)
-                    retryFocus.Focus(FocusState.Programmatic);
-            })
         };
-        container.Children.Add(displaySave);
+        container.Children.Add(loadoutNote);
         displaySaved = Caption("Saved. Applies the next time the game starts.");
         container.Children.Add(displaySaved);
-        RefreshDisplaySave(Current != model.Settings.Saved);
+        RefreshSaveFailure();
+        ConfigProfile? loadout = null;
+        bool loadoutRead = false;
+        bool refreshingResolutions = false;
+        WindowsDisplay? listedDisplay = null;
         var restore = Action("Restore Defaults", async () =>
         {
             previousDisplay = Current;
             var defaults = new GameSettings();
-            await ChangeAsync(Current with { Fullscreen = defaults.Fullscreen, WindowsRenderer = null, WindowsMonitor = null }, display: true);
+            await ChangeAsync(Current with { Fullscreen = defaults.Fullscreen, WindowsRenderer = null, WindowsMonitor = null,
+                Resolution = loadoutRead && loadout is null ? defaults.Resolution : Current.Resolution });
             Render();
         });
         var undo = Action("Undo", async () =>
@@ -127,17 +123,19 @@ public sealed partial class SettingsPage
                 return;
             previousDisplay = null;
             await ChangeAsync(Current with { Fullscreen = saved.Fullscreen, WindowsRenderer = saved.WindowsRenderer,
-                WindowsMonitor = saved.WindowsMonitor }, display: true);
+                WindowsMonitor = saved.WindowsMonitor, Resolution = saved.Resolution });
             Render();
         });
         undo.Visibility = IsVisible(previousDisplay is not null);
         container.Children.Add(Buttons(restore, undo));
 
-        ConfigProfile? loadout = null;
         UpdatePreview();
         container.Loaded += async (_, _) => await shell.ShowProblemAsync(async () =>
         {
             loadout = await session.ReadLoadoutAsync();
+            if (!container.IsLoaded)
+                return;
+            loadoutRead = true;
             UpdatePreview();
         });
         monitors.SelectionChanged += async (_, _) =>
@@ -152,6 +150,12 @@ public sealed partial class SettingsPage
             if (mode.SelectedIndex >= 0)
                 await Save(Current with { Fullscreen = modes[mode.SelectedIndex] }, mode);
         };
+        resolutionPicker.SelectionChanged += async (_, _) =>
+        {
+            if (!refreshingResolutions && resolutionPicker.SelectedItem is ComboBoxItem { Tag: string size } &&
+                size != Current.Resolution)
+                await Save(Current with { Resolution = size }, resolutionPicker);
+        };
         chooseGraphics = index => _ = Save(Current with { WindowsRenderer = (WindowsRenderMode)index }, graphics);
 
         void AddRow(string label, FrameworkElement action, TextBlock detail)
@@ -163,9 +167,9 @@ public sealed partial class SettingsPage
 
         async Task Save(GameSettings settings, Control editor)
         {
-            retryFocus = editor;
-            var pending = ChangeAsync(settings, display: true);
-            displaySaved!.Visibility = Visibility.Collapsed;
+            var pending = ChangeAsync(settings, editor);
+            if (displaySaved is { } saved)
+                saved.Visibility = Visibility.Collapsed;
             UpdatePreview();
             await pending;
         }
@@ -174,13 +178,16 @@ public sealed partial class SettingsPage
         {
             var selected = WindowsDisplays.ForLoadout(displays, Current.WindowsMonitor, loadout?.RequestedMonitor);
             string modeText = WindowsDisplays.ModeName(Current.Fullscreen);
+            bool legacy = loadoutRead && loadout is null;
+            monitorHint.Text = loadout is not null ? "Your next game’s loadout can choose a different display." : "";
             modeHint.Text = Current.Fullscreen switch
             {
                 "exclusive" => "Full screen shows the chosen size pixel for pixel. Switching apps can take a moment.",
                 "windowed" => "A window at the chosen size, beside your other apps.",
                 _ => "Borderless fills the screen and switches apps instantly."
             };
-            previewTitle.Text = modeText.ToUpperInvariant();
+            string size = LauncherText.Resolution(loadout?.RequestedResolution ?? Current.Resolution);
+            previewTitle.Text = legacy ? size : modeText.ToUpperInvariant();
             previewMode.Text = Current.Fullscreen switch
             {
                 "windowed" => "beside your other apps",
@@ -190,25 +197,40 @@ public sealed partial class SettingsPage
             gamePicture.Margin = Current.Fullscreen == "windowed" ? new Thickness(18, 14, 18, 18) : new Thickness(0);
             previewName.Text = selected is null ? "Display unavailable" : selected.Name + (selected.Monitor == 1 ? " · main display" : "");
             AutomationProperties.SetName(screen, $"Display preview, {previewName.Text}, {modeText}");
-            string size = LauncherText.Resolution(loadout?.RequestedResolution ?? Current.Resolution);
-            resolution.Text = loadout is null ? $"{size}. Each loadout keeps its own." :
-                $"{size} from your {loadout.DisplayName} loadout. Each loadout keeps its own.";
-            restore.IsEnabled = Current.WindowsMonitor is not null || Current.Fullscreen != "borderless" ||
-                model.Renderer != WindowsRenderMode.Direct3D9;
+            choose.Visibility = loadoutNote.Visibility = IsVisible(loadout is not null);
+            resolutionPicker.Visibility = IsVisible(legacy);
+            resolution.Text = loadout is not null ? $"{size} from your {loadout.DisplayName} loadout. Each loadout keeps its own." :
+                !legacy ? "" : WindowsDisplays.Adjustment(Current.Resolution, selected) is { } adjusted
+                    ? $"This display can’t show {size}. The game will use {SizeText(adjusted)}."
+                    : selected?.Native is { } native ? $"This display’s own size is {SizeText(native)} pixels." : "";
+            if (legacy)
+                RefreshResolutions(selected, size);
+            restore.IsEnabled = loadoutRead && (Current.WindowsMonitor is not null || Current.Fullscreen != "borderless" ||
+                model.Renderer != WindowsRenderMode.Direct3D9 || legacy && Current.Resolution != new GameSettings().Resolution);
+        }
+
+        void RefreshResolutions(WindowsDisplay? display, string placeholder)
+        {
+            refreshingResolutions = true;
+            resolutionPicker.IsEnabled = display is { Modes.IsEmpty: false };
+            resolutionPicker.PlaceholderText = placeholder;
+            if (!ReferenceEquals(listedDisplay, display))
+            {
+                listedDisplay = display;
+                resolutionPicker.Items.Clear();
+                if (display is not null)
+                    foreach (var mode in display.Modes)
+                        resolutionPicker.Items.Add(new ComboBoxItem { Tag = mode.Size.ToString(),
+                            Content = SizeText(mode.Size) + (mode.Size == display.Native ? " · Native" : "") });
+            }
+            resolutionPicker.SelectedItem = resolutionPicker.Items.OfType<ComboBoxItem>()
+                .FirstOrDefault(item => item.Tag is string size && size == Current.Resolution);
+            refreshingResolutions = false;
         }
     }
 
     // While the game runs: said once, above every pane (SettingsWindow.swift notices).
     internal void RefreshDisplayRunning(bool running) => Running.IsOpen = running;
-
-    private void RefreshDisplaySave(bool failed)
-    {
-        if (displaySave is { } notice && lastPane == 1)
-        {
-            notice.IsOpen = failed;
-            displaySaved!.Visibility = IsVisible(!failed);
-        }
-    }
 
     internal static string SizeText(DisplayResolution size) => LauncherText.Resolution(size.ToString());
 }

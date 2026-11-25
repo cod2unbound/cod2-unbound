@@ -19,9 +19,9 @@ public sealed partial class SettingsPage
         var title = new TextBlock { Text = "COD2 UNBOUND", Style = StyleFor("StencilText"), FontSize = 40,
             TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
-        var copy = new Button { Content = IconLabel("Copy", "Copy version info", 16) };
-        ToolTipService.SetToolTip(copy, "Copy the version, game versions, Windows, graphics and display, as Report a problem shows them.");
-        ProblemReportDialog.AddCopyFeedback(copy, "Copy version info", async () => (await session.ReadProblemReportAsync()).Details);
+        var copy = new Button { Content = IconLabel("Copy", "Copy Version Info", 16) };
+        ToolTipService.SetToolTip(copy, "Copy the app and game versions, Windows version, graphics and display, as Report a Problem shows them.");
+        ProblemReportDialog.AddCopyFeedback(copy, "Copy Version Info", async () => (await session.ReadProblemReportAsync()).Details);
         var version = Body("Version " + session.Version + (session.Build.Length == 0 ? "" : $" ({session.Build})"));
         version.VerticalAlignment = VerticalAlignment.Center;
         var versionGroup = new StackPanel { Spacing = 5, Children = { title, Buttons(version, copy),
@@ -35,7 +35,9 @@ public sealed partial class SettingsPage
         var cards = Columns(4, star, star, star);
         Put(cards, 0, AboutFact("Game versions", WindowsLauncherSession.IncludedVersions, "Both included"));
         Put(cards, 1, AboutFact("Requires", "Windows 10 22H2 or Windows 11", "x64"));
-        Put(cards, 2, AboutFact("Graphics", "Direct3D 9", "DirectX 7 stays as a choice in Settings"));
+        bool direct3D = model.Renderer == CoD2Unbound.Core.WindowsRenderMode.Direct3D9;
+        Put(cards, 2, AboutFact("Graphics", direct3D ? "Direct3D 9" : "DirectX 7",
+            direct3D ? "DirectX 7 stays as a choice in Settings" : "Direct3D 9 is a choice in Settings"));
         panel.Children.Add(cards);
 
         var release = Action("Release Notes", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound/releases"));
