@@ -212,10 +212,11 @@ public static class GlyphAlign
     private static void Align(Panel panel)
     {
         if (panel is StackPanel { Orientation: Orientation.Vertical } ||
-            panel.Children.OfType<FontIcon>().FirstOrDefault(icon => icon.Visibility == Visibility.Visible) is not { } icon ||
             panel.Children.OfType<TextBlock>().FirstOrDefault(text => text.Visibility == Visibility.Visible) is not { } text)
             return;
-        AlignInk(icon, text, icon.ActualOffset.Y, text.ActualOffset.Y);
+
+        foreach (var icon in panel.Children.OfType<FontIcon>().Where(icon => icon.Visibility == Visibility.Visible))
+            AlignInk(icon, text, icon.ActualOffset.Y, text.ActualOffset.Y);
     }
 
     private static void AlignInk(FontIcon icon, TextBlock text, double iconY, double textY)

@@ -186,6 +186,7 @@ public sealed partial class MainWindow
     private ListViewItem JumpRow(JumpTarget target)
     {
         var line = new Grid { ColumnSpacing = 12 };
+        GlyphAlign.SetIsEnabled(line, true);
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
