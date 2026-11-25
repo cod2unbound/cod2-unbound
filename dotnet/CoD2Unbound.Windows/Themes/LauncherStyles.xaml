@@ -1070,8 +1070,8 @@
                                             <Setter Target="PrimaryButton.(Grid.Row)" Value="0" />
                                             <Setter Target="PrimaryButton.(Grid.Column)" Value="1" />
                                             <Setter Target="PrimaryButton.(Grid.ColumnSpan)" Value="1" />
-                                            <Setter Target="PrimaryButton.Margin" Value="0" />
                                             <Setter Target="CloseButton.(Grid.Row)" Value="0" />
+                                            <Setter Target="CloseButton.Margin" Value="0" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="SecondaryAndCloseVisible">
