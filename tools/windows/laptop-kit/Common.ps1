@@ -3,7 +3,11 @@ $ErrorActionPreference = 'Stop'
 $Kit = $PSScriptRoot
 $LocalData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
 if (-not $LocalData -and $Mode -eq 'Status') { $LocalData = $Kit }
-$AppDataRoot = Join-Path $LocalData 'CoD2 Unbound'
+$AppDataRoot = Join-Path $LocalData 'CoD2 Unbound Windows Kit'
+$FixtureName = 'CoD2 Unbound Test'
+$FixtureUninstall = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2UnboundTest_is1'
+$FixtureDemo = 'CoD2UnboundTest.Demo'
+$FixtureDemoExtension = '.cod2-unbound-test-demo'
 
 function Assert-Offline {
     # An online PC is allowed only when the Mac driver asked for it. Every start
@@ -217,6 +221,7 @@ function Start-KitProcess {
         }
         $values[$name] = $Settings[$name]
     }
+    $values.COD2_UNBOUND_TEST_KEY_SLOT = Get-KitKeySlot
 
     # A per-child environment and one raw argument string preserve Unicode and engine quotes.
     $info = New-Object Diagnostics.ProcessStartInfo
@@ -276,15 +281,24 @@ function Invoke-TestKey([string]$Action) {
     if ($checked.TimedOut -or $checked.ExitCode -ne 0) { throw "Windows could not complete the test key check ($Action)." }
 }
 
-function Test-SavedKitKey {
-    $listed = & "$env:SystemRoot\System32\cmdkey.exe" /list
-    if ($LASTEXITCODE -ne 0) { throw 'Windows could not check for an existing saved CoD2 Unbound key.' }
-    [bool]($listed -match 'CoD2 Unbound/CD Key')
+function Get-KitKeySlot {
+    if ($KitKeySlot -cnotmatch '\A[a-z0-9-]{1,32}\z') { throw 'Missing or invalid kit key slot.' }
+    $KitKeySlot
 }
 
-function Assert-NoSavedKitKey {
-    if (Test-SavedKitKey) {
-        throw 'This account already has a saved CoD2 Unbound key. Leave it in place and use another account for the kit.'
+function Save-KitPublicKeyStamp([string]$Stage) {
+    if (-not ('KitCredentialMetadata' -as [type])) {
+        Add-Type -Path (Join-Path $Kit 'KitCredentialMetadata.cs')
+    }
+    $stamp = [KitCredentialMetadata]::ReadPublicKeyStamp()
+    $baseline = Join-Path $KitSafety 'public-key-before.txt'
+    if ($Stage -eq 'before') {
+        if (-not (Test-Path -LiteralPath $baseline)) { [IO.File]::WriteAllText($baseline, $stamp) }
+    } else {
+        [IO.File]::WriteAllText((Join-Path $Results 'public-key-after.txt'), $stamp)
+        if ([IO.File]::ReadAllText($baseline) -cne $stamp) {
+            throw 'The Public CD key presence or last-written time changed during the kit run.'
+        }
     }
 }
 
@@ -325,5 +339,41 @@ function Get-KitSerials {
             Get-CimInstance -ClassName $className -OperationTimeoutSec 4 -ErrorAction Stop |
                 ForEach-Object { "$($_.SerialNumber)".Trim() } | Where-Object { $_.Length -ge 3 }
         } catch { }
+    }
+}
+
+function Invoke-KitProcessEnvironment([string]$Folder, [hashtable]$Settings, [scriptblock]$Action) {
+    $environment = @{
+        HOME = $Folder
+        CFFIXED_USER_HOME = $Folder
+        COD2_PROFILE_CHOSEN = '1'
+        COD2X_TEST_ISOLATE_REGISTRY = '1'
+        COD2X_TEST_SERVICE_URL = 'http://127.0.0.1:9'
+        COD2X_TEST_UPDATER_ADDRESS = '127.0.0.1:9'
+        COD2X_TEST_UPDATER_URL = 'http://127.0.0.1:9/api/updater/check'
+    }
+    foreach ($name in $Settings.Keys) { $environment[$name] = $Settings[$name] }
+    $environment.COD2_UNBOUND_TEST_KEY_SLOT = Get-KitKeySlot
+    $original = @{}
+    try {
+        foreach ($name in $environment.Keys) {
+            $original[$name] = [Environment]::GetEnvironmentVariable($name)
+            [Environment]::SetEnvironmentVariable($name, $environment[$name])
+        }
+        & $Action
+    } finally {
+        foreach ($name in $original.Keys) { [Environment]::SetEnvironmentVariable($name, $original[$name]) }
+    }
+}
+
+function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe, [hashtable]$Settings = (Get-KitLauncherSettings)) {
+    Assert-Offline
+    $key = "HKCU:\Software\Classes\$Class\shell\open\command"
+    if (-not (Test-Path -LiteralPath $key)) { throw 'The kit association was not registered.' }
+    if ((Get-Item -LiteralPath $key).GetValue('') -ine ('"{0}" "%1"' -f $Exe)) {
+        throw 'The association points to a different program.'
+    }
+    Invoke-KitProcessEnvironment $Settings.COD2_UNBOUND_TEST_HOME $Settings {
+        [KitDesktop]::OpenAssociation($Target, $Class)
     }
 }

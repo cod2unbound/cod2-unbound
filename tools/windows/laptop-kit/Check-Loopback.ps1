@@ -63,30 +63,6 @@ function Stop-KitOwnedGame($Game, [IntPtr]$Window) {
     if (-not $Game.WaitForExit(8000)) { $Game.Kill(); [void]$Game.WaitForExit(5000) }
 }
 
-function Open-KitAssociation([string]$Target, [string]$Class, [string]$Exe) {
-    Assert-Offline
-    $key = "HKCU:\Software\Classes\$Class\shell\open\command"
-    Stop-KitIfMissing $key 'The kit association was not registered.'
-    if ((Get-Item -LiteralPath $key).GetValue('') -ine ('"{0}" "%1"' -f $Exe)) {
-        throw 'The association points to a different program.'
-    }
-    $environment = Get-KitLauncherSettings
-    $environment.HOME = $environment.CFFIXED_USER_HOME = $LauncherHome
-    $environment.COD2X_TEST_SERVICE_URL = 'http://127.0.0.1:9'
-    $environment.COD2X_TEST_UPDATER_ADDRESS = '127.0.0.1:9'
-    $environment.COD2X_TEST_UPDATER_URL = 'http://127.0.0.1:9/api/updater/check'
-    $original = @{}
-    try {
-        foreach ($name in $environment.Keys) {
-            $original[$name] = [Environment]::GetEnvironmentVariable($name)
-            [Environment]::SetEnvironmentVariable($name, $environment[$name])
-        }
-        [KitDesktop]::OpenAssociation($Target, $Class)
-    } finally {
-        foreach ($name in $original.Keys) { [Environment]::SetEnvironmentVariable($name, $original[$name]) }
-    }
-}
-
 function Find-KitLoopbackDialog([IntPtr]$App, [string]$Title) {
     Get-KitControls $App $Title -Name |
         Where-Object { Find-KitControl $_ 'PrimaryButton' } | Select-Object -First 1
@@ -112,7 +88,7 @@ function Invoke-KitOpenDemo([string]$Edition) {
     try {
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
-        Open-KitAssociation $demo 'CoD2Unbound.Demo' $exe
+        Open-KitAssociation $demo $FixtureDemo $exe
         $dialog = Wait-KitCondition { Find-KitLoopbackDialog $app 'Play this demo?' } 12 'the demo playback confirmation'
         $since = Get-Date
         Invoke-KitControl $dialog 'PrimaryButton'
@@ -215,7 +191,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Invoke-KitControl $app 'PrimaryButton'
             }
             'link' {
-                $scheme = if ($Edition -eq 'original') { 'cod2' } else { 'cod2x' }
+                $scheme = if ($Edition -eq 'original') { 'cod2-test' } else { 'cod2x-test' }
                 Open-KitAssociation ("${scheme}://127.0.0.1:$port") $scheme $exe
                 Invoke-KitControl $app 'PrimaryButton'
             }

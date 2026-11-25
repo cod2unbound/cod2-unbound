@@ -18,6 +18,7 @@ function Save-KitUpdateLogs([string]$Label, [DateTime]$Since) {
 function Get-KitUpdateTrust {
     $current = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'install') -File -Filter '*-setup.exe')
     if ($current.Count -ne 1) { throw 'Expected one current Setup.' }
+    Assert-FixtureSetup $current[0].FullName
     $signature = Get-AuthenticodeSignature -LiteralPath $current[0].FullName
     [pscustomobject]@{ Setup=$current[0]; Status=$signature.Status.ToString() }
 }
@@ -77,7 +78,7 @@ function Invoke-KitLauncherUpdate([switch]$Interrupt) {
                 if ((Test-Path -LiteralPath "$InstallRoot.previous-install") -and (Test-Path -LiteralPath $pending)) {
                     $data = @(Get-Content -LiteralPath $pending -ErrorAction SilentlyContinue)
                     if ($data.Count -eq 6 -and $data[0] -match '^[a-f0-9]{32}$' -and $data[1] -eq $expected -and $data[3] -ieq $digest) {
-                        $attempt = (Get-ItemProperty -LiteralPath 'HKCU:\Software\CoD2Unbound\InstallTransaction' -ErrorAction SilentlyContinue).Attempt
+                        $attempt = (Get-ItemProperty -LiteralPath 'HKCU:\Software\CoD2UnboundTest\InstallTransaction' -ErrorAction SilentlyContinue).Attempt
                         $raw = Join-Path $logRoot "setup-$($data[0]).log"
                         if ($attempt -eq $data[0] -and (Test-Path -LiteralPath $raw) -and (Test-Path -LiteralPath $exe) -and
                             (Select-String -LiteralPath $raw -SimpleMatch 'Dest filename:' -Quiet -ErrorAction SilentlyContinue)) { $log = $raw; break }

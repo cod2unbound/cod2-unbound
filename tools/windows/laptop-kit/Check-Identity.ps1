@@ -36,7 +36,7 @@ function Invoke-KitHwidCheck([string]$Binary, [string]$DataPath) {
     Initialize-KitDesktop
     $reference = Get-KitReferenceHwid
     $homePath = New-Folder (Join-Path $Private 'identity-home')
-    New-TestProfile $homePath -Classic
+    New-TestProfile $homePath
     $log = Join-Path $homePath 'main\console_mp.log'
     $argsText = (Get-EngineArgs $homePath $DataPath) +
         ' +set net_noudp 1 +set r_fullscreen 0 +set r_mode 800x600 +set com_introPlayed 1 +set r_aaSamples 1 +cl_hwid2 +quit'

@@ -1,5 +1,7 @@
-function Read-InstalledVersion([string]$Scope, [string]$Root) {
-    $key = "${Scope}:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1"
+function Read-InstalledVersion([string]$Scope, [string]$Root, [switch]$Public) {
+    $subkey = if ($Public) { 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1' }
+        else { $FixtureUninstall }
+    $key = "${Scope}:\$subkey"
     if (-not (Test-Path -LiteralPath $key)) { return }
     $registered = (Get-ItemProperty -LiteralPath $key).DisplayVersion
     $version = (Get-Content -LiteralPath (Join-Path $Root 'RELEASE_VERSION') -Raw).Trim()
@@ -14,7 +16,13 @@ function Invoke-Setup([string]$Exe, [string]$Label, [string]$Options = '') {
     Initialize-KitDesktop
     Write-Host 'Setup may show SmartScreen or ask for administrator approval. Read and answer the prompt yourself.'
     try {
-        $p = Start-Process -FilePath $Exe -ArgumentList "$Options /LOG=`"$rawLog`"" -PassThru
+        $p = Invoke-KitProcessEnvironment $detail.Folder @{
+            COD2_UNBOUND_TEST_HOME = $detail.Folder
+            COD2_UNBOUND_TEST_MASTER_PORT = '9'
+            COD2_UNBOUND_TEST_UPDATE_ORIGIN = 'http://127.0.0.1:9'
+        } {
+            Start-Process -FilePath $Exe -ArgumentList "$Options /LOG=`"$rawLog`"" -PassThru
+        }
         try {
             $deadline = [DateTime]::UtcNow.AddMinutes(3)
             while (-not $p.WaitForExit(500) -and [DateTime]::UtcNow -lt $deadline) {
@@ -74,19 +82,19 @@ function Get-KitDemoOpenWith([string]$Path, [string]$Control) {
         $names = $key.GetValueNames()
         @{
             Present=$true
-            Product='CoD2Unbound.Demo' -in $names
+            Product=$FixtureDemo -in $names
             Control=$Control -in $names
             ControlMatches=($Control -in $names -and $key.GetValueKind($Control) -eq 'String' -and
                 $key.GetValue($Control) -ceq '')
-            Other=@($names | Where-Object { $_ -notin 'CoD2Unbound.Demo', $Control }).Count
+            Other=@($names | Where-Object { $_ -notin $FixtureDemo, $Control }).Count
             Subkeys=$key.SubKeyCount
         }
     } finally { $key.Dispose() }
 }
 
 function Invoke-KitDemoUninstall {
-    $path = 'HKCU:\Software\Classes\.dm_1\OpenWithProgids'
-    $control = 'CoD2Unbound.KitOtherDemo'
+    $path = "HKCU:\Software\Classes\$FixtureDemoExtension\OpenWithProgids"
+    $control = 'CoD2UnboundTest.KitOtherDemo'
     $receipt = Join-Path $Results 'demo-open-with.jsonl'
     $before = Get-KitDemoOpenWith $path $control
     if (-not $before.Product) {
@@ -132,6 +140,12 @@ function Invoke-KitDemoUninstall {
                 if (-not $after.Present -and -not ($rest.Other -or $rest.Subkeys -or $rest.Product)) {
                     Remove-Item -LiteralPath $path
                 }
+                $extension = Get-Item -LiteralPath (Split-Path -Parent $path)
+                try {
+                    if (-not ($extension.SubKeyCount -or $extension.ValueCount)) {
+                        Remove-Item -LiteralPath (Split-Path -Parent $path)
+                    }
+                } finally { $extension.Dispose() }
             }
         }
     }
@@ -160,11 +174,13 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $install = Join-Path $Kit 'install'
     $setup = Get-ChildItem -LiteralPath $install -File -Filter 'CoD2-Unbound-*-setup.exe'
     $prior = Get-ChildItem -LiteralPath (Join-Path $install 'previous') -File -Filter 'CoD2-Unbound-*-setup.exe'
-    $root = Join-Path $LocalData 'Programs\CoD2 Unbound'
-    $allRoot = Join-Path $env:ProgramFiles 'CoD2 Unbound'
-    $uninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1'
-    $start = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)) 'CoD2 Unbound'
-    $commonStart = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms)) 'CoD2 Unbound'
+    Assert-FixtureSetup $setup.FullName
+    Assert-FixtureSetup $prior.FullName
+    $root = Join-Path (Join-Path $LocalData 'Programs') $FixtureName
+    $allRoot = Join-Path $env:ProgramFiles $FixtureName
+    $uninstallKey = $FixtureUninstall
+    $start = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)) $FixtureName
+    $commonStart = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms)) $FixtureName
     if ((Test-Path -LiteralPath $root) -or (Test-Path -LiteralPath $allRoot) -or
         (Test-Path -LiteralPath "HKCU:\$uninstallKey") -or (Test-Path -LiteralPath "HKLM:\$uninstallKey") -or
         (Test-Path -LiteralPath $start) -or (Test-Path -LiteralPath $commonStart)) {
@@ -181,7 +197,7 @@ function Invoke-InstallChecks([string]$GamePath, [switch]$AllUsers) {
     $allInstalled = $false
     $launcherHome = $null
     $launcherBefore = $null
-    $setupScheme = 'HKCU:\Software\Classes\cod2unbound'
+    $setupScheme = 'HKCU:\Software\Classes\cod2unbound-test'
     $ownsSetupScheme = $false
     try {
         if ($AllUsers) {

@@ -1,11 +1,11 @@
-$InstallRoot = Join-Path $LocalData 'Programs\CoD2 Unbound'
-$InstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1'
+$InstallRoot = Join-Path (Join-Path $LocalData 'Programs') $FixtureName
+$InstallKey = "HKCU:\$FixtureUninstall"
 $InstallMarker = Join-Path $KitProfile 'owns-install.txt'
 $KeyMarker = Join-Path $KitProfile 'owns-key.txt'
 $LauncherHome = Join-Path $KitProfile 'launcher-profile'
 $programs = [Environment]::GetFolderPath('Programs')
 if (-not $programs -and $Mode -eq 'Status') { $programs = $Kit }
-$StartGroup = Join-Path $programs 'CoD2 Unbound'
+$StartGroup = Join-Path $programs $FixtureName
 $EngineNames = @('cod2_win32.exe','cod2_win32_ded.exe','CoD2Unbound.Windows.exe')
 
 function Stop-KitIfMissing([string]$Path, [string]$Reason) {
@@ -59,7 +59,7 @@ function Get-KitLauncherSettings {
 
 function Get-KitStartTarget {
     $exe = Join-Path $InstallRoot 'launcher\CoD2Unbound.Windows.exe'
-    $shortcutPath = Join-Path $StartGroup 'CoD2 Unbound.lnk'
+    $shortcutPath = Join-Path $StartGroup "$FixtureName.lnk"
     Stop-KitIfMissing $InstallMarker 'The kit has no installation to start.'
     Stop-KitIfMissing $shortcutPath 'The Start shortcut is missing.'
     $shell = New-Object -ComObject WScript.Shell
@@ -79,6 +79,7 @@ function Invoke-KitSetupVersion([bool]$Previous) {
     if ($Previous) { $source = Join-Path $source 'previous' }
     $setup = @(Get-ChildItem -LiteralPath $source -File -Filter '*-setup.exe')
     if ($setup.Count -ne 1) { throw 'Expected one Setup for this version.' }
+    Assert-FixtureSetup $setup[0].FullName
     $exitCode = Invoke-Setup $setup[0].FullName 'setup' '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /CURRENTUSER /TASKS=links'
     if ($exitCode -ne 0) { throw "Setup exited with code $exitCode. See the Setup log." }
     if ((Read-InstalledVersion 'HKCU' $InstallRoot) -ne $setup[0].Name.Split('-')[2]) {
@@ -93,19 +94,15 @@ function Add-KitStep([string]$Id, [string]$Title, [scriptblock]$Action, [string]
 
 $Steps = @(
     Add-KitStep 'preflight' 'Kit files and offline checks' {
+        Save-KitPublicKeyStamp 'before'
+        Save-KitPublicInstallState 'before'
         Save-KitPreflightComputer | Set-Content -LiteralPath (Join-Path $Results 'monitors.txt') -Encoding UTF8
         $gateways = @(Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0', '::/0') }).Count
         "Default routes: $gateways. Online run allowed by the driver: $($env:COD2_KIT_ONLINE -eq '1')." |
             Set-Content -LiteralPath (Join-Path $Results 'network.txt') -Encoding UTF8
         Test-KitFiles
+        Assert-KitSlotBinaries
         [IO.File]::WriteAllText($UpdateTrustFile, (Get-KitUpdateTrust).Status)
-        if (Test-Path -LiteralPath $KeyMarker) {
-            Invoke-TestKey 'verify'
-        } else {
-            Assert-NoSavedKitKey
-            [IO.File]::WriteAllText($KeyMarker, 'sample')
-            Invoke-TestKey 'seed'
-        }
         $captured = @()
         if ($GamePath) {
             [IO.File]::WriteAllText($GamePathFile, (Get-DataRoot $GamePath))
@@ -149,7 +146,19 @@ $Steps = @(
     Add-KitStep 'shaders' 'Stock shaders on the Windows compiler' { Invoke-KitShaderTable }
     Add-KitStep 'firewall-before' 'Firewall rules before first start' { Save-KitFirewallStep 'before' }
     Add-KitStep 'key' 'Windows reads the sample key' {
-        Invoke-TestKey 'check'
+        if (Test-Path -LiteralPath $KeyMarker) {
+            Invoke-TestKey 'clear'
+        } else {
+            Invoke-TestKey 'absent'
+            [IO.File]::WriteAllText($KeyMarker, 'sample')
+        }
+        Invoke-TestKey 'absent'
+        try {
+            if ($GamePath) { Invoke-KitEmptySlotClients }
+        } finally {
+            Invoke-TestKey 'seed'
+            Invoke-TestKey 'verify'
+        }
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
@@ -165,17 +174,7 @@ $Steps = @(
         } -Edition $edition
     }
     Add-KitStep 'install' 'Install the previous version for this user' {
-        $allRoot = Join-Path $env:ProgramFiles 'CoD2 Unbound'
-        $allGroup = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'CoD2 Unbound'
-        foreach ($other in @($InstallRoot, $InstallKey, $StartGroup, $allRoot, $allGroup,
-            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CoD2Unbound_is1',
-            'HKCU:\Software\Classes\cod2unbound',
-            'HKCU:\Software\Classes\cod2',
-            'HKCU:\Software\Classes\cod2x')) {
-            if (Test-Path -LiteralPath $other) {
-                throw [NotSupportedException]::new('An existing install or link handler is present. Use a separate clean account.')
-            }
-        }
+        Assert-NoKitInstall
         [IO.File]::WriteAllText($InstallMarker, 'current user')
         Invoke-KitSetupVersion $true
     } 'Type YES to install the previous test version for this Windows account, or press Enter to skip' -Consent
@@ -204,7 +203,8 @@ $Steps = @(
         [IO.File]::WriteAllText((Join-Path $KitProfile 'empty-releases.json'), '[]')
         foreach ($number in 1..2) {
             $settings = Get-KitLauncherSettings
-            if ($number -eq 1) { $settings.COD2_UNBOUND_TEST_WINDOWS_CREDENTIALS = '0' }
+            Stop-KitIfMissing $KeyMarker 'The sample key check was skipped.'
+            if ($number -eq 1) { Invoke-TestKey 'clear' }
             $run = Start-KitProcess $exe '' $LauncherHome $settings
             try {
                 $trace = Join-Path $LauncherHome 'startup-timing.log'
@@ -215,8 +215,8 @@ $Steps = @(
                     (Select-String -LiteralPath $trace -SimpleMatch " $id first content frame" -Quiet)
                 } 60 'first launcher content' | Out-Null
                 if ($number -eq 1) {
-                    Complete-KitLauncherSetup (Get-KitLauncherWindow $run.Process) $Results -SkipKey
-                    if (Test-Path -LiteralPath $KeyMarker) { Invoke-TestKey 'check' }
+                    Complete-KitLauncherSetup (Get-KitLauncherWindow $run.Process) $Results
+                    Invoke-TestKey 'verify'
                 }
             } finally {
                 if (-not $run.Process.HasExited) { [void]$run.Process.CloseMainWindow() }
@@ -362,17 +362,25 @@ $Steps = @(
         }
         if (Test-Path -LiteralPath $KeyMarker) {
             try {
-                if (Test-SavedKitKey) { Invoke-TestKey 'clear' }
-                Assert-NoSavedKitKey
+                Invoke-TestKey 'clear'
+                Invoke-TestKey 'absent'
                 Remove-Item -LiteralPath $KeyMarker
             }
             catch { $failures += $_.Exception.Message }
         }
-        if ($failures.Count) { throw ($failures -join ' ') }
-        Remove-KitScratch $KitProfile
-        $parent = Split-Path $KitProfile -Parent
-        if (-not $ProfileName -and (Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
-            [IO.Directory]::Delete($parent)
+        try { Invoke-TestKey 'absent' } catch { $failures += $_.Exception.Message }
+        try {
+            Remove-KitScratch $KitProfile
+            $parent = Split-Path $KitProfile -Parent
+            foreach ($folder in @($parent, $AppDataRoot) | Select-Object -Unique) {
+                if ($folder -ne $LocalData -and (Test-Path -LiteralPath $folder) -and
+                    -not (Get-ChildItem -LiteralPath $folder -Force)) { [IO.Directory]::Delete($folder) }
+            }
+        } catch { $failures += $_.Exception.Message }
+        foreach ($check in { Assert-NoKitInstall },
+            { Save-KitPublicKeyStamp 'after' }, { Save-KitPublicInstallState 'after' }) {
+            try { & $check } catch { $failures += $_.Exception.Message }
         }
-    } 'Type YES to test uninstall twice and clear the sample data, or press Enter to keep the test copy' -Consent
+        if ($failures.Count) { throw ($failures -join ' ') }
+    }
 )

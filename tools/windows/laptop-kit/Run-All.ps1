@@ -15,7 +15,7 @@ if (-not ($Extras -or $LanOnly)) {
 }
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
-foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer','Check-Desktop') {
+foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays','Check-Launcher','Check-Installer','Check-Desktop','Check-Isolation') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
@@ -83,6 +83,7 @@ $Private = $null
 $Results = $null
 $hasKey = $false
 $hasBaseline = $false
+$hasSafety = $false
 $ownsLock = $false
 $lock = New-KitLock
 try {
@@ -93,15 +94,21 @@ try {
     $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,6)
     $Private = New-Folder (Join-Path $AppDataRoot "Windows Kit\$stamp")
     $Results = New-Folder (Join-Path $Kit "results\$stamp")
+    $KitSafety = $Results
+    $KitKeySlot = [guid]::NewGuid().ToString('N')
+    Save-KitPublicKeyStamp 'before'
+    Save-KitPublicInstallState 'before'
+    $hasSafety = $true
     $summary = Join-Path $Results 'automatic-checks.txt'
     $windows = Get-KitWindowsVersion
     "$($windows.Family) $($windows.Release) $($windows.Edition), build $($windows.Build)" |
         Set-Content -LiteralPath $summary
 
     Test-KitFiles
+    Assert-KitSlotBinaries
     Write-Host 'PASS - All kit files copied correctly'
     if (-not ($Extras -or $LanOnly)) { Invoke-Check 'Windows and graphics information saved' { Save-Machine } }
-    Assert-NoSavedKitKey
+    Invoke-TestKey 'absent'
     $hasKey = $true
     Invoke-TestKey 'seed'
 
@@ -174,7 +181,11 @@ try {
             }
         }
         if ($hasKey) {
-            try { Invoke-TestKey 'clear' } catch { Write-Warning 'The test key could not be removed. See If something goes wrong in START-HERE.md.' }
+            Invoke-Check 'Removed the test key slot' { Invoke-TestKey 'clear'; Invoke-TestKey 'absent' }
+        }
+        if ($hasSafety) {
+            Invoke-Check 'Public CD key stamp stayed the same' { Save-KitPublicKeyStamp 'after' }
+            Invoke-Check 'Public installation stayed the same' { Save-KitPublicInstallState 'after' }
         }
         if ($Private) {
             try { Remove-KitScratch $Private }

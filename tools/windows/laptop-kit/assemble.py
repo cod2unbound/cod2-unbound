@@ -83,6 +83,7 @@ def assemble(args):
                   kit / "launcher-fixtures/directory.json")
         copy_file(args.probe, kit / "probes/media-probe.exe")
         copy_file(args.stack_probe, kit / "probes/stack-probe.exe")
+        copy_file(args.key_probe, kit / "probes/test-key.exe")
         if args.wine:
             copy_fixtures(args, kit)
         for path in (args.release / "artifacts").iterdir():
@@ -133,7 +134,8 @@ def assemble(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for argument in ("baseline", "release", "previous", "probe", "stack-probe", "frame-python", "output"):
+    for argument in ("baseline", "release", "previous", "probe", "stack-probe", "key-probe",
+                     "frame-python", "output"):
         parser.add_argument(f"--{argument}", required=True, type=Path)
     for argument in ("wine", "windows-original", "windows-cod2x"):
         parser.add_argument(f"--{argument}", type=Path)

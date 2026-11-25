@@ -15,7 +15,7 @@ param(
 . (Join-Path $PSScriptRoot 'Common.ps1')
 foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Servers','Check-Replays',
     'Check-Launcher','Check-Installer','Check-Desktop','Check-Diagnostics','Check-Installed','Check-Frames',
-    'Check-Updates','Check-Loopback','Check-Surfaces','Check-Identity','Check-PublicPlay','Check-Refresh') {
+    'Check-Updates','Check-Loopback','Check-Surfaces','Check-Identity','Check-PublicPlay','Check-Refresh','Check-Isolation') {
     . (Join-Path $PSScriptRoot "$script.ps1")
 }
 
@@ -23,12 +23,15 @@ if ($ProfileName -and $InternetPlay) { throw 'A named private profile is only fo
 $KitProfile = if ($ProfileName) { Join-Path $AppDataRoot $ProfileName } else { Join-Path $AppDataRoot "Windows Kit\$RunId" }
 $RunResults = Join-Path $Kit "results\$RunId"
 $RunStart = Join-Path $RunResults 'started.txt'
+$SlotFile = Join-Path $RunResults 'key-slot.txt'
+$KitSafety = Join-Path $RunResults 'preflight'
 $RunProfileName = Join-Path $RunResults 'profile-name.txt'
 $GamePathFile = Join-Path $KitProfile 'game-path.txt'
 $UpdateTrustFile = Join-Path $RunResults 'preflight\update-trust.txt'
 $script:KitSerials = @()
 . (Join-Path $PSScriptRoot 'Laptop-Steps.ps1')
 if ($InternetPlay) {
+    $InstallRoot = Join-Path $LocalData 'Programs\CoD2 Unbound'
     $Steps = @(
         Add-KitStep 'preflight' 'Check this laptop and the kit for internet play' {
             Assert-KitPublicPlay ($env:COD2_KIT_ONLINE -eq '1') ($env:COD2_KIT_ARM_REHEARSAL -eq '1')
@@ -160,10 +163,17 @@ try {
             throw 'The named private test profile already exists.'
         }
         if ($ProfileName) { [IO.File]::WriteAllText($RunProfileName, $ProfileName) }
+        if (-not $InternetPlay) {
+            [IO.File]::WriteAllText($SlotFile, [guid]::NewGuid().ToString('N'))
+        }
         [IO.File]::WriteAllText($RunStart, [DateTime]::UtcNow.ToString('o'))
     } else {
         $previous = if ([IO.File]::Exists($RunProfileName)) { [IO.File]::ReadAllText($RunProfileName) } else { '' }
         if ($previous -ine [string]$ProfileName) { throw 'Resume with the same private profile name.' }
+    }
+    if (-not $InternetPlay) {
+        $KitKeySlot = [IO.File]::ReadAllText($SlotFile)
+        [void](Get-KitKeySlot)
     }
     do {
         $next = Get-KitStatus

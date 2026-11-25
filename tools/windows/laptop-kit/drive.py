@@ -369,7 +369,7 @@ def main():
     parser.add_argument("--kit", type=Path, default=os.environ.get("COD2_KIT_ZIP"))
     parser.add_argument("--run", default="laptop")
     parser.add_argument("--stage-parent", help="existing absolute Windows directory for a private SSH stage")
-    parser.add_argument("--profile-name", help="fresh private directory directly under LocalAppData\\CoD2 Unbound")
+    parser.add_argument("--profile-name", help="fresh private directory directly under LocalAppData\\CoD2 Unbound Windows Kit")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--game-path")
     parser.add_argument("--graphics-label", choices=("Default", "Intel", "Radeon"), default="Default")

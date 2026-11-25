@@ -28,7 +28,8 @@
    If the kit cannot find your game, add
    `-GamePath "C:\Program Files (x86)\Activision\Call of Duty 2"`.
    Use the same command and run name to pick up after an interruption.
-   Use a clean Windows account if you already have CoD2 Unbound set up.
+   Use your usual account. The offline kit installs **CoD2 Unbound Test**
+   alongside your regular copy.
 2. **Let the Mac drive.** On Windows 10, open Windows PowerShell as
    administrator for these three OpenSSH Server commands. Read and answer
    any Windows approval prompts yourself.
@@ -56,7 +57,8 @@
 
 1. The first receipt records Windows, PowerShell, display scaling and the
    clock. The kit checks its files, makes a temporary test profile with the
-   sample key, and checks the game data and both servers. Allow 10 minutes.
+   sample key in a test-only Credential Manager entry, and checks the game
+   data and both servers. Allow 10 minutes.
 2. Type **YES** when you are ready to install the older test version for your
    account, then again for the newer version. Setup may show **SmartScreen**
    or **Windows Security**, and Windows may ask for **administrator approval**.
@@ -79,9 +81,9 @@
    resume. Allow 10 to 20 minutes. If Windows does not trust the lab
    signature, all seven update and restore checks share one skip reason.
 6. The kit tests freeze recovery and collects the local report. It then
-   shows the comparison pictures and asks what you saw. Give the installer
-   permission to remove the test copy and sample key when asked. Read and
-   answer any final Windows approval prompt yourself.
+   shows the comparison pictures and asks what you saw. Cleanup uninstalls
+   CoD2 Unbound Test, deletes the sample credential and checks that your
+   regular installation and saved credential stayed the same.
 
 ## 4. Protect your key and profile
 

@@ -23,7 +23,7 @@ function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePa
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $entry = New-RunContext 'launcher'
     $exe = Join-Path $Root 'launcher\CoD2Unbound.Windows.exe'
-    $link = Join-Path $StartMenu 'CoD2 Unbound.lnk'
+    $link = Join-Path $StartMenu "$FixtureName.lnk"
     if (-not (Test-Path -LiteralPath $link -PathType Leaf)) { throw 'CoD2 Unbound is missing from Start.' }
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $null
@@ -43,12 +43,13 @@ function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePa
         Set-Content -LiteralPath (Join-Path $settings 'launcher-settings.json') -Encoding ASCII
     $releases = Join-Path $entry.Folder 'releases.json'
     '[]' | Set-Content -LiteralPath $releases -Encoding ASCII
-    $run = Start-KitProcess $exe '' $homePath @{
+    $launcherSettings = @{
         COD2_UNBOUND_TEST_HOME = $homePath
         COD2_UNBOUND_TEST_MASTER_PORT = '9'
         COD2_UNBOUND_TEST_RELEASES = $releases
         COD2_UNBOUND_TEST_CONFIG_DIRECTORY = Join-Path $Kit 'launcher-fixtures\directory.json'
     }
+    $run = Start-KitProcess $exe '' $homePath $launcherSettings
     $process = $run.Process
     $failure = $null
     try {
@@ -71,7 +72,7 @@ function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePa
             throw 'The launcher did not finish Setup with the selected game folder.'
         }
         Save-LauncherPicture $process $entry.Evidence '02-home-native'
-        [void](Read-Host 'Double-click Sample config.cfg in the kit folder. If asked, choose Open with CoD2 Unbound. Leave Review import open and press Enter here')
+        Open-KitAssociation (Join-Path $Kit 'Sample config.cfg') 'CoD2UnboundTest.Config' $exe $launcherSettings
         $window = [Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
         $review = New-Object Windows.Automation.PropertyCondition ([Windows.Automation.AutomationElement]::NameProperty), 'Review import'
         if (-not $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $review)) {
@@ -81,7 +82,7 @@ function Invoke-LauncherCheck([string]$Root, [string]$StartMenu, [string]$GamePa
         [void](Read-Host 'Cancel the import review in the launcher and press Enter here')
         $loadouts = Join-Path $homePath 'main\players'
         $beforeSetupLink = (Get-TreeHashes $loadouts) -join "`n"
-        Start-Process 'cod2unbound://setup/sample'
+        Open-KitAssociation 'cod2unbound-test://setup/sample' 'cod2unbound-test' $exe $launcherSettings
         $deadline = (Get-Date).AddSeconds(20)
         $detail = New-Object Windows.Automation.PropertyCondition ([Windows.Automation.AutomationElement]::NameProperty), 'Try this setup'
         do {

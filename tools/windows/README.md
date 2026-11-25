@@ -186,6 +186,11 @@ Both editions prefer the explicit `CoD2 Unbound/CD Key` credential in Windows
 Credential Manager. If that credential is absent, the first valid key from the
 legacy VirtualStore entries or retail registry wins, in that order. The launcher
 can copy a valid installed key into Credential Manager with the player's approval.
+With `COD2_UNBOUND_TEST_KEY_SLOT` set to 1–32 lowercase ASCII letters, digits or
+hyphens, both engines and the Fixture launcher use only
+`CoD2 Unbound/CD Key (test <slot>)`. An empty slot gives an unset CD key. The
+Fixture launcher and its game inherit the same slot. The Public launcher
+uses its regular key store and passes its environment to the engine.
 See the [Windows game data and user files contract](../../docs/windows-game-data.md)
 for discovery, instance paths and the full key lookup order.
 

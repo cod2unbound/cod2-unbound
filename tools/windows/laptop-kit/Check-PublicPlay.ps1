@@ -427,7 +427,7 @@ function Invoke-KitPublicPlay {
             Wait-KitCondition { Find-KitControl $settingsWindow ("Verified " + [char]0x00b7 + ' Stored only on this PC') -Name -AllowOffscreen } 12 'a verified CD key reported by the launcher' | Out-Null
             Invoke-KitControl $panes 'Updates' -Name
             if (Find-KitControl $settingsWindow 'Check Now' -Name) { Invoke-KitControl $settingsWindow 'Check Now' -Name }
-            $version = Read-InstalledVersion 'HKCU' $InstallRoot
+            $version = Read-InstalledVersion 'HKCU' $InstallRoot -Public
             Save-KitSurface $settingsWindow 'public-launcher-update' @() @("CoD2 Unbound $version is up to date")
         } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
         foreach ($edition in 'original','cod2x') {
