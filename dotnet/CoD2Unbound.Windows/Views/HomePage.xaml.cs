@@ -119,7 +119,9 @@ public sealed partial class HomePage : Page, IShellBackdrop
         double inner = Math.Max(0, width - lead - 32);
         bool narrow = inner < 980;
         double heroTop = Math.Max(16, Math.Min(138, Math.Max(84, windowHeight - 762)) - origin.Y);
-        cardHeight = Math.Min(276, Math.Max(262, windowHeight - 624));
+        // Three native buttons need enough room for the last row to keep its full hit target.
+        double minimumCardHeight = model.Recent.Length == 3 ? 272 : 262;
+        cardHeight = Math.Clamp(windowHeight - 624, minimumCardHeight, 276);
 
         Hero.Width = Math.Min(780, inner);
         Hero.Margin = new Thickness(0, heroTop, 0, 0);

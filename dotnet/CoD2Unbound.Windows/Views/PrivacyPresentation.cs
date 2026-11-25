@@ -186,17 +186,18 @@ internal static class PrivacyPresentation
 
         var scroll = new ScrollViewer
         {
-            Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(0, 0, 12, 0),
+            Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Padding = new Thickness(0, 0, 12, 0),
             MaxHeight = Math.Max(220, (shell.DialogRoot?.Size.Height ?? 900) - 300)
         };
         AutomationProperties.SetName(scroll, "What is sent");
-        var content = new StackPanel { Width = 560, Children = { scroll } };
 
         // The shared sheet scaffold supplies the symbol tile and sentence; the stock command row carries Done,
         // so Enter, Escape and the dialog's own focus order stay the system's.
         var dialog = new ContentDialog
         {
-            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "What is sent", Content = content,
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "What is sent", Content = scroll,
             PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
         }.WithSymbol("FluentEye", "What the launcher records, with an example event in the format the launcher sends.");
         await dialog.ShowAsync();
