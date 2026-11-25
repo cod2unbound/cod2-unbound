@@ -485,7 +485,7 @@
             <SolidColorBrush x:Key="sidebarGlyph" Color="#818D4E" />
             <SolidColorBrush x:Key="sidebarGlyphSelected" Color="#768244" />
             <SolidColorBrush x:Key="sidebarStar" Color="#5F4C1F" />
-            <SolidColorBrush x:Key="sidebarCaption" Color="#54000000" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#8B000000" />
             <SolidColorBrush x:Key="sidebarQuiet" Color="#D8000000" />
             <SolidColorBrush x:Key="sidebarSelection" Color="#18000000" />
             <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#BF6B4A12" />
