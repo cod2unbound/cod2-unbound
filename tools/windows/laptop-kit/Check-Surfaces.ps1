@@ -262,10 +262,10 @@ function Select-KitExportFolder($Picker, [string]$Destination) {
         Add-Content -LiteralPath (Join-Path $Results 'hosting-export-peers.txt') -Encoding UTF8
     $commit = Wait-KitCondition {
         $button = Find-KitControl $Picker '1'
-        if ($button -and $button.Current.ControlType -eq [Windows.Automation.ControlType]::Button) { return $button }
+        if ($button -and -not $button.Current.BoundingRectangle.IsEmpty) { return $button }
         foreach ($name in 'Select Folder', 'Open') {
             $button = Find-KitControl $Picker $name -Name
-            if ($button -and $button.Current.ControlType -eq [Windows.Automation.ControlType]::Button) { return $button }
+            if ($button -and -not $button.Current.BoundingRectangle.IsEmpty) { return $button }
         }
     } 10 'the folder picker to expose its selection button'
     if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'The folder picker lost foreground.' }
@@ -276,7 +276,9 @@ function Select-KitExportFolder($Picker, [string]$Destination) {
         $action.Invoke()
     } else {
         $bounds = $commit.Current.BoundingRectangle
-        if ($bounds.IsEmpty) { throw 'The folder picker selection button has no visible bounds.' }
+        if ($bounds.IsEmpty -or $bounds.Width -le 0 -or $bounds.Height -le 0) {
+            throw 'The folder picker selection button has no visible bounds.'
+        }
         $cursor = [Windows.Forms.Cursor]::Position
         try {
             [Windows.Forms.Cursor]::Position = [Drawing.Point]::new([int]($bounds.X + $bounds.Width / 2),
