@@ -529,7 +529,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         if (active)
         {
             RefreshMessage.Text = state is { Asked: > 0 }
-                ? $"Asking {state.Asked} servers. {state.Answered} {(state.Answered == 1 ? "has" : "have")} answered."
+                ? $"Checked {state.Finished} of {state.Asked} servers. {state.Answered} answered."
                 : "Asking the master servers for the list…";
             RefreshProgressBar.IsIndeterminate = state is not { Asked: > 0 };
             RefreshProgressBar.Value = state is { Asked: > 0 } ? 100d * state.Finished / state.Asked : 0;
