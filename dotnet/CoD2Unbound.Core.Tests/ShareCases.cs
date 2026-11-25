@@ -283,7 +283,8 @@ internal static partial class Program
             Equal(false, ConfigShareLoadout.From(record, listed).ToString().Contains(record.Token, StringComparison.Ordinal));
         });
 
-        Check("Share and withdrawal loopback HTTP contract", () => ShareLoopback(root).GetAwaiter().GetResult());
+        Check("Share POST matches every field in the Mac fixture and withdrawal stays local",
+            () => ShareLoopback(root).GetAwaiter().GetResult());
     }
 
     private static ConfigDirectorySnapshot SignedShareCatalogue(string digest, Uri request)
@@ -319,23 +320,24 @@ internal static partial class Program
         string baseUrl = $"http://127.0.0.1:{endpoint.Port}";
         using var transport = new HttpConfigShareTransport();
         var client = new ConfigShareClient(transport, new Uri(baseUrl));
-        var prepared = await ConfigShare.PrepareAsync(ImportBytes(root.GetProperty("prepared")[0].String("input")!),
+        var fixture = root.GetProperty("prepared")[0];
+        var prepared = await ConfigShare.PrepareAsync(ImportBytes(fixture.String("input")!),
             new ConfigImportCatalogAdapter(ConfigCatalog.LoadBundled()), deadline.Token);
 
         string token = new('a', 64);
-        var payload = ConfigShare.Request(prepared, "Fixture", ConfigDialect.Cod2x, "0.4.1");
+        var payload = ConfigShare.Request(prepared, "Fixture", ConfigDialect.Cod2x, "0.4.1-dev");
         var share = client.ShareAsync(payload, deadline.Token).AsTask();
         using (var first = await ReadPost(server, deadline.Token))
         {
             Equal("POST /api/configs/share HTTP/1.1", first.Start);
             Equal(true, first.HasJson);
             Equal(false, first.HasCookie);
-            using var body = JsonDocument.Parse(first.Body);
-            var values = body.RootElement;
-            Equal("Fixture", values.String("name"));
-            Equal(prepared.Text, values.String("config"));
-            Equal(false, values.String("config")!.Contains("sample-secret", StringComparison.Ordinal));
-            Sequence(new[] { "app", "config", "game", "left", "name", "v" }, values.EnumerateObject().Select(prop => prop.Name).Order());
+            var actual = JsonNode.Parse(first.Body);
+            var expected = JsonNode.Parse(fixture.GetProperty("body").GetRawText());
+            // The Mac encoder sorts keys and the .NET encoder escapes some characters differently.
+            // Compare the whole object, including nested fields and absence of extra fields.
+            Equal(true, JsonNode.DeepEquals(expected, actual));
+            Equal(false, actual!["config"]!.GetValue<string>().Contains("sample-secret", StringComparison.Ordinal));
             await first.Reply(201, $"{{\"request\":128,\"url\":\"{ConfigShareClient.Pulls}128\",\"id\":\"fixture\",\"token\":\"{token}\"}}", deadline.Token,
                 "Set-Cookie: fixture=ignore\r\n");
         }
