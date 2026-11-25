@@ -32,10 +32,14 @@ public sealed partial class ConfigsPage
     {
         if (!CanEdit)
             return;
-        var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Open a config file" };
+        var picker = new FileOpenPicker(shell.AppWindow.Id) { Title = "Open config files" };
         picker.FileTypeFilter.Add(".cfg");
-        if (await picker.PickSingleFileAsync() is { } file)
-            await ReviewFileAsync(file.Path);
+        foreach (var file in await picker.PickMultipleFilesAsync())
+        {
+            if (!CanEdit)
+                break;
+            await shell.ShowProblemAsync(() => ReviewFileAsync(file.Path));
+        }
     }
 
     internal Task ReviewFileAsync(string path)
