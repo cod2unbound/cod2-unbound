@@ -202,6 +202,7 @@
                     <Button x:Name="SortPing" Grid.Column="3" Content="Ping" Style="{StaticResource ColumnHeading}" Height="20" MinHeight="20" Tag="Ping" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Padding="0" />
                 </Grid>
                 <ListView x:Name="ServerList" Grid.Row="3" SelectionChanged="OnSelectionChanged"
+                          SizeChanged="OnServerListSizeChanged"
                           AutomationProperties.Name="Servers">
                     <ListView.Resources>
                         <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
@@ -224,7 +225,7 @@
                                     <ColumnDefinition Width="84" />
                                     <ColumnDefinition Width="22" />
                                 </Grid.ColumnDefinitions>
-                                <Grid ColumnSpacing="16">
+                                <Grid x:Name="RowIdentity" ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="80" />
                                         <ColumnDefinition Width="*" />
