@@ -49,9 +49,11 @@ function Open-KitGameMenu([IntPtr]$Window) {
     Wait-KitHome $Window
     if (Find-KitControl $Window 'OpenGameMenuButton') {
         Invoke-KitControl $Window 'OpenGameMenuButton'
+        'First-run OpenGameMenuButton' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     } else {
         Focus-KitWindow $Window
         [KitDesktop]::Chord(17, 16, 13)
+        'Returning Home Ctrl+Shift+Enter' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     }
 }
 
@@ -173,6 +175,10 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
     Set-KitLauncherProfile $Edition $Renderer
+    if ($Edition -eq 'cod2x' -and $Renderer -eq 'dx9') {
+        [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
+            '{"recent":["127.0.0.1:9"]}')
+    }
     $console = Join-Path $LauncherHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) { Remove-Item -LiteralPath $console }
     $screens = Join-Path $LauncherHome 'main\screenshots'
