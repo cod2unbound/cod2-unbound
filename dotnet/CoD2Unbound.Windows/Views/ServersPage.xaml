@@ -207,7 +207,7 @@
                         <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
+                        <Style TargetType="ListViewItem">
                             <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Padding" Value="11,11,21,11" />
@@ -216,7 +216,7 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid ColumnSpacing="16" MinHeight="60" AutomationProperties.Name="{Binding Label}"
+                            <Grid ColumnSpacing="16" MinHeight="60" Background="Transparent" AutomationProperties.Name="{Binding Label}"
                                   Loaded="OnServerRowLoaded" DataContextChanged="OnServerRowChanged" DoubleTapped="OnServerRowDoubleTapped">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
