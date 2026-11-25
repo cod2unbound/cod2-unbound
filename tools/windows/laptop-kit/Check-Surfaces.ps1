@@ -72,7 +72,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
     try {
         $app = Get-KitLauncherWindow $run.Process
         Wait-KitHome $app
-        [void][KitDesktop]::ShowWindow($app, 3)
+        [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
         Focus-KitWindow $app
         switch ($Page) {
             'home' {
