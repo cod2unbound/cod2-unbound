@@ -140,23 +140,19 @@ public sealed partial class SetupPage
         return row;
     }
 
-    private StackPanel Note(string text, string? symbol = null)
+    private FrameworkElement Note(string text, string? symbol = null)
     {
-        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        if (symbol is not null)
-        {
-            var icon = Symbol(symbol, 11);
-            icon.Foreground = Token("secondary");
-            icon.VerticalAlignment = VerticalAlignment.Top;
-            line.Children.Add(icon);
-        }
         var words = new TextBlock { Text = text, Style = StyleFor("SetupDetail") };
-        line.Children.Add(words);
-        if (symbol is not null)
-        {
-            words.MaxWidth = panelWidth - 60;
-            GlyphAlign.SetIsEnabled(line, true);
-        }
+        if (symbol is null)
+            return words;
+
+        var icon = Symbol(symbol, 11);
+        icon.Foreground = Token("secondary");
+        icon.VerticalAlignment = VerticalAlignment.Top;
+        var line = Columns(6, GridLength.Auto, new(1, GridUnitType.Star));
+        Put(line, 0, icon);
+        Put(line, 1, words);
+        GlyphAlign.SetIsEnabled(line, true);
         AutomationProperties.SetName(line, text);
         return line;
     }
