@@ -22,6 +22,7 @@ function Invoke-KitSurface([string]$Page) {
         return
     }
     $failures = foreach ($theme in 'dark', 'light') {
+        if ($theme -eq 'light') { Wait-KitCooling }
         try { Invoke-KitSurfaceRun 'hosting' -Variant $theme | Out-Null }
         catch { "$theme appearance. $($_.Exception.Message)" }
     }
@@ -295,12 +296,15 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
     $row.SetFocus()
     [KitDesktop]::Chord(16, 121)
     $export = 'Export for another machine' + [char]0x2026
+    Wait-KitCondition { Find-KitControl $App 'Show its folder in File Explorer' -Name } 12 'the Hosting row menu' | Out-Null
+    # Refocusing the app while a flyout is open can dismiss it. Capture it
+    # in place and fetch the live menu item immediately before invoking it.
+    Save-KitWindow $App (Join-Path $Results 'hosting-row-menu.png')
     $item = Wait-KitCondition {
         Get-KitControls $App $export -Name |
             Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::MenuItem } |
             Select-Object -First 1
     } 12 'the Hosting row export action'
-    Save-KitSurface $App 'hosting-row-menu' @() @('Show its folder in File Explorer')
     $item.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
 
     $surface = Wait-KitHostingExport $App 'row'
