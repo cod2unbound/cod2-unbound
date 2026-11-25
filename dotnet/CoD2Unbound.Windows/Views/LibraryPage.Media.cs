@@ -183,14 +183,45 @@ public sealed partial class LibraryPage
         {
             string map = row.Facts.Map is { } key ? MapCatalog.DisplayName(key) : "Unknown";
             string date = row.File.Modified?.ToLocalTime().ToString("g") ?? "Unknown";
-            content.Children.Add(Body($"Map: {map}\nLength: Unknown\nDate: {date}\nSize: {row.Size}"));
+            var details = Body($"Map: {map}\nLength: Reading…\nDate: {date}\nSize: {row.Size}");
+            content.Children.Add(details);
             dialog.PrimaryButtonText = "Play";
             dialog.IsPrimaryButtonEnabled = row.CanPlay;
             if (!row.CanPlay)
                 content.Children.Add(Body(row.PlaybackHint));
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            using var reading = new CancellationTokenSource();
+            var show = dialog.ShowAsync();
+            var duration = LoadDurationAsync();
+            ContentDialogResult choice;
+            try { choice = await show; }
+            finally
+            {
+                await reading.CancelAsync();
+                await duration;
+            }
+            if (choice == ContentDialogResult.Primary)
                 await OpenFileAsync(row);
             return;
+
+            async Task LoadDurationAsync()
+            {
+                TimeSpan? elapsed = null;
+                try
+                {
+                    elapsed = await Task.Run(() =>
+                    {
+                        using var recording = files.OpenDemo(row.Name);
+                        return DemoRecording.ReadDuration(recording, reading.Token);
+                    }, reading.Token);
+                }
+                catch (OperationCanceledException) when (reading.IsCancellationRequested) { return; }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+                if (!reading.IsCancellationRequested)
+                {
+                    string length = elapsed is { } time ? MatchFacts.Duration(time.TotalSeconds) : "Unknown";
+                    details.Text = $"Map: {map}\nLength: {length}\nDate: {date}\nSize: {row.Size}";
+                }
+            }
         }
 
         dialog.Resources["ContentDialogMaxWidth"] = 760d;

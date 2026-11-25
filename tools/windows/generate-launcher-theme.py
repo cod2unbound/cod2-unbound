@@ -45,7 +45,7 @@ BOARD_COLORS = {
     "sidebarGlyph": ("#D3AE60", "#818D4E", "WindowText"),
     "sidebarGlyphSelected": ("#E1BD6F", "#768244", "HighlightText"),
     "sidebarStar": ("#D3BF7E", "#5F4C1F", "WindowText"),
-    "sidebarCaption": ("#74FFFFFF", "#54000000", "WindowText"),
+    "sidebarCaption": ("#74FFFFFF", "#8B000000", "WindowText"),
     "sidebarQuiet": ("#D8FFFFFF", "#D8000000", "WindowText"),
     "sidebarSelection": ("#22FFFFFF", "#18000000", "Highlight"),
 }

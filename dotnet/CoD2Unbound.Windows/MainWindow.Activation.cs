@@ -58,7 +58,7 @@ public sealed partial class MainWindow
             input[WindowsUpdateNotifications.ActivationPrefix.Length..] is { } version && UpdateNotification.IsVersion(version))
         {
             activeNotification = input;
-            try { await OpenNotificationReleaseAsync(version); }
+            try { await NavigateAsync(LauncherPlace.UpdateSettings); }
             finally { activeNotification = null; }
             return;
         }

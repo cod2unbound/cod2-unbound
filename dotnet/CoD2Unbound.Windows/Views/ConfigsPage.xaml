@@ -153,6 +153,18 @@
                         <ListView x:Name="Loadouts" TabNavigation="Once" ItemContainerStyle="{StaticResource StudioColumnItem}"
                                   AutomationProperties.Name="My loadouts" SelectionChanged="OnSelectLoadout"
                                   ContainerContentChanging="OnLoadoutContainerChanging">
+                            <ListView.Resources>
+                                <ResourceDictionary>
+                                    <ResourceDictionary.ThemeDictionaries>
+                                        <ResourceDictionary x:Key="Default">
+                                            <Style x:Key="LoadoutStatusText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="HighContrast">
+                                            <Style x:Key="LoadoutStatusText" TargetType="TextBlock" BasedOn="{StaticResource TypeSubtitle}" />
+                                        </ResourceDictionary>
+                                    </ResourceDictionary.ThemeDictionaries>
+                                </ResourceDictionary>
+                            </ListView.Resources>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid ColumnSpacing="10">
@@ -167,7 +179,7 @@
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Status}" Style="{StaticResource SecondaryText}"
+                                            <TextBlock Text="{Binding Status}" Style="{ThemeResource LoadoutStatusText}"
                                                        FontSize="11" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
