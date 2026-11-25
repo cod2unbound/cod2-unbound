@@ -112,7 +112,7 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
                 } 12 'personalization choices' | Out-Null
                 Focus-KitWindow $Window
                 Save-KitWindow $Window (Join-Path $Evidence 'setup-personalize.png')
-                Invoke-KitControl $Window 'SetupAlternate'
+                Invoke-KitControl $Window 'SetupNext'
             }
             { $_ -in 'usage','crash' } {
                 Wait-KitCondition { Find-KitControl $Window 'DeclineReport' } 12 'the reporting choice' | Out-Null
