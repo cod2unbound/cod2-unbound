@@ -55,6 +55,86 @@ function Assert-InstalledFiles([string]$Root, [string]$From) {
     }
 }
 
+function Remove-KitInstalledFixture([string]$Label) {
+    $entry = Get-ItemProperty -LiteralPath $InstallKey -ErrorAction SilentlyContinue
+    $uninstaller = Join-Path $InstallRoot 'unins000.exe'
+    if ($entry) {
+        if ($entry.UninstallString.Trim('"') -ine $uninstaller) { throw 'The registered uninstaller changed.' }
+        $code = Invoke-Setup $uninstaller $Label '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+        if ($code -ne 0) { throw "Uninstaller exit $code." }
+    }
+    if ((Test-Path -LiteralPath $InstallRoot) -or (Test-Path -LiteralPath $StartGroup) -or
+            (Test-Path -LiteralPath $InstallKey)) { throw 'Windows kept install files, shortcuts or registration.' }
+}
+
+function Get-KitDemoOpenWith([string]$Path, [string]$Control) {
+    $key = Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue
+    if (-not $key) { return @{ Present=$false; Product=$false; Control=$false; Other=0; Subkeys=0 } }
+    try {
+        $names = $key.GetValueNames()
+        @{
+            Present=$true
+            Product='CoD2Unbound.Demo' -in $names
+            Control=$Control -in $names
+            Other=@($names | Where-Object { $_ -notin 'CoD2Unbound.Demo', $Control }).Count
+            Subkeys=$key.SubKeyCount
+        }
+    } finally { $key.Dispose() }
+}
+
+function Invoke-KitDemoUninstall {
+    $path = 'HKCU:\Software\Classes\.dm_1\OpenWithProgids'
+    $control = 'CoD2Unbound.KitOtherDemo'
+    $receipt = Join-Path $Results 'demo-open-with.jsonl'
+    $before = Get-KitDemoOpenWith $path $control
+    if (-not $before.Product) {
+        $installed = Test-Path -LiteralPath $InstallKey
+        Remove-KitInstalledFixture 'uninstall'
+        if ($installed) { throw 'The installed demo association had no kit registration.' }
+        return
+    }
+    @{ Phase='plain-before'; Key=$before } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
+    Remove-KitInstalledFixture 'uninstall'
+    $after = Get-KitDemoOpenWith $path $control
+    @{ Phase='plain-after'; Key=$after } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
+    if ($after.Product -or $after.Other -ne $before.Other -or $after.Subkeys -ne $before.Subkeys -or
+        $after.Present -ne [bool]($before.Control -or $before.Other -or $before.Subkeys)) {
+        throw 'The uninstall did not remove the kit demo association or handle its parent correctly.'
+    }
+    if ($before.Control) { throw 'The dummy second-app entry already exists.' }
+
+    $createdControl = $false
+    try {
+        Invoke-KitSetupVersion $false
+        New-ItemProperty -LiteralPath $path -Name $control -PropertyType String -Value '' | Out-Null
+        $createdControl = $true
+        $controlBefore = Get-KitDemoOpenWith $path $control
+        @{ Phase='control-before'; Key=$controlBefore } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
+        if (-not $controlBefore.Control -or -not $controlBefore.Product) {
+            throw 'The second-app control or the demo registration is missing before uninstall.'
+        }
+        Remove-KitInstalledFixture 'uninstall-demo-control'
+        $controlAfter = Get-KitDemoOpenWith $path $control
+        @{ Phase='control-after'; Key=$controlAfter } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
+        if (-not $controlAfter.Control -or $controlAfter.Product -or $controlAfter.Other -ne $before.Other -or
+            $controlAfter.Subkeys -ne $before.Subkeys) {
+            throw 'Uninstall changed the second-app control or kept the kit demo association.'
+        }
+    } finally {
+        try {
+            if (Test-Path -LiteralPath $InstallKey) { Remove-KitInstalledFixture 'uninstall-demo-cleanup' }
+        } finally {
+            $rest = Get-KitDemoOpenWith $path $control
+            if ($createdControl -and $rest.Control) {
+                Remove-ItemProperty -LiteralPath $path -Name $control
+                if (-not $after.Present -and -not ($rest.Other -or $rest.Subkeys -or $rest.Product)) {
+                    Remove-Item -LiteralPath $path
+                }
+            }
+        }
+    }
+}
+
 function New-PreservationFiles {
     $data = New-Folder (Join-Path $Private 'uninstall-preservation')
     foreach ($name in 'main\players\kit\config_mp.cfg','main\screenshots\kit-preserve.jpg','main\demos\kit-preserve.dm_1') {

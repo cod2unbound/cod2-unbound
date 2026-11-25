@@ -35,6 +35,12 @@ automatic-checks.txt records the script's stage verdicts and failure detail. A s
 
 ## Launcher evidence
 
+The Servers navigation receipt records the selected row's UI Automation runtime ID before, during and after a refresh against 252 loopback addresses. Hosting records the launcher sheet and Windows folder picker separately, with a canceled row export and a completed page export in each appearance. Cleanup records the demo Open With key across a plain uninstall and a second uninstall with a test entry for another app.
+
+The exclusive checks stop if another program's dialog has the foreground. The receipt names the program. A map-load timeout can save a scrubbed console tail and the kit game's x64 stack traces under `private-map-stall-*`. Keep these in the private per-step receipts. The two results packers omit them from combined archives.
+
+Build `StackProbe.c` in the kit's x64 MinGW toolchain with `-municode -ldbghelp` and pass its executable to `assemble.py --stack-probe`.
+
 Part A checks the installed Start shortcut and opens its target with a disposable
 launcher profile, loopback discovery, an empty local release list and the signed
 catalogue fixture. It checks that first-run Setup records the chosen game folder.

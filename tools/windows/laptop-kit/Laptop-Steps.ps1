@@ -352,15 +352,7 @@ $Steps = @(
         $failures = @()
         if (Test-Path -LiteralPath $InstallMarker) {
             try {
-                $entry = Get-ItemProperty -LiteralPath $InstallKey -ErrorAction SilentlyContinue
-                $uninstaller = Join-Path $InstallRoot 'unins000.exe'
-                if ($entry) {
-                    if ($entry.UninstallString.Trim('"') -ine $uninstaller) { throw 'The registered uninstaller changed.' }
-                    $code = Invoke-Setup $uninstaller 'uninstall' '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
-                    if ($code -ne 0) { throw "Uninstaller exit $code." }
-                }
-                if ((Test-Path -LiteralPath $InstallRoot) -or (Test-Path -LiteralPath $StartGroup) -or
-                        (Test-Path -LiteralPath $InstallKey)) { throw 'Windows kept install files, shortcuts or registration.' }
+                Invoke-KitDemoUninstall
                 Remove-Item -LiteralPath $InstallMarker
             } catch { $failures += $_.Exception.Message }
         }
@@ -378,5 +370,5 @@ $Steps = @(
         if (-not $ProfileName -and (Test-Path -LiteralPath $parent) -and -not (Get-ChildItem -LiteralPath $parent -Force)) {
             [IO.Directory]::Delete($parent)
         }
-    } 'Type YES to uninstall the test copy and clear its sample data, or press Enter to keep it' -Consent
+    } 'Type YES to test uninstall twice and clear the sample data, or press Enter to keep the test copy' -Consent
 )
