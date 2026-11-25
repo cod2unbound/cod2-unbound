@@ -85,10 +85,10 @@ internal sealed partial class WindowsLauncherSession
         UpdateInstaller = new(installRoot, HomePath, Version, inventory, () => new(Game.State.Running, Hosting.HasActiveServers),
             FlushForUpdateAsync);
         Updates = new LauncherUpdates(new WindowsReleaseSource(TestMaster is not null), TimeProvider.System,
-            Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin),
+            Version, (version, assets) => WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalAssetOrigin),
             TimeZoneInfo.Local, WindowsReleaseAssets.IsNewer, UpdateInstaller.Log, (version, assets) =>
             {
-                _ = WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalOrigin, out var problem);
+                _ = WindowsReleaseAssets.Offer(version, assets, WindowsReleaseSource.LocalAssetOrigin, out var problem);
                 return problem ?? "The release did not provide a usable update.";
             });
     }

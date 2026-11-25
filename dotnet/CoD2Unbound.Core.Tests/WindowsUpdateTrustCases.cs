@@ -13,14 +13,18 @@ internal static partial class Program
         Check("Public Windows release source ignores environment and file fixtures", () =>
         {
             const string origin = "COD2_UNBOUND_TEST_UPDATE_ORIGIN";
+            const string mirror = "COD2_UNBOUND_TEST_UPDATE_MIRROR_ORIGIN";
             const string fixture = "COD2_UNBOUND_TEST_RELEASES";
             string? savedOrigin = Environment.GetEnvironmentVariable(origin);
+            string? savedMirror = Environment.GetEnvironmentVariable(mirror);
             string? savedFixture = Environment.GetEnvironmentVariable(fixture);
             try
             {
                 Environment.SetEnvironmentVariable(origin, "http://127.0.0.1:8123/");
+                Environment.SetEnvironmentVariable(mirror, "http://127.0.0.1:8124/");
                 Environment.SetEnvironmentVariable(fixture, Path.Combine(AppContext.BaseDirectory, "Fixtures", "settings.json"));
                 Equal<Uri?>(null, WindowsReleaseSource.LocalOrigin);
+                Equal<Uri?>(null, WindowsReleaseSource.LocalAssetOrigin);
                 Equal<string?>(null, WindowsReleaseSource.Fixture);
                 var source = new WindowsReleaseSource(testMode: true);
                 try { source.ReleasesAsync(TimeZoneInfo.Utc, default).GetAwaiter().GetResult(); }
@@ -34,6 +38,7 @@ internal static partial class Program
             finally
             {
                 Environment.SetEnvironmentVariable(origin, savedOrigin);
+                Environment.SetEnvironmentVariable(mirror, savedMirror);
                 Environment.SetEnvironmentVariable(fixture, savedFixture);
             }
         });

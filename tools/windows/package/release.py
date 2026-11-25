@@ -108,6 +108,7 @@ def require_public_launcher(bundle):
     markers = (b"CoD2Unbound.UpdateFixture", b"CoD2Unbound.ReportingFixture")
     fixture_variables = (
         "COD2_UNBOUND_TEST_UPDATE_ORIGIN",
+        "COD2_UNBOUND_TEST_UPDATE_MIRROR_ORIGIN",
         "COD2_UNBOUND_TEST_RELEASES",
         "COD2_UNBOUND_TEST_MASTER_PORT",
         "COD2_UNBOUND_TEST_HOME",

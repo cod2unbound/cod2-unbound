@@ -8,8 +8,15 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
     private static readonly HttpClient Production = ReleaseDownload.CreateClient();
 #if LOCAL_UPDATE_FEED
     private static readonly HttpClient Local = ReleaseDownload.CreateClient(loopbackOnly: true);
+    private static readonly string? MirrorAddress = Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_UPDATE_MIRROR_ORIGIN");
 #endif
     internal static Uri? LocalOrigin { get; } = TestOrigin();
+    internal static Uri? LocalAssetOrigin =>
+#if LOCAL_UPDATE_FEED
+        MirrorAddress is not null ? null : LocalOrigin;
+#else
+        null;
+#endif
     internal static ReleaseDownload Download { get; } = CreateDownload();
     internal static string? Fixture =>
 #if UPDATE_FIXTURES
@@ -40,9 +47,9 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
     {
 #if LOCAL_UPDATE_FEED
         var address = Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_UPDATE_ORIGIN");
-        if (address is not null)
+        if (address is not null || MirrorAddress is not null)
         {
-            if (Uri.TryCreate(address, UriKind.Absolute, out var origin) && WindowsReleaseAssets.IsLoopbackOrigin(origin))
+            if (LoopbackOrigin(address) is { } origin)
                 return origin;
             // A malformed test override must never silently fall back to the public feed.
             return new Uri("http://invalid.invalid/");
@@ -55,8 +62,41 @@ internal sealed class WindowsReleaseSource(bool testMode) : ILauncherReleaseSour
     {
 #if LOCAL_UPDATE_FEED
         if (LocalOrigin is { } origin)
+        {
+            if (MirrorAddress is not null)
+                return new(new HttpClient(new LocalReleaseHosts(LoopbackOrigin(origin.AbsoluteUri), LoopbackOrigin(MirrorAddress)))
+                    { Timeout = Timeout.InfiniteTimeSpan });
             return new(Local, origin);
+        }
 #endif
         return new(Production);
     }
+
+#if LOCAL_UPDATE_FEED
+    private static Uri? LoopbackOrigin(string? address) =>
+        Uri.TryCreate(address, UriKind.Absolute, out var uri) && WindowsReleaseAssets.IsLoopbackOrigin(uri) ? uri : null;
+
+    // Keep the real release URLs through validation and policy. Only the socket goes to a stand-in.
+    private sealed class LocalReleaseHosts(Uri? primary, Uri? mirror) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (primary is null || mirror is null || primary == mirror ||
+                request.RequestUri is not { Scheme: "https", Port: 443 } source)
+                throw new HttpRequestException("Two distinct loopback update origins are required.");
+
+            var origin = source.Host switch
+            {
+                "api.github.com" or "raw.githubusercontent.com" or "github.com" or "release-assets.githubusercontent.com" => primary,
+                "cod2unbound.com" => mirror,
+                _ => throw new HttpRequestException("No local stand-in is configured for this update host.")
+            };
+            var target = new Uri(origin.GetLeftPart(UriPartial.Authority) + source.PathAndQuery);
+            using var localRequest = new HttpRequestMessage(request.Method, target);
+            foreach (var accept in request.Headers.Accept)
+                localRequest.Headers.Accept.Add(accept);
+            return await Local.SendAsync(localRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        }
+    }
+#endif
 }
