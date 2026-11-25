@@ -27,14 +27,6 @@ public sealed partial class MainWindow
                 await notifications.RemoveAsync(version);
     }
 
-    private async Task OpenNotificationReleaseAsync(string version)
-    {
-        if (WindowsReleaseAssets.IsNewer(version, session.Version) && session.Updates.State.Offer?.Version != version &&
-            updateRequest is null && session.CanCheckUpdates)
-            await RunUpdateAsync(install: false);
-        await ShowReleaseNotesAsync(version);
-    }
-
     /// Home's Install Update: the same path as the release notes' Install, from Settings › Updates.
     internal async Task InstallOfferedUpdateAsync()
     {
