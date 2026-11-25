@@ -49,13 +49,20 @@ function Get-KitPublicInstallState {
 }
 
 function Save-KitPublicInstallState([string]$Stage) {
-    $state = Protect-KitText (Get-KitPublicInstallState)
+    $state = Get-KitPublicInstallState
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $digest = [Convert]::ToBase64String($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($state))) }
+    finally { $sha.Dispose() }
     $baseline = Join-Path $KitSafety 'public-install-before.json'
+    $fingerprint = Join-Path $KitSafety 'public-install-before.sha256'
     if ($Stage -eq 'before') {
-        if (-not (Test-Path -LiteralPath $baseline)) { [IO.File]::WriteAllText($baseline, $state) }
+        if (-not (Test-Path -LiteralPath $fingerprint)) {
+            [IO.File]::WriteAllText($baseline, (Protect-KitText $state))
+            [IO.File]::WriteAllText($fingerprint, $digest)
+        }
     } else {
-        [IO.File]::WriteAllText((Join-Path $Results 'public-install-after.json'), $state)
-        if ([IO.File]::ReadAllText($baseline) -cne $state) {
+        [IO.File]::WriteAllText((Join-Path $Results 'public-install-after.json'), (Protect-KitText $state))
+        if ([IO.File]::ReadAllText($fingerprint) -cne $digest) {
             throw 'The Public installation files, version, shortcuts or registry changed during the kit run.'
         }
     }
