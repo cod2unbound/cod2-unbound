@@ -23,6 +23,7 @@
 #include "cod2_feature_config.h"
 #include "pb_public.h"
 #include "www_download.h"
+#include "download_confirm.h"
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
 #include "../qcommon/cod2x_demo.h"
 extern void Cmd_ExecuteString(const char *text);
@@ -41,6 +42,14 @@ static void Cod2x_DemoPlayback(int playing);
 static void Cod2x_DemoClientDisconnect(void);
 #endif
 extern LegacyHacks *legacyHacks;
+#if COD2_DOWNLOAD_CONFIRMATION
+static int downloadConfirmationPending;
+static char downloadPreviousGame[256];
+extern const dvar_t *fs_gameDirVar;
+extern void FS_PureServerSetLoadedIwds(const char *sums, const char *names);
+extern void FS_PureServerSetReferencedIwds(const char *sums, const char *names);
+extern qboolean FS_ConditionalRestart(int checksumFeed);
+#endif
 extern int com_frameTime;
 extern float com_timescaleValue;
 /* dvar globals */
@@ -3029,6 +3038,10 @@ void CL_Disconnect(void)
     if (!legacy->cl_running)
         return;
 
+#if COD2_DOWNLOAD_CONFIRMATION
+    downloadConfirmationPending = 0;
+#endif
+
 #if defined(COD2_X64)
     MatchSummary_Finish("disconnect");
 #endif
@@ -3645,12 +3658,53 @@ void CL_NextDownload(void)
 #endif
 }
 
+#if COD2_DOWNLOAD_CONFIRMATION
+void CL_PrepareDownloadConfirmation(void)
+{
+    if (!downloadConfirmationPending)
+        I_strncpyz(downloadPreviousGame, fs_gameDirVar->current.string, sizeof(downloadPreviousGame));
+}
+
+int CL_DownloadConfirmationPending(void)
+{
+    return downloadConfirmationPending;
+}
+
+void CL_ResolveDownloadConfirmation(int allow)
+{
+    if (!downloadConfirmationPending || clc->state != CA_CONNECTED)
+        return;
+
+    downloadConfirmationPending = 0;
+    if (allow && cl_allowDownload->current.enabled) {
+        Com_Printf("Server download allowed for this join.\n");
+        UI_SetActiveMenu(0);
+        CL_NextDownload();
+        return;
+    }
+
+    Com_Printf("Server download cancelled.\n");
+    CL_Disconnect();
+    FS_PureServerSetLoadedIwds("", "");
+    FS_PureServerSetReferencedIwds("", "");
+    Dvar_SetString(fs_gameDirVar, downloadPreviousGame);
+    FS_ConditionalRestart(0);
+    UI_SetActiveMenu(1);
+}
+#endif
+
 void CL_InitDownloads(void)
 {
     clientConnection_t *conn;
     const dvar_t *svRunning;
     char missingFiles[1024];
 
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (downloadConfirmationPending) {
+        downloadConfirmationPending = 0;
+        UI_SetActiveMenu(0);
+    }
+#endif
 #if defined(COD2_X64) && COD2_X64 && defined(COD2_CODX) && COD2_CODX
     if (((clientConnection_t *)clc)->demoplaying) {
 #if COD2_IS_PATCH_13
@@ -3695,6 +3749,14 @@ void CL_InitDownloads(void)
     }
 
     conn->state = CA_CONNECTED;
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (!conn->demoplaying) {
+        downloadConfirmationPending = 1;
+        Com_Printf("Waiting for confirmation before downloading server files.\n");
+        UI_ShowDownloadConfirmation();
+        return;
+    }
+#endif
     CL_NextDownload();
 }
 

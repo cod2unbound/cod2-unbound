@@ -2,6 +2,7 @@
 #include "imports.h"
 #include "bytematch.h"
 #include "cod2_feature_config.h"
+#include "download_confirm.h"
 #include <math.h>
 /* dvar globals */
 extern LegacyHacks *legacyHacks;
@@ -808,6 +809,12 @@ void CL_MouseEvent(const int dx_in, const int dy_in)
     clientActive_t *ptr = *(clientActive_t **)imp_cl;
     int dx = dx_in, dy = dy_in;
     int index;
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (CL_DownloadConfirmationPending()) {
+        UI_MouseEvent(dx, dy);
+        return;
+    }
+#endif
     if (!(ptr->keyCatchers & 8) || cl_bypassMouseInput->current.enabled) {
         index = ptr->mouseIndex;
         ptr->mouseDx[index] += dx;
@@ -823,6 +830,12 @@ void CL_MouseEventAbsolute(const int x, const int y, const int dx_in, const int 
     int dx = dx_in, dy = dy_in;
     int index;
 
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (CL_DownloadConfirmationPending()) {
+        UI_MouseEventAbsolute(x, y);
+        return;
+    }
+#endif
     if (!(ptr->keyCatchers & 8) || cl_bypassMouseInput->current.enabled) {
         index = ptr->mouseIndex;
         ptr->mouseDx[index] += dx;

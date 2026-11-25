@@ -33,6 +33,14 @@ inspection. The compiler controls establish which objects change.
 | Sound global expression | [`snd_driver.c`](../../src/PC/win32/snd_driver.c), `SND_StartAlias2DSample`, `SND_StartAlias3DSample`, `SND_StartAliasStreamOnChannel`, `SND_Update3DChannel`, `SND_InitDriver`, `SND_SetStreamChannelFromSaveInfo` | Dereferences the imported sound-global pointer directly. | Parenthesizes the same dereference in the macro that selects the native or legacy pointer. No legacy player effect. | The stripped Linux i386 object matches upstream. |
 | Ban-list symbol spelling | [`bss.c`](../../src/blobs/bss.c), file-scope `g_banIPs_dvar` alias | Emits the ELF symbol spelling in the assembly alias even on Apple i386. | Emits leading underscores for Mach-O and 32-bit native PE, matching those ABIs. This affects symbol resolution at link time. | Both Apple i386 source projections show the prefix change. The Linux i386 object matches upstream. Mach-O i386 linking was outside the comparison. |
 
+## Native Original 1.3 client
+
+Retail 1.3 starts fetching missing server archives automatically when Download
+Mods is enabled. The native Original edition asks before requesting the first
+file. Allow applies to the files needed for that join. Cancel disconnects
+and returns to the main menu. Stock servers and servers whose files are
+already installed join directly. [Issue 143](https://github.com/cod2unbound/cod2-unbound/issues/143)
+
 ## Native dedicated server privacy
 
 The native Original and CoD2x servers treat `dedicated 1` as unlisted. A

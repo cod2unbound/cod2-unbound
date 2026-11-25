@@ -1,5 +1,6 @@
 #include "common_types.h"
 #include "imports.h"
+#include "download_confirm.h"
 #include <ctype.h>
 #include <string.h>
 #if defined(COD2_X64)
@@ -1545,6 +1546,10 @@ void CL_KeyEvent(int key, const qboolean down, const unsigned int time)
     bypassUi = 0;
     if (keyCatchers & 8) {
         qboolean bypassMouseInput = CL_DvarEnabledFromImport(imp_cl_bypassMouseInput);
+#if COD2_DOWNLOAD_CONFIRMATION
+        if (CL_DownloadConfirmationPending())
+            bypassMouseInput = 0;
+#endif
         qboolean uiWantsKey = bypassMouseInput ? UI_checkKeyExec(key) : 1;
         if (bypassMouseInput && key >= 0xc8 && key <= 0xca) {
             bypassUi = 1;

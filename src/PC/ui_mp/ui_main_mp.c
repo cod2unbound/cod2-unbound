@@ -8,6 +8,7 @@
 #include "imports.h"
 #include "bytematch.h"
 #include "cod2_feature_config.h"
+#include "PC/client_mp/download_confirm.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -194,6 +195,10 @@ extern int CL_TextWidth(const char *text, int maxChars, FontHandle font);
 extern int CL_TextHeight(FontHandle font);
 extern float GetRealHeightFromVirtualHeight(float scale);
 extern void CalcScreenPlacement(float *x, float *y, float *xScale, float *yScale, int horzAlign, int vertAlign);
+#if COD2_DOWNLOAD_CONFIRMATION
+extern void CalcScreenX(float *x, int align);
+extern void CalcScreenY(float *y, int align);
+#endif
 extern void CalcSplitScreenTextOffset(FontHandle font, float *y);
 extern void CL_DrawTextPhysical(const char *text, int maxChars, FontHandle font, float x, float y, float xScale, float yScale, const vec_t *color, int style);
 extern void CL_DrawTextPhysicalWithCursor(const char *text, int maxChars, FontHandle font, float x, float y, float xScale, float yScale, const vec_t *color, int style, int cursorPos, int cursor);
@@ -1532,9 +1537,85 @@ void UI_Init(void)
 }
 #endif
 
+#if COD2_DOWNLOAD_CONFIRMATION
+enum {
+    DOWNLOAD_BUTTON_X = 204,
+    DOWNLOAD_BUTTON_Y = 255,
+    DOWNLOAD_BUTTON_WIDTH = 106,
+    DOWNLOAD_BUTTON_HEIGHT = 30,
+    DOWNLOAD_BUTTON_STEP = DOWNLOAD_BUTTON_WIDTH + 20
+};
+
+static int downloadAllowFocused;
+
+static int UI_DownloadButtonUnderCursor(void)
+{
+    float x = uiInfo->uiDC.cursorx;
+    float y = uiInfo->uiDC.cursory;
+
+    CalcScreenX(&x, 4);
+    CalcScreenY(&y, 4);
+    for (int button = 0; button < 2; ++button) {
+        float left = DOWNLOAD_BUTTON_X + button * DOWNLOAD_BUTTON_STEP;
+        float top = DOWNLOAD_BUTTON_Y;
+        float width = DOWNLOAD_BUTTON_WIDTH;
+        float height = DOWNLOAD_BUTTON_HEIGHT;
+
+        CalcScreenPlacement(&left, &top, &width, &height, 0, 0);
+        if (x >= left && x < left + width && y >= top && y < top + height)
+            return button;
+    }
+    return -1;
+}
+
+void UI_ShowDownloadConfirmation(void)
+{
+    downloadAllowFocused = 0;
+    UI_SetActiveMenu(0);
+    Key_SetCatcher(8);
+}
+
+static void UI_DownloadConfirmationKey(int key)
+{
+    switch (key) {
+    case 0x1b: /* Escape */
+        CL_ResolveDownloadConfirmation(0);
+        break;
+    case 0x9c: /* Left arrow */
+        downloadAllowFocused = 0;
+        break;
+    case 0x9d: /* Right arrow */
+        downloadAllowFocused = 1;
+        break;
+    case 0x09: /* Tab */
+        downloadAllowFocused = !downloadAllowFocused;
+        break;
+    case 0x0d: /* Enter */
+    case 0xbf: /* Keypad Enter */
+        CL_ResolveDownloadConfirmation(downloadAllowFocused);
+        break;
+    case 0xc8: /* Mouse 1 */
+    {
+        int button = UI_DownloadButtonUnderCursor();
+        if (button >= 0)
+            CL_ResolveDownloadConfirmation(button);
+        break;
+    }
+    }
+}
+#endif
+
 static inline __attribute__((always_inline)) void UI_KeyEvent_impl(int key, qboolean down)
 {
     menuDef_t *menu;
+
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (CL_DownloadConfirmationPending()) {
+        if (down)
+            UI_DownloadConfirmationKey(key);
+        return;
+    }
+#endif
 
     if (Menu_Count(&uiInfo->uiDC) <= 0)
         return;
@@ -3651,6 +3732,10 @@ void UI_Refresh(void)
     static int refreshTraceCount;
     static int fileTraceCount;
 
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (CL_DownloadConfirmationPending())
+        return;
+#endif
     if (Menu_Count(&uiInfo->uiDC) <= 0)
         return;
 
@@ -4832,6 +4917,40 @@ static void UI_DrawCenteredTextAt(const char *text, FontHandle font, float scale
 }
 #endif
 
+#if COD2_DOWNLOAD_CONFIRMATION
+static void UI_DrawDownloadConfirmation(FontHandle font)
+{
+    static const vec4_t panel = {0.08f, 0.08f, 0.07f, 0.97f};
+    static const vec4_t selected = {0.32f, 0.29f, 0.18f, 1.0f};
+    static const vec4_t hovered = {0.23f, 0.21f, 0.16f, 1.0f};
+    static const vec4_t normal = {0.14f, 0.14f, 0.12f, 1.0f};
+    const vec_t *white = (const vec_t *)imp_colorWhite;
+    const char *labels[] = {UI_SafeTranslateString("MENU_CANCEL"), "Allow"};
+    int hoveredButton = UI_DownloadButtonUnderCursor();
+
+    UI_FillRect(96.0f, 165.0f, 448.0f, 140.0f, 0, 0, panel);
+    UI_DrawCenteredText("Download server files?", font, 0.54f, 200.0f, white, 3);
+    UI_DrawCenteredText("This server needs a mod or map you don't have.", font, 0.36f, 227.0f, white, 3);
+
+    for (int button = 0; button < 2; ++button) {
+        float x = DOWNLOAD_BUTTON_X + button * DOWNLOAD_BUTTON_STEP;
+        const vec_t *fill = button == downloadAllowFocused ? selected :
+                            button == hoveredButton ? hovered : normal;
+
+        UI_FillRect(x, DOWNLOAD_BUTTON_Y, DOWNLOAD_BUTTON_WIDTH, DOWNLOAD_BUTTON_HEIGHT, 0, 0, fill);
+        UI_DrawCenteredTextAt(labels[button], font, 0.40f, x + DOWNLOAD_BUTTON_WIDTH / 2.0f,
+                              DOWNLOAD_BUTTON_Y + 21.0f, white, 3);
+    }
+
+#if COD2_FEATURE_GAMEPAD
+    if (UI_ConsoleMode_SuppressCursor())
+        return;
+#endif
+    UI_DrawHandlePic((float)(uiInfo->uiDC.cursorx - 16), (float)(uiInfo->uiDC.cursory - 16),
+                     32.0f, 32.0f, 4, 4, 0, sharedUiInfo.assets.cursor);
+}
+#endif
+
 static void UI_ReadableSize_wrap(char *buf, int bufsize, int value)
 {
     UI_ReadableSize(buf, bufsize, value);
@@ -5070,6 +5189,13 @@ void UI_DrawConnectScreen(void)
     }
 
     font = UI_GetFontHandle(0, connectScale);
+
+#if COD2_DOWNLOAD_CONFIRMATION
+    if (CL_DownloadConfirmationPending()) {
+        UI_DrawDownloadConfirmation(font);
+        return;
+    }
+#endif
 
     GetClientState(&cstate);
 

@@ -14,6 +14,7 @@
 #include "common_types.h"
 #include "imports.h"
 #include "www_download.h"
+#include "download_confirm.h"
 #include "cod2_feature_config.h"
 #include "PC/qcommon/net_hardening.h"
 #include <stdlib.h>
@@ -319,6 +320,9 @@ void CL_ParseGamestate(msg_t *msg)
 
     clc->checksumFeed = MSG_ReadLong(msg);
 
+#if COD2_DOWNLOAD_CONFIRMATION
+    CL_PrepareDownloadConfirmation();
+#endif
     CL_SystemInfoChanged();
 
     FS_ConditionalRestart(clc->checksumFeed);
@@ -355,7 +359,11 @@ void CL_ParseDownload(msg_t *msg)
 #if COD2_IS_PATCH_13
 
     if (block == -1) {
+#if COD2_DOWNLOAD_CONFIRMATION
+        if (!cls.wwwDlInProgress && ((clientConnection_t *)*clc_ptr)->downloadTempName[0]) {
+#else
         if (!cls.wwwDlInProgress) {
+#endif
             CL_ParseWWWDownload(msg);
         } else {
 
