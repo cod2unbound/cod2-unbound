@@ -124,10 +124,12 @@ public sealed partial class MainWindow : Window
             ApplyAppearance(session.Settings.Working.Appearance);
             if (!session.SetupUpdating)
                 await ShowProblemAsync(() => Task.Run(() => session.Game.ReconcileAsync()));
-            await NavigateAsync(session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup);
+            var route = session.SetupComplete ? LauncherPlace.Home : LauncherPlace.Setup;
+            await NavigateAsync(route);
             initialized = true;
             ShowMigrationProblem();
             StartupTrace.Mark("first page ready");
+            _ = session.RecordStartupAsync(route, (ContentFrame.Content as HomePage)?.StartupLayout);
 #if UPDATE_FIXTURES
             CompositionTarget.Rendered += OnFirstContentRendered;
 #endif

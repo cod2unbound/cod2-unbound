@@ -132,6 +132,21 @@ internal sealed partial class WindowsLauncherSession
 
     internal string Version => typeof(WindowsLauncherSession).Assembly.GetName().Version!.ToString(3);
 
+    internal async Task RecordStartupAsync(LauncherPlace route, string? homeLayout)
+    {
+        // Overwrite the previous startup result. Only status fields belong in this log.
+        string status = FormattableString.Invariant(
+            $"{DateTimeOffset.UtcNow:O} pid={Environment.ProcessId} route={route} home={homeLayout ?? "-"} game={Setup.Data.State} key={(Setup.HasStoredKey ? "Recognised" : "Missing")}\n");
+        try
+        {
+            await folder.WriteAsync("startup.log", [.. Encoding.UTF8.GetBytes(status)], default);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            StartupTrace.Mark($"startup log unavailable (0x{error.HResult:X8})");
+        }
+    }
+
     internal GameServer ServerForAddress(string address) =>
         Library.Cache.FirstOrDefault(server => server.Address == address) ??
         new GameServer(address, ImmutableDictionary<string, string>.Empty, -1, []);

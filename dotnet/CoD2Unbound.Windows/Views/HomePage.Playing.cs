@@ -121,6 +121,9 @@ public sealed partial class HomePage
         nextPlayingUpdate = now.AddSeconds(30);
     }
 
+    internal string StartupLayout => LaunchButton.Visibility == Visibility.Visible ? "Returning" :
+        OpenGameMenuButton.Visibility == Visibility.Visible ? "First" : "GameRunning";
+
     /// Launch and Find a Server for a returning player; Find a Server and Open Game Menu before the first
     /// game; Return to Game and Quit Game while it runs. The hint beside them says the key.
     internal void RenderGameControls(GameSessionState game)
