@@ -49,6 +49,8 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
         $players = Join-Path $LauncherHome 'main\players'
         Rename-Item -LiteralPath (Join-Path $players 'kit') -NewName 'Main'
         [IO.File]::WriteAllText((Join-Path $players 'active.txt'), 'Main')
+        [IO.File]::WriteAllText((Join-Path $players 'Main\studio.json'),
+            '{"displayName":"Main","lastImportedValues":{},"locks":[],"notes":{},"origin":{"kind":"created"},"schemaVersion":1}')
     }
     if ($Page -eq 'library') {
         $demo = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
