@@ -277,7 +277,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
                     "Its key may be stored with it. Setup reads it only when you ask.", trailing: useDiscKey)));
             }
         }
-        var stored = Note("Stored only on this PC, in the game’s own settings. Sent only to game servers when you join, as the original game does.", "lock");
+        var stored = Note("Stored only on this PC. For online key checks, the game can send your CD key, its hash and your anonymous-play setting to Activision. CoD2x also sends the key hash to servers you join.", "lock");
         stored.Margin = new Thickness(8, 0, 8, 0);
         items.Add(stored);
         StepContent.Children.Add(GlassPanel(22, 12, [.. items]));

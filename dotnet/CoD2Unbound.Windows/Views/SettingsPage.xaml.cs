@@ -217,7 +217,7 @@ public sealed partial class SettingsPage : Page
         {
             var crash = PrivacySwitch(PrivacyPresentation.CrashSwitch, Current.SendCrashReports, "H", session.SetCrashAsync);
             Row(PrivacyPresentation.CrashSwitch,
-                "If the game crashes: what failed and when, the game version, your Windows version and PC model, and the game’s report. Never your CD key or your Windows user name.",
+                "If the game crashes, the report includes what failed and when, a report number, the app and game versions, your Windows version and PC model, and the game’s report. Never your CD key or your Windows user name.",
                 Buttons(PrivacyPresentation.PreviewButton(true, "F", shell, reports), crash));
         }
         Row(PrivacyPresentation.Cod2xSwitch,
@@ -280,7 +280,7 @@ public sealed partial class SettingsPage : Page
             ("Game servers", "The launcher asks listed servers, favorites and recent servers for their status when the list refreshes. The one you join gets your player name and game settings, and any server password you supplied. When you play with CoD2x, the server also gets a hash of your CD key, the CoD2x protocol version and CoD2x’s IDs for this PC."),
             ("Addresses a server names", "A server can name a web address for the game to download maps and mods from, and with CoD2x, one to upload the match recording to."),
             ("The CoD2x project", "CoD2x checks for updates when the game’s menu opens. It sends your CoD2x version, a hash of your CD key if available, CoD2x’s own install number and IDs for this PC, and a short description of the system: its version, edition and build, its compatibility-mode settings, the country in its region settings, and whether it runs in a virtual machine or as administrator. It also sends how many times the hardware has changed and, after a change, the previous hardware ID and the old and new hardware details, serial numbers included. This is how CoD2x’s own update check works. CoD2x can also download missing zPAM files a server needs from the project’s site."),
-            ("GitHub", "When you check for or install updates, which also fetches the news on Home; when Configs loads player setups; when you download zPAM for a server you host. Report a Problem opens a GitHub form in your browser with your app and game versions, Windows version, graphics and display mode, graphics adapters and the adapter attached to the display already filled in."),
+            ("GitHub", "Used for updates, the news on Home, player setups in Configs and zPAM downloads for servers you host. Report a Problem opens a GitHub form in your browser with your app and game versions, Windows version, graphics and display mode, graphics adapters and the adapter attached to the display already filled in."),
             ("Steam", "When you choose Install with Steam in Setup, the launcher opens the Steam app for Call of Duty 2. Steam handles sign-in and downloads the game you own."),
             ("Config links", "Only a link you paste into Configs to import from it."),
             ("cod2unbound.com", "For updates and the news on Home when GitHub can’t be reached; nothing about you. When you choose Share setup: the cleaned config, the name you type, the game and app versions, and how many lines were left out and why. The setup is posted publicly on GitHub. Stop sharing sends the request number and its private token."),
