@@ -91,12 +91,14 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 Open-KitConnect $app
                 Save-KitSurface $app 'connect' @('AddressBox', 'CloseButton')
                 Invoke-KitControl $app 'CloseButton'
+                Wait-KitCondition { -not (Find-KitControl $app 'AddressBox') } 12 'Connect to close' | Out-Null
+                Invoke-KitControl $app 'HomeItem'
+                Wait-KitHome $app
                 $news = Wait-KitCondition {
-                    if (Find-KitControl $app 'AddressBox') { return }
                     foreach ($id in 'SeeAllNews', 'NewsChip') {
                         if (Find-KitControl $app $id) { return $id }
                     }
-                } 12 'the visible Home news action after Connect closes'
+                } 12 'the visible Home news action'
                 Invoke-KitControl $app $news
                 Save-KitSurface $app 'news' @('CloseButton')
                 Invoke-KitControl $app 'CloseButton'
