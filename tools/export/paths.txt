@@ -41,6 +41,7 @@ tools/cod2x/make_macos_app.py
 tools/windows/laptop-kit/
 tools/windows/package/
 tools/windows/check-package.sh
+tools/windows/generate-launcher-theme.py
 tools/windows/release.sh
 tools/windows/vm-build.sh
 tools/tests/test_server_service.py
