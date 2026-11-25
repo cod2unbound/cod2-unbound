@@ -171,10 +171,11 @@ compile-only.
 
 ## Online downloads and player data
 
-A Windows client downloaded files from a modded server online and restarted
-into the mod. Asking before the first transfer, canceling safely and completing
-an approved download and rejoin in both editions are tracked in
-[issue #143](https://github.com/cod2unbound/cod2-unbound/issues/143).
+A Windows client joining a modded server downloads the missing files and
+restarts into the mod without asking, when Allow Downloading is set to Yes in
+Multiplayer Options. This is what the original 1.3 does, and both editions
+keep it; set the option to No to be warned instead
+([issue #143](https://github.com/cod2unbound/cod2-unbound/issues/143)).
 
 Both editions store writable files under `%LOCALAPPDATA%\CoD2 Unbound` by default.
 Profiles live under `main\players` there. Configs, mods, downloads, demos,
