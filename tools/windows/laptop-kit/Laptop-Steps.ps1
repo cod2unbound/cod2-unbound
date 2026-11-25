@@ -215,7 +215,7 @@ $Steps = @(
                     (Select-String -LiteralPath $trace -SimpleMatch " $id first content frame" -Quiet)
                 } 60 'first launcher content' | Out-Null
                 if ($number -eq 1) {
-                    Complete-KitLauncherSetup (Get-KitLauncherWindow $run.Process) $Results
+                    Complete-KitLauncherSetup (Get-KitLauncherWindow $run.Process) $Results -SkipKey
                     if (Test-Path -LiteralPath $KeyMarker) { Invoke-TestKey 'check' }
                 }
             } finally {

@@ -18,9 +18,9 @@ public sealed class SetupFooterActions : Panel
         int visibleCount = 0;
         foreach (UIElement child in Children)
         {
+            child.Measure(constraint);
             if (child.Visibility == Visibility.Collapsed)
                 continue;
-            child.Measure(constraint);
             actionWidth = Math.Max(actionWidth, child.DesiredSize.Width);
             height = Math.Max(height, child.DesiredSize.Height);
             visibleCount++;
@@ -36,7 +36,10 @@ public sealed class SetupFooterActions : Panel
         foreach (UIElement child in Children)
         {
             if (child.Visibility == Visibility.Collapsed)
+            {
+                child.Arrange(new Rect(left, 0, 0, 0));
                 continue;
+            }
             child.Arrange(new Rect(left, 0, actionWidth, finalSize.Height));
             left += actionWidth + Spacing;
         }

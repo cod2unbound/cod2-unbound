@@ -90,7 +90,7 @@ function Open-KitSettings([IntPtr]$Window) {
     } 12 'the separate Settings window'
 }
 
-function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
+function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence, [switch]$SkipKey) {
     $complete = Join-Path $LauncherHome 'launcher\.launcher-setup-complete'
     if (Test-Path -LiteralPath $complete) { return }
     foreach ($step in 'welcome','game-data','key','personalize','crash','usage','ready') {
@@ -101,14 +101,18 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
                     (Find-KitControl $Window ('Replace' + [char]0x2026) -Name)
                 } 12 'the CD key page'
                 $box = Find-KitControl $Window 'CD key' -Name
-                if ($box) {
+                $keyAction = 'SetupNext'
+                if ($box -and $SkipKey) {
+                    $keyAction = 'SetupAlternate'
+                    Wait-KitCondition { Find-KitControl $Window 'SetupAlternate' } 12 'Skip for Now on the CD key step' | Out-Null
+                } elseif ($box) {
                     Focus-KitWindow $Window
                     $box.SetFocus()
                     [Windows.Forms.SendKeys]::SendWait('000000000000000086D3')
                 }
                 Focus-KitWindow $Window
                 Save-KitWindow $Window (Join-Path $Evidence 'setup-key.png')
-                Invoke-KitControl $Window 'SetupNext'
+                Invoke-KitControl $Window $keyAction
             }
             'personalize' {
                 Wait-KitCondition {
@@ -116,7 +120,7 @@ function Complete-KitLauncherSetup([IntPtr]$Window, [string]$Evidence) {
                 } 12 'personalization choices' | Out-Null
                 Focus-KitWindow $Window
                 Save-KitWindow $Window (Join-Path $Evidence 'setup-personalize.png')
-                Invoke-KitControl $Window 'SetupNext'
+                Invoke-KitControl $Window 'SetupAlternate'
             }
             { $_ -in 'usage','crash' } {
                 Wait-KitCondition { Find-KitControl $Window 'DeclineReport' } 12 'the reporting choice' | Out-Null
