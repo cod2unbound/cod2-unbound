@@ -169,6 +169,7 @@ public sealed partial class HostingPage
 
             if (!editingRunning)
             {
+                save.VerticalAlignment = VerticalAlignment.Bottom;
                 var advanced = Buttons(port, save);
                 Content.Children.Add(advanced);
             }
@@ -303,9 +304,11 @@ public sealed partial class HostingPage
                 PlaceMap(mapRows, tile, index);
             }
 
-            var add = new Button { Style = StyleFor("SetupCard"), IsEnabled = HostingCatalog.Maps.Any(map => !maps.Contains(map)),
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center,
-                Content = new StackPanel { Spacing = 6, Children = { Fluent("Add", 18), Caption("Add Map") } } };
+            var plus = Fluent("Add", 18);
+            plus.HorizontalAlignment = HorizontalAlignment.Center;
+            plus.VerticalAlignment = VerticalAlignment.Center;
+            var add = MapTile(plus, "Add Map");
+            add.IsEnabled = HostingCatalog.Maps.Any(map => !maps.Contains(map));
             AutomationProperties.SetName(add, "Add Map…");
             var picker = new Flyout { Placement = FlyoutPlacementMode.Left };
             picker.Opening += (_, _) => picker.Content = MapChoices(picker, add);
@@ -357,16 +360,19 @@ public sealed partial class HostingPage
 
         private Button MapTile(string map, string title)
         {
-            var image = new Image { Height = 60, Stretch = Stretch.UniformToFill };
+            var image = new Image { Stretch = Stretch.UniformToFill };
             _ = previews.FillAsync(image, map);
-            return new Button { Style = StyleFor("SetupCard"), HorizontalAlignment = HorizontalAlignment.Stretch,
+            return MapTile(image, title);
+        }
+
+        private static Button MapTile(FrameworkElement art, string title) =>
+            new() { Style = StyleFor("SetupCard"), HorizontalAlignment = HorizontalAlignment.Stretch,
                 Content = new StackPanel { Spacing = 4, Children =
                 {
-                    new Border { Style = StyleFor("MediaTile"), Child = image },
+                    new Border { Style = StyleFor("MediaTile"), Height = 60, Child = art },
                     new TextBlock { Text = title, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
                         Margin = new Thickness(6, 0, 6, 4) }
                 } } };
-        }
 
         private static void PlaceMap(Grid grid, FrameworkElement tile, int index)
         {
