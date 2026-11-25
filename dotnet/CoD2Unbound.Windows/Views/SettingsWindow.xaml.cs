@@ -36,8 +36,9 @@ public sealed partial class SettingsWindow : Window
         }
         systemTheme = Microsoft.UI.System.ThemeSettings.CreateForWindowId(AppWindow.Id);
         systemTheme.Changed += OnSystemThemeChanged;
-        SettingsRoot.RequestedTheme = theme;
         SettingsRoot.ActualThemeChanged += (_, _) => UpdateCaption();
+        SettingsRoot.RequestedTheme = theme;
+        UpdateCaption();
         Page = new SettingsPage(shell, session, pane);
         Page.PaneChanged += OnPaneChanged;
         Page.ContentResized += FitToPane;
