@@ -97,6 +97,7 @@ public sealed partial class LibraryPage
         {
             SelectorItem { Content: MediaRow media } => media,
             Button { Tag: MediaRow media } => media,
+            FrameworkElement { DataContext: MediaRow media } => media,
             _ => null
         };
         if (row is null || MediaList.ContainerFromItem(row) is not SelectorItem container)
@@ -138,8 +139,8 @@ public sealed partial class LibraryPage
         var menu = new MenuFlyout();
         if (anchor is Button)
             menu.Placement = FlyoutPlacementMode.BottomEdgeAlignedRight;
-        Add("Preview", () => PreviewMediaAsync(row), LauncherShortcuts.Keys(ShellCommand.PreviewMedia));
         Add(demo ? "Play" : "Open", () => OpenFileAsync(row), "Enter", row.CanPlay);
+        Add("Preview", () => PreviewMediaAsync(row), LauncherShortcuts.Keys(ShellCommand.PreviewMedia));
         Add("Show in File Explorer", () => RevealMediaAsync(row));
         menu.Items.Add(new MenuFlyoutSeparator());
         if (demo)
@@ -199,7 +200,7 @@ public sealed partial class LibraryPage
         AutomationProperties.SetLiveSetting(status, AutomationLiveSetting.Polite);
         content.Children.Add(new Grid { Children = { image, status } });
 
-        MediaRow[] items = Screenshots.Items.OfType<MediaRow>().ToArray();
+        MediaRow[] items = [.. screenshots];
         int index = Array.IndexOf(items, row);
         if (index < 0)
             return;
