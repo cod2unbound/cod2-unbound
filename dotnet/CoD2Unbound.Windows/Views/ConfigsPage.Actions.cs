@@ -162,7 +162,11 @@ public sealed partial class ConfigsPage
         if (shortcut is not null)
             item.KeyboardAcceleratorTextOverride = shortcut;
         if (glyph is not null)
-            item.Icon = Fluent(glyph, 16);
+        {
+            var icon = Fluent(glyph, 16);
+            GlyphAlign.WatchCentered(icon, () => item.FontSize);
+            item.Icon = icon;
+        }
         AutomationProperties.SetName(item, label);
         item.Click += async (_, _) => await shell.RunAsync(action);
         return item;

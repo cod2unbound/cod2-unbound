@@ -903,13 +903,11 @@ public sealed partial class ConfigsPage
         var row = Columns(8, GridLength.Auto, new GridLength(1, GridUnitType.Star));
         var glyph = Fluent(icon, 16);
         glyph.VerticalAlignment = VerticalAlignment.Top;
-        glyph.Margin = new Thickness(0, 2, 0, 0);
         AutomationProperties.SetAccessibilityView(glyph, AccessibilityView.Raw);
+        var heading = new TextBlock { Text = title, Style = StyleFor("BodyStrongTextBlockStyle"), TextWrapping = TextWrapping.Wrap };
+        GlyphAlign.WatchBeside(glyph, heading);
         Put(row, 0, glyph);
-        Put(row, 1, new StackPanel { Spacing = 2, Children = {
-            new TextBlock { Text = title, Style = StyleFor("BodyStrongTextBlockStyle"), TextWrapping = TextWrapping.Wrap },
-            Caption(detail)
-        } });
+        Put(row, 1, new StackPanel { Spacing = 2, Children = { heading, Caption(detail) } });
         return row;
     }
 
