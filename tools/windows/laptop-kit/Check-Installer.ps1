@@ -76,6 +76,8 @@ function Get-KitDemoOpenWith([string]$Path, [string]$Control) {
             Present=$true
             Product='CoD2Unbound.Demo' -in $names
             Control=$Control -in $names
+            ControlMatches=($Control -in $names -and $key.GetValueKind($Control) -eq 'String' -and
+                $key.GetValue($Control) -ceq '')
             Other=@($names | Where-Object { $_ -notin 'CoD2Unbound.Demo', $Control }).Count
             Subkeys=$key.SubKeyCount
         }
@@ -110,13 +112,13 @@ function Invoke-KitDemoUninstall {
         $createdControl = $true
         $controlBefore = Get-KitDemoOpenWith $path $control
         @{ Phase='control-before'; Key=$controlBefore } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
-        if (-not $controlBefore.Control -or -not $controlBefore.Product) {
+        if (-not $controlBefore.ControlMatches -or -not $controlBefore.Product) {
             throw 'The second-app control or the demo registration is missing before uninstall.'
         }
         Remove-KitInstalledFixture 'uninstall-demo-control'
         $controlAfter = Get-KitDemoOpenWith $path $control
         @{ Phase='control-after'; Key=$controlAfter } | ConvertTo-Json -Compress | Add-Content -LiteralPath $receipt
-        if (-not $controlAfter.Control -or $controlAfter.Product -or $controlAfter.Other -ne $before.Other -or
+        if (-not $controlAfter.ControlMatches -or $controlAfter.Product -or $controlAfter.Other -ne $before.Other -or
             $controlAfter.Subkeys -ne $before.Subkeys) {
             throw 'Uninstall changed the second-app control or kept the kit demo association.'
         }
