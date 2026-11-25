@@ -96,6 +96,8 @@ internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
 
     internal FileStream OpenScreenshot(string name) => WindowsFiles.Open(home, Relative(MediaKind.Screenshot, name));
 
+    internal FileStream OpenDemo(string name) => WindowsFiles.Open(home, Relative(MediaKind.Demo, name));
+
     internal async Task<ImageSource?> ReadScreenshotPreviewAsync(string name)
     {
         const int previewWidth = 1440;
