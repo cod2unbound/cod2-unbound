@@ -2,9 +2,10 @@
 
 The reference is opencod2 `410342a`. The owner confirmed the first six shared
 fixes on 2026-11-21. The Windows warning review added the renderer declaration,
-map loader and directory size fixes. Fourteen catalogued files differ in all
-ten include-free configurations. The Mach-O alias differs in both Apple i386
-patch modes, bringing the total to 142. Player effects come from source
+map loader and directory size fixes. The `mp_burgundy` load failure (issue 164)
+added the thread locals fix. Fifteen catalogued files differ in all ten
+include-free configurations. The Mach-O alias differs in both Apple i386 patch
+modes, bringing the total to 152. Player effects come from source
 inspection. The compiler controls establish which objects change.
 
 ## Shared fixes
@@ -20,6 +21,7 @@ inspection. The compiler controls establish which objects change.
 | Renderer helper declarations | [`D3DXTex.c`](../../src/Mac/DirectX_9/D3DXTex.c), `D3DXTex_SetupView`, and [`r_water.c`](../../src/PC/gfx_d3d/r_water.c), `RB_UploadWaterTexture` | The reconstructed C can call `gluOrtho2D` and `sqrtf` without their declarations in some native builds. | Declares the four-double, void-returning GLU helper and includes the standard prototype for the float-taking, float-returning square root. | Apple arm64 text and relocations match before and after. The include-free legacy projections have no new differences for these declarations. |
 | Map loader prototypes | [`r_loadworld_new.c`](../../src/PC/gfx_d3d/r_loadworld_new.c), `R_LoadWorldInternal` | Calls functions that take `GfxBspLoad *` through a function pointer type that takes `void *`. The `R_LoadCells` declaration also omits the legacy register convention used by its definition. | Calls each loader through its declared type and gives `R_LoadCells` the matching register convention. This removes undefined behavior from loading map geometry. | MinGW diagnoses the incompatible call before the fix. Apple arm64 text and relocations match before and after. GCC 14 produces the same stripped Linux i386 object at the upstream base, the reviewed commit and the Windows integration baseline. |
 | Directory size split | [`MacWin32.c`](../../src/Mac/Tools/MacWin32.c), `FindFirstFileA`, `FindNextFileA` | Shifts the file size right by 32, which is undefined with a 32-bit `st_size`. | Widens the signed size to `int64_t` before the split. Native Windows already reads directories through its Unicode file layer and skips this emulation. | The i686 Windows probe reports the two invalid shifts before the fix. Apple arm64 text and relocations match before and after. |
+| Thread locals after a wait | [`scr_vm.c`](../../src/PC/script/scr_vm.c), `VM_RestoreLocalVarsFromSibling`, called by `VM_Resume` | Rebuilds no local cache when the waiting thread's local object has id 1 or 2. The thread resumes with none of its parameters or locals. | Walks the local object's children for every id. A level whose script thread is given id 1 or 2 after a level change keeps that thread's values. Before, such a thread read its parameters as undefined; on `mp_burgundy` that stopped the level load with "undefined is not an array index" whenever the log file or `developer` was on. | Mac 1.3 `VM_Resume` walks the siblings with no id test, at `0x86b33` for the resumed frame and `0x86cc4` for its callers. A diagnostic build caught local id 2 resuming with 0 of its 8 locals, followed by the same error. |
 
 ## Other differences from the source check
 
@@ -66,7 +68,7 @@ the known upstream build failures.
 ```json
 {
   "upstream": "410342a82da1b2e8286c290274aeb0f1731a6859",
-  "reviewed": "562f612c3b459ba34da5b292e50ecca837c08b81",
+  "reviewed": "e2050a93099292feb476e5ba502efbb77fe5107b",
   "entries": [
     {
       "id": "Query allocation",
@@ -102,6 +104,11 @@ the known upstream build failures.
       "id": "Directory size split",
       "source": "src/Mac/Tools/MacWin32.c",
       "objects": ["CMakeFiles/cod2_objs.dir/src/Mac/Tools/MacWin32.c.o"]
+    },
+    {
+      "id": "Thread locals after a wait",
+      "source": "src/PC/script/scr_vm.c",
+      "objects": ["CMakeFiles/cod2_objs.dir/src/PC/script/scr_vm.c.o"]
     },
     {"id": "Directory name alias", "source": "src/Mac/Main/mac_common.c"},
     {"id": "DPVS cell declaration", "source": "src/PC/gfx_d3d/r_dpvs.c"},
