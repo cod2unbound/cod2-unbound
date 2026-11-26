@@ -1772,10 +1772,35 @@
     <Style x:Key="StudioKeyboardKey" TargetType="Button" BasedOn="{StaticResource Keycap}">
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="MinHeight" Value="34" />
-        <Setter Property="Height" Value="34" />
+        <Setter Property="Height" Value="Auto" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Padding" Value="1" />
+    </Style>
+    <Style x:Key="StudioKeyboardViewport" TargetType="ScrollViewer">
+        <Setter Property="HorizontalScrollMode" Value="Enabled" />
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VerticalScrollMode" Value="Disabled" />
+        <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ZoomMode" Value="Disabled" />
+        <Setter Property="IsTabStop" Value="False" />
+    </Style>
+    <Style x:Key="StudioKeyboardDrawing" TargetType="StackPanel">
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="Spacing" Value="3" />
+    </Style>
+    <Style x:Key="StudioKeyboardRow" TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="2" />
+    </Style>
+    <Style x:Key="StudioKeyboardLegend" TargetType="TextBlock" BasedOn="{StaticResource Mono}">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+    <Style x:Key="StudioKeyboardDetail" TargetType="TextBlock">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style x:Key="AddKeycap" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="FontSize" Value="14" />

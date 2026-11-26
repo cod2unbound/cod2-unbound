@@ -30,7 +30,9 @@ public sealed partial class ConfigsPage
         var keyboard = windowsKeyboard!;
         var details = new StackPanel { Spacing = 4 };
         var keyTiles = new Dictionary<Button, EngineKey>();
-        var keyboardDrawing = new StackPanel { Spacing = 3 };
+        var keyboardDrawing = new StackPanel { Style = StyleFor("StudioKeyboardDrawing") };
+        var keyboardViewport = new ScrollViewer { Style = StyleFor("StudioKeyboardViewport"), Content = keyboardDrawing };
+        keyboardViewport.SizeChanged += (_, args) => ResizeDrawing(args.NewSize.Width);
         var keyboardHeader = Columns(16, GridLength.Auto, new GridLength(1, GridUnitType.Star));
         var settings = new Button { Style = StyleFor("SmallAction") };
         AutomationProperties.SetName(settings, "Keyboard layout and size");
@@ -85,8 +87,8 @@ public sealed partial class ConfigsPage
             legend.Children.Add(Buttons(swatch, Caption(BindingGroup(group))));
         }
         legend.Children.Add(Caption("▧ Game can’t use this key"));
-        AutomationProperties.SetName(keyboardDrawing, "PC keyboard");
-        var keysAndLegend = CheckPair(keyboardDrawing, legend, 690, rightAuto: true);
+        AutomationProperties.SetName(keyboardViewport, "PC keyboard");
+        var keysAndLegend = CheckPair(keyboardViewport, legend, 690, rightAuto: true);
         var keyboardPanel = new StackPanel { Spacing = 16, Children = { keyboardHeader, keysAndLegend } };
         surface.Children.Add(new Border { Style = StyleFor("FieldCard"), Child = keyboardPanel });
 
@@ -128,9 +130,12 @@ public sealed partial class ConfigsPage
         {
             keyTiles.Clear();
             keyboardDrawing.Children.Clear();
+            double minimumWidth = 0;
             foreach (var layoutRow in PcKeyRows(verifiedShape ?? keyboard.Shape, keyboardSize))
             {
-                var row = Columns(2, layoutRow.Select(key => new GridLength(key.Width, GridUnitType.Star)).ToArray());
+                var row = new Grid { Style = StyleFor("StudioKeyboardRow") };
+                foreach (var key in layoutRow)
+                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(key.Width, GridUnitType.Star) });
                 for (int index = 0; index < layoutRow.Length; index++)
                 {
                     var shape = layoutRow[index];
@@ -147,21 +152,18 @@ public sealed partial class ConfigsPage
                             BindStatus(InfoBarSeverity.Informational, "", $"{label} can’t be used by the game.");
                     });
                     tile.Style = StyleFor("StudioKeyboardKey");
-                    var keyText = MonoCaption(unavailable ? $"▧ {label}" : label);
-                    keyText.HorizontalAlignment = HorizontalAlignment.Center;
-                    keyText.TextWrapping = TextWrapping.NoWrap;
-                    keyText.TextTrimming = TextTrimming.CharacterEllipsis;
-                    var keyFace = new StackPanel { Spacing = 0, Children = { keyText } };
-                    if (!actions.IsEmpty)
-                    {
-                        var name = Caption(actions[0].Title);
-                        name.FontSize = 9;
-                        name.TextWrapping = TextWrapping.NoWrap;
-                        name.TextTrimming = TextTrimming.CharacterEllipsis;
-                        name.HorizontalAlignment = HorizontalAlignment.Center;
-                        keyFace.Children.Add(name);
-                    }
+                    var keyText = new TextBlock { Text = label, Style = StyleFor("StudioKeyboardLegend") };
+                    var keyFace = new StackPanel { Children = { keyText } };
+                    if (unavailable || !actions.IsEmpty)
+                        keyFace.Children.Add(new TextBlock
+                        {
+                            Text = unavailable ? "▧" : actions[0].Title,
+                            Style = StyleFor("StudioKeyboardDetail")
+                        });
                     tile.Content = keyFace;
+                    keyText.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
+                    row.ColumnDefinitions[index].MinWidth = Math.Ceiling(keyText.DesiredSize.Width) +
+                        tile.Padding.Left + tile.Padding.Right + tile.BorderThickness.Left + tile.BorderThickness.Right;
                     if (!actions.IsEmpty && !shell.IsHighContrast)
                         tile.Background = GroupBrush(actions[0].Group);
                     if (key.HasValue && !unavailable)
@@ -173,9 +175,15 @@ public sealed partial class ConfigsPage
                     Put(row, index, tile);
                 }
                 keyboardDrawing.Children.Add(row);
+                minimumWidth = Math.Max(minimumWidth, row.ColumnDefinitions.Sum(column => column.MinWidth) +
+                    row.ColumnSpacing * (layoutRow.Length - 1));
             }
+            keyboardDrawing.MinWidth = minimumWidth + keyboardDrawing.Padding.Left + keyboardDrawing.Padding.Right;
+            ResizeDrawing(keyboardViewport.ActualWidth);
             MarkSelected();
         }
+
+        void ResizeDrawing(double viewportWidth) => keyboardDrawing.Width = Math.Max(viewportWidth, keyboardDrawing.MinWidth);
 
         void MarkSelected()
         {
