@@ -1,6 +1,6 @@
 function Save-KitEvents {
     $start = [DateTime]::Parse((Get-Content -LiteralPath $RunStart -Raw)).ToLocalTime()
-    $match = '(?i)cod2_win32(?:_ded)?\.exe|CoD2Unbound\.Windows\.exe|CoD2-Unbound-[0-9.]+-windows-x64-setup\.exe'
+    $match = [regex]::Escape($Kit + '\') + '|' + [regex]::Escape($InstallRoot + '\')
     $alerts = @()
     foreach ($logName in 'Application','Microsoft-Windows-Windows Defender/Operational') {
         $filter = @{ LogName=$logName; StartTime=$start }
@@ -10,27 +10,22 @@ function Save-KitEvents {
                 $_.ToXml() -match $match
             } | ForEach-Object {
                 [pscustomobject]@{ Id=$_.Id; Time=$_.TimeCreated.ToUniversalTime().ToString('o')
-                    Provider=$_.ProviderName; Description=(Protect-KitText $_.Message) }
+                    Provider=$_.ProviderName }
             })
         } catch {
             $events = @()
-            if ($_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*') { $alerts += "$name could not be read" }
+            if ($_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*') {
+                if ($_.Exception -isnot [UnauthorizedAccessException] -and
+                    $_.CategoryInfo.Category -notin 'PermissionDenied','SecurityError') { throw }
+                $alerts += $name
+            }
         }
         ConvertTo-Json -InputObject $events -Depth 3 | Set-Content -LiteralPath (Join-Path $Results "$name.json") -Encoding UTF8
     }
 
-    $dumpPath = Join-Path $LocalData 'CrashDumps'
-    if (Test-Path -LiteralPath $dumpPath -PathType Container) {
-        $dumps = @(Get-ChildItem -LiteralPath $dumpPath -File -Filter '*.dmp' | Where-Object {
-            $_.CreationTime -ge $start -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
-                $_.Name -match '^(cod2_win32(_ded)?|CoD2Unbound\.Windows|CoD2-Unbound-[0-9.]+-windows-x64-setup)\.exe\.\d+\.dmp$'
-        })
-        foreach ($dump in $dumps) {
-            "$($dump.Name) $($dump.Length) bytes. Raw memory. Review before sharing." |
-                Add-Content -LiteralPath (Join-Path $Results 'crash-dumps.txt')
-        }
+    if ($alerts.Count) {
+        throw [NotSupportedException]::new("Windows refused access to event logs: $($alerts -join ', ').")
     }
-    if ($alerts.Count) { throw ($alerts -join '; ') }
 }
 
 function Invoke-KitShaderTable {

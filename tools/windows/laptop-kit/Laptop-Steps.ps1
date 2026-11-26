@@ -23,6 +23,8 @@ function Save-KitFirewall([string]$Label) {
         $records = foreach ($filter in Get-NetFirewallApplicationFilter -PolicyStore ActiveStore -ErrorAction Stop) {
             if (-not $filter.Program -or $filter.Program -eq 'Any') { continue }
             if ((Split-Path $filter.Program -Leaf) -notin $EngineNames) { continue }
+            if (-not $filter.Program.StartsWith("$InstallRoot\", [StringComparison]::OrdinalIgnoreCase) -and
+                -not $filter.Program.StartsWith("$Kit\", [StringComparison]::OrdinalIgnoreCase)) { continue }
             $rule = Get-NetFirewallRule -AssociatedNetFirewallApplicationFilter $filter -ErrorAction Stop
             [pscustomobject]@{ Program=$filter.Program; Direction=$rule.Direction.ToString()
                 Enabled=$rule.Enabled.ToString(); Action=$rule.Action.ToString(); Profile=$rule.Profile.ToString() }
@@ -348,7 +350,10 @@ $Steps = @(
     Add-KitStep 'faults' 'Freeze recovery and crash with a local report receiver' {
         Invoke-KitFaults
     }
-    Add-KitStep 'collect' 'Windows application and Defender event entries' { Save-KitEvents }
+    Add-KitStep 'collect' 'Windows application and Defender events for the test installation' { Save-KitEvents }
+    Add-KitStep 'collect-dumps' 'Collect Windows crash dumps' {
+        throw [NotSupportedException]::new('The Windows dump folder belongs to the whole account. The kit uses its own local crash-report check.')
+    }
     Add-KitStep 'comparison-pictures' 'Open game and reference pictures side by side' { Open-KitComparison }
     Add-KitStep 'looks' 'Picture, mouse and sound on this PC' {} 'Compare the game pictures. Try mouse turning and sound in both editions, then Alt+Tab out and back. Write one line about picture, mouse, sound and full-screen, or type skip'
     Add-KitStep 'narrator' 'Windows appearance and Narrator' {} 'Check Home and Settings > Privacy with Narrator. Write what read out of order, what was hard to reach, or what looked out of place. Type skip to skip'
