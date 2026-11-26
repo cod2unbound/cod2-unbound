@@ -13,7 +13,9 @@ internal static class NativeEngineStart
     private const uint ExtendedStartupInfoPresent = 0x00080000;
     private const uint CreateUnicodeEnvironment = 0x00000400;
     private const uint CreateNoWindow = 0x08000000;
+    private const uint StartUseShowWindow = 0x00000001;
     private const uint StartUseStdHandles = 0x00000100;
+    private const ushort ShowHidden = 0;
     private const string HideServerConsole = "COD2_UNBOUND_HIDE_SERVER_CONSOLE";
     private static readonly nint HandleListAttribute = 0x00020002;
 
@@ -44,7 +46,9 @@ internal static class NativeEngineStart
             {
                 Startup = new()
                 {
-                    Size = Marshal.SizeOf<StartupInfoEx>(), Flags = StartUseStdHandles,
+                    Size = Marshal.SizeOf<StartupInfoEx>(),
+                    Flags = hostedServer ? StartUseStdHandles | StartUseShowWindow : StartUseStdHandles,
+                    ShowWindow = ShowHidden,
                     Input = stdin, Output = stdout, Error = stdout
                 },
                 AttributeList = attributes
