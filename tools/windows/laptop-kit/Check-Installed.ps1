@@ -276,10 +276,18 @@ function Invoke-KitFirstResolution {
                     Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox } |
                     Select-Object -First 1
             } 18 'the launcher resolution selector'
+            Focus-KitPictureWindow $settingsWindow $run.Process.Id
             $picker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+            # WinUI can expose the open menu outside the ComboBox's automation subtree.
+            $owner = [Windows.Automation.PropertyCondition]::new(
+                [Windows.Automation.AutomationElement]::ProcessIdProperty, $run.Process.Id)
+            $kind = [Windows.Automation.PropertyCondition]::new(
+                [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)
+            $resolutionItems = [Windows.Automation.AndCondition]::new($owner, $kind)
             $choice = Wait-KitCondition {
-                $picker.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) |
-                    Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::ListItem -and
+                [Windows.Automation.AutomationElement]::RootElement.FindAll(
+                    [Windows.Automation.TreeScope]::Descendants, $resolutionItems) |
+                    Where-Object { $_.Current.IsEnabled -and
                         $_.Current.Name -match '^1280\s*[x\u00d7]\s*720\b' } | Select-Object -First 1
             } 12 '1280 x 720 in the resolution selector'
             $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
