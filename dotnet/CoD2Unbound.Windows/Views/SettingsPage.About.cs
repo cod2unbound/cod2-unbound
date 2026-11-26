@@ -45,6 +45,12 @@ public sealed partial class SettingsPage
         var website = Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound"));
         var report = Action("Report a Problem…", ReportProblemFromShellAsync);
         var acknowledgements = Action("Acknowledgements", ShowAcknowledgementsAsync);
+        foreach (var (button, icon) in new[] { (release, "Document"), (website, "Globe"), (report, "Bug"), (acknowledgements, "People") })
+        {
+            string label = (string)button.Content;
+            button.Content = IconLabel(icon, label, 16);
+            AutomationProperties.SetName(button, label);
+        }
         AutomationProperties.SetAutomationId(report, "SettingsReportProblem");
         AutomationProperties.SetAutomationId(acknowledgements, "SettingsAcknowledgements");
         var shortcuts = Action("Show", () => KeyboardShortcutsDialog.ShowAsync(shell));
@@ -67,15 +73,21 @@ public sealed partial class SettingsPage
         AutomationProperties.SetHeadingLevel(built, AutomationHeadingLevel.Level2);
         panel.Children.Add(built);
         var components = new StackPanel();
-        components.Children.Add(SettingRow("opencod2", WindowsAcknowledgements.Notices[0].Role, Caption("No licence declared"), grouped: true));
+        components.Children.Add(SettingRow("opencod2", WindowsAcknowledgements.Notices[0].Role, LicenceTag("No licence"), grouped: true));
         components.Children.Add(SettingRow("CoD2x", "The multiplayer community patch. Its behavior is the reference for the CoD2x edition.", grouped: true));
-        components.Children.Add(SettingRow("SDL", "Windows, input and sound for the game.", Caption("zlib"), grouped: true));
-        components.Children.Add(SettingRow("curl", "Downloads for the game over Windows TLS.", Caption("curl"), grouped: true));
-        components.Children.Add(SettingRow("Windows App SDK", "The launcher’s window and controls.", Caption("MIT"), grouped: true));
-        components.Children.Add(SettingRow("Typefaces", "Big Shoulders Stencil and Courier Prime.", Caption("OFL-1.1"), grouped: true));
+        components.Children.Add(SettingRow("SDL", "Windows, input and sound for the game.", LicenceTag("Zlib"), grouped: true));
+        components.Children.Add(SettingRow("curl", "Downloads for the game over Windows TLS.", LicenceTag("curl"), grouped: true));
+        components.Children.Add(SettingRow("Windows App SDK", "The launcher’s window and controls.", LicenceTag("MIT"), grouped: true));
+        components.Children.Add(SettingRow("Typefaces", "Big Shoulders Stencil and Courier Prime.", LicenceTag("OFL-1.1"), grouped: true));
         panel.Children.Add(new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(0), Child = components });
         panel.Children.Add(Caption("Call of Duty is a registered trademark of Activision Publishing, Inc. CoD2 Unbound is a community project and is not affiliated with or endorsed by Activision. No game content is included."));
     }
+
+    private static Border LicenceTag(string licence) => new()
+    {
+        Style = StyleFor("EditionTag"),
+        Child = new TextBlock { Text = licence, Style = StyleFor("TypeLabel"), VerticalAlignment = VerticalAlignment.Center }
+    };
 
     private static Border AboutFact(string label, string value, string footnote) =>
         new()

@@ -45,6 +45,7 @@
     <x:String x:Key="FluentFolder">&#xF418;</x:String>
     <x:String x:Key="FluentDocument">&#xF378;</x:String>
     <x:String x:Key="FluentGlobe">&#xF45A;</x:String>
+    <x:String x:Key="FluentBug">&#xE206;</x:String>
     <x:String x:Key="FluentStar">&#xF70F;</x:String>
     <x:String x:Key="FluentLock">&#xE78E;</x:String>
     <x:String x:Key="FluentLockClosed">&#xE78F;</x:String>
