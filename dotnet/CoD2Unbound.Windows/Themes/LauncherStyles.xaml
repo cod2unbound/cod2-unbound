@@ -2135,6 +2135,7 @@
     <!-- Jump to rows: real ListView items, 40 high, the list's rounded selection. Section labels are items
          that cannot be selected, so the arrow keys pass over them. -->
     <Style x:Key="JumpRowItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Margin" Value="8,1" />
@@ -2158,7 +2159,6 @@
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="Padding" Value="12,8,12,4" />
         <Setter Property="IsEnabled" Value="False" />
-        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
     </Style>
     <!-- The Settings window's pane bar (SettingsTabBar): a symbol over a name, 84 x 50, 12 radius; the chosen
