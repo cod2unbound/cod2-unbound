@@ -192,7 +192,8 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
         Invoke-KitControl $app 'ServersItem'
-        $since = Get-Date
+        $gameSince = Get-Date
+        $hostedSince = $null
         switch ($Route) {
             'connect' {
                 Open-KitConnect $app
@@ -224,6 +225,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 Invoke-KitControl $app 'Hosting' -Name
                 Invoke-KitControl $app 'New server' -Name
                 Set-KitEdit $app 'Server name' $hostName -Name
+                $hostedSince = Get-Date
                 Invoke-KitControl $app 'Start server' -Name
                 $hosted = Wait-KitCondition { Find-KitHostedServer $hostName } 15 'the saved Hosting entry'
                 $port = $hosted.Port
@@ -246,8 +248,9 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                         $hostedProcess = $null
                     }
                 }
+                $gameSince = Get-Date
                 Invoke-KitControl $app 'Join' -Name
-                try { $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId -Seconds 8 }
+                try { $game = Get-KitOwnedGame $Edition $gameSince $launcher.Process.SessionId -Seconds 8 }
                 catch {
                     if ($launcher.Process.HasExited) { throw }
                     Focus-KitWindow $app
@@ -255,7 +258,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 }
             }
         }
-        if (-not $game) { $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId }
+        if (-not $game) { $game = Get-KitOwnedGame $Edition $gameSince $launcher.Process.SessionId }
         $process = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $game.Id)
         if ($process.ParentProcessId -ne $launcher.Process.Id) { throw 'The test launcher did not start the game.' }
         Protect-KitText $process.CommandLine | Set-Content -LiteralPath (Join-Path $Results 'client-command.txt') -Encoding UTF8
@@ -377,7 +380,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 $launcher.Process.HasExited -and -not (Request-KitServer $port 'getstatus Kit')
             } 20 'the launcher and its hosted server to stop' | Out-Null
             'The launcher exited and the hosted server stopped answering.' | Add-Content -LiteralPath $closeTrace
-            Assert-KitHostedLookups $hosted.Id $since
+            Assert-KitHostedLookups $hosted.Id $hostedSince
         }
     } catch {
         Protect-KitText $_.Exception.Message | Set-Content -LiteralPath (Join-Path $Results 'operation-error.txt') -Encoding UTF8
@@ -400,7 +403,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             }
             $logs = Join-Path $LauncherHome 'hosting\servers'
             foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter '*.log' -ErrorAction SilentlyContinue) {
-                if ($since -and $file.LastWriteTime -ge $since) {
+                if ($hostedSince -and $file.LastWriteTime -ge $hostedSince) {
                     if ($file.Name -like 'engine-*.log') { Save-KitEngineAudit (Read-KitText $file.FullName) $Results }
                     Save-Text $file.FullName (Join-Path $Results $file.Name)
                 }
