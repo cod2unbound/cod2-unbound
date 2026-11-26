@@ -19,6 +19,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
     {
         // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
         Style = StyleFor("LauncherSheet");
+        this.WithWidth("ServerPasswordSheetWidth");
         hadSavedPassword = saved is not null;
         Title = $"“{serverName}” needs a password";
         this.WithSymbol("FluentLock", "The people who run the server hand it out.");
@@ -28,7 +29,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
         password = new PasswordBox
         {
             Style = StyleFor("CapsulePasswordBox"), PasswordRevealMode = PasswordRevealMode.Hidden, MaxLength = 127,
-            Password = supplied ?? saved ?? ""
+            Password = supplied ?? saved ?? "", PlaceholderText = "Password"
         };
         AutomationProperties.SetName(password, $"Password for {serverName}");
         remember = new CheckBox { Content = "Remember for this server, on this PC only", IsChecked = hadSavedPassword };

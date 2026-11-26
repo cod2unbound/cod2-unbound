@@ -14,6 +14,14 @@ internal static class SheetPresentation
 {
     internal enum Tone { Accent, Negative, Positive }
 
+    internal static T WithWidth<T>(this T dialog, string widthKey) where T : ContentDialog
+    {
+        var width = (double)Application.Current.Resources[widthKey];
+        dialog.Resources["ContentDialogMinWidth"] = width;
+        dialog.Resources["ContentDialogMaxWidth"] = width;
+        return dialog;
+    }
+
     /// Puts the symbol tile and the optional sentence beside the dialog's title. `glyphKey` names a Fluent or
     /// System glyph resource; "mark" uses the app's mark (update sheets).
     internal static T WithSymbol<T>(this T dialog, string glyphKey, string? message = null, Tone tone = Tone.Accent) where T : ContentDialog

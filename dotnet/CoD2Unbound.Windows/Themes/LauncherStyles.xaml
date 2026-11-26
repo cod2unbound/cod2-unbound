@@ -1524,6 +1524,8 @@
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
     <x:Double x:Key="ShareSheetWidth">520</x:Double>
+    <x:Double x:Key="ServerPasswordSheetWidth">460</x:Double>
+    <x:Double x:Key="ServerEditionSheetWidth">480</x:Double>
     <Style x:Key="SheetFactRow" TargetType="Grid">
         <Setter Property="Padding" Value="16,11" />
         <Setter Property="ColumnSpacing" Value="14" />
@@ -1809,6 +1811,12 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
         <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style x:Key="SheetFormGroup" TargetType="Border" BasedOn="{StaticResource FieldCard}">
+        <Setter Property="Background" Value="{ThemeResource well}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
+        <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
+        <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="StudioColumnItem" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
         <Setter Property="MinHeight" Value="48" />

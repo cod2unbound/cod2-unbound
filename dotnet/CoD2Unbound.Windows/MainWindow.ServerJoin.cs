@@ -152,7 +152,7 @@ public sealed partial class MainWindow
             XamlRoot = DialogRoot, RequestedTheme = DialogTheme, Title = $"“{name}” runs {version}",
             Content = remember,
             PrimaryButtonText = $"Launch with {version}", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
-        }.WithSymbol("FluentGauge", explanation);
+        }.WithSymbol("FluentGauge", explanation).WithWidth("ServerEditionSheetWidth");
         if (await ShowShellSheetAsync(dialog) != ContentDialogResult.Primary)
             return false;
         if (remember.IsChecked == true)

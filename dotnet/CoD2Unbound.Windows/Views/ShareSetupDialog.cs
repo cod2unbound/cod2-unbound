@@ -44,9 +44,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         DefaultStyleKey = typeof(ContentDialog);
         DefaultButton = ContentDialogButton.Primary;
         HighContrastAdjustment = ElementHighContrastAdjustment.None;
-        var sheetWidth = (double)Application.Current.Resources["ShareSheetWidth"];
-        Resources["ContentDialogMaxWidth"] = sheetWidth;
-        Resources["ContentDialogMinWidth"] = sheetWidth;
+        this.WithWidth("ShareSheetWidth");
         shareTitle = $"Share “{loadout}” with other players";
         AutomationProperties.SetName(name, "Name to show with the setup");
         AutomationProperties.SetAutomationId(name, "ShareCreditName");
@@ -60,7 +58,7 @@ internal sealed class ShareSetupDialog : ContentDialog
             RefreshName();
         };
 
-        factCard = PrivacyPresentation.GroupCard(facts);
+        factCard = new Border { Style = StyleFor("SheetFormGroup"), Child = facts };
         if (form.Prepared is { } prepared)
         {
             var (sent, leftOut) = PrivacyPresentation.ShareFacts(prepared);
