@@ -164,6 +164,8 @@ def generate(source):
         token("AccentFillColorDefaultBrush", "prominentBottom", "Highlight")
         token("TextOnAccentFillColorPrimaryBrush", "prominentText", "HighlightText")
         token("SettingsNoteBackground", "well")
+        token("IconTileFill", "selection", "Window")
+        brush("IconTileStroke", TRANSPARENT if palette else system_color("WindowText"))
         token("TextControlSelectionHighlightColor", "selectionStroke", "Highlight")
 
         if palette:

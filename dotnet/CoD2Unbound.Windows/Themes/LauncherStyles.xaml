@@ -1455,7 +1455,9 @@
         <Setter Property="Width" Value="30" />
         <Setter Property="Height" Value="30" />
         <Setter Property="CornerRadius" Value="{StaticResource IconTileRadius}" />
-        <Setter Property="Background" Value="{ThemeResource selection}" />
+        <Setter Property="Background" Value="{ThemeResource IconTileFill}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource IconTileStroke}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
     </Style>
     <!-- The Mac's large sidebar rows (List .sidebar, .sidebarRowSize large): 15 regular in the label colour,
          40 high with a 10 radius; the chosen row's label turns semibold (MainWindow.PaintNavGlyphs). -->

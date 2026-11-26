@@ -94,6 +94,8 @@
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFC4984C" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF1C170C" />
             <SolidColorBrush x:Key="SettingsNoteBackground" Color="#42000000" />
+            <SolidColorBrush x:Key="IconTileFill" Color="#1AE2BD72" />
+            <SolidColorBrush x:Key="IconTileStroke" Color="#00000000" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#73E2BD72" />
             <LinearGradientBrush x:Key="SetupHeroScrimBrush" StartPoint="0,0" EndPoint="1,0">
                 <GradientStop Offset="0" Color="#FF141711" />
@@ -497,6 +499,8 @@
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF46522A" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFF8E8" />
             <SolidColorBrush x:Key="SettingsNoteBackground" Color="#0F504628" />
+            <SolidColorBrush x:Key="IconTileFill" Color="#1A5C6A33" />
+            <SolidColorBrush x:Key="IconTileStroke" Color="#00000000" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#735C6A33" />
             <LinearGradientBrush x:Key="SetupHeroScrimBrush" StartPoint="0,0" EndPoint="1,0">
                 <GradientStop Offset="0" Color="#FFF7F2E6" />
@@ -900,6 +904,8 @@
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="SettingsNoteBackground" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="IconTileFill" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="IconTileStroke" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SetupHeroScrimBrush" Color="#00000000" />
             <SolidColorBrush x:Key="GlassAcrylicBrush" Color="{ThemeResource SystemColorWindowColor}" />
