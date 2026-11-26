@@ -141,7 +141,11 @@ function Invoke-KitJumpPointer {
                             Set-Content -LiteralPath (Join-Path $pictures 'server-selection.txt') -Encoding UTF8
                         return $true
                     }
-                } 12 "the result of clicking $($case.Name)" | Out-Null
+                } 12 "the result of clicking $($case.Name)" {
+                    if ([KitDesktop]::GetForegroundWindow() -eq $app -and -not [KitDesktop]::SecurityPrompt()) {
+                        Save-KitWindow $app (Join-Path $pictures "$file-after-timeout.png")
+                    }
+                } | Out-Null
                 Save-KitWindow $app (Join-Path $pictures "$file-after.png")
                 "$theme $($case.Name): pointer click opened the result." |
                     Add-Content -LiteralPath (Join-Path $Results 'pointer-results.txt') -Encoding UTF8
@@ -236,6 +240,8 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                     Open-KitJump $app 'open game menu' 'Open Game Menu' | Out-Null
                     Save-KitSurface $app 'game-menu-jump' @('JumpBox', 'JumpList')
                     [KitDesktop]::Tap(27)
+                    Wait-KitCondition { -not (Find-KitControl $app 'JumpBox') } 12 'Jump to to close' | Out-Null
+                    Focus-KitPictureWindow $app $run.Process.Id
                     Open-KitConnect $app
                     Save-KitSurface $app 'connect' @('AddressBox', 'CloseButton')
                     Invoke-KitControl $app 'CloseButton'
@@ -252,7 +258,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             }
             'hosting' {
                 Invoke-KitControl $app 'ServersItem'
-                Invoke-KitControl $app 'Hosting' -Name
+                Invoke-KitControl $app 'HostingTab'
                 Invoke-KitControl $app 'New server' -Name
                 Set-KitEdit $app 'Server name' 'Kit Export' -Name
                 Invoke-KitControl $app 'Start server' -Name
@@ -276,7 +282,10 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             'configs' {
                 Invoke-KitControl $app 'ConfigsItem'
                 Save-KitSurface $app 'config-landing' @('Loadouts', 'AddConfig')
-                Invoke-KitControl (Find-KitControl $app 'Loadouts') 'Main' -Name
+                $loadout = Wait-KitCondition {
+                    Find-KitControl $app 'ConfigsLoadout-Main'
+                } 12 'the Main loadout row'
+                $loadout.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
                 Wait-KitCondition { Find-KitControl $app 'StudioSettings' } 12 'the Main loadout' | Out-Null
                 Invoke-KitControl $app 'Binds' -Name
                 Save-KitSurface $app 'config-binds' @() @('Find an action or key')
@@ -302,9 +311,9 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                     Invoke-KitControl $panes 'About' -Name
                     $report = 'Report a Problem' + [char]0x2026
                     Save-KitSurface $settingsWindow 'settings-about' @('Panes') @($report,'Acknowledgements')
-                    Invoke-KitControl $settingsWindow $report -Name
-                    Save-KitSurface $settingsWindow 'problem-report' @('CloseButton') @('Copy details')
-                    Invoke-KitControl $settingsWindow 'CloseButton'
+                    Invoke-KitControl $settingsWindow 'SettingsReportProblem'
+                    Save-KitSurface $app 'problem-report' @('CloseButton') @('Copy details') -PictureOwner $run.Process.Id
+                    Invoke-KitControl $app 'CloseButton'
                 } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
             }
         }

@@ -290,11 +290,12 @@ public static class KitDesktop {
         try {
             var point = new Point { X = x, Y = y };
             if (GetAncestor(WindowFromPoint(point), 2) != window) return false;
-            Cursor.Position = new System.Drawing.Point(x - 2, y);
-            Thread.Sleep(100);
+            Cursor.Position = new System.Drawing.Point(x - 16, y);
+            Move(1, 0);
+            Thread.Sleep(120);
             Cursor.Position = new System.Drawing.Point(x, y);
             Move(1, 0);
-            Thread.Sleep(140);
+            Thread.Sleep(180);
             GetCursorPos(out point);
             if (GetAncestor(WindowFromPoint(point), 2) != window || SecurityPrompt() != "" ||
                 (requireForeground && GetForegroundWindow() != window)) return false;
