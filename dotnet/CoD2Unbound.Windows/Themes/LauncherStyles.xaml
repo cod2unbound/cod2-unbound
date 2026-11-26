@@ -555,6 +555,7 @@
     <Style TargetType="SelectorBar" BasedOn="{StaticResource Segmented}" />
     <Style TargetType="ToggleSwitch">
         <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="ManipulationMode" Value="System,TranslateX" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="OnContent" Value="" />
@@ -618,10 +619,10 @@
                                 <VisualState x:Name="On">
                                     <VisualState.Setters>
                                         <Setter Target="KnobTranslateTransform.X" Value="{StaticResource SwitchTravel}" />
-                                        <Setter Target="SwitchKnobBounds.Opacity" Value="1" />
-                                        <Setter Target="OuterBorder.Opacity" Value="0" />
-                                        <Setter Target="KnobFaceOff.Opacity" Value="0" />
-                                        <Setter Target="KnobFaceOn.Opacity" Value="1" />
+                                        <Setter Target="SwitchKnobBounds.Visibility" Value="Visible" />
+                                        <Setter Target="OuterBorder.Visibility" Value="Collapsed" />
+                                        <Setter Target="KnobFaceOff.Visibility" Value="Collapsed" />
+                                        <Setter Target="KnobFaceOn.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
@@ -633,14 +634,14 @@
                               CornerRadius="{StaticResource SwitchRadius}">
                             <Rectangle x:Name="OuterBorder" RadiusX="12" RadiusY="12" Fill="{ThemeResource ToggleSwitchFillOff}"
                                        Stroke="{ThemeResource ToggleSwitchStrokeOff}" StrokeThickness="1" />
-                            <Rectangle x:Name="SwitchKnobBounds" RadiusX="12" RadiusY="12" Opacity="0"
+                            <Rectangle x:Name="SwitchKnobBounds" RadiusX="12" RadiusY="12" Visibility="Collapsed"
                                        Fill="{ThemeResource ToggleSwitchFillOn}" />
                             <Grid x:Name="SwitchKnob" Width="{StaticResource SwitchHeight}" HorizontalAlignment="Left">
                                 <Grid.RenderTransform><TranslateTransform x:Name="KnobTranslateTransform" /></Grid.RenderTransform>
                                 <Ellipse x:Name="KnobFaceOff" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
                                          Fill="{ThemeResource ToggleSwitchKnobFillOff}" />
                                 <Ellipse x:Name="KnobFaceOn" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
-                                         Fill="{ThemeResource ToggleSwitchKnobFillOn}" Opacity="0" />
+                                         Fill="{ThemeResource ToggleSwitchKnobFillOn}" Visibility="Collapsed" />
                             </Grid>
                             <Thumb x:Name="SwitchThumb" AutomationProperties.AccessibilityView="Raw">
                                 <Thumb.Template><ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent" /></ControlTemplate></Thumb.Template>
