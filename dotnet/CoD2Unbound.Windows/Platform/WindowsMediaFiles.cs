@@ -29,7 +29,7 @@ internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
     {
         string folder = WindowsFiles.Under(home, MediaLibrary.Folder(MediaKind.Demo));
         using var destination = new WindowsFiles.DirectoryHandles(folder, create: true);
-        using var input = WindowsFiles.Open(Path.GetDirectoryName(source.LocalPath)!, Path.GetFileName(source.LocalPath));
+        using var input = WindowsFiles.Open(Path.GetDirectoryName(source.LocalPath)!, Path.GetFileName(source.LocalPath), FileShare.Read);
         string target = WindowsFiles.Under(folder, fileName);
         if (await ExistingAsync() is { } existing)
             return existing;
