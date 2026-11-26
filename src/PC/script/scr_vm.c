@@ -9334,9 +9334,10 @@ static unsigned int VM_RestoreLocalVarsFromSibling(unsigned int localId)
     unsigned int *localVarLimit = (unsigned int *)(scrVmGlob + 24) + 2047;
 #endif
 
-    if (localId <= 2)
-        return 0;
-
+    /* Every local object id is walked, as Mac 1.3 VM_Resume does (0x86b33 for the
+       resumed frame, 0x86cc4 for its callers). Ids 1 and 2 are ordinary ids that a
+       thread can be given after a level change; skipping them resumed such a thread
+       with an empty local cache, so its parameters read as undefined (issue 164). */
     varId = FindPrevSibling(localId);
 
     while (varId && scrVmPub.localVars < localVarLimit) {
