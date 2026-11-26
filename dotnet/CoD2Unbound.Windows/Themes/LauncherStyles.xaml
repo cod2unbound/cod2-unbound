@@ -44,6 +44,7 @@
     <x:String x:Key="FluentHistory">&#xE707;</x:String>
     <x:String x:Key="FluentFolder">&#xF418;</x:String>
     <x:String x:Key="FluentDocument">&#xF378;</x:String>
+    <x:String x:Key="FluentGlobe">&#xF45A;</x:String>
     <x:String x:Key="FluentStar">&#xF70F;</x:String>
     <x:String x:Key="FluentLock">&#xE78E;</x:String>
     <x:String x:Key="FluentLockClosed">&#xE78F;</x:String>
@@ -1499,6 +1500,13 @@
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
+    <Style x:Key="SheetFactRow" TargetType="Grid">
+        <Setter Property="Padding" Value="16,11" />
+        <Setter Property="ColumnSpacing" Value="14" />
+    </Style>
+    <Style x:Key="SheetFactHeading" TargetType="TextBlock" BasedOn="{StaticResource TypeBody}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
     <Style x:Key="CrashFlyoutPresenter" TargetType="FlyoutPresenter">
         <Setter Property="Padding" Value="16" />
         <Setter Property="CornerRadius" Value="{StaticResource PopoverRadius}" />
@@ -1662,6 +1670,11 @@
         <Setter Property="HighContrastAdjustment" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Foreground" Value="{ThemeResource LinkBrush}" />
+    </Style>
+    <Style x:Key="SharePreviewAction" TargetType="Button" BasedOn="{StaticResource SubtleLinkAction}">
+        <Setter Property="AutomationProperties.Name" Value="See what’s sent when sharing a setup" />
+        <Setter Property="AutomationProperties.AutomationId" Value="SharePreview" />
+        <Setter Property="AccessKey" Value="W" />
     </Style>
     <Style x:Key="SubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}" />
     <Style x:Key="SetupFactLabel" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">

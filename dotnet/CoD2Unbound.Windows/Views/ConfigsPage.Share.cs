@@ -93,7 +93,7 @@ public sealed partial class ConfigsPage
         var confirmation = Dialog($"Stop sharing “{profile.DisplayName}”?",
             Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
             "Stop Sharing");
-        confirmation.AsAlert(destructive: true);
+        confirmation.AsAlert(destructive: false);
         confirmation.DefaultButton = ContentDialogButton.Close;
         if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
             return;

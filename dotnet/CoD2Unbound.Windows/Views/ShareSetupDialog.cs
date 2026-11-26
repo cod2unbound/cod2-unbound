@@ -17,14 +17,13 @@ internal sealed class ShareSetupDialog : ContentDialog
     private readonly Func<CancellationToken, Task<ConfigShareSent?>> publish;
     private readonly DataTemplate omittedLine;
     private readonly string shareTitle;
-    private readonly TextBox name = new() { Header = "Name to show with the setup", PlaceholderText = "The name players know you by" };
+    private readonly TextBox name = new() { PlaceholderText = "The name players know you by" };
     private readonly TextBlock nameProblem = Caption("");
     private readonly StackPanel fields = new() { Spacing = 6 };
     private readonly StackPanel facts = new() { Spacing = 0 };
     private readonly Border factCard;
     private readonly InfoBar notice = new() { IsClosable = false };
     private readonly ProgressBar sending = new();
-    private readonly Button see;
     private readonly StackPanel main;
     private CancellationTokenSource? cancellation;
     private Task? inFlight;
@@ -48,7 +47,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         Resources["ContentDialogMaxWidth"] = 548d;
         Resources["ContentDialogMinWidth"] = 548d;
         shareTitle = $"Share “{loadout}” with other players";
-        AutomationProperties.SetName(name, (string)name.Header);
+        AutomationProperties.SetName(name, "Name to show with the setup");
         AutomationProperties.SetAutomationId(name, "ShareCreditName");
         AutomationProperties.SetLiveSetting(nameProblem, AutomationLiveSetting.Polite);
         AutomationProperties.SetName(sending, "Sending setup");
@@ -60,23 +59,17 @@ internal sealed class ShareSetupDialog : ContentDialog
             RefreshName();
         };
 
-        see = new Button { Content = "See What’s Sent…", Style = StyleFor("SubtleLinkAction"), AccessKey = "W" };
-        AutomationProperties.SetName(see, "See what’s sent when sharing a setup");
-        AutomationProperties.SetAutomationId(see, "SharePreview");
-        see.Click += (_, _) => ShowPreview();
-
         factCard = PrivacyPresentation.GroupCard(facts);
         if (form.Prepared is { } prepared)
         {
             var (sent, leftOut) = PrivacyPresentation.ShareFacts(prepared);
             Fact("Document", "What is sent", sent);
             Fact("LockClosed", "What is left out", leftOut);
-            Fact("PeopleCommunity", "Where it goes", PrivacyPresentation.ShareDestination);
+            Fact("Globe", "Where it goes", PrivacyPresentation.ShareDestination);
         }
         fields.Children.Add(name);
         fields.Children.Add(nameProblem);
         fields.Children.Add(factCard);
-        fields.Children.Add(see);
         main = new StackPanel { Spacing = 12, Children = { fields, sending, notice } };
 
         Opened += (_, _) => name.Focus(FocusState.Programmatic);
@@ -108,6 +101,11 @@ internal sealed class ShareSetupDialog : ContentDialog
         SecondaryButtonClick += (_, args) =>
         {
             args.Cancel = true;
+            if (!preview)
+            {
+                ShowPreview();
+                return;
+            }
             var data = new DataPackage();
             data.SetText(previewCopy);
             Clipboard.SetContent(data);
@@ -120,14 +118,21 @@ internal sealed class ShareSetupDialog : ContentDialog
         {
             if (facts.Children.Count != 0)
                 facts.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            var headingRow = IconLabel(icon, heading, 18);
-            var symbol = (FontIcon)headingRow.Children[0];
+            var symbol = Fluent(icon, (double)Application.Current.Resources["BodySize"]);
             symbol.Style = StyleFor("PrivacyQuestionIcon");
             AutomationProperties.SetAccessibilityView(symbol, AccessibilityView.Raw);
-            ((TextBlock)headingRow.Children[1]).FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
-            var words = Caption(detail);
-            words.Margin = new Thickness(26, 0, 0, 0);
-            var row = new StackPanel { Spacing = 3, Padding = new Thickness(16, 11, 16, 11), Children = { headingRow, words } };
+            var tile = new Border { Style = StyleFor("RowSymbol"), VerticalAlignment = VerticalAlignment.Top, Child = symbol };
+            var words = new StackPanel
+            {
+                Spacing = 3,
+                Children = { new TextBlock { Text = heading, Style = StyleFor("SheetFactHeading") },
+                    new TextBlock { Text = detail, Style = StyleFor("SetupFactLabel"), TextWrapping = TextWrapping.Wrap } }
+            };
+            var row = new Grid { Style = StyleFor("SheetFactRow") };
+            row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new());
+            Put(row, 0, tile);
+            Put(row, 1, words);
             facts.Children.Add(row);
         }
     }
@@ -144,7 +149,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         preview = false;
         SheetPresentation.SetSheetTitle(this, "FluentShare", shareTitle, PrivacyPresentation.ShareIntro);
         Content = main;
-        SecondaryButtonText = "";
+        SecondaryButtonStyle = StyleFor("SharePreviewAction");
         CloseButtonText = "Cancel";
         RefreshForm();
     }
@@ -160,9 +165,11 @@ internal sealed class ShareSetupDialog : ContentDialog
     private void RefreshForm()
     {
         bool busy = form.Phase == ConfigSharePhase.Sending;
-        name.IsEnabled = see.IsEnabled = !busy;
+        name.IsEnabled = !busy;
         factCard.Opacity = busy ? 0.45 : 1;
-        factCard.Visibility = see.Visibility = IsVisible(form.ShowDetails);
+        factCard.Visibility = IsVisible(form.ShowDetails);
+        SecondaryButtonText = form.ShowDetails ? "See What’s Sent…" : "";
+        IsSecondaryButtonEnabled = !busy;
         sending.Visibility = IsVisible(busy);
         sending.IsIndeterminate = busy;
         PrimaryButtonText = form.Phase switch
@@ -212,6 +219,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         SheetPresentation.SetSheetTitle(this, "FluentDocument", "What is sent", PrivacyPresentation.SharePreviewIntro(appVersion));
         PrimaryButtonText = "Done";
         IsPrimaryButtonEnabled = true;
+        SecondaryButtonStyle = StyleFor("SheetButton");
         CloseButtonText = "";
         var sentLines = new TextBox
         {
@@ -255,6 +263,7 @@ internal sealed class ShareSetupDialog : ContentDialog
             SheetPresentation.Tone.Positive);
         PrimaryButtonText = form.Action;
         IsPrimaryButtonEnabled = true;
+        SecondaryButtonText = "";
         CloseButtonText = "";
         string url = sent.Url.AbsoluteUri;
         string shortAddress = url[(url.IndexOf("://", StringComparison.Ordinal) + 3)..];
