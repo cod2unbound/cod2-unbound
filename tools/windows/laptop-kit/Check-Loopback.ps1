@@ -552,7 +552,7 @@ function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') 
     $clientArgs = (Get-EngineArgs $clientEntry.Folder $GamePath -Port ($port+100)) +
         " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set r_fullscreen 1 +set r_borderless 0 +set r_mode $desktop" +
         " +set com_introPlayed 1 +set cl_allowDownload 0 +connect 127.0.0.1:$port"
-    $run = $null
+    $run = $switchWindow = $null
     $window = [IntPtr]::Zero
     $log = Join-Path $clientEntry.Folder 'main\console_mp.log'
     $trace = New-KitFrameTrace $clientEntry.Evidence
@@ -562,6 +562,13 @@ function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') 
         Wait-KitCondition {
             (Request-KitServer $port 'getstatus Kit') -match '\\mapname\\mp_toujane\\'
         } 45 'the exclusive match server' | Out-Null
+        Wait-KitCooling
+        $switchWindow = Start-KitTaskSwitchWindow $clientEntry.Folder
+        Wait-KitCondition {
+            $switchWindow.Process.Refresh()
+            if ($switchWindow.Process.HasExited) { throw 'The task-switch window exited during startup.' }
+            $switchWindow.Process.MainWindowHandle -ne [IntPtr]::Zero
+        } 10 'the task-switch window' | Out-Null
         $run = Start-KitProcess (Get-Binary $Edition) $clientArgs $clientEntry.Folder @{ COD2_FRAME_TRACE_FILE=$trace.Path }
         $window = Get-KitGameWindow $run.Process $clientEntry.Evidence
         Wait-KitMapLoad {
@@ -596,16 +603,26 @@ function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') 
         if (-not $recovery) { $recovery = 'The restored game rendered without a lost-device line in the log.' }
         $recovery | Set-Content -LiteralPath (Join-Path $clientEntry.Evidence 'device-recovery.txt')
     } finally {
-        if ($run) {
-            $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
-            if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
-            $clientDone = Complete-KitProcess $run $clientEntry.Evidence 8
-            Save-GameEvidence $clientEntry.Folder $clientEntry.Evidence
-            Save-KitFrameTrace $trace $clientEntry.Evidence $log
+        try {
+            if ($run) {
+                $trace.End = [Diagnostics.Stopwatch]::GetTimestamp()
+                if (-not $run.Process.HasExited) { [KitDesktop]::CloseOwnedWindow($window) }
+                $clientDone = Complete-KitProcess $run $clientEntry.Evidence 8
+                Save-GameEvidence $clientEntry.Folder $clientEntry.Evidence
+                Save-KitFrameTrace $trace $clientEntry.Evidence $log
+            }
+        } finally {
+            try {
+                if (-not $server.Process.HasExited) { Stop-SetupServer $admin $port }
+                Complete-KitProcess $server $serverEntry.Evidence 8 | Out-Null
+                Save-GameEvidence $serverEntry.Folder $serverEntry.Evidence
+            } finally {
+                if ($switchWindow) {
+                    if (-not $switchWindow.Process.HasExited) { [void]$switchWindow.Process.CloseMainWindow() }
+                    Complete-KitProcess $switchWindow (New-Folder (Join-Path $clientEntry.Evidence 'switch-window')) 5 | Out-Null
+                }
+            }
         }
-        if (-not $server.Process.HasExited) { Stop-SetupServer $admin $port }
-        Complete-KitProcess $server $serverEntry.Evidence 8 | Out-Null
-        Save-GameEvidence $serverEntry.Folder $serverEntry.Evidence
     }
     if ($clientDone.TimedOut -or $clientDone.ExitCode -ne 0) { throw 'The game did not close cleanly after the switch.' }
     if ([KitDesktop]::CurrentMode() -ne $desktop) { throw 'Windows did not return to the desktop resolution.' }
