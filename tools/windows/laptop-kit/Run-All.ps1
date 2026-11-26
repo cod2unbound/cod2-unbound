@@ -73,7 +73,7 @@ if ($Extras) {
 $prompt = if ($LanOnly -or $group -in '2','3') { 'Check that both PCs are on the same network with internet access disconnected.' }
     else { 'Close CoD2 and Steam and disconnect from the internet.' }
 if ((Read-Host "$prompt Type TEST to begin") -cne 'TEST') { return }
-foreach ($location in @($AppDataRoot, (Join-Path $AppDataRoot 'Windows Kit'), (Join-Path $Kit 'results'))) {
+foreach ($location in @($AppDataRoot, $KitScratchRoot, (Join-Path $Kit 'results'))) {
     if ((Test-Path -LiteralPath $location) -and ((Get-Item -LiteralPath $location -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw 'Use a kit folder and Windows profile whose test and results folders are ordinary folders.'
     }
@@ -92,7 +92,7 @@ try {
     if (-not $ownsLock) { throw 'A kit check is already open in this Windows account.' }
 
     $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,6)
-    $Private = New-Folder (Join-Path $AppDataRoot "Windows Kit\$stamp")
+    $Private = New-Folder (Join-Path $KitScratchRoot $stamp)
     $Results = New-Folder (Join-Path $Kit "results\$stamp")
     $KitSafety = $Results
     $KitKeySlot = [guid]::NewGuid().ToString('N')

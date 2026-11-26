@@ -110,7 +110,7 @@ function Assert-NoKitInstall {
             throw 'A CoD2 Unbound Test Start group remains or already exists.'
         }
     }
-    if (Test-Path -LiteralPath (Join-Path $LocalData $FixtureName)) {
+    if (Test-Path -LiteralPath (Join-Path $AppDataRoot 'Fixture')) {
         throw 'A CoD2 Unbound Test settings folder remains or already exists.'
     }
 }
@@ -120,7 +120,7 @@ function Invoke-KitEmptySlotClients {
         $context = New-RunContext "empty-slot-$edition"
         $arguments = (Get-EngineArgs $context.Folder $GamePath) +
             ' +set net_noudp 1 +set r_fullscreen 0 +set r_mode 800x600 +set com_introPlayed 1 +quit'
-        $run = Start-KitProcess (Get-Binary $edition) $arguments $context.Folder
+        $run = Start-KitProcess (Get-Binary $edition) $arguments $context.Folder @{ COD2_CRASH_NOPOPUP = '1' }
         $done = Complete-KitProcess $run $context.Evidence 90
         $stderr = Join-Path $context.Evidence 'stderr.txt'
         if ($done.TimedOut -or $done.ExitCode -ne 0 -or

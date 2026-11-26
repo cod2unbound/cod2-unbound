@@ -52,8 +52,16 @@ internal sealed partial class WindowsLauncherSession
     internal static bool HasFixtureHome => FixtureHome() is not null;
 #endif
 
-    internal static string ResolveHome() => FixtureHome() ?? Path.Join(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), WindowsInstallIdentity.Product);
+    internal static string ResolveHome()
+    {
+        string gameHome = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CoD2 Unbound");
+#if UPDATE_FIXTURES
+        // Native clients accept private homes under this root. Fixture owns a child of it.
+        return FixtureHome() ?? Path.Join(gameHome, "Fixture");
+#else
+        return gameHome;
+#endif
+    }
 
     internal WindowsLauncherSession()
     {

@@ -371,10 +371,8 @@ $Steps = @(
         try { Invoke-TestKey 'absent' } catch { $failures += $_.Exception.Message }
         try {
             Remove-KitScratch $KitProfile
-            $parent = Split-Path $KitProfile -Parent
-            foreach ($folder in @($parent, $AppDataRoot) | Select-Object -Unique) {
-                if ($folder -ne $LocalData -and (Test-Path -LiteralPath $folder) -and
-                    -not (Get-ChildItem -LiteralPath $folder -Force)) { [IO.Directory]::Delete($folder) }
+            if ((Test-Path -LiteralPath $KitScratchRoot) -and -not (Get-ChildItem -LiteralPath $KitScratchRoot -Force)) {
+                [IO.Directory]::Delete($KitScratchRoot)
             }
         } catch { $failures += $_.Exception.Message }
         foreach ($check in { Assert-NoKitInstall },

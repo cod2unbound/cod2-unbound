@@ -20,7 +20,7 @@ foreach ($script in 'Check-Machine','Check-GameData','Check-Clients','Check-Serv
 }
 
 if ($ProfileName -and $InternetPlay) { throw 'A named private profile is only for the Fixture run.' }
-$KitProfile = if ($ProfileName) { Join-Path $AppDataRoot $ProfileName } else { Join-Path $AppDataRoot "Windows Kit\$RunId" }
+$KitProfile = Join-Path $KitScratchRoot $(if ($ProfileName) { $ProfileName } else { $RunId })
 $RunResults = Join-Path $Kit "results\$RunId"
 $RunStart = Join-Path $RunResults 'started.txt'
 $SlotFile = Join-Path $RunResults 'key-slot.txt'
