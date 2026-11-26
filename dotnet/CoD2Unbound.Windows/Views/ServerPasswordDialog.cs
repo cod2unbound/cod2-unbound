@@ -32,7 +32,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
             Password = supplied ?? saved ?? "", PlaceholderText = "Password"
         };
         AutomationProperties.SetName(password, $"Password for {serverName}");
-        remember = new CheckBox { Content = "Remember for this server, on this PC only", IsChecked = hadSavedPassword };
+        remember = new CheckBox { Content = "Remember for this server, on this PC only", IsChecked = true };
         note = Caption("");
         validation = new TextBlock { Style = StyleFor("NegativeText"), TextWrapping = TextWrapping.Wrap };
         AutomationProperties.SetLiveSetting(validation, AutomationLiveSetting.Polite);
