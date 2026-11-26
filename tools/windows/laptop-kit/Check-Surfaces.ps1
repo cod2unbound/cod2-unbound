@@ -146,7 +146,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                     Invoke-KitControl $app 'CloseButton'
                 } else {
                     Save-KitSurface $app 'returning-home' @('LaunchButton')
-                    Open-KitJump $app 'open game menu' 'Open Game Menu'
+                    Open-KitJump $app 'open game menu' 'Open Game Menu' | Out-Null
                     Save-KitSurface $app 'game-menu-jump' @('JumpBox', 'JumpList')
                     [KitDesktop]::Tap(27)
                     Open-KitConnect $app
@@ -155,9 +155,9 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 }
             }
             'jump' {
-                Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts'
+                $action = Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts'
                 Save-KitSurface $app 'jump-search' @('JumpBox', 'JumpList')
-                [KitDesktop]::Tap(13)
+                $action.Invoke()
                 $sheet = Wait-KitCondition { Get-KitControls $app 'Keyboard shortcuts' -Name |
                     Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::Window } } 12 'the shortcuts sheet'
                 Save-KitSurface $app 'shortcuts' @('PrimaryButton')
@@ -200,10 +200,9 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             }
             'library' {
                 Invoke-KitControl $app 'LibraryItem'
+                Save-KitSurface $app 'library-demos' @('Search','ShowFolder','Files')
                 Invoke-KitControl $app 'MatchesSection'
                 Save-KitSurface $app 'library-matches' @('Matches') @(('Toujane ' + [char]0x00b7 + ' Deathmatch'))
-                Invoke-KitControl $app 'DemosSection'
-                Save-KitSurface $app 'library-demos' @('Search','ShowFolder','Files')
                 Invoke-KitControl $app 'ScreenshotsSection'
                 Save-KitSurface $app 'library-screenshots' @('Search','ShowFolder','Screenshots')
             }

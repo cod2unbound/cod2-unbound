@@ -51,8 +51,7 @@ function Open-KitGameMenu([IntPtr]$Window, [switch]$UseJump) {
         Invoke-KitControl $Window 'OpenGameMenuButton'
         'First-run OpenGameMenuButton' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     } elseif ($UseJump) {
-        Open-KitJump $Window 'open game menu' 'Open Game Menu'
-        [KitDesktop]::Tap(13)
+        (Open-KitJump $Window 'open game menu' 'Open Game Menu').Invoke()
         'Returning Home Jump to > Open Game Menu' | Set-Content -LiteralPath (Join-Path $Results 'game-menu-route.txt')
     } else {
         Focus-KitWindow $Window
@@ -75,9 +74,17 @@ function Open-KitJump([IntPtr]$Window, [string]$Query, [string]$Result) {
         $list = Find-KitControl $Window 'JumpList'
         if ($list) {
             $pattern = $list.GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern)
-            $pattern.Current.GetSelection() | Where-Object { $_.Current.Name -eq $Result } | Select-Object -First 1
+            foreach ($row in $pattern.Current.GetSelection()) {
+                if ($row.Current.Name -ne $Result) { continue }
+                foreach ($control in Get-KitControls $row $Result -Name) {
+                    $action = $null
+                    if ($control.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$action)) {
+                        return $action
+                    }
+                }
+            }
         }
-    } 12 "the selected Jump result $Result" | Out-Null
+    } 12 "the action in the selected Jump result $Result"
 }
 
 function Open-KitSettings([IntPtr]$Window) {

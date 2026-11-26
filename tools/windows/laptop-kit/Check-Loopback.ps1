@@ -71,8 +71,13 @@ function Find-KitLoopbackDialog([IntPtr]$App, [string]$Title) {
 function Invoke-KitOpenDemo([string]$Edition) {
     Stop-KitIfNoGame
     $exe = Get-KitStartTarget
-    $demo = Join-Path $RunResults "match-$Edition-connect\kit-match-$Edition.dm_1"
-    Stop-KitIfMissing $demo 'The loopback match did not save a demo.'
+    Stop-KitIfMissing $KeyMarker 'The sample key check was skipped.'
+    Invoke-TestKey 'verify'
+    $recording = Join-Path $RunResults "match-$Edition-connect\kit-match-$Edition.dm_1"
+    Stop-KitIfMissing $recording 'The loopback match did not save a demo.'
+    $demo = Join-Path $Private "kit match $Edition.dm_1"
+    Copy-Item -LiteralPath $recording -Destination $demo
+    $playableName = "kit_match_$Edition"
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
@@ -88,17 +93,21 @@ function Invoke-KitOpenDemo([string]$Edition) {
     try {
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
-        Open-KitAssociation $demo $FixtureDemo $exe
-        $dialog = Wait-KitCondition { Find-KitLoopbackDialog $app 'Play this demo?' } 12 'the demo playback confirmation'
         $since = Get-Date
-        Invoke-KitControl $dialog 'PrimaryButton'
+        Open-KitAssociation $demo $FixtureDemo $exe $settings
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
+        $command = (Get-CimInstance Win32_Process -Filter "ProcessId=$($game.Id)").CommandLine
+        if ($command -notmatch ('(?:^|\s)"?\+demo"?\s+"?' + [regex]::Escape($playableName) + '"?(?=\s|$)')) {
+            throw 'The game did not start with the expected playable demo name.'
+        }
         $window = Get-KitGameWindow $game
         Wait-KitCondition {
             (Test-Path -LiteralPath $console) -and
-                (Select-String -LiteralPath $console -SimpleMatch "demos/kit-match-$Edition.dm_1" -Quiet) -and
+                (Select-String -LiteralPath $console -SimpleMatch "demos/$playableName.dm_1" -Quiet) -and
                 (Select-String -LiteralPath $console -SimpleMatch 'CL_InitCGame:' -Quiet)
         } 65 'game demo playback' | Out-Null
+        "+demo $playableName started and playback loaded." |
+            Set-Content -LiteralPath (Join-Path $Results 'demo-playback.txt')
         Start-KitFrameSample $trace $window $console
         Focus-KitWindow $window
         Save-KitWindow $window (Join-Path $Results 'kit-shell-demo-window.png')
