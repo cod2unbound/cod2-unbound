@@ -206,8 +206,8 @@
                         </Border>
                     </Grid>
                     <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
-                    <ListView x:Name="JumpList" Grid.Row="2" MaxHeight="380" Padding="0,8" SelectionMode="Single"
-                              IsItemClickEnabled="True" ItemClick="OnJumpItemClick" SelectionChanged="OnJumpSelectionChanged"
+                    <ListView x:Name="JumpList" Grid.Row="2" MaxHeight="380" Padding="0,8" SelectionMode="None"
+                              IsItemClickEnabled="True" ItemClick="OnJumpItemClick"
                               ItemContainerStyle="{StaticResource JumpRowItem}" IsTabStop="False"
                               AutomationProperties.Name="Results">
                         <ListView.Resources>

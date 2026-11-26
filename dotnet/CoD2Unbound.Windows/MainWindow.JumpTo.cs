@@ -23,6 +23,7 @@ public sealed partial class MainWindow
     private bool jumpEnabled;
     private bool jumpSettings;
     private int jumpGeneration;
+    private int jumpSelection = -1;
     private IReadOnlyList<ConfigProfile> jumpLoadouts = [];
     private JumpTarget[] jumpResults = [];
     private ListViewItem[] jumpRows = [];
@@ -121,6 +122,7 @@ public sealed partial class MainWindow
         JumpList.Items.Clear();
         jumpResults = [];
         jumpRows = [];
+        jumpSelection = -1;
         var previous = jumpReturnFocus;
         jumpReturnFocus = null;
         if (restoreFocus)
@@ -134,6 +136,7 @@ public sealed partial class MainWindow
     {
         string query = JumpBox.Text;
         jumpResults = [.. JumpResults(query)];
+        jumpSelection = -1;
         JumpList.Items.Clear();
         var rows = new List<ListViewItem>();
         JumpGroup? group = null;
@@ -215,7 +218,8 @@ public sealed partial class MainWindow
             Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast), Text = target.Keys
         };
         Put(line, 3, hint);
-        var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = line, Tag = (target, hint) };
+        var surface = new Border { Style = StyleFor("JumpRowSurface"), Child = line };
+        var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = surface, Tag = (target, hint) };
         AutomationProperties.SetName(row, target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}");
         if (target.Group == JumpGroup.Servers)
             AutomationProperties.SetHelpText(row, "Enter shows it in Servers. Ctrl+Enter launches on it.");
@@ -229,13 +233,15 @@ public sealed partial class MainWindow
 
     private void SelectJumpRow(int index)
     {
-        if (jumpRows.ElementAtOrDefault(index) is not { } row)
+        // The native list is in click mode. Keep the keyboard candidate highlighted while focus stays in the field.
+        if (jumpRows.ElementAtOrDefault(jumpSelection) is { } previous)
+            PaintJumpRow(previous, selected: false);
+        jumpSelection = index;
+        if (jumpRows.ElementAtOrDefault(index) is { } row)
         {
-            JumpList.SelectedItem = null;
-            return;
+            PaintJumpRow(row, selected: true);
+            JumpList.ScrollIntoView(row);
         }
-        JumpList.SelectedItem = row;
-        JumpList.ScrollIntoView(row);
     }
 
     private async void OnJumpItemClick(object sender, ItemClickEventArgs args)
@@ -244,19 +250,13 @@ public sealed partial class MainWindow
             await OpenJumpTargetAsync(chosen, launch: false);
     }
 
-    private void OnJumpSelectionChanged(object sender, SelectionChangedEventArgs args)
-    {
-        foreach (var item in args.RemovedItems.OfType<ListViewItem>())
-            PaintJumpRow(item, selected: false);
-        foreach (var item in args.AddedItems.OfType<ListViewItem>())
-            PaintJumpRow(item, selected: true);
-    }
-
     // The board's selected server row offers its launch key; other rows show their shortcut.
     private void PaintJumpRow(ListViewItem row, bool selected)
     {
-        if (row.Tag is not (JumpTarget target, TextBlock hint))
+        if (row.Tag is not (JumpTarget target, TextBlock hint) || row.Content is not Border surface)
             return;
+        surface.BorderBrush = selected ? ThemeBrush("selectionStroke", Root.ActualTheme, IsHighContrast) : null;
+        surface.Background = selected && !IsHighContrast ? ThemeBrush("selection", Root.ActualTheme, false) : null;
         bool server = target.Group == JumpGroup.Servers;
         hint.Text = server ? (selected ? "Launch Ctrl+Enter" : "") : target.Keys;
         hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", Root.ActualTheme, IsHighContrast);
@@ -276,11 +276,11 @@ public sealed partial class MainWindow
             case VirtualKey.Down:
                 args.Handled = true;
                 if (jumpResults.Length != 0)
-                    SelectJumpRow(Math.Clamp(JumpIndexOf(JumpList.SelectedItem) + (args.Key == VirtualKey.Up ? -1 : 1), 0, jumpResults.Length - 1));
+                    SelectJumpRow(Math.Clamp(jumpSelection + (args.Key == VirtualKey.Up ? -1 : 1), 0, jumpResults.Length - 1));
                 break;
             case VirtualKey.Enter:
                 args.Handled = true;
-                if (jumpResults.ElementAtOrDefault(JumpIndexOf(JumpList.SelectedItem)) is { } target)
+                if (jumpResults.ElementAtOrDefault(jumpSelection) is { } target)
                     await OpenJumpTargetAsync(target, launch: ControlKeyDown());
                 break;
         }

@@ -1970,10 +1970,15 @@
          that cannot be selected, so the arrow keys pass over them. -->
     <Style x:Key="JumpRowItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
         <Setter Property="MinHeight" Value="40" />
-        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Padding" Value="0" />
         <Setter Property="Margin" Value="8,1" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style x:Key="JumpRowSurface" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="Padding" Value="11,0" />
     </Style>
     <Style x:Key="JumpHeaderItem" TargetType="ListViewItem" BasedOn="{StaticResource JumpRowItem}">
         <Setter Property="MinHeight" Value="0" />
