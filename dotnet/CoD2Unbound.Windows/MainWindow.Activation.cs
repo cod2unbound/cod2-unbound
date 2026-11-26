@@ -4,6 +4,7 @@ using CoD2Unbound.Windows.Platform;
 using CoD2Unbound.Windows.Views;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace CoD2Unbound.Windows;
 
@@ -33,7 +34,23 @@ public sealed partial class MainWindow
 
     private void ScheduleActivation()
     {
-        if (initialized && !busy && !closing && !session.SetupActive && activations.Count != 0)
+        if (!initialized || closing || activations.Count == 0)
+            return;
+        if (session.SetupActive)
+        {
+            bool rejectedRecording = false;
+            for (int count = activations.Count; count > 0; count--)
+            {
+                string input = activations.Dequeue();
+                if (IsRecordingPath(input))
+                    rejectedRecording = true;
+                else
+                    activations.Enqueue(input);
+            }
+            if (rejectedRecording)
+                ShowShellNotice("Finish setup, then open the recording again.", InfoBarSeverity.Warning);
+        }
+        else if (!busy)
             DispatcherQueue.TryEnqueue(OpenNextActivation);
     }
 
@@ -85,20 +102,42 @@ public sealed partial class MainWindow
             return;
         }
 
-        string extension = Path.GetExtension(input);
-        if (!Path.IsPathFullyQualified(input) || extension.ToLowerInvariant() is not (".cfg" or ".dm_1"))
-            throw new IOException("Choose a .cfg config file or a .dm_1 demo recording.");
-
-        if (extension.Equals(".cfg", StringComparison.OrdinalIgnoreCase))
+        if (IsRecordingPath(input))
+            await OpenRecordingAsync(input);
+        else if (Path.IsPathFullyQualified(input) && Path.GetExtension(input).Equals(".cfg", StringComparison.OrdinalIgnoreCase))
         {
             await NavigateAsync(LauncherPlace.Configs);
             await ((ConfigsPage)ContentFrame.Content).ReviewFileAsync(input);
         }
         else
+            throw new IOException("Choose a .cfg config file or a .dm_1 demo recording.");
+    }
+
+    private static bool IsRecordingPath(string input) => Path.IsPathFullyQualified(input) &&
+        Path.GetExtension(input).Equals(".dm_1", StringComparison.OrdinalIgnoreCase);
+
+    private async Task OpenRecordingAsync(string input)
+    {
+        if (session.ClientIsRunning)
         {
-            await NavigateAsync(LauncherPlace.Library);
-            await ((LibraryPage)ContentFrame.Content).OfferDemoAsync(input);
+            ShowShellNotice(MediaRow.PlayBlocked, InfoBarSeverity.Warning);
+            return;
         }
+
+        string path;
+        try
+        {
+            var files = new WindowsMediaFiles(session.HomePath);
+            path = await files.StageOpenedDemoAsync(input);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            ShowShellNotice($"“{Path.GetFileName(input)}” couldn’t be added to your demos. {error.Message}", InfoBarSeverity.Error);
+            return;
+        }
+
+        await NavigateAsync(LauncherPlace.Library);
+        await ((LibraryPage)ContentFrame.Content).PlayOpenedDemoAsync(path);
     }
 
     [DllImport("user32.dll")]

@@ -251,19 +251,19 @@ public sealed partial class LibraryPage : Page
     private Task OpenFileAsync(MediaRow row)
     {
         string path = files.Existing(row.Kind, row.File.Name);
-        return row.Kind == MediaKind.Screenshot ? OpenAsync(path) : PlayDemoAsync(path, confirm: false);
+        return row.Kind == MediaKind.Screenshot ? OpenAsync(path) : PlayDemoAsync(path);
     }
 
-    internal Task OfferDemoAsync(string path)
+    internal Task PlayOpenedDemoAsync(string path)
     {
         Sections.SelectedItem = DemosSection;
-        return PlayDemoAsync(path, confirm: true);
+        return PlayDemoAsync(path);
     }
 
-    private async Task PlayDemoAsync(string path, bool confirm)
+    private async Task PlayDemoAsync(string path)
     {
         if (session.ClientIsRunning)
-            throw new IOException("Close the game before playing a demo.");
+            throw new IOException(MediaRow.PlayBlocked);
         string fileName = Path.GetFileName(path);
         if (!MediaLibrary.Accepts(fileName, MediaKind.Demo))
             throw new IOException("Choose a .dm_1 demo recording.");
@@ -274,33 +274,19 @@ public sealed partial class LibraryPage : Page
         if (await Task.Run(() => DemoRecording.ReadEdition(source)) is not { } edition)
             throw new IOException("This file isn’t a complete Original 1.3 or CoD2x demo.");
 
-        if (confirm)
-        {
-            var details = Body($"{fileName}\n{ConnectDialog.EditionName(edition)}");
-            details.TextWrapping = TextWrapping.Wrap;
-            var dialog = new ContentDialog
-            {
-                XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Play this demo?", Content = details,
-                PrimaryButtonText = "Play Demo", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close
-            };
-            AutomationProperties.SetAutomationId(dialog, "LibraryDemoPlaybackDialog");
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-                return;
-        }
-
         string name = Path.GetFileNameWithoutExtension(fileName);
-        if (confirm || !MediaName.Playable(name))
+        if (!MediaName.Playable(name))
             name = await library.PrepareDemoAsync(new Uri(path), fileName);
         var result = await shell.RunGameStartAsync(edition, () => session.LaunchAsync(edition: edition, demo: name));
         if (result is GameStartState.AlreadyRunning or GameStartState.Attached)
-            throw new IOException("Close the game before playing a demo.");
+            throw new IOException(MediaRow.PlayBlocked);
     }
 
 }
 
 internal sealed class MediaRow(MediaKind kind, MediaFile file, MediaFacts facts, bool canPlay) : INotifyPropertyChanged
 {
-    internal const string PlayBlocked = "Close the game before playing a demo.";
+    internal const string PlayBlocked = "Close the game before playing a recording.";
     internal MediaKind Kind { get; } = kind;
     internal MediaFile File { get; } = file;
     internal MediaFacts Facts { get; } = facts;

@@ -94,6 +94,18 @@ internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
         return folder;
     }
 
+    internal async Task<string> StageOpenedDemoAsync(string path)
+    {
+        path = Path.GetFullPath(path);
+        string fileName = Path.GetFileName(path);
+        string stem = Path.GetFileNameWithoutExtension(fileName);
+        string folder = WindowsFiles.Under(home, MediaLibrary.Folder(MediaKind.Demo));
+        if (MediaName.Playable(stem) && string.Equals(Path.GetDirectoryName(path), folder, StringComparison.OrdinalIgnoreCase))
+            return Existing(MediaKind.Demo, fileName);
+        string name = await new MediaLibrary(this).PrepareDemoAsync(new Uri(path), fileName);
+        return Existing(MediaKind.Demo, name + ".dm_1");
+    }
+
     internal FileStream OpenScreenshot(string name) => WindowsFiles.Open(home, Relative(MediaKind.Screenshot, name));
 
     internal FileStream OpenDemo(string name) => WindowsFiles.Open(home, Relative(MediaKind.Demo, name));
