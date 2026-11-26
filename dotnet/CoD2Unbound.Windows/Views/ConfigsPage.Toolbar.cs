@@ -48,9 +48,18 @@ public sealed partial class ConfigsPage
         actions.Children.Add(more);
 
         var snapshot = historySnapshotButton!;
+        var snapshotTarget = historySnapshotTarget!;
+        var compactSegment = StyleFor("CompactSegmentItem");
+        var standardSegment = StyleFor("SegmentItem");
+        var expandedSectionsWidth = (double)Application.Current.Resources["StudioToolbarExpandedSectionsWidth"];
         SizeChangedEventHandler fit = (_, _) => FitToolbar();
         configToolbar.SizeChanged += fit;
-        actions.Unloaded += (_, _) => configToolbar.SizeChanged -= fit;
+        var visibility = snapshotTarget.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => FitToolbar());
+        actions.Unloaded += (_, _) =>
+        {
+            configToolbar.SizeChanged -= fit;
+            snapshotTarget.UnregisterPropertyChangedCallback(VisibilityProperty, visibility);
+        };
         FitToolbar();
         Put(configToolbar, 0, new Border { Style = StyleFor("ToolbarSurface"), Child = tabs,
             HorizontalAlignment = HorizontalAlignment.Left });
@@ -59,6 +68,12 @@ public sealed partial class ConfigsPage
         void FitToolbar()
         {
             bool compact = configToolbar.ActualWidth < 700;
+            bool compactSections = snapshotTarget.Visibility == Visibility.Visible &&
+                configToolbar.ActualWidth < expandedSectionsWidth;
+            var segmentStyle = compactSections ? compactSegment : standardSegment;
+            foreach (var item in tabs.Items)
+                if (item.Style != segmentStyle)
+                    item.Style = segmentStyle;
             if (jump.Content is StackPanel content)
                 ((TextBlock)content.Children[1]).Visibility = IsVisible(!compact);
             jump.Width = compact ? 44 : double.NaN;

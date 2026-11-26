@@ -516,6 +516,10 @@
         </Setter>
     </Style>
     <Style TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
+    <x:Double x:Key="StudioToolbarExpandedSectionsWidth">780</x:Double>
+    <Style x:Key="CompactSegmentItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}">
+        <Setter Property="Padding" Value="8,0" />
+    </Style>
     <!-- launcher.css .seg.lg: 36 high, 18 to each side, 13 point. -->
     <Style x:Key="SegmentLargeItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}">
         <Setter Property="FontSize" Value="{StaticResource SubtitleSize}" />
