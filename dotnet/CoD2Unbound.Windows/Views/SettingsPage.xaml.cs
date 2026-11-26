@@ -157,20 +157,31 @@ public sealed partial class SettingsPage : Page
                 return Task.CompletedTask;
             }));
         }
-        Row(DataSummary(data), string.Join("\n", new[]
+        bool found = data.State == SetupDataState.Found;
+        string dataStatus = data.State switch
+        {
+            SetupDataState.Found => "Found",
+            SetupDataState.Damaged or SetupDataState.UnfinishedSteam => "Incomplete",
+            _ => "Not found"
+        };
+        dataActions.Children.Insert(0, GameDataStatus(dataStatus, found));
+        Row("Game data", string.Join("\n", new[]
         {
             data.Path, data.Problem ?? (data.State == SetupDataState.Found ? SetupSession.FoundSummary : "")
-        }.Where(line => line.Length != 0)), dataActions);
-        var changeKey = Action(session.Setup.HasStoredKey ? "Replace…" : "Enter key…", ReplaceKeyAsync);
+        }.Where(line => line.Length != 0)), dataActions, Fluent("Folder", 14));
+        bool hasKey = session.Setup.HasStoredKey;
+        var changeKey = Action(hasKey ? "Replace…" : "Add Key…", ReplaceKeyAsync);
         changeKey.IsEnabled = !session.ClientIsRunning;
-        Row("CD key", session.Setup.HasStoredKey ? "Verified · Stored only on this PC" : "Not entered.", changeKey);
+        Row("CD key", hasKey ? "Stored only on this PC" : "No key stored. The game needs one to join servers.",
+            Buttons(GameDataStatus(hasKey ? "Verified" : "Missing", hasKey), changeKey), SystemIcon("SystemPermissions", 14));
         Group("Your files");
-        Row("Loadouts, demos and screenshots", session.HomePath, Action("Show in File Explorer", () => OpenAsync(session.HomePath)));
+        Row("Loadouts, demos and screenshots", session.HomePath,
+            Action("Show in File Explorer", () => OpenAsync(session.HomePath)), Fluent("Document", 14));
         var versions = new StackPanel { Spacing = 4 };
         AddEdition(GameEdition.Cod2x, "CoD2x 1.4.6.8");
         AddEdition(GameEdition.Original, "Original 1.3");
         if (versions.Children.Count > 0)
-            Row("Game versions installed", null, versions);
+            Row("Game versions installed", null, versions, Fluent("Desktop", 14));
         var setupAgain = Action("Set Up Again…", ConfirmSetupAgainAsync);
         setupAgain.IsEnabled = !session.ClientIsRunning && !session.SetupUpdating;
         Row("Set up again", "Walks through game data and CD key once more. Your loadouts, demos and screenshots stay. You can cancel at any step.",
@@ -187,6 +198,13 @@ public sealed partial class SettingsPage : Page
             versions.Children.Add(label);
         }
     }
+
+    private static TextBlock GameDataStatus(string text, bool ready) => new()
+    {
+        Text = text,
+        Style = StyleFor(ready ? "PositiveCaption" : "NegativeText"),
+        VerticalAlignment = VerticalAlignment.Center
+    };
 
     private async Task ReplaceKeyAsync()
     {
@@ -755,7 +773,7 @@ public sealed partial class SettingsPage : Page
 
     // Rows that follow one another share one rounded group with hairlines between them,
     // as the Mac's grouped Form draws them (SettingsWin board).
-    private void Row(string label, string? description = null, FrameworkElement? action = null)
+    private void Row(string label, string? description = null, FrameworkElement? action = null, FontIcon? symbol = null)
     {
         if (Fields.Children.Count == 0 || Fields.Children[^1] is not Border { Tag: RowGroupTag, Child: StackPanel rows })
         {
@@ -766,7 +784,7 @@ public sealed partial class SettingsPage : Page
         }
         else
             rows.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1, Margin = new Thickness(16, 0, 16, 0) });
-        rows.Children.Add(SettingRow(label, description, action, grouped: true));
+        rows.Children.Add(SettingRow(label, description, action, grouped: true, symbol: symbol));
     }
 
     private const string RowGroupTag = "settings-row-group";

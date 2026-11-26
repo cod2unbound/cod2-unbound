@@ -1,5 +1,7 @@
 using CoD2Unbound.Core;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
@@ -154,7 +156,15 @@ internal static class PagePresentation
         return bar;
     }
 
-    internal static Border SettingRow(string label, string? detail, FrameworkElement? action = null, bool grouped = false)
+    internal static Border RowIconTile(FontIcon icon, VerticalAlignment alignment = VerticalAlignment.Center)
+    {
+        icon.Style = StyleFor("PrivacyQuestionIcon");
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        return new Border { Style = StyleFor("RowSymbol"), VerticalAlignment = alignment, Child = icon };
+    }
+
+    internal static Border SettingRow(string label, string? detail, FrameworkElement? action = null,
+        bool grouped = false, FontIcon? symbol = null)
     {
         var lines = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         lines.Children.Add(new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap });
@@ -162,7 +172,15 @@ internal static class PagePresentation
             lines.Children.Add(Caption(detail));
         var layout = new Grid { MinHeight = grouped ? 28 : 34, ColumnSpacing = 12 };
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        layout.Children.Add(lines);
+        if (symbol is null)
+            layout.Children.Add(lines);
+        else
+        {
+            var decorated = Columns(14, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+            Put(decorated, 0, RowIconTile(symbol));
+            Put(decorated, 1, lines);
+            layout.Children.Add(decorated);
+        }
         if (action is not null)
         {
             layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -202,10 +220,4 @@ internal static class PagePresentation
         return Task.CompletedTask;
     }
 
-    internal static string DataSummary(SetupDataChoice choice) => choice.State switch
-    {
-        SetupDataState.Found => "Game data found",
-        SetupDataState.Damaged or SetupDataState.UnfinishedSteam => "Game data is incomplete",
-        _ => "Game data not found"
-    };
 }

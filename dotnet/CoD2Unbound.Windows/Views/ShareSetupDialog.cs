@@ -120,9 +120,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         {
             if (facts.Children.Count != 0)
                 facts.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            symbol.Style = StyleFor("PrivacyQuestionIcon");
-            AutomationProperties.SetAccessibilityView(symbol, AccessibilityView.Raw);
-            var tile = new Border { Style = StyleFor("RowSymbol"), VerticalAlignment = VerticalAlignment.Top, Child = symbol };
+            var tile = RowIconTile(symbol, VerticalAlignment.Top);
             var words = new StackPanel
             {
                 Spacing = 3,
