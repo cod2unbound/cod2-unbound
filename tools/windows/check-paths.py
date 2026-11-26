@@ -19,6 +19,7 @@ ENV = dict(os.environ, LC_ALL='C.UTF-8', WINEARCH='win64', WINEDEBUG='-all', WIN
            COD2_CRASH_NOPOPUP='1', COD2X_TEST_SERVICE_URL='http://127.0.0.1:9',
            COD2X_TEST_UPDATER_ADDRESS='127.0.0.1:9',
            COD2X_TEST_UPDATER_URL='http://127.0.0.1:9/api/updater/check')
+ENV.pop('COD2_UNBOUND_TEST_KEY_SLOT', None)
 
 
 def win(path):
@@ -100,6 +101,24 @@ def app_data(prefix):
     users = prefix / 'drive_c/users'
     return next(user / 'AppData/Local' for user in users.iterdir() if user.name != 'Public')
 
+
+def key_probe(case, run, env, prefix, *args):
+    if case == 'key-legacy':
+        configured = env.get('WINEPREFIX')
+        if (not configured or Path(configured).resolve(strict=True) != prefix or
+                prefix.parent != run or run.parent != OUTPUT or
+                'COD2_UNBOUND_TEST_KEY_SLOT' in env):
+            raise ValueError('legacy key probe requires the private path-check Wine prefix and no test slot')
+        probe = 'legacy-key-probe.exe'
+    else:
+        probe = 'key-probe.exe'
+    log = run / ('key-after-engine.log' if args else 'key-probe.log')
+    result = command(env, 'wine', str(OUTPUT / probe), *args, check=False)
+    log.write_bytes(result.stdout)
+    if result.returncode:
+        raise ValueError(f'key probe exited {result.returncode}. See {log}')
+
+
 def assert_result(run, result, source, selected):
     log = result.stdout.decode('utf-8', 'replace')
     (run / 'engine.log').write_bytes(result.stdout)
@@ -142,7 +161,7 @@ def check(case, edition, licensed_cache):
             selected, source = synthetic_install(run / 'Portable'), 'executable folder'
             candidates.append(selected)
             executable = Path(shutil.copyfile(executable, selected / executable.name))
-        if case in ('read-only', 'unicode-long', 'key', 'unsafe-home'):
+        if case in ('read-only', 'unicode-long', 'key', 'key-legacy', 'unsafe-home'):
             selected, source = LICENSED, 'command line'
             if case == 'unicode-long':
                 path = run / 'Żółć + 東京' / Path(*['licensed-' + 'y' * 65] * 4)
@@ -161,10 +180,8 @@ def check(case, edition, licensed_cache):
             args += ['+set', 'fs_homepath', win(LICENSED)]
         if case == 'key':
             env['COD2_UNBOUND_TEST_KEY_SLOT'] = 'paths'
-            result = command(env, 'wine', str(OUTPUT / 'key-probe.exe'), check=False)
-            (run / 'key-probe.log').write_bytes(result.stdout)
-            if result.returncode:
-                raise ValueError(f'key probe exited {result.returncode}. See {run}/key-probe.log')
+        if case in ('key', 'key-legacy'):
+            key_probe(case, run, env, prefix)
         virtual = app / 'VirtualStore/Program Files (x86)/Activision/Call of Duty 2/main/players/legacy'
         virtual.mkdir(parents=True)
         (virtual / 'config_mp.cfg').write_text('echo P5_LEGACY_PROFILE_WAS_READ\n')
@@ -180,11 +197,8 @@ def check(case, edition, licensed_cache):
                 raise ValueError('writable override outside LocalAppData was accepted')
         else:
             assert_result(run, result, source, selected)
-        if case == 'key':
-            checked = command(env, 'wine', str(OUTPUT / 'key-probe.exe'), 'verify', check=False)
-            (run / 'key-after-engine.log').write_bytes(checked.stdout)
-            if checked.returncode:
-                raise ValueError(f'key preservation probe exited {checked.returncode}')
+        if case in ('key', 'key-legacy'):
+            key_probe(case, run, env, prefix, 'verify')
         cache = dict(licensed_cache)
         after = {str(path): digest(path, cache) for path in candidates}
         for name, hashes in (('before', before), ('after', after)):
@@ -202,9 +216,10 @@ def check(case, edition, licensed_cache):
 
 
 def main():
-    subprocess.run(['x86_64-w64-mingw32-gcc', '-DCOD2_WINDOWS_NATIVE=1', '-I/src/src', '-I/src/src/headers',
-                    '/src/tools/windows/path-test-key.c', '/src/src/win32/win_key.c', '-ladvapi32',
-                    '-o', str(OUTPUT / 'key-probe.exe')], check=True, timeout=60)
+    for source, probe in (('path-test-key', 'key-probe'), ('path-test-legacy-key', 'legacy-key-probe')):
+        subprocess.run(['x86_64-w64-mingw32-gcc', '-DCOD2_WINDOWS_NATIVE=1', '-I/src/src', '-I/src/src/headers',
+                        f'/src/tools/windows/{source}.c', '/src/src/win32/win_key.c', '-ladvapi32',
+                        '-o', str(OUTPUT / f'{probe}.exe')], check=True, timeout=60)
     # /data is mounted read-only. Hash it at both ends of the run and reuse
     # its fingerprints for the fixture links in each case.
     licensed_cache = {}
@@ -212,7 +227,7 @@ def main():
     failures = []
     for edition in ('original', 'cod2x'):
         for case in ('retail32', 'retail64', 'steam', 'both', 'neither', 'exec-folder',
-                     'invalid-explicit', 'read-only', 'key', 'unicode-long', 'unsafe-home'):
+                     'invalid-explicit', 'read-only', 'key', 'key-legacy', 'unicode-long', 'unsafe-home'):
             try:
                 check(case, edition, licensed_cache)
             except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
