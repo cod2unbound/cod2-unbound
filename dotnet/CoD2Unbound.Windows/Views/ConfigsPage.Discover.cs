@@ -696,7 +696,7 @@ public sealed partial class ConfigsPage
 
         double? setupDistance = null;
         var attempt = Action("Try This Setup", () => ReviewSetupAsync(newOnly: true));
-        attempt.Style = StyleFor("LauncherAccentButton");
+        attempt.Style = StyleFor("MediumAccentButton");
         var import = Action("Import…", () => ReviewSetupAsync(newOnly: false));
         import.Style = StyleFor("SubtleAction");
         attempt.IsEnabled = import.IsEnabled = !model.Studio.IsReadOnly;
@@ -932,7 +932,7 @@ public sealed partial class ConfigsPage
 
     private Button Bookmark(ConfigDirectoryEntry entry)
     {
-        var action = new Button { Width = 36, Height = 36, Padding = new Thickness(0) };
+        var action = new Button { Style = StyleFor("IconAction") };
         Update();
         action.Click += async (_, _) => await shell.RunAsync(async () =>
         {
