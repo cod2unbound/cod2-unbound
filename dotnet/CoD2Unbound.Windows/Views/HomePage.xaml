@@ -151,7 +151,7 @@
                                     AccessKey="C" Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <FontIcon Glyph="&#xE7E8;" FontSize="16" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="CloseGameLabel" Text="Quit Game" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="CloseGameLabel" Text="Close Game" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
