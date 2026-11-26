@@ -46,9 +46,9 @@ internal static class SheetPresentation
                 Glyph = (string)resources[glyphKey], FontSize = 20,
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
             };
-            var tile = new Border { Width = 44, Height = 44, CornerRadius = new CornerRadius(12), Child = icon };
+            var tile = new Border { Style = StyleFor("SheetIconTile"), Child = icon };
             string ink = tone switch { Tone.Negative => "negative", Tone.Positive => "positive", _ => "accent" };
-            Follow(tile, theme => { tile.Background = theme("selection"); icon.Foreground = theme(ink); });
+            Follow(tile, theme => icon.Foreground = theme(ink));
             mark = tile;
         }
         mark.VerticalAlignment = VerticalAlignment.Top;

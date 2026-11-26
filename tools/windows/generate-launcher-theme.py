@@ -166,6 +166,7 @@ def generate(source):
         token("SettingsNoteBackground", "well")
         token("IconTileFill", "selection", "Window")
         brush("IconTileStroke", TRANSPARENT if palette else system_color("WindowText"))
+        brush("StatusGlyphFill", TRANSPARENT if palette else system_color("Window"))
         token("TextControlSelectionHighlightColor", "selectionStroke", "Highlight")
 
         if palette:

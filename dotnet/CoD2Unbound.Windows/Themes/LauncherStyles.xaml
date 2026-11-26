@@ -1469,6 +1469,17 @@
         <Setter Property="BorderBrush" Value="{ThemeResource IconTileStroke}" />
         <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
     </Style>
+    <Style x:Key="SheetIconTile" TargetType="Border" BasedOn="{StaticResource RowSymbol}">
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="44" />
+        <Setter Property="CornerRadius" Value="{StaticResource WellRadius}" />
+    </Style>
+    <Style x:Key="StatusGlyphTile" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource StatusGlyphFill}" />
+        <Setter Property="CornerRadius" Value="{StaticResource BadgeRadius}" />
+        <Setter Property="Padding" Value="1" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <!-- The Mac's large sidebar rows (List .sidebar, .sidebarRowSize large): 15 regular in the label colour,
          40 high with a 10 radius; the chosen row's label turns semibold (MainWindow.PaintNavGlyphs). -->
     <Style x:Key="ShellNavItem" TargetType="NavigationViewItem">

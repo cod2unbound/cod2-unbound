@@ -182,8 +182,11 @@
                                             <TextBlock Text="{Binding Status}" Style="{ThemeResource LoadoutStatusText}"
                                                        FontSize="11" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
-                                        <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
-                                                  FontSize="16" Style="{StaticResource PositiveIcon}" Visibility="{Binding Checkmark}" />
+                                        <Border Grid.Column="2" Style="{StaticResource StatusGlyphTile}" Visibility="{Binding Checkmark}"
+                                                AutomationProperties.AccessibilityView="Raw">
+                                            <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
+                                                      FontSize="16" Style="{StaticResource PositiveIcon}" />
+                                        </Border>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
