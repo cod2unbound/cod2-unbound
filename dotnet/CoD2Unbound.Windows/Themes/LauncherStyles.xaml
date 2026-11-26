@@ -44,8 +44,6 @@
     <x:String x:Key="FluentHistory">&#xE707;</x:String>
     <x:String x:Key="FluentFolder">&#xF418;</x:String>
     <x:String x:Key="FluentDocument">&#xF378;</x:String>
-    <x:String x:Key="FluentGlobe">&#xF45A;</x:String>
-    <x:String x:Key="FluentBug">&#xE206;</x:String>
     <x:String x:Key="FluentStar">&#xF70F;</x:String>
     <x:String x:Key="FluentLock">&#xE78E;</x:String>
     <x:String x:Key="FluentLockClosed">&#xE78F;</x:String>
@@ -70,6 +68,7 @@
     <x:String x:Key="SystemEdit">&#xE70F;</x:String>
     <x:String x:Key="SystemLink">&#xE71B;</x:String>
     <x:String x:Key="SystemWarning">&#xE7BA;</x:String>
+    <x:String x:Key="SystemGlobe">&#xE774;</x:String>
     <x:String x:Key="SystemBug">&#xEBE8;</x:String>
     <x:String x:Key="SystemPermissions">&#xE8D7;</x:String>
     <x:String x:Key="SystemPeople">&#xE716;</x:String>

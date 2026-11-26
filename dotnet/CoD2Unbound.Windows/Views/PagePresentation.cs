@@ -44,13 +44,23 @@ internal static class PagePresentation
         FontSize = size
     };
 
+    internal static FontIcon SystemIcon(string key, double size) => new()
+    {
+        Glyph = (string)Application.Current.Resources[key],
+        FontFamily = (FontFamily)Application.Current.Resources["SystemIcons"],
+        FontSize = size
+    };
+
     // Glyph and label: a horizontal StackPanel of a FontIcon then a TextBlock, which GlyphAlign lines up.
-    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false)
+    internal static StackPanel IconLabel(string icon, string text, double size = 20, bool filled = false) =>
+        IconLabel(Fluent(icon, size, filled), text);
+
+    internal static StackPanel IconLabel(FontIcon icon, string text)
     {
         var panel = new StackPanel
         {
             Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center,
-            Children = { Fluent(icon, size, filled), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
+            Children = { icon, new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } }
         };
         GlyphAlign.SetIsEnabled(panel, true);
         return panel;

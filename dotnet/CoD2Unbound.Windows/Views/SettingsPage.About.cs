@@ -45,10 +45,11 @@ public sealed partial class SettingsPage
         var website = Action("Website", () => OpenAsync("https://github.com/cod2unbound/cod2-unbound"));
         var report = Action("Report a Problem…", ReportProblemFromShellAsync);
         var acknowledgements = Action("Acknowledgements", ShowAcknowledgementsAsync);
-        foreach (var (button, icon) in new[] { (release, "Document"), (website, "Globe"), (report, "Bug"), (acknowledgements, "People") })
+        foreach (var (button, icon) in new[] { (release, Fluent("Document", 16)), (website, SystemIcon("SystemGlobe", 16)),
+            (report, SystemIcon("SystemBug", 16)), (acknowledgements, Fluent("People", 16)) })
         {
             string label = (string)button.Content;
-            button.Content = IconLabel(icon, label, 16);
+            button.Content = IconLabel(icon, label);
             AutomationProperties.SetName(button, label);
         }
         AutomationProperties.SetAutomationId(report, "SettingsReportProblem");

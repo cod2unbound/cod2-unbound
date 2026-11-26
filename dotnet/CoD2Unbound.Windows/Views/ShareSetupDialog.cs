@@ -63,9 +63,10 @@ internal sealed class ShareSetupDialog : ContentDialog
         if (form.Prepared is { } prepared)
         {
             var (sent, leftOut) = PrivacyPresentation.ShareFacts(prepared);
-            Fact("Document", "What is sent", sent);
-            Fact("LockClosed", "What is left out", leftOut);
-            Fact("Globe", "Where it goes", PrivacyPresentation.ShareDestination);
+            double size = (double)Application.Current.Resources["BodySize"];
+            Fact(Fluent("Document", size), "What is sent", sent);
+            Fact(Fluent("LockClosed", size), "What is left out", leftOut);
+            Fact(SystemIcon("SystemGlobe", size), "Where it goes", PrivacyPresentation.ShareDestination);
         }
         fields.Children.Add(name);
         fields.Children.Add(nameProblem);
@@ -114,11 +115,10 @@ internal sealed class ShareSetupDialog : ContentDialog
         };
         ShowForm();
 
-        void Fact(string icon, string heading, string detail)
+        void Fact(FontIcon symbol, string heading, string detail)
         {
             if (facts.Children.Count != 0)
                 facts.Children.Add(new Border { Style = StyleFor("CardDivider"), Height = 1 });
-            var symbol = Fluent(icon, (double)Application.Current.Resources["BodySize"]);
             symbol.Style = StyleFor("PrivacyQuestionIcon");
             AutomationProperties.SetAccessibilityView(symbol, AccessibilityView.Raw);
             var tile = new Border { Style = StyleFor("RowSymbol"), VerticalAlignment = VerticalAlignment.Top, Child = symbol };
