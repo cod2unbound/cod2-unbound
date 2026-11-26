@@ -220,7 +220,7 @@ function Wait-KitMapLoad([scriptblock]$Loaded, [int]$Seconds, [string]$Label, $G
 }
 
 function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Window, [string]$Renderer,
-    $Trace, $Game, [switch]$FromLauncher) {
+    $Trace, $Game, [switch]$FromLauncher, [switch]$CarentanOnly) {
     $log = Join-Path $GameHome 'main\console_mp.log'
     $boot = $log
     if ($FromLauncher) {
@@ -238,14 +238,21 @@ function Invoke-MapPictures([string]$GameHome, [string]$Evidence, [IntPtr]$Windo
     $notes = Join-Path $Evidence 'input.txt'
     "Menu clip $([KitDesktop]::Clip())" | Set-Content -LiteralPath $notes
     Save-KitFrame $Window $GameHome $Evidence 'kit-menu'
-    foreach ($map in 'mp_toujane','restart','mp_harbor','mp_carentan','mp_burgundy') {
+    $maps = if ($CarentanOnly) { 'mp_carentan' } else { 'mp_toujane','restart','mp_harbor','mp_carentan','mp_burgundy' }
+    foreach ($map in $maps) {
         $marker = 'CL_InitCGame:'
         $count = @(Select-String -LiteralPath $log -SimpleMatch $marker).Count
         $command = if ($map -eq 'restart') { 'map_restart' } else { "devmap $map" }
+        $load = [Diagnostics.Stopwatch]::StartNew()
         Send-KitCommand $Window "/toggleconsole; $command"
         Wait-KitMapLoad {
             @(Select-String -LiteralPath $log -SimpleMatch $marker).Count -gt $count
         } 55 $map $Game $log $Evidence
+        $load.Stop()
+        if ($map -eq 'mp_carentan') {
+            "mp_carentan $($load.ElapsedMilliseconds) ms from sending the command to observing CL_InitCGame." |
+                Set-Content -LiteralPath (Join-Path $Evidence 'map-load-times.txt') -Encoding UTF8
+        }
         if ($map -ne 'restart') {
             Start-Sleep -Seconds 2
             Enter-KitPlay $Window
@@ -295,7 +302,8 @@ function Assert-KitExclusiveForeground([IntPtr]$Window, [string]$Evidence, [swit
     } finally { $process.Dispose() }
 }
 
-function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evidence, [string]$Label) {
+function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evidence, [string]$Label,
+    [int]$SwitchTargetPid = 0) {
     $switches = Join-Path $Evidence 'fullscreen-switch.txt'
     $mode = [KitDesktop]::CurrentMode()
     Assert-KitExclusiveForeground $Window $Evidence
@@ -306,6 +314,9 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
         $current -ne $Window -and $current -ne [IntPtr]::Zero -and
             [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
     } 8 'Alt+Tab to switch away' -SkipSecurity | Out-Null
+    if ($SwitchTargetPid -and [KitDesktop]::WindowPid([KitDesktop]::GetForegroundWindow()) -ne $SwitchTargetPid) {
+        throw 'Alt+Tab switched to a different window from the kit switch target.'
+    }
     "Alt+Tab switched away. Game minimized $([KitDesktop]::IsIconic($Window))." |
          Set-Content -LiteralPath $switches -Encoding UTF8
     [KitDesktop]::Chord(18, 9)
@@ -316,7 +327,7 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
         } 8 'Alt+Tab to return' -OnTimeout { Assert-KitExclusiveForeground $Window $Evidence -AllowShell } -SkipSecurity | Out-Null
         'Alt+Tab returned foreground to the game.' | Add-Content -LiteralPath $switches
     } catch {
-        if ($_.Exception -is [NotSupportedException]) { throw }
+        if ($_.Exception -is [NotSupportedException] -or $SwitchTargetPid) { throw }
         'Trying a direct restore from the Windows shell.' | Add-Content -LiteralPath $switches
         Focus-KitWindow $window
     }
@@ -345,7 +356,8 @@ finally { $form.Dispose() }
     Start-KitProcess $powershell "-NoProfile -NonInteractive -STA -EncodedCommand $encoded" $Folder -NoWindow
 }
 
-function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode, [switch]$Borderless) {
+function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Renderer, [string]$DisplayMode,
+    [switch]$Borderless, [switch]$CarentanOnly) {
     Initialize-KitDesktop
     $entry = New-RunContext 'game'
     if ($DisplayMode -and -not $Borderless) {
@@ -399,7 +411,7 @@ function Invoke-AutomaticClient([string]$Edition, [string]$GamePath, [string]$Re
                 Invoke-KitTaskSwitch $window $homePath $entry.Evidence 'kit-fullscreen'
             }
         } else {
-            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace $run.Process
+            Invoke-MapPictures $homePath $entry.Evidence $window $Renderer $trace $run.Process -CarentanOnly:$CarentanOnly
         }
     } finally {
         try {

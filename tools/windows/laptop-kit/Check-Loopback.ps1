@@ -597,7 +597,7 @@ function Invoke-KitFullscreenMatch([string]$Edition, [string]$Renderer = 'dx9') 
         "Play cursor clip before switch $([KitDesktop]::Clip())" | Set-Content -LiteralPath $inputReceipt
         Start-KitFrameSample $trace $window $log
         Save-KitFrame $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
-        Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match'
+        Invoke-KitTaskSwitch $window $clientEntry.Folder $clientEntry.Evidence 'kit-match' $switchWindow.Process.Id
         "Play cursor clip after switch $([KitDesktop]::Clip())" | Add-Content -LiteralPath $inputReceipt
         $viewPattern = '(?m)^\( *-?\d+ +-?\d+ +-?\d+\) *: *-?\d+'
         Send-KitCommand $window '/toggleconsole; viewpos'

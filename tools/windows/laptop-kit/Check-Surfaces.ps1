@@ -1,12 +1,27 @@
-function Save-KitSurface([IntPtr]$Window, [string]$Name, [string[]]$Controls, [string[]]$Names = @()) {
+function Focus-KitPictureWindow([IntPtr]$Window, [uint32]$Owner) {
+    Wait-KitCondition { [KitDesktop]::TryFocusPictureWindow($Window, $Owner) } 12 'the owned launcher picture window to take focus' | Out-Null
+}
+
+function Save-KitSurface([IntPtr]$Window, [string]$Name, [string[]]$Controls, [string[]]$Names = @(), [uint32]$PictureOwner = 0) {
     foreach ($control in $Controls) {
         Wait-KitCondition { Find-KitControl $Window $control -AllowOffscreen } 12 $control | Out-Null
     }
     foreach ($control in $Names) {
         Wait-KitCondition { Find-KitControl $Window $control -Name -AllowOffscreen } 12 $control | Out-Null
     }
-    Focus-KitWindow $Window
-    Save-KitWindow $Window (Join-Path $Results "$Name.png")
+    $path = Join-Path $Results "$Name.png"
+    if ($PictureOwner) {
+        Focus-KitPictureWindow $Window $PictureOwner
+        try { Save-KitWindow $Window $path }
+        catch {
+            if ([KitDesktop]::GetForegroundWindow() -eq $Window) { throw }
+            Focus-KitPictureWindow $Window $PictureOwner
+            Save-KitWindow $Window $path
+        }
+    } else {
+        Focus-KitWindow $Window
+        Save-KitWindow $Window $path
+    }
     "$Name IDs [$($Controls -join ', ')] names [$($Names -join ', ')]" |
         Add-Content -LiteralPath (Join-Path $Results 'automation-controls.txt') -Encoding UTF8
 }
@@ -53,7 +68,7 @@ function Invoke-KitWindows10Startup {
                     'returning-home' { 'LaunchButton' }
                 }
                 [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
-                Save-KitSurface $app $name @($control)
+                Save-KitSurface $app $name @($control) -PictureOwner $run.Process.Id
             } finally {
                 if (-not $run.Process.HasExited) { [void]$run.Process.CloseMainWindow() }
                 $done = Complete-KitProcess $run (New-Folder (Join-Path $Results $name)) 12
@@ -61,6 +76,78 @@ function Invoke-KitWindows10Startup {
                 if ($done.TimedOut -or $done.ExitCode -ne 0) { throw "$name did not close cleanly." }
             }
         }
+    }
+}
+
+function Invoke-KitJumpPointer {
+    Stop-KitIfNoGame
+    Initialize-KitDesktop
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    $exe = Get-KitStartTarget
+    $setupHome = $LauncherHome
+    $address = '127.0.0.1:9'
+    $cases = @(
+        @{ Query='library'; Name='Library'; Witness='DemosSection' }
+        @{ Query='configs'; Name='Configs'; Witness='ConfigsCheckConfig' }
+        @{ Query='keyboard shortcuts'; Name='Keyboard Shortcuts'; Witness='PrimaryButton'; Dialog=$true }
+        @{ Query='connect to address'; Name='Connect to Address'; Witness='AddressBox'; Dialog=$true }
+        @{ Query=$address; Name=$address; Server=$true }
+    )
+    foreach ($theme in 'dark','light') {
+        $LauncherHome = New-KitLauncherTestHome $setupHome (New-Folder (Join-Path $Private $theme))
+        Set-KitLauncherProfile 'original' 'dx9'
+        $preferences = Join-Path $LauncherHome 'launcher\launcher-settings.json'
+        $settings = Get-Content -LiteralPath $preferences -Raw | ConvertFrom-Json
+        $settings | Add-Member -NotePropertyName appearance -NotePropertyValue $theme
+        $settings | ConvertTo-Json | Set-Content -LiteralPath $preferences -Encoding ASCII
+        [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
+            (@{recent=@($address)} | ConvertTo-Json -Compress))
+        $pictures = New-Folder (Join-Path $Results $theme)
+        $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+        try {
+            $app = Get-KitLauncherWindow $run.Process
+            Wait-KitHome $app
+            [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
+            foreach ($case in $cases) {
+                Focus-KitPictureWindow $app $run.Process.Id
+                [KitDesktop]::Chord(17, 75)
+                Set-KitEdit $app 'JumpBox' $case.Query
+                $button = Wait-KitCondition {
+                    $list = Find-KitControl $app 'JumpList'
+                    if ($list) {
+                        $kind = [Windows.Automation.PropertyCondition]::new(
+                            [Windows.Automation.AutomationElement]::ControlTypeProperty,
+                            [Windows.Automation.ControlType]::Button)
+                        $list.FindAll([Windows.Automation.TreeScope]::Descendants,$kind) | Where-Object {
+                            $_.Current.IsEnabled -and -not $_.Current.IsOffscreen -and
+                                $_.Current.Name -like "$($case.Name)*"
+                        } | Select-Object -First 1
+                    }
+                } 10 "the $($case.Name) Jump to button"
+                $file = $case.Query -replace '[^a-z0-9]+','-'
+                Save-KitWindow $app (Join-Path $pictures "$file-before.png")
+                $area = $button.Current.BoundingRectangle
+                if ($area.IsEmpty -or -not [KitDesktop]::ClickSurface($app,
+                        [int]($area.Left + $area.Width/2), [int]($area.Top + $area.Height/2), $true)) {
+                    throw "The $($case.Name) Jump to button could not receive a pointer click."
+                }
+                Wait-KitCondition {
+                    if (Find-KitControl $app 'JumpBox') { return }
+                    if (-not $case.Server) { return Find-KitControl $app $case.Witness }
+                    $row = Get-KitSelectedServerRow $app
+                    $detail = Find-KitControl $app 'DetailAddress' -AllowOffscreen
+                    if ($row.Name -like "*$address*" -and $detail.Current.Name -like "*$address*") {
+                        "Selected: $($row.Name). Details: $($detail.Current.Name)." |
+                            Set-Content -LiteralPath (Join-Path $pictures 'server-selection.txt') -Encoding UTF8
+                        return $true
+                    }
+                } 12 "the result of clicking $($case.Name)" | Out-Null
+                Save-KitWindow $app (Join-Path $pictures "$file-after.png")
+                "$theme $($case.Name): pointer click opened the result." |
+                    Add-Content -LiteralPath (Join-Path $Results 'pointer-results.txt') -Encoding UTF8
+                if ($case.Dialog) { [KitDesktop]::Tap(27) }
+            }
+        } finally { Stop-KitLauncher $run $pictures }
     }
 }
 
@@ -131,21 +218,21 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
         $app = Get-KitLauncherWindow $run.Process
         Wait-KitHome $app
         [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
-        Focus-KitWindow $app
+        if ($Page -ne 'home') { Focus-KitWindow $app }
         switch ($Page) {
             'home' {
                 if ($Variant -eq 'first') {
-                    Save-KitSurface $app 'first-home' @('OpenGameMenuButton', 'FindServerButton')
+                    Save-KitSurface $app 'first-home' @('OpenGameMenuButton', 'FindServerButton') -PictureOwner $run.Process.Id
                     $news = Wait-KitCondition {
                         foreach ($id in 'SeeAllNews', 'NewsChip') {
                             if (Find-KitControl $app $id) { return $id }
                         }
                     } 12 'the visible Home news action'
                     Invoke-KitControl $app $news
-                    Save-KitSurface $app 'news' @('CloseButton')
+                    Save-KitSurface $app 'news' @('CloseButton') -PictureOwner $run.Process.Id
                     Invoke-KitControl $app 'CloseButton'
                 } else {
-                    Save-KitSurface $app 'returning-home' @('LaunchButton')
+                    Save-KitSurface $app 'returning-home' @('LaunchButton') -PictureOwner $run.Process.Id
                     Open-KitJump $app 'open game menu' 'Open Game Menu' | Out-Null
                     Save-KitSurface $app 'game-menu-jump' @('JumpBox', 'JumpList')
                     [KitDesktop]::Tap(27)

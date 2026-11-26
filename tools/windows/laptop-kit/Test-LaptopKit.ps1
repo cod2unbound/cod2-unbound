@@ -65,6 +65,21 @@ foreach ($refusal in 'Server uses a different version.', 'Unpure client detected
 }
 $root = Join-Path ([IO.Path]::GetTempPath()) ('kit-tests-' + [guid]::NewGuid().ToString('N'))
 try {
+    $KitProfile = $root
+    . (Join-Path $PSScriptRoot 'Laptop-Steps.ps1')
+    if (@($Steps.Id | Sort-Object -Unique).Count -ne $Steps.Count) { throw 'Laptop step IDs must be unique.' }
+    foreach ($edition in 'original','cod2x') {
+        foreach ($renderer in 'dx9','dx7') {
+            $repeats = @($Steps | Where-Object {
+                $_.Id -like 'match-*-fullscreen*' -and $_.Edition -eq $edition -and $_.Renderer -eq $renderer
+            })
+            if ($repeats.Count -ne 3) { throw "Expected three $edition $renderer exclusive matches." }
+        }
+    }
+    foreach ($id in 'launcher-jump-pointer','resolution-original','carentan-direct-2','carentan-direct-3',
+        'carentan-installed-2','carentan-installed-3','collect-dumps') {
+        if ($id -notin $Steps.Id) { throw "Laptop check is missing $id." }
+    }
     $main = New-Folder (Join-Path $root 'main')
     [IO.File]::WriteAllText((Join-Path $main 'iw_00.iwd'), 'fixture archive')
     [IO.File]::WriteAllText((Join-Path $main 'config_mp.cfg'), 'synthetic retail profile marker')

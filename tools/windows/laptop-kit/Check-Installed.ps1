@@ -185,7 +185,7 @@ function Stop-KitLauncher($Run, [string]$Evidence) {
     }
 }
 
-function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
+function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer, [switch]$CarentanOnly) {
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
@@ -219,7 +219,7 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
                 Select-Object -First 1
         } 40 'the installed game process'
         $window = Get-KitGameWindow $game
-        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace $game -FromLauncher
+        Invoke-MapPictures $LauncherHome $Results $window $Renderer $trace $game -FromLauncher -CarentanOnly:$CarentanOnly
     } finally {
         if ($game -and -not $game.HasExited) {
             if ($window -ne [IntPtr]::Zero) {
@@ -236,6 +236,91 @@ function Invoke-InstalledKitClient([string]$Edition, [string]$Renderer) {
         Save-KitFrameTrace $trace $Results $adapterLog
         Stop-KitLauncher $run $Results
         [void](Save-KitFirewall 'after-installed-client')
+    }
+}
+
+function Assert-KitNoConfigurationPrompt($Game) {
+    foreach ($handle in [KitDesktop]::VisibleProcessWindows($Game.Id)) {
+        if ([KitDesktop]::WindowClass($handle) -ne '#32770') { continue }
+        $dialog = [Windows.Automation.AutomationElement]::FromHandle($handle)
+        if ($dialog.Current.Name -match 'WIN_CONFIGURE_UPDATED_TITLE|Recommended Settings Updated') {
+            throw 'The game displayed the configuration-updated question on first start.'
+        }
+    }
+}
+
+function Invoke-KitFirstResolution {
+    Stop-KitIfNoGame
+    Initialize-KitDesktop
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    $exe = Get-KitStartTarget
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
+    Set-KitLauncherProfile 'original' 'dx9' 'windowed' '800x600'
+    $chosen = '1280x720'
+    $receipt = Join-Path $Results 'first-resolution.txt'
+    $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+    $game = $null
+    $window = [IntPtr]::Zero
+    try {
+        $app = Get-KitLauncherWindow $run.Process
+        Wait-KitHome $app
+        # Choose the general resolution before an active loadout owns the setting.
+        $players = Join-Path $LauncherHome 'main\players'
+        Move-Item -LiteralPath (Join-Path $players 'active.txt') -Destination (Join-Path $Private 'preselection-active.txt')
+        Move-Item -LiteralPath (Join-Path $players 'kit') -Destination (Join-Path $Private 'preselection-loadout')
+        $settingsWindow = Open-KitSettings $app
+        try {
+            Invoke-KitControl (Find-KitControl $settingsWindow 'Panes') 'Display' -Name
+            $picker = Wait-KitCondition {
+                Get-KitControls $settingsWindow 'Resolution' -Name -AllowOffscreen |
+                    Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox } |
+                    Select-Object -First 1
+            } 18 'the launcher resolution selector'
+            $picker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+            $choice = Wait-KitCondition {
+                $picker.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) |
+                    Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::ListItem -and
+                        $_.Current.Name -match '^1280\s*[x\u00d7]\s*720\b' } | Select-Object -First 1
+            } 12 '1280 x 720 in the resolution selector'
+            $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+            $settingsPath = Join-Path $LauncherHome 'launcher\launcher-settings.json'
+            Wait-KitCondition {
+                (Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json).resolution -eq $chosen
+            } 12 'the selected resolution to save' | Out-Null
+            "Selected $chosen in Settings > Display." | Set-Content -LiteralPath $receipt -Encoding UTF8
+            Focus-KitPictureWindow $settingsWindow $run.Process.Id
+            Save-KitWindow $settingsWindow (Join-Path $Results 'launcher-resolution-selected.png')
+        } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
+        New-TestProfile $LauncherHome
+        $started = Get-Date
+        Open-KitGameMenu $app
+        $game = Get-KitOwnedGame 'original' $started $run.Process.SessionId
+        $log = Join-Path $LauncherHome 'main\console_mp.log'
+        Wait-KitCondition {
+            Assert-KitNoConfigurationPrompt $game
+            if ($game.HasExited) { throw 'Original exited during first start.' }
+            (Test-Path -LiteralPath $log) -and (Select-String -LiteralPath $log -SimpleMatch 'Working directory:' -Quiet)
+        } 65 'the first startup log' | Out-Null
+        foreach ($sample in 1..12) {
+            Assert-KitNoConfigurationPrompt $game
+            Start-Sleep -Milliseconds 250
+        }
+        $window = Get-KitGameWindow $game
+        Save-KitFrame $window $LauncherHome $Results 'kit-first-resolution'
+        Assert-KitNoConfigurationPrompt $game
+        $picture = [Drawing.Image]::FromFile((Join-Path $Results 'kit-first-resolution.jpg'))
+        try {
+            "First engine picture: $($picture.Width)x$($picture.Height)." | Add-Content -LiteralPath $receipt
+            if ($picture.Width -ne 1280 -or $picture.Height -ne 720) {
+                throw "Original rendered at $($picture.Width)x$($picture.Height) with $chosen requested."
+            }
+        } finally { $picture.Dispose() }
+        'No configuration-updated question appeared during startup or the three-second menu observation.' |
+            Add-Content -LiteralPath $receipt
+    } finally {
+        Stop-KitOwnedGame $game $window
+        Save-GameEvidence $LauncherHome $Results
+        Stop-KitLauncher $run $Results
     }
 }
 

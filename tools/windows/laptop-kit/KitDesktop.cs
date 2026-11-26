@@ -33,6 +33,8 @@ public static class KitDesktop {
     [DllImport("user32.dll", SetLastError = true)] static extern bool SetWindowPos(IntPtr window, IntPtr after,
         int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+    [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point point);
+    [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr window, uint flags);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumWindow callback, IntPtr state);
     delegate bool EnumWindow(IntPtr window, IntPtr state);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
@@ -279,6 +281,51 @@ public static class KitDesktop {
             if (attached) AttachThreadInput(caller, foregroundThread, false);
         }
         return GetForegroundWindow() == window;
+    }
+
+    public static bool ClickSurface(IntPtr window, int x, int y, bool requireForeground)
+    {
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        System.Drawing.Point cursor = Cursor.Position;
+        try {
+            var point = new Point { X = x, Y = y };
+            if (GetAncestor(WindowFromPoint(point), 2) != window) return false;
+            Cursor.Position = new System.Drawing.Point(x - 2, y);
+            Thread.Sleep(100);
+            Cursor.Position = new System.Drawing.Point(x, y);
+            Move(1, 0);
+            Thread.Sleep(140);
+            GetCursorPos(out point);
+            if (GetAncestor(WindowFromPoint(point), 2) != window || SecurityPrompt() != "" ||
+                (requireForeground && GetForegroundWindow() != window)) return false;
+            ClickButton(false);
+            try { Thread.Sleep(85); } finally { ClickButton(true); }
+            return true;
+        } finally {
+            Cursor.Position = cursor;
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
+    }
+
+    public static bool TryFocusPictureWindow(IntPtr window, uint owner)
+    {
+        if (owner == 0 || WindowPid(window) != owner) return false;
+        if (TryFocus(window)) return true;
+        IntPtr foreground = GetForegroundWindow();
+        if (!QuietDesktop(1200) || SecurityPrompt() != "" || WindowClass(foreground) == "#32770")
+            return false;
+        IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            // Place the owned window where a title-bar click can activate it normally.
+            const uint keepSizePositionAndFocus = 0x0001 | 0x0002 | 0x0010;
+            if (!SetWindowPos(window, IntPtr.Zero, 0, 0, 0, 0, keepSizePositionAndFocus)) return false;
+            Rectangle frame = Frame(window);
+            int captionY = frame.Top + (int)(12 * GetDpiForWindow(window) / 96.0);
+            if (!ClickSurface(window, frame.Left + frame.Width / 2, captionY, false)) return false;
+            return GetForegroundWindow() == window;
+        } finally {
+            if (previous != IntPtr.Zero) SetThreadDpiAwarenessContext(previous);
+        }
     }
 
     [DllImport("user32.dll")] public static extern bool GetClipCursor(out Rect r);

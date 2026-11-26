@@ -237,6 +237,10 @@ $Steps = @(
             Invoke-KitSurface $step.Variant
         } -Variant $surface
     }
+    Add-KitStep 'launcher-jump-pointer' 'Click Jump to results in dark and light' { Invoke-KitJumpPointer }
+    Add-KitStep 'resolution-original' 'First Original launch at 1280 x 720 without a configuration question' {
+        Invoke-KitFirstResolution
+    }
     Add-KitStep 'servers-refresh-navigation' 'Navigate away and preserve the selected server during a 252-address refresh' {
         Invoke-KitRefreshNavigation
     }
@@ -291,6 +295,17 @@ $Steps = @(
             Invoke-AutomaticClient $step.Edition $GamePath 'dx9' ([KitDesktop]::CurrentMode()) -Borderless
         } -Edition $edition
     }
+    # The normal Direct3D 9 runs provide the first Carentan sample on each route.
+    foreach ($route in 'direct','installed') {
+        foreach ($attempt in 2,3) {
+            Add-KitStep "carentan-$route-$attempt" "CoD2x Direct3D 9 Carentan load, $route attempt $attempt" {
+                param($step)
+                Stop-KitIfNoGame
+                if ($step.Variant -eq 'direct') { Invoke-AutomaticClient 'cod2x' $GamePath 'dx9' -CarentanOnly }
+                else { Invoke-InstalledKitClient 'cod2x' 'dx9' -CarentanOnly }
+            } -Variant $route
+        }
+    }
     Add-KitStep 'audio' 'Sound loopback and volume ratio' {
         $audio = Join-Path $RunResults 'direct-original-dx9\game'
         $ratio = Join-Path $audio 'audio-ratio.txt'
@@ -314,21 +329,24 @@ $Steps = @(
                 Invoke-KitLoopback $step.Edition $step.Variant
             } -Edition $edition -Variant $route
         }
-        Add-KitStep "match-$edition-fullscreen" "$name exclusive full-screen match and Alt+Tab" {
-            param($step)
-            Stop-KitIfNoGame
-            Invoke-KitFullscreenMatch $step.Edition
-        } -Edition $edition
+        foreach ($renderer in 'dx9','dx7') {
+            $primary = "match-$edition-fullscreen"
+            if ($renderer -eq 'dx7') { $primary += '-dx7' }
+            foreach ($attempt in 1..3) {
+                $id = if ($attempt -eq 1) { $primary } else { "$primary-$attempt" }
+                Add-KitStep $id "$name exclusive $(Get-GraphicsMode $renderer) match and Alt+Tab, attempt $attempt of 3" {
+                    param($step)
+                    Stop-KitIfNoGame
+                    Invoke-KitFullscreenMatch $step.Edition $step.Renderer
+                } -Edition $edition -Renderer $renderer
+            }
+        }
     }
     foreach ($edition in 'original','cod2x') {
         Add-KitStep "open-demo-$edition" "Open the $(Get-EditionName $edition) demo through Windows" {
             param($step)
             Invoke-KitOpenDemo $step.Edition
         } -Edition $edition
-    }
-    Add-KitStep 'match-cod2x-fullscreen-dx7' 'CoD2x exclusive DirectX 7 match and Alt+Tab' {
-        Stop-KitIfNoGame
-        Invoke-KitFullscreenMatch 'cod2x' 'dx7'
     }
     Add-KitStep 'identity-cod2x' 'Compare the CoD2x identifier with the 1.4.6.8 algorithm on this PC' {
         Stop-KitIfNoGame

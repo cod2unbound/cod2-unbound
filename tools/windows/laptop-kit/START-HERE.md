@@ -73,14 +73,20 @@
    when it asks. Allow 5 minutes.
 4. The kit opens Setup and the launcher pages and takes pictures. Then both
    game editions run in both graphics modes and join matches on this PC.
+   The kit clicks Jump to results in both appearances and checks the first
+   Original launch at the resolution selected in Settings. It repeats each
+   exclusive match three times and records three Carentan loads each from
+   the direct client and the launcher.
    Keep your hands off the keyboard and mouse during those automatic steps.
-   Leave the kit's windows in front. Allow 30 to 50 minutes.
+   Leave the kit's windows in front and allow at least an hour.
 5. If Windows trusts the lab signature, the kit asks before each of five
    updates. It asks separately before the update interruption and restart.
    Save your work. After the restart, sign back in as the same user and
    resume. Allow 10 to 20 minutes. If Windows does not trust the lab
    signature, all seven update and restore checks share one skip reason.
-6. The kit tests freeze recovery and collects the local report. It then
+6. The kit tests freeze recovery and collects the local test report and
+   events linked to the test installation. It skips the account's crash
+   dump folder. It then
    shows the comparison pictures and asks what you saw. Cleanup uninstalls
    CoD2 Unbound Test, deletes the sample credential and checks that your
    regular installation and saved credential stayed the same.
