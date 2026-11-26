@@ -50,11 +50,11 @@
                         </Border>
                     </StackPanel>
                     <Button.Flyout>
-                        <Flyout Opening="OnFiltersOpening" Placement="Bottom">
-                            <StackPanel Width="340" Spacing="10">
-                                <Border Style="{StaticResource GroupCard}">
+                        <Flyout Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
+                            <StackPanel Spacing="10">
+                                <Border Style="{StaticResource SheetFormGroup}">
                                     <StackPanel>
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
                                             <SelectorBar x:Name="FilterEdition" Grid.Column="1" AutomationProperties.Name="Version"
                                                          SelectionChanged="OnEditionFilterSelection">
@@ -64,31 +64,31 @@
                                             </SelectorBar>
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Game mode" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <ComboBox x:Name="FilterMode" Grid.Column="1" SelectionChanged="OnFilterSelection"
                                                       AutomationProperties.Name="Game type" />
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Ping" VerticalAlignment="Center" FontWeight="SemiBold" />
                                             <ComboBox x:Name="FilterPing" Grid.Column="1" SelectionChanged="OnFilterSelection"
                                                       AutomationProperties.Name="Maximum ping" />
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Hide empty servers" VerticalAlignment="Center" />
                                             <ToggleSwitch x:Name="HideEmpty" Grid.Column="1" MinWidth="0" Toggled="OnFilterToggle"
                                                           AutomationProperties.Name="Hide empty servers" />
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Hide full servers" VerticalAlignment="Center" />
                                             <ToggleSwitch x:Name="HideFull" Grid.Column="1" MinWidth="0" Toggled="OnFilterToggle"
                                                           AutomationProperties.Name="Hide full servers" />
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
-                                        <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
+                                        <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Hide servers that need a password" VerticalAlignment="Center" TextWrapping="Wrap" />
                                             <ToggleSwitch x:Name="HidePassworded" Grid.Column="1" MinWidth="0" Toggled="OnFilterToggle"
                                                           AutomationProperties.Name="Hide passworded servers" />
