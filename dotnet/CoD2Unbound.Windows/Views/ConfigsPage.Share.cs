@@ -94,7 +94,7 @@ public sealed partial class ConfigsPage
             Body("It is taken off Player Setups for everyone. Copies other players already imported stay on their PCs."),
             "Stop Sharing");
         confirmation.AsAlert(destructive: false);
-        confirmation.DefaultButton = ContentDialogButton.Close;
+        confirmation.DefaultButton = ContentDialogButton.Primary;
         if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
             return;
         if (noticeBar is not null)
