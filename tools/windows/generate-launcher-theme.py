@@ -193,6 +193,8 @@ def generate(source):
 
         disabled_ink = "#66" + palette["text"][-6:] if palette else system_color("GrayText")
         brush("disabledInk", disabled_ink)
+        token("DisplayPreviewTitleBrush", "accent", "HighlightText")
+        token("DisplayPreviewNoteBrush", "secondary", "HighlightText")
 
         for key, start, end in (("ProminentBrush", "0.5,0", "0.5,1"),
                                 ("ProgressFillBrush", "0,0.5", "1,0.5")):
@@ -257,15 +259,22 @@ def generate(source):
                 keys("knob", "HighlightText", f"CheckBoxCheckGlyphForeground{check}{state}")
             keys("field", "Window", f"CheckBoxCheckBackgroundFillUnchecked{state}")
             keys("wellStroke", "WindowText", f"CheckBoxCheckBackgroundStrokeUnchecked{state}")
+            token(f"ToggleSwitchFillOn{state}", "control", "Window" if disabled else "Highlight")
             keys("control", "GrayText" if disabled else "Highlight",
-                 f"ToggleSwitchFillOn{state} ToggleSwitchStrokeOn{state} "
-                 f"RadioButtonOuterEllipseCheckedStroke{state} RadioButtonOuterEllipseCheckedFill{state}")
+                 f"ToggleSwitchStrokeOn{state} RadioButtonOuterEllipseCheckedStroke{state} RadioButtonOuterEllipseCheckedFill{state}")
             keys("knob", "HighlightText", f"RadioButtonCheckGlyphFill{state}")
             keys("buttonHover" if state == "PointerOver" else "press" if state == "Pressed" else "track",
                  "Window", f"ToggleSwitchFillOff{state}")
             keys("track", "Window", f"SliderTrackFill{state}")
             keys("track", "WindowText", f"ToggleSwitchStrokeOff{state}")
-            keys("knob", "ButtonText", f"ToggleSwitchKnobFillOn{state} ToggleSwitchKnobFillOff{state} SliderThumbBackground{state}")
+            if disabled:
+                fill = disabled_ink if palette else system_color("WindowText")
+                brush(f"ToggleSwitchKnobFillOn{state}", fill)
+                brush(f"ToggleSwitchKnobFillOff{state}", fill)
+            else:
+                token(f"ToggleSwitchKnobFillOn{state}", "knob", "HighlightText")
+                token(f"ToggleSwitchKnobFillOff{state}", "knob", "WindowText")
+            keys("knob", "ButtonText", f"SliderThumbBackground{state}")
             keys("control", "GrayText" if disabled else "Highlight", f"SliderTrackValueFill{state}")
 
         for control in ("ListViewItem", "GridViewItem", "NavigationViewItem", "SelectorBarItem", "ComboBoxItem", "MenuFlyoutItem", "MenuFlyoutSubItem"):

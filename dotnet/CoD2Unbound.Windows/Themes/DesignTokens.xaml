@@ -110,6 +110,8 @@
             <SolidColorBrush x:Key="tagEyelet" Color="#FF22251B" />
             <SolidColorBrush x:Key="tagStamp" Color="#FF6F6B5E" />
             <SolidColorBrush x:Key="disabledInk" Color="#66ECE6D6" />
+            <SolidColorBrush x:Key="DisplayPreviewTitleBrush" Color="#FFE2BD72" />
+            <SolidColorBrush x:Key="DisplayPreviewNoteBrush" Color="#FFA9A28F" />
             <LinearGradientBrush x:Key="ProminentBrush" StartPoint="0.5,0" EndPoint="0.5,1">
                 <GradientStop Offset="0" Color="#FFE8C478" />
                 <GradientStop Offset="1" Color="#FFC4984C" />
@@ -282,8 +284,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#29FFFFFF" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#FFF4EEDF" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#FFF4EEDF" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#66ECE6D6" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#66ECE6D6" />
             <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FFF4EEDF" />
             <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FFC99A4C" />
             <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#0DFFFFFF" />
@@ -516,6 +518,8 @@
             <SolidColorBrush x:Key="tagEyelet" Color="#FFEFE8D8" />
             <SolidColorBrush x:Key="tagStamp" Color="#FF6F6B5E" />
             <SolidColorBrush x:Key="disabledInk" Color="#6626251D" />
+            <SolidColorBrush x:Key="DisplayPreviewTitleBrush" Color="#FF6B4A12" />
+            <SolidColorBrush x:Key="DisplayPreviewNoteBrush" Color="#FF615E51" />
             <LinearGradientBrush x:Key="ProminentBrush" StartPoint="0.5,0" EndPoint="0.5,1">
                 <GradientStop Offset="0" Color="#FF5C6A33" />
                 <GradientStop Offset="1" Color="#FF46522A" />
@@ -688,8 +692,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#29504628" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#29504628" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#29504628" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#FFFFFFFF" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#6626251D" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#6626251D" />
             <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF55622F" />
             <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#0D3C3214" />
@@ -918,6 +922,8 @@
             <SolidColorBrush x:Key="tagEyelet" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="tagStamp" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="disabledInk" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="DisplayPreviewTitleBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="DisplayPreviewNoteBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ProminentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ProgressFillBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ButtonBackground" Color="{ThemeResource SystemColorButtonFaceColor}" />
@@ -956,8 +962,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFill" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{ThemeResource SystemColorButtonTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{ThemeResource SystemColorButtonTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
@@ -996,8 +1002,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{ThemeResource SystemColorButtonTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="{ThemeResource SystemColorButtonTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
@@ -1036,8 +1042,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillPressed" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{ThemeResource SystemColorButtonTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="{ThemeResource SystemColorButtonTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="{ThemeResource SystemColorButtonFaceColor}" />
@@ -1067,7 +1073,7 @@
             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
@@ -1075,8 +1081,8 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="{ThemeResource SystemColorWindowTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource SystemColorButtonTextColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="{ThemeResource SystemColorButtonTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
             <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />

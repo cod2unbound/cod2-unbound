@@ -587,7 +587,9 @@
                                     <VisualState.Setters>
                                         <Setter Target="OuterBorder.Fill" Value="{ThemeResource ToggleSwitchFillOffDisabled}" />
                                         <Setter Target="SwitchKnobBounds.Fill" Value="{ThemeResource ToggleSwitchFillOnDisabled}" />
-                                        <Setter Target="KnobFace.Fill" Value="{ThemeResource disabledInk}" />
+                                        <Setter Target="SwitchKnobBounds.Stroke" Value="{ThemeResource ToggleSwitchStrokeOff}" />
+                                        <Setter Target="KnobFaceOff.Fill" Value="{ThemeResource ToggleSwitchKnobFillOffDisabled}" />
+                                        <Setter Target="KnobFaceOn.Fill" Value="{ThemeResource ToggleSwitchKnobFillOnDisabled}" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
@@ -618,6 +620,8 @@
                                         <Setter Target="KnobTranslateTransform.X" Value="{StaticResource SwitchTravel}" />
                                         <Setter Target="SwitchKnobBounds.Opacity" Value="1" />
                                         <Setter Target="OuterBorder.Opacity" Value="0" />
+                                        <Setter Target="KnobFaceOff.Opacity" Value="0" />
+                                        <Setter Target="KnobFaceOn.Opacity" Value="1" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
@@ -633,8 +637,10 @@
                                        Fill="{ThemeResource ToggleSwitchFillOn}" />
                             <Grid x:Name="SwitchKnob" Width="{StaticResource SwitchHeight}" HorizontalAlignment="Left">
                                 <Grid.RenderTransform><TranslateTransform x:Name="KnobTranslateTransform" /></Grid.RenderTransform>
-                                <Ellipse x:Name="KnobFace" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
+                                <Ellipse x:Name="KnobFaceOff" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
                                          Fill="{ThemeResource ToggleSwitchKnobFillOff}" />
+                                <Ellipse x:Name="KnobFaceOn" Width="{StaticResource SwitchKnobSize}" Height="{StaticResource SwitchKnobSize}"
+                                         Fill="{ThemeResource ToggleSwitchKnobFillOn}" Opacity="0" />
                             </Grid>
                             <Thumb x:Name="SwitchThumb" AutomationProperties.AccessibilityView="Raw">
                                 <Thumb.Template><ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent" /></ControlTemplate></Thumb.Template>
@@ -1923,7 +1929,7 @@
     </Style>
     <Style x:Key="DisplayPreviewTitle" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
         <Setter Property="FontSize" Value="26" />
-        <Setter Property="Foreground" Value="{ThemeResource accent}" />
+        <Setter Property="Foreground" Value="{ThemeResource DisplayPreviewTitleBrush}" />
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
@@ -1933,6 +1939,7 @@
     <Style x:Key="DisplayPreviewNote" TargetType="TextBlock" BasedOn="{StaticResource TypeHelp}">
         <Setter Property="TextAlignment" Value="Center" />
         <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{ThemeResource DisplayPreviewNoteBrush}" />
     </Style>
     <Style x:Key="DisplayPreviewDevice" TargetType="TextBlock" BasedOn="{StaticResource TypeHelp}">
         <Setter Property="TextAlignment" Value="Center" />

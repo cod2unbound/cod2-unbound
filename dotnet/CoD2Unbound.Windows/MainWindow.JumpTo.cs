@@ -51,7 +51,7 @@ public sealed partial class MainWindow
             hint.Children.Add(new TextBlock
             {
                 Text = words, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = ThemeBrush("tertiary", Root.ActualTheme, false)
+                Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast)
             });
             JumpFooter.Children.Add(hint);
         }
@@ -195,19 +195,19 @@ public sealed partial class MainWindow
         {
             FontFamily = (FontFamily)Application.Current.Resources["FluentRegular"], FontSize = 15,
             Glyph = new JumpSuggestion(target, "", false, null).Icon, VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeBrush("chipIcon", Root.ActualTheme, IsHighContrast)
+            Foreground = IsHighContrast ? null : ThemeBrush("chipIcon", Root.ActualTheme, false)
         });
         Put(line, 1, new TextBlock
         {
             Text = target.Title, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeBrush("text", Root.ActualTheme, IsHighContrast)
+            Foreground = IsHighContrast ? null : ThemeBrush("text", Root.ActualTheme, false)
         });
         if (target.Detail.Length != 0)
             Put(line, 2, new TextBlock
             {
                 Text = target.Detail, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center, Foreground = ThemeBrush("secondary", Root.ActualTheme, IsHighContrast)
+                VerticalAlignment = VerticalAlignment.Center, Foreground = IsHighContrast ? null : ThemeBrush("secondary", Root.ActualTheme, false)
             });
         var hint = new TextBlock
         {
@@ -215,6 +215,12 @@ public sealed partial class MainWindow
             Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast), Text = target.Keys
         };
         Put(line, 3, hint);
+        if (IsHighContrast)
+            foreach (var element in line.Children)
+                if (element is TextBlock text)
+                    text.ClearValue(TextBlock.ForegroundProperty);
+                else if (element is FontIcon icon)
+                    icon.ClearValue(FontIcon.ForegroundProperty);
         var action = new Button { Style = StyleFor("JumpResultAction"), Content = line };
         var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = action, Tag = (target, hint) };
         // Selection stays on the native row for the search keys and UI Automation. The button invokes.
@@ -258,11 +264,17 @@ public sealed partial class MainWindow
     // The board's selected server row offers its launch key; other rows show their shortcut.
     private void PaintJumpRow(ListViewItem row, bool selected)
     {
-        if (row.Tag is not (JumpTarget target, TextBlock hint))
+        if (row.Tag is not (JumpTarget target, TextBlock hint) || row.Content is not Button action)
             return;
         bool server = target.Group == JumpGroup.Servers;
         hint.Text = server ? (selected ? "Launch Ctrl+Enter" : "") : target.Keys;
-        hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", Root.ActualTheme, IsHighContrast);
+        if (IsHighContrast)
+        {
+            hint.ClearValue(TextBlock.ForegroundProperty);
+            action.Foreground = ThemeBrush(selected ? "ListViewItemForegroundSelected" : "text", Root.ActualTheme, true);
+        }
+        else
+            hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", Root.ActualTheme, false);
     }
 
     private async void OnJumpKeyDown(object sender, KeyRoutedEventArgs args)
