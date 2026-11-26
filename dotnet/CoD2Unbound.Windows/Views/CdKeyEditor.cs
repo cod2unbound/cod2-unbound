@@ -155,14 +155,15 @@ internal sealed class CdKeyEditor : StackPanel
         var editor = new CdKeyEditor(shell);
         var dialog = new ContentDialog
         {
-            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "Replace your CD key",
+            XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme,
+            Title = replacing ? "Replace your CD key" : "Add your CD key",
             Content = new StackPanel
             {
                 Spacing = 12,
-                Children = { Caption(replacing ? "The key you type replaces the one stored on this PC." :
-                    "Enter the 20-character key that came with your game."), editor }
+                Children = { Caption(replacing ? "The key you have now keeps working until you press Replace." :
+                    "The 20-character key that came with your game. Joining a server needs it."), editor }
             },
-            PrimaryButtonText = replacing ? "Replace" : "Save Key",
+            PrimaryButtonText = replacing ? "Replace Key" : "Save Key",
             IsPrimaryButtonEnabled = false,
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary
