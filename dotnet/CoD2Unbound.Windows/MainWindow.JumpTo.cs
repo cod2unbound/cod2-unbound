@@ -50,16 +50,10 @@ public sealed partial class MainWindow
                 hint.Children.Add(KeyCap(key));
             hint.Children.Add(new TextBlock
             {
-                Text = words, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast)
+                Text = words, Style = StyleFor("JumpFooterText")
             });
             JumpFooter.Children.Add(hint);
         }
-        Root.ActualThemeChanged += (_, _) =>
-        {
-            foreach (var text in JumpFooter.Children.OfType<StackPanel>().SelectMany(panel => panel.Children.OfType<TextBlock>()))
-                text.Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast);
-        };
     }
 
     private static Border KeyCap(string key) => new()
