@@ -1818,6 +1818,86 @@
         <Setter Property="CornerRadius" Value="{StaticResource CrateRadius}" />
         <Setter Property="Padding" Value="0" />
     </Style>
+    <x:Double x:Key="DisplayPreviewStackBelow">620</x:Double>
+    <x:Double x:Key="DisplayPreviewWindowInset">16</x:Double>
+    <Style x:Key="DisplayPreviewLayout" TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="20" />
+        <Setter Property="RowSpacing" Value="8" />
+    </Style>
+    <Style x:Key="DisplayPreviewCard" TargetType="Border" BasedOn="{StaticResource GroupCard}">
+        <Setter Property="Width" Value="300" />
+        <Setter Property="MinHeight" Value="234" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+    <Style x:Key="DisplayPreviewFrame" TargetType="Border">
+        <Setter Property="Width" Value="228" />
+        <Setter Property="Height" Value="134" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="BorderBrush" Value="{ThemeResource secondary}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewScreen" TargetType="Border">
+        <Setter Property="Width" Value="218" />
+        <Setter Property="Height" Value="124" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource wellStroke}" />
+        <Setter Property="Background" Value="{ThemeResource well}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewPicture" TargetType="Border">
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="MinWidth" Value="92" />
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource selectionStroke}" />
+        <Setter Property="Background" Value="{ThemeResource selection}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewStand" TargetType="Path">
+        <Setter Property="Data" Value="M14,0 L54,0 L60,20 L8,20 Z" />
+        <Setter Property="Width" Value="68" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Fill" Value="{ThemeResource track}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewBase" TargetType="Border">
+        <Setter Property="Width" Value="88" />
+        <Setter Property="Height" Value="4" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Background" Value="{ThemeResource track}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewDiagram" TargetType="StackPanel">
+        <Setter Property="Spacing" Value="12" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewAnnotation" TargetType="StackPanel">
+        <Setter Property="Spacing" Value="4" />
+        <Setter Property="Padding" Value="3,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="DisplayPreviewTitle" TargetType="TextBlock" BasedOn="{StaticResource StencilText}">
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="Foreground" Value="{ThemeResource accent}" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="DisplayPreviewWindowTitle" TargetType="TextBlock" BasedOn="{StaticResource DisplayPreviewTitle}">
+        <Setter Property="FontSize" Value="20" />
+    </Style>
+    <Style x:Key="DisplayPreviewNote" TargetType="TextBlock" BasedOn="{StaticResource TypeHelp}">
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style x:Key="DisplayPreviewDevice" TargetType="TextBlock" BasedOn="{StaticResource TypeHelp}">
+        <Setter Property="TextAlignment" Value="Center" />
+    </Style>
     <Style x:Key="StudioColumnItem" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItem}">
         <Setter Property="MinHeight" Value="48" />
         <Setter Property="Margin" Value="0,0,0,4" />

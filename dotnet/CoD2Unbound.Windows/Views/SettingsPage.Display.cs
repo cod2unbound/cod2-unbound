@@ -3,7 +3,6 @@ using CoD2Unbound.Windows.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -17,42 +16,47 @@ public sealed partial class SettingsPage
         var container = new StackPanel { Spacing = 12, MaxWidth = 900 };
         Fields.Children.Add(container);
 
-        var previewTitle = new TextBlock { Style = StyleFor("StencilText"), FontSize = 22, TextAlignment = TextAlignment.Center };
-        var previewMode = Caption("");
-        previewMode.TextAlignment = TextAlignment.Center;
+        var previewTitle = new TextBlock();
+        var previewMode = new TextBlock { Style = StyleFor("DisplayPreviewNote") };
         var gamePicture = new Border
         {
-            Style = StyleFor("FieldCard"), Padding = new Thickness(4), VerticalAlignment = VerticalAlignment.Stretch,
-            Child = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center, Children = { previewTitle, previewMode } }
+            Style = StyleFor("DisplayPreviewPicture"),
+            Child = new StackPanel { Style = StyleFor("DisplayPreviewAnnotation"), Children = { previewTitle, previewMode } }
         };
+        var panel = new Border { Style = StyleFor("DisplayPreviewScreen"), Child = gamePicture };
         var monitorOutline = new Border
         {
-            Style = StyleFor("FieldCard"), Padding = new Thickness(3), Width = 198, Height = 118, Child = gamePicture
+            Style = StyleFor("DisplayPreviewFrame"), Child = panel
         };
-        var stand = new Border
+        var monitor = new StackPanel
         {
-            Style = StyleFor("FieldCard"), Padding = new Thickness(0), Width = 40, Height = 8,
-            HorizontalAlignment = HorizontalAlignment.Center
+            Children =
+            {
+                monitorOutline, new Microsoft.UI.Xaml.Shapes.Path { Style = StyleFor("DisplayPreviewStand") },
+                new Border { Style = StyleFor("DisplayPreviewBase") }
+            }
         };
-        var previewName = Caption("");
-        previewName.TextAlignment = TextAlignment.Center;
-        var screen = new StackPanel
+        var previewName = new TextBlock { Style = StyleFor("DisplayPreviewDevice") };
+        var screen = new Border
         {
-            Spacing = 4, MinHeight = 154, VerticalAlignment = VerticalAlignment.Center,
-            Children = { monitorOutline, stand, previewName }
+            Style = StyleFor("DisplayPreviewCard"),
+            Child = new StackPanel { Style = StyleFor("DisplayPreviewDiagram"), Children = { monitor, previewName } }
         };
         var rows = new StackPanel { Spacing = 4 };
-        var layout = Columns(16, new GridLength(220), new GridLength(1, GridUnitType.Star));
+        var layout = new Grid { Style = StyleFor("DisplayPreviewLayout") };
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         Put(layout, 0, screen);
         Put(layout, 1, rows);
+        double stackBelow = (double)Application.Current.Resources["DisplayPreviewStackBelow"];
+        double windowInset = (double)Application.Current.Resources["DisplayPreviewWindowInset"];
         layout.SizeChanged += (_, args) =>
         {
-            bool compact = args.NewSize.Width < 650;
-            layout.ColumnDefinitions[0].Width = compact ? new GridLength(1, GridUnitType.Star) : new GridLength(220);
+            bool compact = args.NewSize.Width < stackBelow;
+            layout.ColumnDefinitions[0].Width = compact ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
             layout.ColumnDefinitions[1].Width = compact ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
             Grid.SetRow(rows, compact ? 1 : 0);
             Grid.SetColumn(rows, compact ? 0 : 1);
-            layout.RowSpacing = compact ? 8 : 0;
         };
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -188,7 +192,10 @@ public sealed partial class SettingsPage
                 "windowed" => "A window at the chosen size, beside your other apps.",
                 _ => "Borderless fills the screen and switches apps instantly."
             };
-            string size = LauncherText.Resolution(loadout?.RequestedResolution ?? Current.Resolution);
+            string requested = loadout?.RequestedResolution ?? Current.Resolution;
+            string size = LauncherText.Resolution(requested);
+            bool windowed = Current.Fullscreen == "windowed";
+            previewTitle.Style = StyleFor(windowed ? "DisplayPreviewWindowTitle" : "DisplayPreviewTitle");
             previewTitle.Text = legacy ? size : modeText.ToUpperInvariant();
             previewMode.Text = Current.Fullscreen switch
             {
@@ -196,7 +203,11 @@ public sealed partial class SettingsPage
                 "exclusive" => "pixel for pixel",
                 _ => "fills the display"
             };
-            gamePicture.Margin = Current.Fullscreen == "windowed" ? new Thickness(18, 14, 18, 18) : new Thickness(0);
+            var nativeSize = selected?.Native ?? selected?.Current ?? new DisplayResolution(1920, 1080);
+            var gameSize = DisplayResolution.TryParse(requested, out var parsed) ? parsed : nativeSize;
+            double scale = Math.Min(panel.Width / nativeSize.Width, panel.Height / nativeSize.Height);
+            gamePicture.Width = windowed ? Math.Clamp(gameSize.Width * scale, gamePicture.MinWidth, panel.Width - windowInset) : panel.Width;
+            gamePicture.Height = windowed ? Math.Clamp(gameSize.Height * scale, gamePicture.MinHeight, panel.Height - windowInset) : panel.Height;
             previewName.Text = selected is null ? "Display unavailable" : selected.Name + (selected.Monitor == 1 ? " · main display" : "");
             AutomationProperties.SetName(screen, $"Display preview, {previewName.Text}, {modeText}");
             choose.Visibility = loadoutNote.Visibility = IsVisible(loadout is not null);
