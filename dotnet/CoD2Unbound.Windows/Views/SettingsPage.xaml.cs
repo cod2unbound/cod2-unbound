@@ -164,7 +164,7 @@ public sealed partial class SettingsPage : Page
             SetupDataState.Damaged or SetupDataState.UnfinishedSteam => "Incomplete",
             _ => "Not found"
         };
-        dataActions.Children.Insert(0, GameDataStatus(dataStatus, found));
+        dataActions.Children.Insert(0, SettingStatus(dataStatus, found));
         Row("Game data", string.Join("\n", new[]
         {
             data.Path, data.Problem ?? (data.State == SetupDataState.Found ? SetupSession.FoundSummary : "")
@@ -173,7 +173,7 @@ public sealed partial class SettingsPage : Page
         var changeKey = Action(hasKey ? "Replace…" : "Add Key…", ReplaceKeyAsync);
         changeKey.IsEnabled = !session.ClientIsRunning;
         Row("CD key", hasKey ? "Stored only on this PC" : "No key stored. The game needs one to join servers.",
-            Buttons(GameDataStatus(hasKey ? "Verified" : "Missing", hasKey), changeKey), SystemIcon("SystemPermissions", 14));
+            Buttons(SettingStatus(hasKey ? "Verified" : "Missing", hasKey), changeKey), SystemIcon("SystemPermissions", 14));
         Group("Your files");
         Row("Loadouts, demos and screenshots", session.HomePath,
             Action("Show in File Explorer", () => OpenAsync(session.HomePath)), Fluent("Document", 14));
@@ -199,7 +199,7 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private static TextBlock GameDataStatus(string text, bool ready) => new()
+    private static TextBlock SettingStatus(string text, bool ready) => new()
     {
         Text = text,
         Style = StyleFor(ready ? "PositiveCaption" : "NegativeText"),
@@ -356,8 +356,23 @@ public sealed partial class SettingsPage : Page
         updateCard = new Border { Style = StyleFor("FieldCard"), Padding = new Thickness(20, 16, 20, 16) };
         Fields.Children.Add(updateCard);
         RenderUpdate(session.Updates.State);
-        Switch("Check for updates automatically", "Once a day, when the launcher is open.", Current.CheckUpdatesAutomatically,
+        Switch("Check for updates automatically", "Once a day, when the launcher is open. Nothing is downloaded until you choose Install.", Current.CheckUpdatesAutomatically,
             value => ChangeAsync(Current with { CheckUpdatesAutomatically = value }));
+        Group("Game versions");
+        bool hasCod2x = session.HasClient(GameEdition.Cod2x);
+        bool hasOriginal = session.HasClient(GameEdition.Original);
+        Row(ConnectDialog.EditionName(GameEdition.Cod2x),
+            hasCod2x ? "The version current CoD2x servers expect. Updates arrive with the app." : "Not included in this copy of the app.",
+            hasCod2x ? SettingStatus("Current", true) : Caption("Not included"));
+        Row(ConnectDialog.EditionName(GameEdition.Original),
+            hasOriginal ? "The final official patch. It doesn’t change." : "Not included in this copy of the app.",
+            Caption(hasOriginal ? "Final" : "Not included"));
+        Fields.Children.Add(new HyperlinkButton
+        {
+            Content = "Release notes for every version",
+            NavigateUri = WindowsReleaseAssets.ReleasesPage,
+            HorizontalAlignment = HorizontalAlignment.Left
+        });
     }
 
     private void RenderUpdate(LauncherUpdateState state)
@@ -366,7 +381,7 @@ public sealed partial class SettingsPage : Page
         updateProgress = null;
         string current = session.Version;
         string version = state.AvailableVersion ?? current;
-        string installed = $"CoD2 Unbound {current} is installed";
+        string installed = $"CoD2 Unbound {current}";
         string available = $"CoD2 Unbound {version} is available";
         string? checkedAt = LastChecked(state.CheckedAt ?? session.Library.DispatchesCheckedAt);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
@@ -424,8 +439,8 @@ public sealed partial class SettingsPage : Page
             switch (state.Phase)
             {
                 case UpdatePhase.Checking:
-                    title = installed;
-                    message = "Checking for updates…";
+                    title = "Checking for updates…";
+                    message = "Asking for the latest release.";
                     showProgress = true;
                     AddAction("Check Now", "UpdateCheck", enabled: false);
                     break;
@@ -459,7 +474,7 @@ public sealed partial class SettingsPage : Page
                     break;
                 default:
                     title = state.WasChecked || checkedAt is not null ? $"CoD2 Unbound {current} is up to date" : installed;
-                    message = checkedAt;
+                    message = checkedAt ?? "Not checked yet.";
                     AddAction("Check Now", "UpdateCheck");
                     break;
             }
@@ -494,8 +509,7 @@ public sealed partial class SettingsPage : Page
             var action = Action(label, () => shell.RunUpdateAsync(install), exclusive: false);
             AutomationProperties.SetAutomationId(action, id);
             action.IsEnabled = enabled && session.CanCheckUpdates;
-            if (primary)
-                action.Style = StyleFor("LauncherAccentButton");
+            action.Style = StyleFor(primary ? "MediumAccentButton" : "MediumButton");
             actions.Children.Add(action);
         }
 
@@ -503,6 +517,7 @@ public sealed partial class SettingsPage : Page
         {
             var target = state.ReleaseUrl ?? WindowsReleaseAssets.ReleasesPage;
             var action = Action("Open download page", () => OpenAsync(target.AbsoluteUri));
+            action.Style = StyleFor("MediumButton");
             AutomationProperties.SetAutomationId(action, "UpdateDownloadPage");
             actions.Children.Add(action);
         }
@@ -510,6 +525,7 @@ public sealed partial class SettingsPage : Page
         void AddWhatsNew(string release)
         {
             var action = Action("What’s New", () => shell.ShowReleaseNotesAsync(release));
+            action.Style = StyleFor("MediumButton");
             AutomationProperties.SetAutomationId(action, "UpdateWhatsNew");
             actions.Children.Add(action);
         }
