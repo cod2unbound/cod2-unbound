@@ -1975,10 +1975,14 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Stretch" />
     </Style>
-    <Style x:Key="JumpRowSurface" TargetType="Border">
-        <Setter Property="CornerRadius" Value="{StaticResource NavItemRadius}" />
-        <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
-        <Setter Property="Padding" Value="11,0" />
+    <Style x:Key="JumpResultAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
     <Style x:Key="JumpHeaderItem" TargetType="ListViewItem" BasedOn="{StaticResource JumpRowItem}">
         <Setter Property="MinHeight" Value="0" />
