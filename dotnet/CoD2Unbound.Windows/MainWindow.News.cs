@@ -10,8 +10,8 @@ public sealed partial class MainWindow
     internal async Task OpenMatchesAsync()
     {
         await NavigateAsync(LauncherPlace.Library);
-        if (ContentFrame.Content is LibraryPage library && library.FindName("MatchesSection") is SelectorBarItem matches)
-            matches.IsSelected = true;
+        if (ContentFrame.Content is LibraryPage library)
+            library.OpenMatches();
     }
 
     /// The loadout chip's Edit … in Configs.

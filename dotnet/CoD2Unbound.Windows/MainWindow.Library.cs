@@ -8,6 +8,8 @@ public sealed partial class MainWindow
 {
     private WindowsMediaShare? mediaShare;
 
+    internal LibrarySection LastLibrarySection { get; set; } = LibrarySection.Demos;
+
     internal WindowsMediaShare LibraryShare =>
         mediaShare ??= new(WinRT.Interop.WindowNative.GetWindowHandle(this));
 

@@ -12,6 +12,8 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
+internal enum LibrarySection { Matches, Demos, Screenshots }
+
 public sealed partial class LibraryPage : Page
 {
     private readonly MainWindow shell;
@@ -46,7 +48,12 @@ public sealed partial class LibraryPage : Page
         Screenshots.ItemsSource = screenshots;
         Files.ItemsSource = filesInView;
         Matches.ItemsSource = matchesInView;
-        Sections.SelectedItem = MatchesSection;
+        Sections.SelectedItem = shell.LastLibrarySection switch
+        {
+            LibrarySection.Matches => MatchesSection,
+            LibrarySection.Screenshots => ScreenshotsSection,
+            _ => DemosSection
+        };
         RetentionText.Text = $"Kept on this PC · the last {MatchSummaries.RecordLimit} matches";
         AutomationProperties.SetName(Retention, $"Kept on this PC. The last {MatchSummaries.RecordLimit} matches");
         ready = true;
@@ -74,6 +81,8 @@ public sealed partial class LibraryPage : Page
     {
         if (!ready)
             return;
+        shell.LastLibrarySection = ShowingMatches ? LibrarySection.Matches
+            : CurrentKind == MediaKind.Demo ? LibrarySection.Demos : LibrarySection.Screenshots;
         Notice.IsOpen = false;
         RecycleNotice.IsOpen = false;
         recycled = null;
