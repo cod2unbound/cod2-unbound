@@ -56,7 +56,7 @@
                                     <StackPanel>
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                            <SelectorBar x:Name="FilterEdition" Grid.Column="1" AutomationProperties.Name="Version"
+                                            <SelectorBar x:Name="FilterEdition" Grid.Column="1" Style="{StaticResource InsetFormSelector}" AutomationProperties.Name="Version"
                                                          SelectionChanged="OnEditionFilterSelection">
                                                 <SelectorBarItem Text="Any" />
                                                 <SelectorBarItem Text="CoD2x" />

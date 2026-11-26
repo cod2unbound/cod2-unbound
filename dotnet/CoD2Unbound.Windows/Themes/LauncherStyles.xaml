@@ -1761,6 +1761,9 @@
     <Style x:Key="AlignedSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
         <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
+    <Style x:Key="InsetFormSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style x:Key="Keycap" TargetType="Button" BasedOn="{StaticResource SmallAction}">
         <Setter Property="FontFamily" Value="{StaticResource CourierPrime}" />
         <Setter Property="FontSize" Value="13" />
