@@ -718,9 +718,15 @@
     <!-- Sheet buttons (launcher.css .sheet .btn): no hairline or glow; the default action is a flat mix of the accent. -->
     <Style x:Key="SheetButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}">
         <Setter Property="Template" Value="{StaticResource LauncherFlatButtonTemplate}" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
     </Style>
     <Style x:Key="SheetAccentButton" TargetType="Button" BasedOn="{StaticResource LauncherAccentButton}">
         <Setter Property="Template" Value="{StaticResource LauncherFlatAccentButtonTemplate}" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
     </Style>
     <Style x:Key="AlertButton" TargetType="Button" BasedOn="{StaticResource SheetButton}">
         <Setter Property="Height" Value="32" />
@@ -1506,6 +1512,7 @@
     <Style x:Key="PrivacyQuestionIcon" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource HeroAccentBrush}" />
     </Style>
+    <x:Double x:Key="ShareSheetWidth">520</x:Double>
     <Style x:Key="SheetFactRow" TargetType="Grid">
         <Setter Property="Padding" Value="16,11" />
         <Setter Property="ColumnSpacing" Value="14" />
@@ -1681,11 +1688,19 @@
         <Setter Property="AutomationProperties.Name" Value="See what’s sent when sharing a setup" />
         <Setter Property="AutomationProperties.AutomationId" Value="SharePreview" />
         <Setter Property="AccessKey" Value="W" />
+        <Setter Property="Height" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="MinHeight" Value="{StaticResource ButtonMediumHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonMediumRadius}" />
     </Style>
     <Style x:Key="SubtleAction" TargetType="Button" BasedOn="{StaticResource QuietButton}" />
     <Style x:Key="SetupFactLabel" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{ThemeResource TertiaryBrush}" />
+    </Style>
+    <Style x:Key="SheetFactDetail" TargetType="TextBlock" BasedOn="{StaticResource SetupFactLabel}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight" Value="16" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
     </Style>
     <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
         <Setter Property="CornerRadius" Value="{StaticResource CircleRadius}" />

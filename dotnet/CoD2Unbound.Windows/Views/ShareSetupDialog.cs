@@ -44,8 +44,9 @@ internal sealed class ShareSetupDialog : ContentDialog
         DefaultStyleKey = typeof(ContentDialog);
         DefaultButton = ContentDialogButton.Primary;
         HighContrastAdjustment = ElementHighContrastAdjustment.None;
-        Resources["ContentDialogMaxWidth"] = 548d;
-        Resources["ContentDialogMinWidth"] = 548d;
+        var sheetWidth = (double)Application.Current.Resources["ShareSheetWidth"];
+        Resources["ContentDialogMaxWidth"] = sheetWidth;
+        Resources["ContentDialogMinWidth"] = sheetWidth;
         shareTitle = $"Share “{loadout}” with other players";
         AutomationProperties.SetName(name, "Name to show with the setup");
         AutomationProperties.SetAutomationId(name, "ShareCreditName");
@@ -126,7 +127,7 @@ internal sealed class ShareSetupDialog : ContentDialog
             {
                 Spacing = 3,
                 Children = { new TextBlock { Text = heading, Style = StyleFor("SheetFactHeading") },
-                    new TextBlock { Text = detail, Style = StyleFor("SetupFactLabel"), TextWrapping = TextWrapping.Wrap } }
+                    new TextBlock { Text = detail, Style = StyleFor("SheetFactDetail") } }
             };
             var row = new Grid { Style = StyleFor("SheetFactRow") };
             row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
