@@ -2245,4 +2245,17 @@
         <Setter Property="Padding" Value="0" />
         <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <Style x:Key="ListRowSecondaryText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}" />
+            <Style x:Key="ListRowMonoCaption" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <!-- Let the list item supply the ink for its current interaction state. -->
+            <Style x:Key="ListRowSecondaryText" TargetType="TextBlock" BasedOn="{StaticResource TypeSubtitle}">
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <Style x:Key="ListRowMonoCaption" TargetType="TextBlock" BasedOn="{StaticResource Mono}" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

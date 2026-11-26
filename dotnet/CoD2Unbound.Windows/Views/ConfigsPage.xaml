@@ -53,8 +53,8 @@
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="4">
                     <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Text="{Binding Stamp}" Style="{StaticResource MonoCaption}" />
+                    <TextBlock Text="{Binding Detail}" Style="{ThemeResource ListRowSecondaryText}" />
+                    <TextBlock Text="{Binding Stamp}" Style="{ThemeResource ListRowMonoCaption}" />
                 </StackPanel>
             </Grid>
         </DataTemplate>
