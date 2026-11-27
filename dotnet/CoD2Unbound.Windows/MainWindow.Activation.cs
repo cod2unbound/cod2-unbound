@@ -124,6 +124,20 @@ public sealed partial class MainWindow
             return;
         }
 
+        await NavigateAsync(LauncherPlace.Library);
+        var review = new ContentDialog
+        {
+            XamlRoot = DialogRoot,
+            RequestedTheme = DialogTheme,
+            Title = "Play recording?",
+            Content = new TextBlock { Text = Path.GetFileName(input), TextWrapping = TextWrapping.Wrap },
+            PrimaryButtonText = "Play Recording",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close
+        }.WithSymbol("FluentFilmstrip");
+        if (await ShowShellSheetAsync(review) != ContentDialogResult.Primary)
+            return;
+
         string path;
         try
         {
@@ -136,7 +150,6 @@ public sealed partial class MainWindow
             return;
         }
 
-        await NavigateAsync(LauncherPlace.Library);
         await ((LibraryPage)ContentFrame.Content).PlayOpenedDemoAsync(path);
     }
 
