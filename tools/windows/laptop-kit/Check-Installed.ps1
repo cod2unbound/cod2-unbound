@@ -306,8 +306,17 @@ function Invoke-KitFirstResolution {
                 (Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json).resolution -eq $chosen
             } 12 'the selected resolution to save' | Out-Null
             "Selected $chosen in Settings > Display." | Set-Content -LiteralPath $receipt -Encoding UTF8
-            Focus-KitPictureWindow $settingsWindow $run.Process.Id
-            Save-KitWindow $settingsWindow (Join-Path $Results 'launcher-resolution-selected.png')
+            for ($attempt = 1; ; $attempt++) {
+                Focus-KitPictureWindow $settingsWindow $run.Process.Id
+                try {
+                    Save-KitWindow $settingsWindow (Join-Path $Results 'launcher-resolution-selected.png')
+                    break
+                } catch {
+                    if ($attempt -eq 3 -or $_.Exception.GetBaseException().Message -ne
+                        'The foreground or window position changed during capture.') { throw }
+                    Start-Sleep -Milliseconds 250
+                }
+            }
         } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
         New-TestProfile $LauncherHome
         $started = Get-Date
