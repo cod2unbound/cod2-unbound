@@ -67,6 +67,11 @@ public sealed partial class MainWindow
     // HomeJump board: 640 wide, centred, 122 below the window's top.
     private void PlaceJumpTo()
     {
+        bool largeText = new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
+        JumpPanel.Width = Math.Min(largeText ? 780 : 640, Math.Max(0, Root.ActualWidth - 32));
+        JumpFooter.Orientation = largeText ? Orientation.Vertical : Orientation.Horizontal;
+        JumpFooter.Spacing = largeText ? 4 : 12;
+        JumpList.MaxHeight = largeText ? Math.Clamp(Root.ActualHeight - 320, 130, 380) : 380;
         JumpPopup.HorizontalOffset = Math.Max(16, (Root.ActualWidth - JumpPanel.Width) / 2);
         JumpPopup.VerticalOffset = 122;
         JumpPanel.MaxHeight = Math.Max(200, Root.ActualHeight - 138);
@@ -90,8 +95,8 @@ public sealed partial class MainWindow
         JumpBox.Text = "";
         PlaceJumpTo();
         JumpPopup.IsOpen = true;
-        RenderJumpResults();
         JumpBox.Focus(FocusState.Keyboard);
+        RenderJumpResults();
         if (!jumpSettings)
         {
             await ShowProblemAsync(async () =>
@@ -117,6 +122,7 @@ public sealed partial class MainWindow
         JumpList.Items.Clear();
         jumpResults = [];
         jumpRows = [];
+        AutomationProperties.SetItemStatus(JumpBox, "");
         jumpResultPresses.Clear();
         jumpPendingSelection = null;
         var previous = jumpReturnFocus;
@@ -142,13 +148,22 @@ public sealed partial class MainWindow
         string query = JumpBox.Text;
         JumpTarget[] results = [.. JumpResults(query)];
         bool empty = results.Length == 0;
+        string previousEmpty = JumpEmpty.Text;
         JumpList.Visibility = IsVisible(!empty);
         JumpEmpty.Visibility = IsVisible(empty);
         if (empty)
             JumpEmpty.Text = jumpSettings
                 ? "No setting matches. Try a word like “jump”, “turn” or “sound”."
                 : $"Nothing matches “{query.Trim()}”. Try a server, map, loadout or setting name.";
-        if (results.SequenceEqual(jumpResults))
+        bool sameResults = results.SequenceEqual(jumpResults);
+        string count = results.Length == 1 ? "1 result" : $"{results.Length} results";
+        if (AutomationProperties.GetItemStatus(JumpBox) != count || !sameResults ||
+            (empty && JumpEmpty.Text != previousEmpty))
+        {
+            AutomationProperties.SetItemStatus(JumpBox, count);
+            Announce(JumpBox, empty ? JumpEmpty.Text : count, "JumpResults");
+        }
+        if (sameResults)
             return;
 
         int previousIndex = preserveSelection ? JumpIndexOf(JumpList.SelectedItem) : -1;
@@ -168,7 +183,7 @@ public sealed partial class MainWindow
                     Content = new TextBlock { Text = GroupName(target.Group), Style = StyleFor("GroupLabelText") }
                 });
             }
-            var row = JumpRow(target);
+            var row = JumpRow(target, rows.Count + 1, results.Length);
             rows.Add(row);
             JumpList.Items.Add(row);
         }
@@ -199,13 +214,14 @@ public sealed partial class MainWindow
         });
     }
 
-    private ListViewItem JumpRow(JumpTarget target)
+    private ListViewItem JumpRow(JumpTarget target, int position, int count)
     {
         var line = new Grid { ColumnSpacing = 12 };
+        bool largeText = JumpFooter.Orientation == Orientation.Vertical;
         GlyphAlign.SetIsEnabled(line, true);
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
-        line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = largeText ? new GridLength(1, GridUnitType.Star) : GridLength.Auto });
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = largeText ? new GridLength(0) : new GridLength(1, GridUnitType.Star) });
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         line.Children.Add(new FontIcon
         {
@@ -217,14 +233,26 @@ public sealed partial class MainWindow
         {
             Text = target.Title, Style = StyleFor("BodyStrongTextBlockStyle"),
             TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = largeText ? TextWrapping.Wrap : TextWrapping.NoWrap,
             Foreground = IsHighContrast ? null : ThemeBrush("text", Root.ActualTheme, false)
         });
         if (target.Detail.Length != 0)
-            Put(line, 2, new TextBlock
+        {
+            var detail = new TextBlock
             {
                 Text = target.Detail, Style = StyleFor("BodyTextBlockStyle"), TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center, Foreground = IsHighContrast ? null : ThemeBrush("secondary", Root.ActualTheme, false)
-            });
+            };
+            if (largeText)
+            {
+                line.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                line.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                detail.TextWrapping = TextWrapping.Wrap;
+                Grid.SetRow(detail, 1);
+                Grid.SetColumnSpan(detail, 3);
+            }
+            Put(line, largeText ? 1 : 2, detail);
+        }
         var hint = new TextBlock
         {
             Style = StyleFor("CaptionTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center,
@@ -248,13 +276,18 @@ public sealed partial class MainWindow
         string label = target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}";
         AutomationProperties.SetName(row, label);
         AutomationProperties.SetName(action, label);
+        foreach (var element in new Control[] { row, action })
+        {
+            AutomationProperties.SetPositionInSet(element, position);
+            AutomationProperties.SetSizeOfSet(element, count);
+            if (target.Group == JumpGroup.Servers)
+                AutomationProperties.SetHelpText(element, "Enter shows it in Servers. Ctrl+Enter launches on it.");
+        }
         action.Click += async (_, _) =>
         {
             if (jumpOpen && JumpIndexOf(row) >= 0)
                 await OpenJumpTargetAsync(target, launch: false);
         };
-        if (target.Group == JumpGroup.Servers)
-            AutomationProperties.SetHelpText(row, "Enter shows it in Servers. Ctrl+Enter launches on it.");
         if (target.Group == JumpGroup.Actions)
             AutomationProperties.SetAutomationId(row, $"JumpCommand{target.Id}");
         PaintJumpRow(row, selected: false);

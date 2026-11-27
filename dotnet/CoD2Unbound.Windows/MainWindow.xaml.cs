@@ -354,6 +354,7 @@ public sealed partial class MainWindow : Window
         PlayerName.Inlines.Clear();
         AddGameName(PlayerName, player.Name, Root.ActualTheme, IsHighContrast);
         PaneLoadout.Text = player.Loadout ?? player.Key;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(PlayerPlate, $"{QuakeColors.Plain(player.Name)}, {PaneLoadout.Text}");
         if (!loadoutChanged)
             return;
         if (ContentFrame.Content is HomePage home)
@@ -371,13 +372,19 @@ public sealed partial class MainWindow : Window
         if (session.Library.Favorites.Count == 0)
             return;
         Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites" });
+        bool largeText = new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
             var icon = new SymbolIcon(Symbol.Favorite);
             string plain = QuakeColors.Plain(favorite.Name);
             string shortName = plain.Split('|', 2)[0].Trim();
-            var title = new TextBlock { Text = shortName, TextTrimming = TextTrimming.CharacterEllipsis };
+            var title = new TextBlock
+            {
+                Text = shortName,
+                TextWrapping = largeText ? TextWrapping.Wrap : TextWrapping.NoWrap,
+                TextTrimming = largeText ? TextTrimming.None : TextTrimming.CharacterEllipsis
+            };
             var content = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
             content.Children.Add(title);
             if (favorite.MaxPlayers > 0)
