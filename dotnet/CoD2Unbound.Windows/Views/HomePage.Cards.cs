@@ -17,21 +17,13 @@ public sealed partial class HomePage
     private readonly List<Button> recentButtons = [];
     private readonly List<(ListViewItem Item, bool Listed)> recentItems = [];
 
-    /// A card's list: a stock ListView whose items click, with the Mac's row hover and press fills set
-    /// through the item's own lightweight resources.
-    private ListView HomeList(string itemStyle)
+    private ListView HomeList(string itemStyle) => new()
     {
-        var list = new ListView
-        {
-            SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true, ItemContainerStyle = LocalStyle(itemStyle),
-            Padding = new Thickness()
-        };
-        list.Resources["ListViewItemBackgroundPointerOver"] = Ink("hover");
-        list.Resources["ListViewItemBackgroundPressed"] = Ink("press");
-        return list;
-    }
+        SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true, ItemContainerStyle = LocalStyle(itemStyle),
+        Padding = new Thickness()
+    };
 
-    /// A card's empty state: a stencil heading, a sentence and at most one button.
+    /// A card's empty state: a heading, a sentence and at most one button.
     private static StackPanel CardEmpty(string heading, string message, (string Title, Action Run)? action = null)
     {
         var panel = new StackPanel { Spacing = 8, Padding = new Thickness(10, 22, 10, 0), HorizontalAlignment = HorizontalAlignment.Stretch };

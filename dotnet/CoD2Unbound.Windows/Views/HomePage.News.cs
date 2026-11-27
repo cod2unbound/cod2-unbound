@@ -216,7 +216,6 @@ public sealed partial class HomePage
         UpdateNotes.Visibility = IsVisible(ready);
         UpdateButton.Visibility = IsVisible(ready);
         UpdateDetails.Visibility = IsVisible(failed);
-        UpdatePill.Padding = new Thickness(16, 0, ready ? 4 : 16, 0);
         AutomationProperties.SetName(UpdatePill, "Update: " + UpdateText.Text);
     }
 

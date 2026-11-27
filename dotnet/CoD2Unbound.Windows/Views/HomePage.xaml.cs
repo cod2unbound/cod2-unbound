@@ -44,9 +44,6 @@ public sealed partial class HomePage : Page
         loadoutMenu.Opening += OnLoadoutMenuOpening;
         LoadoutChip.Flyout = loadoutMenu;
         ActualThemeChanged += (_, _) => UpdateTheme();
-        // The update pill lives in the shell's title-bar slot (the Mac's sits in the toolbar): 16 from the window's
-        // top, its end 18 from the caption buttons. The shell keeps its passthrough rectangle and clears the slot
-        // when another page replaces Home.
         Loaded += (_, _) =>
         {
             HomeFixture.Trace("loaded");
@@ -85,9 +82,6 @@ public sealed partial class HomePage : Page
 
     internal void UpdateTheme()
     {
-        // The notice's fill: the InfoBar's documented severity background resources, set to the glass.
-        foreach (string key in new[] { "InfoBarWarningSeverityBackgroundBrush", "InfoBarInformationalSeverityBackgroundBrush" })
-            Toast.Resources[key] = Ink("PanelBrush");
         RenderBackdrop();
         RenderHeroDetail(model.Game);
         RenderRecent();
