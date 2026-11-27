@@ -333,13 +333,17 @@ public sealed partial class MainWindow : Window
         object? content = ContentFrame.Content;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            if (ReferenceEquals(ContentFrame.Content, content) && content is Page page)
+            if (ReferenceEquals(ContentFrame.Content, content) && content is Page and not SetupPage)
             {
-                page.IsTabStop = true;
-                page.UseSystemFocusVisuals = false;
-                page.Focus(FocusState.Programmatic);
+                FocusPageAction();
             }
         });
+    }
+
+    private void FocusPageAction()
+    {
+        if (ContentFrame.Content is Page page && FocusManager.FindFirstFocusableElement(page) is Control action)
+            action.Focus(FocusState.Programmatic);
     }
 
     private void OnClientStarted() => MinimizeForGame();

@@ -120,7 +120,7 @@ public sealed partial class MainWindow
         if (restoreFocus)
         {
             if (previous is not { IsLoaded: true } || !previous.Focus(FocusState.Keyboard))
-                (ContentFrame.Content as Page)?.Focus(FocusState.Programmatic);
+                FocusPageAction();
         }
     }
 
