@@ -90,14 +90,20 @@ function Invoke-KitTabNames {
         Wait-KitHome $window
         [KitDesktop]::SizeSurfaceWindow($window, 1440, 900)
         $pages = @(
-            @{Name='Home'; Key=49; Witness='HeroTitle'}, @{Name='Servers'; Key=50; Witness='SearchBox'},
-            @{Name='Hosting'; Witness='HostingNewServer'}, @{Name='Library'; Key=51; Witness='DemosSection'},
-            @{Name='Configs'; Key=52; Witness='ConfigsCheckConfig'}
+            @{Name='Home'; Item='HomeItem'; Witness='HeroTitle'},
+            @{Name='Servers'; Item='ServersItem'; Witness='SearchBox'},
+            @{Name='Hosting'; Item='HostingTab'; Witness='HostingNewServer'},
+            @{Name='Library'; Item='LibraryItem'; Witness='DemosSection'},
+            @{Name='Configs'; Item='ConfigsItem'; Witness='ConfigsCheckConfig'}
         )
         foreach ($page in $pages) {
             Focus-KitPictureWindow $window $run.Process.Id
-            if ($page.Key) { [KitDesktop]::Chord(17,$page.Key) }
-            else { Invoke-KitControl $window 'HostingTab' }
+            $item = Wait-KitCondition { Find-KitControl $window $page.Item } 8 "the $($page.Name) navigation item"
+            $area = $item.Current.BoundingRectangle
+            if ($area.IsEmpty -or -not [KitDesktop]::ClickSurface($window,
+                    [int]($area.Left + $area.Width / 2), [int]($area.Top + $area.Height / 2), $true)) {
+                throw "The $($page.Name) navigation item could not receive a pointer click."
+            }
             Wait-KitCondition { Find-KitControl $window $page.Witness -AllowOffscreen } 12 $page.Name | Out-Null
             $start = Wait-KitCondition { Find-KitControl $window 'SettingsItem' } 8 'the Settings sidebar item'
             $start.SetFocus()
@@ -138,29 +144,41 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
     $demo = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
     Stop-KitIfMissing $demo 'The test recording is missing.'
     $failures = foreach ($case in @(
-        @{ Type='config'; Source=$config; Class='CoD2UnboundTest.Config'; Sheet='Review import' },
+        @{ Type='config'; Source=$config; Class='CoD2UnboundTest.Config'; Sheet='Review this config'; Witness='Cancel' },
         @{ Type='demo'; Source=$demo; Class=$FixtureDemo; Sheet='Play recording?'; Witness='Play Recording' },
         @{ Type='server'; Source='cod2-test://127.0.0.1:9'; Class='cod2-test'; Sheet='Connect to an address'; Witness='Server address' }
     )) {
         $directory = New-Folder (Join-Path $Results $case.Type)
         $LauncherHome = New-KitLauncherTestHome $profile (New-Folder (Join-Path $Private $case.Type))
         Set-KitLauncherProfile 'original' 'dx9'
-        $before = @(Get-TreeHashes (Join-Path $LauncherHome 'main'))
         $settings = Get-KitLauncherSettings
-        $run = $process = $null
-        $expectedWindow = [IntPtr]::Zero
+        $run = $process = $sheet = $null
+        $window = $expectedWindow = [IntPtr]::Zero
         $expectedMonitor = $null
         $started = Get-Date
         try {
+            $run = Start-KitDesktopLauncher $exe -Settings $settings
+            $preparedWindow = Get-KitLauncherWindow $run.Process
+            Wait-KitHome $preparedWindow
+            Focus-KitPictureWindow $preparedWindow $run.Process.Id
+            # Visiting Studio once lets it create its default loadout before the no-import comparison.
+            [KitDesktop]::Chord(17,52)
+            Wait-KitCondition { Find-KitControl $preparedWindow 'ConfigsCheckConfig' -AllowOffscreen } 12 'the initialized Config Studio' | Out-Null
+            [KitDesktop]::Chord(17,49)
+            Wait-KitHome $preparedWindow
             if ($Opening -eq 'running') {
-                $run = Start-KitDesktopLauncher $exe
                 $process = $run.Process
-                $expectedWindow = Get-KitLauncherWindow $process
-                Wait-KitHome $expectedWindow
+                $expectedWindow = $preparedWindow
                 $expectedMonitor = [Windows.Forms.Screen]::FromHandle($expectedWindow).DeviceName
                 [void][KitDesktop]::ShowWindow($expectedWindow, 6)
                 Wait-KitCondition { [KitDesktop]::IsIconic($expectedWindow) } 5 'the launcher to minimize' | Out-Null
+            } else {
+                Stop-KitLauncher $run (New-Folder (Join-Path $directory 'prepared'))
+                $run = $null
+                $started = Get-Date
             }
+            $before = @(Get-TreeHashes (Join-Path $LauncherHome 'main'))
+            $before | Set-Content -LiteralPath (Join-Path $directory 'private-files-before.txt')
             Open-KitAssociation $case.Source $case.Class $exe $settings
             $window = Wait-KitCondition {
                 $front = [KitDesktop]::GetForegroundWindow()
@@ -173,8 +191,8 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             "Foreground window=$window process=$($process.Id) monitor=$monitor expected=$expectedMonitor" |
                 Set-Content -LiteralPath (Join-Path $directory 'foreground.txt')
             if ($expectedMonitor -and $monitor -ne $expectedMonitor) { throw 'The existing window moved to another screen.' }
-            Wait-KitCondition { Find-KitControl $window $case.Sheet -Name } 14 $case.Sheet | Out-Null
-            if ($case.Witness) { Wait-KitCondition { Find-KitControl $window $case.Witness -Name } 10 $case.Witness | Out-Null }
+            $sheet = Wait-KitCondition { Find-KitControl $window $case.Sheet -Name } 14 $case.Sheet
+            Wait-KitCondition { Find-KitControl $window $case.Witness -Name } 10 $case.Witness | Out-Null
             if ($case.Type -eq 'server') {
                 $edit = Find-KitControl $window 'AddressBox'
                 if ($edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -ne '127.0.0.1:9') {
@@ -183,6 +201,7 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             }
             Save-KitWindow $window (Join-Path $directory 'review.png')
             $after = @(Get-TreeHashes (Join-Path $LauncherHome 'main'))
+            $after | Set-Content -LiteralPath (Join-Path $directory 'private-files-at-review.txt')
             if (($before -join [Environment]::NewLine) -cne ($after -join [Environment]::NewLine)) {
                 throw 'The test player or recording files changed before confirmation.'
             }
@@ -192,16 +211,26 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             }) { throw 'An engine started before confirmation.' }
             'The review was shown. No test data changed and no test engine started.' |
                 Set-Content -LiteralPath (Join-Path $directory 'confirmation.txt')
-            Invoke-KitControl $window 'Cancel' -Name
         } catch {
             "$($case.Type). $($_.Exception.Message)"
         } finally {
-            if ($run) { Stop-KitLauncher $run $directory }
-            else {
-                if (!$process) { $process = Find-KitActivatedLauncher $exe $started $session }
-                if ($process -and !$process.HasExited) {
-                    [void]$process.CloseMainWindow()
-                    if (!$process.WaitForExit(12000)) { throw 'The association-opened Test launcher did not close.' }
+            try {
+                if ($sheet -and (Find-KitControl $window $case.Sheet -Name)) {
+                    $dismiss = if (Find-KitControl $window 'Cancel' -Name) { 'Cancel' } else { 'Close' }
+                    Invoke-KitControl $window $dismiss -Name
+                }
+            } finally {
+                if ($run) { Stop-KitLauncher $run $directory }
+                else {
+                    if (!$process) { $process = Find-KitActivatedLauncher $exe $started $session }
+                    if ($process -and !$process.HasExited) {
+                        [void]$process.CloseMainWindow()
+                        if (!$process.WaitForExit(12000)) {
+                            $process.Kill()
+                            [void]$process.WaitForExit(8000)
+                            throw 'The association-opened Test launcher did not close and was stopped.'
+                        }
+                    }
                 }
             }
         }
@@ -283,9 +312,10 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
     $entry = New-RunContext 'notice-feed'
     $ready = Join-Path $entry.Folder 'port'
     $version = '0.5.' + (Get-Random -Minimum 10000 -Maximum 100000)
+    $presented = Join-Path $entry.Folder "presentation-ready-$version"
     $server = Join-Path $Kit 'Local-Update-Feed.ps1'
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}" -NoticeVersion {3}' -f $server,$setup.FullName,$ready,$version
+    $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}" -NoticeVersion {3} -NoticeGate "{4}"' -f $server,$setup.FullName,$ready,$version,$presented
     $feed = Start-KitProcess $powershell $arguments $entry.Folder -NoWindow
     $run = $null
     $receipt = Join-Path $Results 'notice.txt'
@@ -305,11 +335,18 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         Wait-KitHome $window
         if ($State -eq 'foreground') {
             Focus-KitPictureWindow $window $run.Process.Id
-            Wait-KitCondition {
-                if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'Foreground changed during the update check.' }
-                $offer = Find-KitControl $window 'UpdateText' -AllowOffscreen
-                $offer -and $offer.Current.Name -like "*$version*"
-            } 40 'the in-app update offer' | Out-Null
+            [IO.File]::WriteAllText($presented, 'foreground')
+            try {
+                Wait-KitCondition {
+                    if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'Foreground changed during the update check.' }
+                    Find-KitControl $window 'Install Update' -Name
+                } 40 'the in-app Install Update action' | Out-Null
+            } catch {
+                if ([KitDesktop]::GetForegroundWindow() -eq $window) {
+                    Save-KitWindow $window (Join-Path $Results 'in-app-timeout.png')
+                }
+                throw
+            }
             Save-KitWindow $window (Join-Path $Results 'in-app-offer.png')
             'Home showed the offer. The launcher reserves Windows notifications for background offers.' |
                 Add-Content -LiteralPath $receipt
@@ -318,6 +355,7 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
 
         [void][KitDesktop]::ShowWindow($window,6)
         Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
+        [IO.File]::WriteAllText($presented, 'minimized')
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         try {
             Wait-KitCondition {

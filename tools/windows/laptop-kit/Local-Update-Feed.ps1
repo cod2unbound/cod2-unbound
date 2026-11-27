@@ -1,5 +1,6 @@
 #Requires -Version 5.1
-param([string]$Setup, [string]$Ready, [ValidatePattern('^0\.5\.[1-9][0-9]{4}$')][string]$NoticeVersion)
+param([string]$Setup, [string]$Ready, [ValidatePattern('^0\.5\.[1-9][0-9]{4}$')][string]$NoticeVersion,
+    [string]$NoticeGate)
 $ErrorActionPreference = 'Stop'
 $version = [IO.Path]::GetFileName($Setup).Split('-')[2]
 $name = [IO.Path]::GetFileName($Setup)
@@ -48,7 +49,17 @@ try {
                 for ($n = 0; $n -lt 80; $n++) { if (-not $reader.ReadLine()) { break } }
                 if ($n -eq 80) { Send-Header 400 0; continue }
                 switch ($target) {
-                    '/releases' { Write-Output 'Release list'; Send-Bytes ([Text.Encoding]::UTF8.GetBytes($release)) }
+                    '/releases' {
+                        if ($NoticeGate) {
+                            $presentationDeadline = [DateTime]::UtcNow.AddSeconds(20)
+                            while (!(Test-Path -LiteralPath $NoticeGate) -and [DateTime]::UtcNow -lt $presentationDeadline) {
+                                Start-Sleep -Milliseconds 100
+                            }
+                            if (!(Test-Path -LiteralPath $NoticeGate)) { Send-Header 503 0; continue }
+                        }
+                        Write-Output 'Release list'
+                        Send-Bytes ([Text.Encoding]::UTF8.GetBytes($release))
+                    }
                     $sums { Write-Output 'Installer checksum'; Send-Bytes $checksum }
                     $asset {
                         if ($NoticeVersion) { Send-Header 404 0; continue }
