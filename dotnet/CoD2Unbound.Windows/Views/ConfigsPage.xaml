@@ -113,13 +113,11 @@
                         <ListView x:Name="DiscoverPlaces" AutomationProperties.Name="Discover" TabNavigation="Once"
                                   SelectionChanged="OnDiscoverPlaceChanged">
                             <ListViewItem AccessKey="P" AutomationProperties.Name="Player Setups" Style="{StaticResource StudioColumnItem}">
-                                <Grid>
+                                <Grid ColumnDefinitions="30,*" ColumnSpacing="10" views:GlyphAlign.IsEnabled="True">
                                     <Border Style="{StaticResource StudioMonogramTile}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
-                                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPeopleCommunity}"
-                                                  Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
-                                        <TextBlock Text="Player Setups" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    </StackPanel>
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentPeopleCommunity}"
+                                              Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
+                                    <TextBlock Grid.Column="1" Text="Player Setups" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
                                 </Grid>
                             </ListViewItem>
                             <ListViewItem AccessKey="V" AutomationProperties.Name="Saved" Style="{StaticResource StudioColumnItem}">
@@ -139,13 +137,11 @@
                                 </Grid>
                             </ListViewItem>
                             <ListViewItem AutomationProperties.Name="Check a config" AutomationProperties.AutomationId="ConfigsCheckConfig" Style="{StaticResource StudioColumnItem}">
-                                <Grid>
+                                <Grid ColumnDefinitions="30,*" ColumnSpacing="10" views:GlyphAlign.IsEnabled="True">
                                     <Border Style="{StaticResource StudioMonogramTile}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
-                                        <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentShieldCheckmark}"
-                                                  Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
-                                        <TextBlock Text="Check a Config" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    </StackPanel>
+                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentShieldCheckmark}"
+                                              Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
+                                    <TextBlock Grid.Column="1" Text="Check a Config" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
                                 </Grid>
                             </ListViewItem>
                         </ListView>
@@ -192,22 +188,18 @@
                         </ListView>
                         <Button x:Name="NewLoadout" AccessKey="N" Click="OnNewLoadout" AutomationProperties.Name="New loadout"
                                 Style="{StaticResource StudioColumnAction}">
-                            <Grid>
+                            <Grid ColumnDefinitions="30,*" ColumnSpacing="10" views:GlyphAlign.IsEnabled="True">
                                 <Border Style="{StaticResource StudioMonogramTile}" />
-                                <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAddSmall}" Width="30" FontSize="16" />
-                                    <TextBlock Text="New Loadout" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                </StackPanel>
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAddSmall}" Width="30" FontSize="16" />
+                                <TextBlock Grid.Column="1" Text="New Loadout" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
                             </Grid>
                         </Button>
                         <Button x:Name="AddConfig" AccessKey="I" AutomationProperties.Name="Add a config" Style="{StaticResource StudioColumnAction}">
-                            <Grid>
+                            <Grid ColumnDefinitions="30,*,Auto" ColumnSpacing="10" views:GlyphAlign.IsEnabled="True">
                                 <Border Style="{StaticResource StudioMonogramTile}" />
-                                <StackPanel Orientation="Horizontal" Spacing="10" views:GlyphAlign.IsEnabled="True">
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" Width="30" FontSize="18" />
-                                    <TextBlock Text="Add a Config" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
-                                </StackPanel>
+                                <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" Width="30" FontSize="18" />
+                                <TextBlock Grid.Column="1" Text="Add a Config" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                <FontIcon Grid.Column="2" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentChevronDown}" FontSize="12" />
                             </Grid>
                         </Button>
                     </StackPanel>

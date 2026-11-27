@@ -233,6 +233,8 @@ public sealed partial class ConfigsPage
                     var sort = new ComboBox { MinWidth = 152 };
                     var label = new TextBlock { Text = "Order", VerticalAlignment = VerticalAlignment.Center };
                     AutomationProperties.SetLabeledBy(sort, label);
+                    AutomationProperties.SetName(sort, "Sort by");
+                    AutomationProperties.SetAutomationId(sort, "PlayerSetupsSort");
                     ToolTipService.SetToolTip(sort, "Sort the setups");
                     sort.ItemsSource = orders.Select(value => value switch
                     {
@@ -241,17 +243,22 @@ public sealed partial class ConfigsPage
                         _ => "Featured first"
                     }).ToArray();
                     sort.SelectedIndex = orders.IndexOf(order);
+                    UpdateSortStatus();
                     sort.SelectionChanged += (_, _) =>
                     {
                         if (sort.SelectedIndex < 0)
                             return;
                         shell.SetupOrder = order = orders[sort.SelectedIndex];
+                        UpdateSortStatus();
                         FillGrid();
                     };
                     var sortRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                         VerticalAlignment = VerticalAlignment.Bottom, Children = { label, sort } };
                     Put(gridHeading, 1, sortRow);
                     MoveBelowWhenNarrow(gridHeading, sortRow, 720);
+
+                    void UpdateSortStatus() =>
+                        AutomationProperties.SetItemStatus(sort, (string)sort.SelectedItem);
                 }
                 FillGrid();
 
