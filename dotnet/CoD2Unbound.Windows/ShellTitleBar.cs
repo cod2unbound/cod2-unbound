@@ -13,10 +13,8 @@ public sealed partial class MainWindow
     private RectInt32[] passthrough = [];
 
     /// <summary>
-    /// Shows <paramref name="element"/> in the caption band (window coordinates: lay it out with its own
-    /// alignment and margin inside a host that spans the window's width less the caption buttons' 138 px, from
-    /// the window's top edge). Null removes it. The element may reach below the caption band. A page calls this
-    /// from its Loaded handler; the shell clears it whenever another page replaces the current one.
+    /// Places <paramref name="element"/> in the title bar between the system insets. The shell clears it
+    /// when navigation replaces the current page.
     /// </summary>
     internal void SetTitleBarContent(FrameworkElement? element)
     {
@@ -41,6 +39,10 @@ public sealed partial class MainWindow
         if (!useCustomTitleBar || Root.XamlRoot is null)
             return;
         double scale = Root.XamlRoot.RasterizationScale;
+        var window = AppWindow;
+        var insets = new Thickness(window.TitleBar.LeftInset / scale, 0, window.TitleBar.RightInset / scale, 0);
+        if (TitleBarContent.Margin != insets)
+            TitleBarContent.Margin = insets;
         var rects = new List<RectInt32>();
         foreach (var child in TitleBarContent.Children.OfType<FrameworkElement>())
         {
@@ -51,7 +53,7 @@ public sealed partial class MainWindow
                 (int)Math.Floor(bounds.X * scale), (int)Math.Floor(bounds.Y * scale),
                 (int)Math.Ceiling(bounds.Width * scale), (int)Math.Ceiling(bounds.Height * scale)));
         }
-        if (rects.SequenceEqual(passthrough) || AppWindow is not { } window ||
+        if (rects.SequenceEqual(passthrough) ||
             InputNonClientPointerSource.GetForWindowId(window.Id) is not { } source)
             return;
         var next = rects.ToArray();

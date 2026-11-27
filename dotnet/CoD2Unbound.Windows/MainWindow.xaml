@@ -83,10 +83,8 @@
             </Grid>
         </NavigationView>
 
-        <!-- Title-bar content (ShellTitleBar.cs): interactive pieces a page places in the caption band, such as
-             Home's update pill. The host itself takes no input; the shell keeps a passthrough region over each
-             visible child, and the host stays 138 px clear of the caption buttons. -->
-        <Grid x:Name="TitleBarContent" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,0,138,0" />
+        <!-- Interactive title-bar content stays clear of the system caption buttons. -->
+        <Grid x:Name="TitleBarContent" Grid.RowSpan="2" VerticalAlignment="Top" />
 
         <!-- Jump to (JumpPalette.swift, HomeJump board): a light-dismiss popup centred over the window, opened
              with Ctrl+K, holding a real TextBox and a real ListView. A click outside closes it, as on the Mac. -->
