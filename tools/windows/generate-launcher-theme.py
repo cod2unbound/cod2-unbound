@@ -139,6 +139,8 @@ def generate(source):
             # The gold on the dark theme needs dark ink.
             if name == "Dark":
                 token("TextOnAccentFillColorSelectedTextBrush", "prominentText")
+            # WinUI's translucent pressed ink falls below 4.5:1 on both gold fills.
+            token("TextOnAccentFillColorSecondaryBrush", "prominentText")
             for key, value in {
                 "TextFillColorPrimaryBrush": "text",
                 "TextFillColorSecondaryBrush": "secondary",
