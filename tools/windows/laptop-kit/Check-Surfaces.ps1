@@ -59,8 +59,8 @@ function Invoke-KitWindows10Startup {
                     (Test-Path -LiteralPath $trace) -and
                         (Select-String -LiteralPath $trace -SimpleMatch " $id first content frame" -Quiet)
                 } 45 "$name content" | Out-Null
-                if (-not (Select-String -LiteralPath $trace -SimpleMatch " $id Windows 10 acrylic fallback applied" -Quiet)) {
-                    throw 'The Windows 10 fallback did not apply to both themes.'
+                if (-not (Select-String -LiteralPath $trace -SimpleMatch " $id Windows 10 solid backdrop selected" -Quiet)) {
+                    throw 'The launcher did not select the solid Windows 10 backdrop.'
                 }
                 $control = switch ($route) {
                     'setup' { 'SetupNext' }
