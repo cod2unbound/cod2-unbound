@@ -477,7 +477,8 @@ function Complete-KitJoinPassword([IntPtr]$Window, [string]$Name, [string]$Passw
     [Windows.Forms.SendKeys]::SendWait($Password)
     $remember = Find-KitControl $Window 'Remember for this server, on this PC only' -Name
     if (-not $remember) { throw 'The remember-password choice was missing.' }
-    $remember.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
+    $choice = $remember.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
+    if ($choice.Current.ToggleState -ne [Windows.Automation.ToggleState]::On) { $choice.Toggle() }
     Save-KitWindow $Window (Join-Path $Results 'server-password.png')
     Invoke-KitControl $Window 'PrimaryButton'
 }
