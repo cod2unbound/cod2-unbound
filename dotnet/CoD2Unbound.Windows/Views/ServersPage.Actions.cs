@@ -80,10 +80,12 @@ public sealed partial class ServersPage
             }
             else if (!largeText)
                 row.RowDefinitions.Clear();
-            Grid.SetColumnSpan(row.Children[0], largeText ? 2 : 1);
-            Grid.SetRow(row.Children[1], largeText ? 1 : 0);
-            Grid.SetColumn(row.Children[1], largeText ? 0 : 1);
-            Grid.SetColumnSpan(row.Children[1], largeText ? 2 : 1);
+            var label = (FrameworkElement)row.Children[0];
+            var input = (FrameworkElement)row.Children[1];
+            Grid.SetColumnSpan(label, largeText ? 2 : 1);
+            Grid.SetRow(input, largeText ? 1 : 0);
+            Grid.SetColumn(input, largeText ? 0 : 1);
+            Grid.SetColumnSpan(input, largeText ? 2 : 1);
         }
         loadingFilters = true;
         try
