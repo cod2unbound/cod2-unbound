@@ -113,13 +113,13 @@ public sealed partial class HostingPage : Page
             if (detail.Text != status)
                 detail.Text = status;
             if (root.FindName("HostRowIcon") is FontIcon icon)
-                icon.Foreground = ThemeBrush(state.Phase switch
+                icon.Foreground = shell.IsHighContrast ? null : ThemeBrush(state.Phase switch
                 {
                     HostedPhase.Running => "positive",
                     HostedPhase.PortBusy or HostedPhase.Failed => "negative",
                     _ when server.Id == draft?.Id => "accent",
                     _ => "tertiary"
-                }, ActualTheme, shell.IsHighContrast);
+                }, ActualTheme, false);
             if (AutomationProperties.GetHelpText(item) != status)
                 AutomationProperties.SetHelpText(item, status);
         }
@@ -153,7 +153,7 @@ public sealed partial class HostingPage : Page
             var title = new TextBlock
             {
                 Text = "HOST YOUR OWN SERVER", TextAlignment = TextAlignment.Center,
-                Style = StyleFor("EmptyHeading"), FontSize = 34
+                Style = StyleFor("TitleTextBlockStyle")
             };
             var description = Body("Run a server on this PC for friends on your network or over the internet, with the original 1.3 or CoD2x, public rules or a competitive zPAM match. Or write the files for a server that runs somewhere else.");
             description.TextAlignment = TextAlignment.Center;

@@ -295,7 +295,7 @@ public sealed partial class HostingPage
 
         private static TextBlock NumberValue(string value = "") => new()
         {
-            Text = value, Style = StyleFor("StencilText"), FontSize = 30,
+            Text = value, Style = StyleFor("TitleTextBlockStyle"),
             TextTrimming = TextTrimming.CharacterEllipsis
         };
 

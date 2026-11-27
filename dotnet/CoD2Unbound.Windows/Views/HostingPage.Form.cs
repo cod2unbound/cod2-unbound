@@ -246,7 +246,7 @@ public sealed partial class HostingPage
             switch (state)
             {
                 case { Phase: ZpamDownloadPhase.Missing, Release: { } release }:
-                    var get = new Button { Content = $"Get zPAM {release.Version}", Style = StyleFor("AccentButtonStyle") };
+                    var get = new Button { Content = $"Get zPAM {release.Version}" };
                     get.Click += async (_, _) => await page.shell.ShowProblemAsync(async () =>
                     {
                         await page.hosting.Zpam.GetAsync(line, lifetime.Token);
