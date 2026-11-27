@@ -241,14 +241,14 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowMapMode" Text="{Binding MapMode}"
-                                                       MaxWidth="176" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                       MaxWidth="176" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                             <Border Grid.Column="1" x:Name="RowEdition" Style="{StaticResource EditionTag}">
                                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowEditionText" Text="{Binding Edition}"
                                                            VerticalAlignment="Center" />
                                             </Border>
                                             <Border Grid.Column="2" x:Name="RowMod" Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="80">
                                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding Mod}" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis" />
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                             </Border>
                                         </Grid>
                                     </StackPanel>
