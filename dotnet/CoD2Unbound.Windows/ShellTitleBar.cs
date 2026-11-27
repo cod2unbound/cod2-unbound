@@ -36,11 +36,11 @@ public sealed partial class MainWindow
 
     private void UpdatePassthrough()
     {
-        if (!useCustomTitleBar || Root.XamlRoot is null)
+        if (!useCustomTitleBar || flushedForClose || windowsSessionEnding ||
+            Root.XamlRoot is not { } xamlRoot || AppWindow is not { TitleBar: { } titleBar } window)
             return;
-        double scale = Root.XamlRoot.RasterizationScale;
-        var window = AppWindow;
-        var insets = new Thickness(window.TitleBar.LeftInset / scale, 0, window.TitleBar.RightInset / scale, 0);
+        double scale = xamlRoot.RasterizationScale;
+        var insets = new Thickness(titleBar.LeftInset / scale, 0, titleBar.RightInset / scale, 0);
         if (TitleBarContent.Margin != insets)
             TitleBarContent.Margin = insets;
         var rects = new List<RectInt32>();
