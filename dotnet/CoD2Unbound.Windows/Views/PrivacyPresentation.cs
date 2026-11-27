@@ -1,6 +1,5 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Platform;
-using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -126,13 +125,10 @@ internal static class PrivacyPresentation
             panel.Children.Add(row);
         }
         panel.Children.Add(Caption("No account, name or CD key goes with it, and a report that seems to hold a CD key is never sent. The launcher asks Sentry to leave your network address out of the report and keeps track of reports Sentry has accepted."));
-        bool useAcrylic = WindowsVersion.IsWindows11OrLater
-            && DesktopAcrylicController.IsSupported();
         return new Flyout
         {
             Content = panel, Placement = FlyoutPlacementMode.TopEdgeAlignedRight,
-            SystemBackdrop = useAcrylic ? new DesktopAcrylicBackdrop() : null,
-            FlyoutPresenterStyle = StyleFor(useAcrylic ? "CrashFlyoutPresenter" : "SolidCrashFlyoutPresenter")
+            FlyoutPresenterStyle = StyleFor("CrashFlyoutPresenter")
         };
     }
 

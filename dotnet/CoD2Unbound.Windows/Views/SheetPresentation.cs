@@ -7,9 +7,7 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
-/// The Mac's sheet anatomy (SheetScaffold, AllSheets board) for WinUI's ContentDialog: a symbol on a 44-point
-/// tile, a title that names the thing and one sentence of consequence; and its single-decision alert, the
-/// app's mark over a centred title and message. LauncherSheet and LauncherAlert supply the rest.
+/// Supplies the app's artwork and heading content for a standard ContentDialog.
 internal static class SheetPresentation
 {
     internal enum Tone { Accent, Negative, Positive }
@@ -63,15 +61,14 @@ internal static class SheetPresentation
         AutomationProperties.SetAccessibilityView(mark, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
         row.Children.Add(mark);
         var words = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
-        var heading = new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap, FontSize = 17, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold };
+        var heading = new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap, Style = StyleFor("SubtitleTextBlockStyle") };
         AutomationProperties.SetHeadingLevel(heading, Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level1);
         words.Children.Add(heading);
         if (!string.IsNullOrEmpty(message))
         {
             var sentence = new TextBlock
             {
-                Text = message, TextWrapping = TextWrapping.Wrap, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.Normal,
-                LineHeight = 18
+                Text = message, TextWrapping = TextWrapping.Wrap, Style = StyleFor("BodyTextBlockStyle")
             };
             Follow(sentence, theme => sentence.Foreground = theme("secondary"));
             words.Children.Add(sentence);
@@ -80,20 +77,10 @@ internal static class SheetPresentation
         return row;
     }
 
-    /// The single-decision alert: the app's mark, a centred title and message; buttons side by side, or
-    /// stacked with the destructive action first.
+    /// Keeps the brand mark in the alert's heading and lets the native command row lay out the choices.
     internal static T AsAlert<T>(this T dialog, bool destructive = false) where T : ContentDialog
     {
-        string title = dialog.Title as string ?? AutomationProperties.GetName(dialog);
-        dialog.Title = new TextBlock { Text = title, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
-        AutomationProperties.SetName(dialog, title);
-        if (dialog.Content is TextBlock text)
-        {
-            text.TextAlignment = TextAlignment.Center;
-            text.HorizontalAlignment = HorizontalAlignment.Center;
-            text.MinWidth = 0;
-        }
-
+        dialog.WithSymbol("mark");
         if (destructive)
             dialog.PrimaryButtonStyle = StyleFor("AlertDestructiveButton");
         return dialog;

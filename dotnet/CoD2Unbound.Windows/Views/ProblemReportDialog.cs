@@ -27,7 +27,7 @@ internal sealed class ProblemReportDialog : ContentDialog
 
         var detail = new TextBlock
         {
-            Text = report.Details, Style = StyleFor("Mono"), FontSize = 12, LineHeight = 18,
+            Text = report.Details, Style = StyleFor("CaptionTextBlockStyle"),
             TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true
         };
         AutomationProperties.SetName(detail, "Details that go in the report");
@@ -56,7 +56,7 @@ internal sealed class ProblemReportDialog : ContentDialog
             Children = { well, new Border { Style = StyleFor("GroupCard"), Child = choices }, note }
         };
 
-        var copyStyle = new Style(typeof(Button)) { BasedOn = StyleFor("SheetButton") };
+        var copyStyle = new Style(typeof(Button));
         copyStyle.Setters.Add(new Setter(AutomationProperties.NameProperty, "Copy details"));
         copyStyle.Setters.Add(new Setter(AutomationProperties.AutomationIdProperty, "ProblemReportCopyDetails"));
         SecondaryButtonStyle = copyStyle;
@@ -66,7 +66,7 @@ internal sealed class ProblemReportDialog : ContentDialog
         {
             args.Cancel = true;
             int attempt = ++copyGeneration;
-            SecondaryButtonStyle = StyleFor("SheetButton");
+            SecondaryButtonStyle = null;
             try
             {
                 CopyText(report.Details);

@@ -102,7 +102,7 @@ public sealed partial class SettingsPage
 
         var loadoutNote = new InfoBar
         {
-            IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational, Style = StyleFor("SettingsNote"),
+            IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational,
             Visibility = Visibility.Collapsed,
             Message = "Your loadouts keep their own resolution and picture settings.",
             ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))

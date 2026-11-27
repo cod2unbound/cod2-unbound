@@ -114,7 +114,6 @@ public sealed partial class SettingsPage : Page
             Title = "Looking for mouse, brightness, network, HUD or sound?",
             Message = "They live in your loadouts, so every loadout keeps its own.",
             IsOpen = true, IsClosable = false,
-            Style = StyleFor("SettingsNote"),
             ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
         };
         hint.Margin = new Thickness(0, 16, 0, 0);

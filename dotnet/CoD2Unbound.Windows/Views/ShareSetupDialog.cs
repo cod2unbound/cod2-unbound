@@ -215,7 +215,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         SheetPresentation.SetSheetTitle(this, "FluentDocument", "What is sent", PrivacyPresentation.SharePreviewIntro(appVersion));
         PrimaryButtonText = "Done";
         IsPrimaryButtonEnabled = true;
-        SecondaryButtonStyle = StyleFor("SheetButton");
+        SecondaryButtonStyle = null;
         CloseButtonText = "";
         var sentLines = new TextBox
         {
