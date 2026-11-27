@@ -89,8 +89,8 @@ function Invoke-KitJumpPointer {
     $cases = @(
         @{ Query='library'; Name='Library'; Witness='DemosSection' }
         @{ Query='configs'; Name='Configs'; Witness='ConfigsCheckConfig' }
-        @{ Query='keyboard shortcuts'; Name='Keyboard Shortcuts'; Witness='PrimaryButton'; Dialog=$true }
-        @{ Query='connect to address'; Name='Connect to Address'; Witness='AddressBox'; Dialog=$true }
+        @{ Query='keyboard shortcuts'; Name='Keyboard Shortcuts'; Witness='PrimaryButton'; Close='Done' }
+        @{ Query='connect to address'; Name='Connect to Address'; Witness='AddressBox'; Close='Cancel' }
         @{ Query=$address; Name=$address; Server=$true }
     )
     foreach ($theme in 'dark','light') {
@@ -149,7 +149,10 @@ function Invoke-KitJumpPointer {
                 Save-KitWindow $app (Join-Path $pictures "$file-after.png")
                 "$theme $($case.Name): pointer click opened the result." |
                     Add-Content -LiteralPath (Join-Path $Results 'pointer-results.txt') -Encoding UTF8
-                if ($case.Dialog) { [KitDesktop]::Tap(27) }
+                if ($case.Close) {
+                    Invoke-KitControl $app $case.Close -Name
+                    Wait-KitCondition { -not (Find-KitControl $app $case.Witness) } 8 'the Jump to action sheet to close' | Out-Null
+                }
             }
         } finally { Stop-KitLauncher $run $pictures }
     }
