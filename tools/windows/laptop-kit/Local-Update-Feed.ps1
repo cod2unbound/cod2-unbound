@@ -1,8 +1,12 @@
 #Requires -Version 5.1
-param([string]$Setup, [string]$Ready)
+param([string]$Setup, [string]$Ready, [ValidatePattern('^0\.5\.[1-9][0-9]{4}$')][string]$NoticeVersion)
 $ErrorActionPreference = 'Stop'
 $version = [IO.Path]::GetFileName($Setup).Split('-')[2]
 $name = [IO.Path]::GetFileName($Setup)
+if ($NoticeVersion) {
+    $name = $name.Replace("-$version-", "-$NoticeVersion-")
+    $version = $NoticeVersion
+}
 $length = (Get-Item -LiteralPath $Setup).Length
 $checksum = [Text.Encoding]::ASCII.GetBytes("$((Get-FileHash -LiteralPath $Setup).Hash.ToLowerInvariant())  $name`n")
 $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
@@ -47,6 +51,7 @@ try {
                     '/releases' { Write-Output 'Release list'; Send-Bytes ([Text.Encoding]::UTF8.GetBytes($release)) }
                     $sums { Write-Output 'Installer checksum'; Send-Bytes $checksum }
                     $asset {
+                        if ($NoticeVersion) { Send-Header 404 0; continue }
                         Write-Output 'Installer'
                         Send-Header 200 $length
                         $file = [IO.File]::OpenRead($Setup)

@@ -238,6 +238,22 @@ $Steps = @(
         } -Variant $surface
     }
     Add-KitStep 'launcher-jump-pointer' 'Click Jump to results in dark and light' { Invoke-KitJumpPointer }
+    Add-KitStep 'launcher-jump-pointer-repeat' 'Repeat the Jump to pointer sweep five times' { Invoke-KitJumpPointer -Rounds 5 }
+    Add-KitStep 'launcher-sheet-dimming' 'Sample sheet dimming in Light, Dark and Match System' { Invoke-KitSheetDimming }
+    Add-KitStep 'launcher-tab-names' 'Record Tab stops from Settings into each page and through Settings sections' { Invoke-KitTabNames }
+    foreach ($opening in 'running','closed') {
+        Add-KitStep "launcher-activation-$opening" "Open a config, recording and server link with the launcher $opening" {
+            param($step)
+            Invoke-KitSafeActivation $step.Variant
+        } -Variant $opening
+    }
+    Add-KitStep 'launcher-taskbar-caption' 'Capture the launcher taskbar button and window caption' { Invoke-KitTaskbarCaption }
+    foreach ($state in 'foreground','minimized','closed') {
+        Add-KitStep "launcher-update-notice-$state" "Check the local update notice with the launcher $state" {
+            param($step)
+            Invoke-KitUpdateNotice $step.Variant
+        } -Variant $state
+    }
     Add-KitStep 'resolution-original' 'First Original launch at the chosen resolution without a configuration question' {
         Invoke-KitFirstResolution
     }

@@ -76,7 +76,10 @@ try {
             if ($repeats.Count -ne 3) { throw "Expected three $edition $renderer exclusive matches." }
         }
     }
-    foreach ($id in 'launcher-jump-pointer','resolution-original','carentan-direct-2','carentan-direct-3',
+    foreach ($id in 'launcher-jump-pointer','launcher-jump-pointer-repeat','launcher-sheet-dimming',
+        'launcher-tab-names','launcher-activation-running','launcher-activation-closed','launcher-taskbar-caption',
+        'launcher-update-notice-foreground','launcher-update-notice-minimized','launcher-update-notice-closed',
+        'resolution-original','carentan-direct-2','carentan-direct-3',
         'carentan-installed-2','carentan-installed-3','collect-dumps') {
         if ($id -notin $Steps.Id) { throw "Laptop check is missing $id." }
     }

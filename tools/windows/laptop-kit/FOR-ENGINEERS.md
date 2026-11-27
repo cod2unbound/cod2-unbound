@@ -207,3 +207,27 @@ installed release status. The CoD2x comparison gets the engine's value in an
 offline probe and independently computes the reference from the tagged
 CoD2x machine description and retail hash routine. The comparison saves only
 its result. [CoD2x 1.4.6.8 reference](https://github.com/callofduty2x/CoD2x/blob/v1.4.6.8/src/mss32/hwid.cpp)
+
+## Launcher desktop receipts
+
+The launcher desktop steps use the installed Test identity and a private kit
+profile. They read the current Windows appearance for the dimming result. Leave
+Windows appearance, notifications and default apps as they are.
+
+- `launcher-sheet-dimming` saves paired pictures and two pixel samples for
+  each of Light, Dark and Match System.
+- `launcher-jump-pointer` runs the original pointer sweep.
+  `launcher-jump-pointer-repeat` repeats it five times with separate receipts.
+- `launcher-tab-names` saves the focused name, type and ID while tabbing from
+  the sidebar Settings item and through each section of the Settings window.
+- `launcher-activation-running` and `launcher-activation-closed` use only the
+  registered Test associations. Their receipts record foreground, monitor and
+  the review prompt for each input. Cancel closes the review.
+- `launcher-taskbar-caption` captures the caption and the Test taskbar button
+  when Windows exposes a unique visible button.
+- `launcher-update-notice-foreground`, `-minimized` and `-closed` use an
+  update offer from a loopback feed. Home shows the offer while foregrounded.
+  A background offer can create a Windows notification. The receipt marks
+  an attended click when Windows exposes no clickable item. A cold click
+  requires a disposable offline Windows account because the notification
+  service starts the launcher without the kit's private environment.

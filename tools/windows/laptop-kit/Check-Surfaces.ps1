@@ -79,7 +79,19 @@ function Invoke-KitWindows10Startup {
     }
 }
 
-function Invoke-KitJumpPointer {
+function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
+    if ($Rounds -gt 1) {
+        $receiptRoot = $Results
+        $privateRoot = $Private
+        $failures = foreach ($round in 1..$Rounds) {
+            $Results = New-Folder (Join-Path $receiptRoot "round-$round")
+            $Private = New-Folder (Join-Path $privateRoot "round-$round")
+            try { Invoke-KitJumpPointer }
+            catch { "Round ${round}: $($_.Exception.Message)" }
+        }
+        if ($failures) { throw ($failures -join ' ') }
+        return
+    }
     Stop-KitIfNoGame
     Initialize-KitDesktop
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
