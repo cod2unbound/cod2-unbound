@@ -14,7 +14,7 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="StepCommand" TargetType="Border" BasedOn="{StaticResource MediaTile}">
-            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="28" />
             <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
             <Setter Property="BorderBrush" Value="{ThemeResource buttonStroke}" />
             <Setter Property="Background" Value="{ThemeResource button}" />
@@ -28,7 +28,7 @@
         </Style>
     </UserControl.Resources>
     <Border Style="{StaticResource GroupCard}">
-        <StackPanel>
+        <StackPanel x:Name="Instructions">
             <Grid Style="{StaticResource RecordingStep}" ColumnDefinitions="16,Auto,Auto">
                 <TextBlock Text="1" Style="{StaticResource StepNumber}" />
                 <TextBlock Grid.Column="1" Text="In a match, open the console" VerticalAlignment="Center" />
