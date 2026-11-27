@@ -331,19 +331,13 @@ public sealed partial class ServersPage : Page
             if (label is not null)
                 GlyphAlign.WatchBeside(icon, label);
         }
-        SetFavoriteForeground(button, favorite);
+        if (shell.IsHighContrast)
+            button.ClearValue(Control.ForegroundProperty);
+        else
+            button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, false);
         string action = favorite ? "Remove from favorites" : "Add to favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
         ToolTipService.SetToolTip(button, action);
-    }
-
-    private void SetFavoriteForeground(Button button, bool favorite)
-    {
-        bool contrast = shell.IsHighContrast;
-        string brush = favorite ? "FavoriteBrush" : "CaptionBrush";
-        if (contrast && button.Tag is ServerRow row && ReferenceEquals(row, ServerList.SelectedItem))
-            brush = "prominentText";
-        button.Foreground = ThemeBrush(brush, ActualTheme, contrast);
     }
 
     private void OnSearch(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -387,11 +381,6 @@ public sealed partial class ServersPage : Page
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (shell.IsHighContrast)
-            foreach (var row in args.RemovedItems.Concat(args.AddedItems).OfType<ServerRow>())
-                if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid } &&
-                    grid.FindName("RowFavorite") is Button star)
-                    SetFavoriteForeground(star, model.IsFavorite(row.Server.Address));
         if (!renderingRows)
             RenderDetails();
     }

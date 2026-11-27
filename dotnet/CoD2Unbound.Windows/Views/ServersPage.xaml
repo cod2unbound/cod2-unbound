@@ -189,7 +189,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="80" />
                         <ColumnDefinition Width="84" />
-                        <ColumnDefinition Width="22" />
+                        <ColumnDefinition Width="40" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Map" VerticalAlignment="Center" Style="{StaticResource SecondaryCaption}" />
                     <Button x:Name="SortName" Grid.Column="1" Content="Server" Style="{StaticResource ColumnHeading}" Tag="Name" Click="OnSort" HorizontalContentAlignment="Left" />
@@ -214,7 +214,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="80" />
                                     <ColumnDefinition Width="84" />
-                                    <ColumnDefinition Width="22" />
+                                    <ColumnDefinition Width="40" />
                                 </Grid.ColumnDefinitions>
                                 <Grid x:Name="RowIdentity" ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
@@ -260,7 +260,7 @@
                                                 AutomationProperties.AccessibilityView="Raw" />
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowPing" Text="{Binding Ping}" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <Button x:Name="RowFavorite" Grid.Column="3" Style="{StaticResource IconAction}" Width="22" Height="22" MinWidth="22" MinHeight="22"
+                                <Button x:Name="RowFavorite" Grid.Column="3" Style="{StaticResource IconAction}"
                                         Click="OnRowFavorite" VerticalAlignment="Center" Tag="{Binding}" />
                             </Grid>
                         </DataTemplate>
@@ -299,7 +299,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" VerticalAlignment="Center"
                                                    MaxWidth="214" Style="{StaticResource AddressText}" />
-                                        <Button Style="{StaticResource IconAction}" Width="24" Height="24" MinHeight="24" Click="OnCopyAddress"
+                                        <Button Style="{StaticResource IconAction}" Click="OnCopyAddress"
                                                 AutomationProperties.Name="Copy server address" ToolTipService.ToolTip="Copy server address">
                                             <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCopy}" FontSize="14" />
                                         </Button>
