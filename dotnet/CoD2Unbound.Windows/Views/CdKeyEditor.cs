@@ -9,9 +9,8 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
-/// <summary>The CD key field. The typed key stays visible, as on the Mac, and is grouped in fours as it is
-/// typed. Setup draws the 56-point mono capsule with Paste beside it and renders the feedback itself; the
-/// player card and Settings dialog use the regular capsule with its own feedback line.</summary>
+/// <summary>A visible CD key field that groups characters in fours as the player types. Setup supplies its
+/// own feedback, and the player card and Settings dialog use the editor's feedback line.</summary>
 internal sealed class CdKeyEditor : StackPanel
 {
     private readonly MainWindow shell;
@@ -38,8 +37,6 @@ internal sealed class CdKeyEditor : StackPanel
         AutomationProperties.SetName(input, "CD key");
         AutomationProperties.SetHelpText(input, "Twenty characters");
         var paste = new Button { Content = "Paste", VerticalAlignment = large ? VerticalAlignment.Center : VerticalAlignment.Bottom };
-        if (large)
-            paste.Style = StyleFor("SetupAction");
         AutomationProperties.SetName(paste, "Paste the CD key");
         paste.Click += async (_, _) => await shell.ShowProblemAsync(async () =>
         {
@@ -54,15 +51,12 @@ internal sealed class CdKeyEditor : StackPanel
         var row = Columns(8, new(1, GridUnitType.Star), GridLength.Auto);
         if (large)
         {
-            // The text box draws the capsule itself, so its pointer, focus and contrast states stay the
-            // system's; a mismatch or a verified key tints its resting stroke, and the line under it says so.
             input.Style = StyleFor("SetupKeyBox");
             input.ActualThemeChanged += (_, _) => Stroke();
             Put(row, 0, input);
         }
         else
         {
-            input.Style = StyleFor("CapsuleTextBox");
             input.Header = "CD key";
             Put(row, 0, input);
             feedback = new InfoBar { IsClosable = false };

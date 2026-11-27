@@ -48,6 +48,7 @@ public sealed partial class SetupPage : Page
         AutomationProperties.SetAccessibilityView(Backdrop, AccessibilityView.Raw);
         SetupFrame.Children.Insert(0, Backdrop);
         Backdrop.SizeChanged += (_, args) => PlaceScene(args.NewSize.Height);
+        SetupBar.SizeChanged += (_, _) => Layout();
         SetupMark.Shadow = new ThemeShadow();
         SetupMark.Translation = new System.Numerics.Vector3(0, 0, 32);
         Unloaded += (_, _) => StopSteamWatch();
@@ -86,9 +87,11 @@ public sealed partial class SetupPage : Page
         string eyebrow = welcome ? "Reporting for duty" : StepTitle(step);
         SetupEyebrow.Text = eyebrow.ToUpperInvariant();
         // The Mac sets the Welcome eyebrow 14 further below the mark.
-        SetupEyebrow.Margin = new Thickness(0, welcome ? 14 : 0, 0, 0);
-        SetupTitle.FontSize = welcome ? 40 : 30;
-        SetupTitle.LineHeight = welcome ? 46 : 36;
+        SetupEyebrow.Margin = new Thickness(0, welcome ? 16 : 0, 0, 0);
+        if (welcome)
+            SetupTitle.FontSize = 40;
+        else
+            SetupTitle.ClearValue(TextBlock.FontSizeProperty);
         (SetupTitle.Text, SetupDescription.Text) = step switch
         {
             SetupStep.Data => (Setup.Data.State == SetupDataState.Found ? "Game data found" : "Find your game data",
@@ -145,8 +148,6 @@ public sealed partial class SetupPage : Page
         var step = Setup.Step;
         bool question = step is SetupStep.CrashReports or SetupStep.UsageData;
         SetupBack.Visibility = IsVisible(step != SetupStep.Welcome);
-        // The board: the first capsule sits 10 in from the bar's edge on Welcome, 18 after Back elsewhere.
-        StepDots.Margin = new Thickness(step == SetupStep.Welcome ? 10 : 18, 0, 0, 0);
         SetupCancel.Visibility = IsVisible(Setup.CanCancel);
         DeclineReport.Visibility = IsVisible(question);
         SetupNext.Content = step switch
@@ -160,7 +161,7 @@ public sealed partial class SetupPage : Page
         RenderDots();
     }
 
-    /// <summary>SetupView.swift centers Welcome above the footer and pins every other step to 128 points.</summary>
+    /// <summary>Center Welcome above the footer and give the remaining steps a consistent top inset.</summary>
     private void Layout()
     {
         double width = SetupFrame.ActualWidth, height = SetupFrame.ActualHeight;
@@ -169,7 +170,8 @@ public sealed partial class SetupPage : Page
             panelWidth = Math.Min(panelWidth, Math.Max(320, width - 48));
         SetupColumn.Width = panelWidth;
         bool welcome = Setup.Step == SetupStep.Welcome;
-        var padding = new Thickness(24, welcome ? 16 : 128, 24, 84 + 16);
+        double footerSpace = Math.Max(SetupBar.MinHeight, SetupBar.ActualHeight) + SetupBar.Margin.Bottom + 16;
+        var padding = new Thickness(24, welcome ? 16 : 80, 24, footerSpace);
         if (SetupStage.Padding != padding)
             SetupStage.Padding = padding;
         SetupStage.MinHeight = Math.Max(0, height);
@@ -326,8 +328,7 @@ public sealed partial class SetupPage : Page
             Style = StyleFor("SetupDetail"), Margin = new Thickness(6, 0, 0, 0)
         };
         AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
-        // The stock RadioButtons control keeps the system's arrow keys, roving focus and selection; its items are
-        // radio buttons templated as the Mac's crates, sized to share the panel's width in three columns.
+        // RadioButtons handles arrow keys and selection. The content shares the available width.
         var crates = new RadioButtons { MaxColumns = ModeValues.Length, HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(crates, modeLabel);
         for (int index = 0; index < ModeValues.Length; index++)
@@ -354,8 +355,6 @@ public sealed partial class SetupPage : Page
             if (crates.SelectedIndex >= 0)
                 displayMode = ModeValues[crates.SelectedIndex];
         };
-        // The Mac's crates share one width and the tallest one's height (SetupView.swift: maxWidth .infinity,
-        // minHeight 84, in an HStack).
         ShareCells(crates, ModeValues.Length, CrateGap);
         var both = Note("Both can be changed any time: the name on your player card, the display in Settings.");
         both.Margin = new Thickness(6, 0, 0, 0);

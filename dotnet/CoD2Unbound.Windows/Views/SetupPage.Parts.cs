@@ -220,7 +220,7 @@ public sealed partial class SetupPage
         return button;
     }
 
-    /// <summary>One capsule per shown step: the current one 26 wide in the accent, done ones in the positive colour.</summary>
+    /// <summary>Show the progress of the steps available in this run.</summary>
     private void RenderDots()
     {
         var steps = Setup.Steps;
@@ -232,10 +232,10 @@ public sealed partial class SetupPage
             // In a contrast theme the track colour is the window's own, so steps still ahead take the theme's
             // grey-text colour instead of vanishing.
             string key = position == current ? "accent" : position < current ? "positive" : contrast ? "secondary" : "track";
-            StepDots.Children.Add(new Border
+            StepDots.Children.Add(new Rectangle
             {
-                Width = position == current ? 26 : 14, Height = 5, CornerRadius = new CornerRadius(2.5),
-                Background = ThemeBrush(key, ActualTheme, contrast)
+                Width = position == current ? 24 : 12, Height = 4,
+                Fill = ThemeBrush(key, ActualTheme, contrast)
             });
         }
         string title = StepTitle(Setup.Step);
