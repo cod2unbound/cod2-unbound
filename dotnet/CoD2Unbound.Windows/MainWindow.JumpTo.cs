@@ -1,5 +1,6 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Views;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -26,6 +27,7 @@ public sealed partial class MainWindow
     private IReadOnlyList<ConfigProfile> jumpLoadouts = [];
     private JumpTarget[] jumpResults = [];
     private ListViewItem[] jumpRows = [];
+    private bool? jumpPendingSelection;
 
     private void InitializeJumpTo()
     {
@@ -99,7 +101,7 @@ public sealed partial class MainWindow
                 {
                     jumpLoadouts = profiles;
                     if (JumpBox.Text.Length != 0)
-                        RenderJumpResults();
+                        RenderJumpResults(preserveSelection: true);
                 }
             });
         }
@@ -115,6 +117,7 @@ public sealed partial class MainWindow
         JumpList.Items.Clear();
         jumpResults = [];
         jumpRows = [];
+        jumpPendingSelection = null;
         var previous = jumpReturnFocus;
         jumpReturnFocus = null;
         if (restoreFocus)
@@ -126,10 +129,31 @@ public sealed partial class MainWindow
 
     private void RenderJumpResults(bool preserveSelection = false)
     {
+        preserveSelection &= jumpPendingSelection ?? true;
+        // The native button captures a press until release or cancellation.
+        // Replacing it while it holds capture would drop its Click.
+        if (jumpRows.Any(row => row.Content is Button { PointerCaptures.Count: > 0 }))
+        {
+            jumpPendingSelection = preserveSelection;
+            return;
+        }
+        jumpPendingSelection = null;
+
+        string query = JumpBox.Text;
+        JumpTarget[] results = [.. JumpResults(query)];
+        bool empty = results.Length == 0;
+        JumpList.Visibility = IsVisible(!empty);
+        JumpEmpty.Visibility = IsVisible(empty);
+        if (empty)
+            JumpEmpty.Text = jumpSettings
+                ? "No setting matches. Try a word like “jump”, “turn” or “sound”."
+                : $"Nothing matches “{query.Trim()}”. Try a server, map, loadout or setting name.";
+        if (results.SequenceEqual(jumpResults))
+            return;
+
         int previousIndex = preserveSelection ? JumpIndexOf(JumpList.SelectedItem) : -1;
         JumpTarget? previous = previousIndex >= 0 ? jumpResults[previousIndex] : null;
-        string query = JumpBox.Text;
-        jumpResults = [.. JumpResults(query)];
+        jumpResults = results;
         JumpList.Items.Clear();
         var rows = new List<ListViewItem>();
         JumpGroup? group = null;
@@ -149,12 +173,6 @@ public sealed partial class MainWindow
             JumpList.Items.Add(row);
         }
         jumpRows = [.. rows];
-        bool empty = jumpResults.Length == 0;
-        JumpList.Visibility = IsVisible(!empty);
-        JumpEmpty.Visibility = IsVisible(empty);
-        JumpEmpty.Text = jumpSettings
-            ? "No setting matches. Try a word like “jump”, “turn” or “sound”."
-            : $"Nothing matches “{query.Trim()}”. Try a server, map, loadout or setting name.";
         int selected = previous is null ? 0 : Array.FindIndex(jumpResults,
             target => target.Group == previous.Group && target.Id == previous.Id);
         SelectJumpRow(empty ? -1 : Math.Max(0, selected));
@@ -220,6 +238,10 @@ public sealed partial class MainWindow
                 else if (element is FontIcon icon)
                     icon.ClearValue(FontIcon.ForegroundProperty);
         var action = new Button { Style = StyleFor("JumpResultAction"), Content = line };
+        PointerEventHandler finished = OnJumpResultPointerFinished;
+        action.AddHandler(UIElement.PointerReleasedEvent, finished, handledEventsToo: true);
+        action.AddHandler(UIElement.PointerCaptureLostEvent, finished, handledEventsToo: true);
+        action.AddHandler(UIElement.PointerCanceledEvent, finished, handledEventsToo: true);
         var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = action, Tag = (target, hint) };
         // Selection stays on the native row for the search keys and UI Automation. The button invokes.
         string label = target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}";
@@ -236,6 +258,19 @@ public sealed partial class MainWindow
             AutomationProperties.SetAutomationId(row, $"JumpCommand{target.Id}");
         PaintJumpRow(row, selected: false);
         return row;
+    }
+
+    private void OnJumpResultPointerFinished(object sender, PointerRoutedEventArgs args)
+    {
+        if (jumpPendingSelection is null)
+            return;
+        int generation = jumpGeneration;
+        // Let the native button finish dispatching this release before applying queued results.
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (jumpOpen && generation == jumpGeneration && jumpPendingSelection is bool preserveSelection)
+                RenderJumpResults(preserveSelection);
+        });
     }
 
     private int JumpIndexOf(object? item) => item is ListViewItem row ? Array.IndexOf(jumpRows, row) : -1;
