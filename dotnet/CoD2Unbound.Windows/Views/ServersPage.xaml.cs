@@ -226,6 +226,7 @@ public sealed partial class ServersPage : Page
         // Budgets are in the page toolbar space. Shrink search before either trailing group leaves.
         const double minimumSearch = 160;
         bool twoRows = LargeText;
+        FiltersFlyout.FlyoutPresenterStyle = StyleFor(twoRows ? "WideInsetFormPopover" : "InsetFormPopover");
         Grid.SetRow(BrowserTools, twoRows ? 1 : 0);
         Grid.SetColumn(BrowserTools, twoRows ? 0 : 1);
         Grid.SetColumnSpan(BrowserTools, twoRows ? 2 : 1);

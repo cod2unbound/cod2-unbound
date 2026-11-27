@@ -45,8 +45,9 @@
                         </Border>
                     </StackPanel>
                     <Button.Flyout>
-                        <Flyout Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
-                            <ScrollViewer x:Name="FiltersScroll" VerticalScrollBarVisibility="Auto">
+                        <Flyout x:Name="FiltersFlyout" Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
+                            <ScrollViewer x:Name="FiltersScroll" VerticalScrollBarVisibility="Auto"
+                                          IsTabStop="False" AutomationProperties.Name="Server filter options">
                             <StackPanel Spacing="10">
                                 <Border Style="{StaticResource SheetFormGroup}">
                                     <StackPanel>
