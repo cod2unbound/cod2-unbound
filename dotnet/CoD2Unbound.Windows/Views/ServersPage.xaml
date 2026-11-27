@@ -45,12 +45,12 @@
                         </Border>
                     </StackPanel>
                     <Button.Flyout>
-                        <Flyout x:Name="FiltersFlyout" Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
+                        <Flyout Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
                             <ScrollViewer x:Name="FiltersScroll" VerticalScrollBarVisibility="Auto"
                                           IsTabStop="False" AutomationProperties.Name="Server filter options">
                             <StackPanel Spacing="10">
                                 <Border Style="{StaticResource SheetFormGroup}">
-                                    <StackPanel>
+                                    <StackPanel x:Name="FilterOptions">
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
                                             <SelectorBar x:Name="FilterEdition" Grid.Column="1" AutomationProperties.Name="Version"
@@ -92,7 +92,7 @@
                                         </Grid>
                                     </StackPanel>
                                 </Border>
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid x:Name="FilterFooter" ColumnDefinitions="*,Auto">
                                     <TextBlock x:Name="FilterSummary" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
                                     <Button x:Name="ClearFilters" Grid.Column="1" Content="Reset" Click="OnClearFilters" />
                                 </Grid>

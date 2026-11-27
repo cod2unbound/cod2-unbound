@@ -121,9 +121,6 @@
         <Setter Property="Width" Value="380" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
-    <Style x:Key="WideInsetFormPopover" TargetType="FlyoutPresenter" BasedOn="{StaticResource InsetFormPopover}">
-        <Setter Property="Width" Value="640" />
-    </Style>
     <Style x:Key="CrateItem" TargetType="GridViewItem">
         <Setter Property="Padding" Value="14" />
     </Style>

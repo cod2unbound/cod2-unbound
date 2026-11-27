@@ -70,6 +70,21 @@ public sealed partial class ServersPage
     private void OnFiltersOpening(object sender, object args)
     {
         FiltersScroll.MaxHeight = Math.Max(220, (XamlRoot?.Size.Height ?? 700) - 190);
+        bool largeText = LargeText;
+        foreach (var row in FilterOptions.Children.OfType<Grid>().Append(FilterFooter))
+        {
+            if (largeText && row.RowDefinitions.Count == 0)
+            {
+                row.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                row.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            }
+            else if (!largeText)
+                row.RowDefinitions.Clear();
+            Grid.SetColumnSpan(row.Children[0], largeText ? 2 : 1);
+            Grid.SetRow(row.Children[1], largeText ? 1 : 0);
+            Grid.SetColumn(row.Children[1], largeText ? 0 : 1);
+            Grid.SetColumnSpan(row.Children[1], largeText ? 2 : 1);
+        }
         loadingFilters = true;
         try
         {
