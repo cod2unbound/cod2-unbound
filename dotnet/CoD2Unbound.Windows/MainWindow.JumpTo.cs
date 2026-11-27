@@ -26,6 +26,7 @@ public sealed partial class MainWindow
     private IReadOnlyList<ConfigProfile> jumpLoadouts = [];
     private JumpTarget[] jumpResults = [];
     private ListViewItem[] jumpRows = [];
+    private readonly HashSet<uint> jumpResultPresses = [];
     private bool? jumpPendingSelection;
 
     private void InitializeJumpTo()
@@ -116,6 +117,7 @@ public sealed partial class MainWindow
         JumpList.Items.Clear();
         jumpResults = [];
         jumpRows = [];
+        jumpResultPresses.Clear();
         jumpPendingSelection = null;
         var previous = jumpReturnFocus;
         jumpReturnFocus = null;
@@ -129,9 +131,8 @@ public sealed partial class MainWindow
     private void RenderJumpResults(bool preserveSelection = false)
     {
         preserveSelection &= jumpPendingSelection ?? true;
-        // The native button captures a press until release or cancellation.
-        // Replacing it while it holds capture would drop its Click.
-        if (jumpRows.Any(row => row.Content is Button { PointerCaptures.Count: > 0 }))
+        // Keep the pressed button alive until WinUI dispatches release or cancellation.
+        if (jumpResultPresses.Count != 0)
         {
             jumpPendingSelection = preserveSelection;
             return;
@@ -237,6 +238,7 @@ public sealed partial class MainWindow
                 else if (element is FontIcon icon)
                     icon.ClearValue(FontIcon.ForegroundProperty);
         var action = new Button { Style = StyleFor("JumpResultAction"), Content = line };
+        action.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnJumpResultPointerPressed), handledEventsToo: true);
         PointerEventHandler finished = OnJumpResultPointerFinished;
         action.AddHandler(UIElement.PointerReleasedEvent, finished, handledEventsToo: true);
         action.AddHandler(UIElement.PointerCaptureLostEvent, finished, handledEventsToo: true);
@@ -259,9 +261,15 @@ public sealed partial class MainWindow
         return row;
     }
 
+    private void OnJumpResultPointerPressed(object sender, PointerRoutedEventArgs args)
+    {
+        if (sender is Button action && args.GetCurrentPoint(action).Properties.IsLeftButtonPressed)
+            jumpResultPresses.Add(args.Pointer.PointerId);
+    }
+
     private void OnJumpResultPointerFinished(object sender, PointerRoutedEventArgs args)
     {
-        if (jumpPendingSelection is null)
+        if (!jumpResultPresses.Remove(args.Pointer.PointerId) || jumpPendingSelection is null)
             return;
         int generation = jumpGeneration;
         // Let the native button finish dispatching this release before applying queued results.
