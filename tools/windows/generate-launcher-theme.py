@@ -65,6 +65,16 @@ def system_color(name):
     return f"{{ThemeResource SystemColor{name}Color}}" if name else TRANSPARENT
 
 
+def accent_steps(color):
+    channels = [int(color[index:index + 2], 16) for index in (3, 5, 7)]
+    yield "SystemAccentColor", color
+    for direction, target in (("Light", 255), ("Dark", 0)):
+        for step in range(1, 4):
+            weight = step / 20
+            rgb = "".join(f"{round(channel + (target - channel) * weight):02X}" for channel in channels)
+            yield f"SystemAccentColor{direction}{step}", xaml_color(rgb)
+
+
 def high_contrast(token):
     if token in WINDOW_FILLS:
         return "Window"
@@ -123,24 +133,13 @@ def generate(source):
         # Override documented Fluent colour resources in standard appearance.
         # The system supplies the native controls' contrast theme.
         if palette:
-            gold = "prominentBottom" if name == "Dark" else "accent"
-            hover = "prominentTop" if name == "Dark" else "link"
-            pressed = "prominentTint" if name == "Dark" else "prominentBottom"
-            resource(dictionary, "Color", "SystemAccentColor").text = palette[gold]
+            for key, color in accent_steps(palette["accent"]):
+                resource(dictionary, "Color", key).text = color
+            # Selected text uses the base accent with white ink in both WinUI themes.
+            # The gold on the dark theme needs dark ink.
+            if name == "Dark":
+                token("TextOnAccentFillColorSelectedTextBrush", "prominentText")
             for key, value in {
-                "AccentFillColorDefaultBrush": gold,
-                "AccentFillColorSecondaryBrush": hover,
-                "AccentFillColorTertiaryBrush": pressed,
-                # The stock button resolves its own theme keys, whose defaults
-                # are static aliases to the system accent brushes.
-                "AccentButtonBackground": gold,
-                "AccentButtonBackgroundPointerOver": hover,
-                "AccentButtonBackgroundPressed": pressed,
-                "AccentButtonForeground": "prominentText",
-                "AccentButtonForegroundPointerOver": "prominentText",
-                "AccentButtonForegroundPressed": "prominentText",
-                "AccentTextFillColorPrimaryBrush": "link",
-                "TextOnAccentFillColorPrimaryBrush": "prominentText",
                 "TextFillColorPrimaryBrush": "text",
                 "TextFillColorSecondaryBrush": "secondary",
                 "TextFillColorTertiaryBrush": "tertiary",
