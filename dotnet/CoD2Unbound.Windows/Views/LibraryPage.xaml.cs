@@ -23,6 +23,7 @@ public sealed partial class LibraryPage : Page
     private readonly MapPreviews previews;
     private readonly ObservableCollection<MediaRow> screenshots = [];
     private readonly ObservableCollection<MediaRow> filesInView = [];
+    private readonly global::Windows.UI.ViewManagement.UISettings textSettings = new();
     private bool ready;
 
     internal LibraryPage(MainWindow shell, WindowsLauncherSession session)
@@ -33,6 +34,12 @@ public sealed partial class LibraryPage : Page
         library = new(files);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
+        Loaded += (_, _) =>
+        {
+            textSettings.TextScaleFactorChanged += OnTextScaleChanged;
+            AdaptToolbar();
+        };
+        Unloaded += (_, _) => textSettings.TextScaleFactorChanged -= OnTextScaleChanged;
         foreach (var banner in new[] { SummariesOff, RecycleNotice, Notice })
         {
             banner.Visibility = Visibility.Collapsed;
@@ -52,6 +59,20 @@ public sealed partial class LibraryPage : Page
         AutomationProperties.SetName(Retention, $"Kept on this PC. The last {MatchSummaries.RecordLimit} matches");
         ready = true;
         Render();
+    }
+
+    private void OnTextScaleChanged(global::Windows.UI.ViewManagement.UISettings sender, object args) =>
+        DispatcherQueue.TryEnqueue(AdaptToolbar);
+
+    private void AdaptToolbar()
+    {
+        bool largeText = textSettings.TextScaleFactor > 1.2;
+        Grid.SetColumnSpan(Sections, largeText ? 3 : 1);
+        Grid.SetRow(Search, largeText ? 1 : 0);
+        Grid.SetRow(DeleteSummaries, largeText ? 1 : 0);
+        Grid.SetRow(ShowFolder, largeText ? 1 : 0);
+        LibraryToolbar.RowSpacing = largeText ? 8 : 0;
+        Search.Width = largeText ? 200 : 160;
     }
 
     private MediaKind CurrentKind => ReferenceEquals(Sections.SelectedItem, DemosSection)

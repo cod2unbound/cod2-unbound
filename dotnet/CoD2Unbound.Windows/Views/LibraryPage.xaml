@@ -20,7 +20,8 @@
         </Style>
     </Page.Resources>
     <Grid x:Name="LibraryLayout" Padding="16,12,16,24" RowDefinitions="Auto,Auto,Auto,*">
-        <Grid x:Name="LibraryToolbar" Margin="0,0,0,20" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Top">
+        <Grid x:Name="LibraryToolbar" Margin="0,0,0,20" RowDefinitions="Auto,Auto"
+              ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Top">
             <SelectorBar x:Name="Sections"
                          VerticalAlignment="Center" SelectionChanged="OnSectionChanged"
                          AutomationProperties.Name="Library sections">
