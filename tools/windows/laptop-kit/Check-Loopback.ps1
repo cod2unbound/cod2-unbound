@@ -156,8 +156,10 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
         if ($Route -ne 'hosting') {
             $entry = New-RunContext 'local-server'
             $serverHome = $entry.Folder
+            # Keep Toujane running until the client joins after the cooling pause.
+            $roundMinutes = if ($env:COD2_KIT_COOL_DOWN -eq '1') { 3 } else { 2 }
             $argsText = (Get-EngineArgs $serverHome $GamePath -Port $port) +
-                " +set dedicated 1 +set g_gametype dm +set scr_dm_timelimit 2 +set g_logSync 1 +set rcon_password $password" +
+                " +set dedicated 1 +set g_gametype dm +set scr_dm_timelimit $roundMinutes +set g_logSync 1 +set rcon_password $password" +
                 ' +set sv_hostname Kit-Loopback +set sv_mapRotation "gametype dm map mp_toujane gametype dm map mp_harbor" +map_rotate'
             $server = Start-KitProcess (Get-Binary $Edition -Server -Root $InstallRoot) $argsText $serverHome -NoWindow
             Wait-KitCondition {
@@ -166,6 +168,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
             } 45 'the kit loopback server' | Out-Null
         }
         if ($Route -eq 'handoff') {
+            Wait-KitCooling
             $secondEntry = New-RunContext 'password-server'
             $secondArgs = (Get-EngineArgs $secondEntry.Folder $GamePath -Port $secondPort) +
                 " +set dedicated 1 +set g_gametype dm +set sv_hostname Kit-Password +set g_password $joinPassword" +
@@ -188,6 +191,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                 if (Test-Path -LiteralPath $ready) { Get-Content -LiteralPath $ready -Raw }
             } 10 'the loopback server-list stand-in'
         }
+        if ($Route -ne 'hosting') { Wait-KitCooling }
         $launcher = Start-KitProcess $exe '' $LauncherHome $settings
         $app = Get-KitLauncherWindow $launcher.Process
         Wait-KitHome $app
@@ -248,6 +252,7 @@ function Invoke-KitLoopback([string]$Edition, [string]$Route) {
                         $hostedProcess = $null
                     }
                 }
+                Wait-KitCooling
                 $gameSince = Get-Date
                 Invoke-KitControl $app 'Join' -Name
                 try { $game = Get-KitOwnedGame $Edition $gameSince $launcher.Process.SessionId -Seconds 8 }
