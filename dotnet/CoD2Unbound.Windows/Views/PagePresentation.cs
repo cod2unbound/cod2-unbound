@@ -16,6 +16,12 @@ internal static class PagePresentation
 {
     internal static Visibility IsVisible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     internal static Style StyleFor(string key) => (Style)Application.Current.Resources[key];
+
+    internal static void Announce(UIElement source, string message, string activity,
+        AutomationNotificationKind kind = AutomationNotificationKind.Other) =>
+        FrameworkElementAutomationPeer.CreatePeerForElement(source)?.RaiseNotificationEvent(
+            kind, AutomationNotificationProcessing.MostRecent, message, activity);
+
     internal static bool IsInside(global::Windows.Foundation.Point point, FrameworkElement element) =>
         point.X >= 0 && point.X < element.ActualWidth && point.Y >= 0 && point.Y < element.ActualHeight;
 

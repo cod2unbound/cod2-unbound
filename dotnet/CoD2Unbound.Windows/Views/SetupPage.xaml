@@ -1,6 +1,6 @@
 <Page x:Class="CoD2Unbound.Windows.Views.SetupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" AutomationProperties.Name="Setup">
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="Enter" Invoked="OnDefaultAction" />
         <KeyboardAccelerator Key="Escape" Invoked="OnCancelAction" />
@@ -15,7 +15,7 @@
                     <!-- Decorative: the step's name is read from the title and progress indicator. Kept out of UI
                          Automation so names such as "CD key" stay unique for the field. -->
                     <TextBlock x:Name="SetupEyebrow" Style="{StaticResource SetupEyebrow}" AutomationProperties.AccessibilityView="Raw" />
-                    <TextBlock x:Name="SetupTitle" Style="{StaticResource SetupTitle}" />
+                    <TextBlock x:Name="SetupTitle" Style="{StaticResource SetupTitle}" AutomationProperties.HeadingLevel="Level1" />
                     <TextBlock x:Name="SetupDescription" Style="{StaticResource SetupSubtitle}" />
                     <StackPanel x:Name="StepContent" Spacing="12" Margin="0,13,0,0" HorizontalAlignment="Center" />
                 </StackPanel>

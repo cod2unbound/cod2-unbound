@@ -243,6 +243,8 @@ public sealed partial class SetupPage
         StepLabel.Text = (session.ReviewingSetup ? "Setting up again · " : "") + $"Step {current} of {steps.Count}";
         AutomationProperties.SetName(StepDots, $"{StepLabel.Text}, {title}");
         AutomationProperties.SetAccessibilityView(StepDots, AccessibilityView.Content);
+        AutomationProperties.SetPositionInSet(SetupTitle, current);
+        AutomationProperties.SetSizeOfSet(SetupTitle, steps.Count);
     }
 
     internal static string StepTitle(CoD2Unbound.Core.SetupStep step) => step switch

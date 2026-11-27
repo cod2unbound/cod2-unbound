@@ -422,14 +422,16 @@ public sealed partial class SetupPage : Page
             return;
         focusPending = false;
         var target = focusTarget;
+        var step = Setup.Step;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            if (!IsLoaded)
+            if (!IsLoaded || Setup.Step != step)
                 return;
             if (target is { IsEnabled: true } && target.Visibility == Visibility.Visible)
                 target.Focus(FocusState.Programmatic);
             else if (keyEditor is null && nameEditor is null)
                 Focus(FocusState.Programmatic);
+            Announce(SetupTitle, $"{StepLabel.Text}. {SetupTitle.Text}", "SetupStep");
         });
     }
 
