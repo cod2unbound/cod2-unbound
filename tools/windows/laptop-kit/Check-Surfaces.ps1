@@ -254,8 +254,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 $action = Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts'
                 Save-KitSurface $app 'jump-search' @('JumpBox', 'JumpList')
                 $action.Invoke()
-                $sheet = Wait-KitCondition { Get-KitControls $app 'Keyboard shortcuts' -Name |
-                    Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::Window } } 12 'the shortcuts sheet'
+                $sheet = Wait-KitCondition { Find-KitControl $app 'KeyboardShortcutsDialog' } 12 'the shortcuts sheet'
                 Save-KitSurface $app 'shortcuts' @('PrimaryButton')
                 Invoke-KitControl $sheet 'PrimaryButton'
             }
