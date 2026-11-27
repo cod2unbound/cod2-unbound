@@ -93,17 +93,17 @@
         <Popup x:Name="JumpPopup" Grid.RowSpan="2" IsLightDismissEnabled="True" LightDismissOverlayMode="Off">
             <Border x:Name="JumpPanel" Width="640"
                     CornerRadius="{ThemeResource OverlayCornerRadius}" Background="{ThemeResource PanelBrush}"
-                    BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
+                    BorderBrush="{ThemeResource PanelStrokeBrush}" BorderThickness="{StaticResource Stroke}"
                     Translation="0,0,32" AutomationProperties.Name="Jump to" AutomationProperties.LandmarkType="Search">
                 <Border.Shadow><ThemeShadow /></Border.Shadow>
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="58" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="44" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <Grid Padding="18,0" ColumnSpacing="12">
+                    <Grid Padding="16,12" ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -111,19 +111,10 @@
                         </Grid.ColumnDefinitions>
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="17"
                                   Foreground="{ThemeResource secondary}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                        <TextBox x:Name="JumpBox" Grid.Column="1" Style="{StaticResource JumpField}"
+                        <TextBox x:Name="JumpBox" Grid.Column="1"
                                  PlaceholderText="Servers, loadouts, settings and actions"
-                                 AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K">
-                            <TextBox.Resources>
-                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
-                            </TextBox.Resources>
-                        </TextBox>
+                                 IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                                 AutomationProperties.Name="Jump to" AutomationProperties.AcceleratorKey="Ctrl+K" />
                         <Border Grid.Column="2" Style="{StaticResource KeyCapLabel}" AutomationProperties.Name="Escape closes">
                             <TextBlock Text="esc" Style="{StaticResource KeyCapText}" />
                         </Border>
@@ -138,10 +129,10 @@
                             <x:Double x:Key="ListViewItemDisabledThemeOpacity">1</x:Double>
                         </ListView.Resources>
                     </ListView>
-                    <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="20,18" TextWrapping="Wrap" Visibility="Collapsed" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource secondary}" />
-                    <Grid Grid.Row="3" Padding="14,0" BorderBrush="{ThemeResource separator}" BorderThickness="0,1,0,0"
+                    <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="16" TextWrapping="Wrap" Visibility="Collapsed" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource secondary}" />
+                    <Grid Grid.Row="3" Padding="16,8" BorderBrush="{ThemeResource separator}" BorderThickness="0,1,0,0"
                           AutomationProperties.Name="Up and Down to move, Enter to open, Ctrl+Enter to launch on a server">
-                        <StackPanel x:Name="JumpFooter" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />
+                        <StackPanel x:Name="JumpFooter" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" />
                     </Grid>
                 </Grid>
             </Border>

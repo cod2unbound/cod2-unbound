@@ -193,19 +193,19 @@ public sealed partial class MainWindow
         });
         Put(line, 1, new TextBlock
         {
-            Text = target.Title, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Text = target.Title, Style = StyleFor("BodyStrongTextBlockStyle"),
             TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center,
             Foreground = IsHighContrast ? null : ThemeBrush("text", Root.ActualTheme, false)
         });
         if (target.Detail.Length != 0)
             Put(line, 2, new TextBlock
             {
-                Text = target.Detail, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = target.Detail, Style = StyleFor("BodyTextBlockStyle"), TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center, Foreground = IsHighContrast ? null : ThemeBrush("secondary", Root.ActualTheme, false)
             });
         var hint = new TextBlock
         {
-            FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+            Style = StyleFor("CaptionTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center,
             Foreground = ThemeBrush("tertiary", Root.ActualTheme, IsHighContrast), Text = target.Keys
         };
         Put(line, 3, hint);
