@@ -308,15 +308,14 @@ function Invoke-KitTaskSwitch([IntPtr]$Window, [string]$HomePath, [string]$Evide
     $mode = [KitDesktop]::CurrentMode()
     Assert-KitExclusiveForeground $Window $Evidence
     [KitDesktop]::Chord(18, 9)
+    $switchDescription = if ($SwitchTargetPid) { 'Alt+Tab to reach the kit switch window' } else { 'Alt+Tab to switch away' }
     Wait-KitCondition {
         Assert-KitExclusiveForeground $Window $Evidence -ModalOnly
         $current = [KitDesktop]::GetForegroundWindow()
         $current -ne $Window -and $current -ne [IntPtr]::Zero -and
-            [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging'
-    } 8 'Alt+Tab to switch away' -SkipSecurity | Out-Null
-    if ($SwitchTargetPid -and [KitDesktop]::WindowPid([KitDesktop]::GetForegroundWindow()) -ne $SwitchTargetPid) {
-        throw 'Alt+Tab switched to a different window from the kit switch target.'
-    }
+            [KitDesktop]::WindowClass($current) -ne 'ForegroundStaging' -and
+            (-not $SwitchTargetPid -or [KitDesktop]::WindowPid($current) -eq $SwitchTargetPid)
+    } 8 $switchDescription -SkipSecurity | Out-Null
     "Alt+Tab switched away. Game minimized $([KitDesktop]::IsIconic($Window))." |
          Set-Content -LiteralPath $switches -Encoding UTF8
     [KitDesktop]::Chord(18, 9)
