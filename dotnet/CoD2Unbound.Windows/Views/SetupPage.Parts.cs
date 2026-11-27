@@ -259,7 +259,7 @@ public sealed partial class SetupPage
 
     /// <summary>The scene, handed to the shell's backdrop host so it fills the whole window.</summary>
     /// <summary>SetupBackdrop: the scene with the board's sky, edge and vignette, every colour from the tokens.</summary>
-    private void RenderBackdrop()
+    internal void RenderBackdrop()
     {
         bool light = ActualTheme == ElementTheme.Light;
         bool contrast = shell.IsHighContrast;

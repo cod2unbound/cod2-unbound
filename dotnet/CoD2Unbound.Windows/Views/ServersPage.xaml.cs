@@ -154,7 +154,7 @@ public sealed partial class ServersPage : Page
         RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = BrowserTools.Visibility = IsVisible(!showHosting);
         HostingLayout.Visibility = HostingActions.Visibility = IsVisible(showHosting);
-        ServersContours.Visibility = IsVisible(!showHosting);
+        UpdateDecoration();
         UpdateToolbarOverflow(ServerToolbar.ActualWidth);
         if (showHosting)
         {
@@ -183,12 +183,16 @@ public sealed partial class ServersPage : Page
 
     internal void UpdateContrast()
     {
+        UpdateDecoration();
         foreach (var row in rows)
             if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid })
                 ApplyServerRow(grid, assignMenu: false);
         shownRoster = default;
         RenderDetails();
     }
+
+    private void UpdateDecoration() =>
+        ServersContours.Visibility = IsVisible(ShowsServerBrowser && !shell.IsHighContrast);
 
     internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
 

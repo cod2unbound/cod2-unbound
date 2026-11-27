@@ -146,6 +146,7 @@ public sealed partial class HomePage : Page
 
     private void RenderBackdrop()
     {
+        ArtCanvas.Visibility = IsVisible(!shell.IsHighContrast);
         if (HeroArt.Source is not WriteableBitmap)
         {
             string tone = ActualTheme == ElementTheme.Light ? "light" : "dark";

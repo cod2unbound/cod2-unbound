@@ -172,6 +172,8 @@ public sealed partial class MainWindow : Window
                 home.UpdateTheme();
             else if (ContentFrame.Content is ServersPage servers)
                 servers.UpdateContrast();
+            else if (ContentFrame.Content is SetupPage setup)
+                setup.RenderBackdrop();
             settingsWindow?.Page.UpdateContrast();
         });
 
