@@ -1,13 +1,12 @@
 <ContentDialog x:Class="CoD2Unbound.Windows.Views.ConnectDialog"
                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                xmlns:views="using:CoD2Unbound.Windows.Views"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                Title="Connect to an address" PrimaryButtonText="Launch" CloseButtonText="Cancel"
                DefaultButton="Primary" IsPrimaryButtonEnabled="False">
     <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="10">
-            <TextBox x:Name="AddressBox" PlaceholderText="203.0.113.24:28960" Style="{StaticResource CapsuleTextBox}"
-                     FontFamily="{StaticResource CourierPrime}" FontWeight="Bold" FontSize="15"
+        <StackPanel Spacing="12">
+            <TextBox x:Name="AddressBox" PlaceholderText="203.0.113.24:28960"
                      AutomationProperties.Name="Server address" TextChanged="OnAddressChanged" MaxLength="1024" />
             <Grid views:GlyphAlign.IsEnabled="True" x:Name="LookupLine" ColumnSpacing="6" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
@@ -17,10 +16,10 @@
                 <FontIcon x:Name="Answered" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
                           Style="{StaticResource PositiveIcon}" FontSize="15" Visibility="Collapsed" />
                 <ProgressRing x:Name="Asking" Width="16" Height="16" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Name="Answer" Grid.Column="1" Style="{StaticResource SecondaryText}" FontSize="12" TextWrapping="Wrap"
+                <TextBlock x:Name="Answer" Grid.Column="1" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                            AutomationProperties.LiveSetting="Polite" />
             </Grid>
-            <PasswordBox x:Name="PasswordInput" Style="{StaticResource CapsulePasswordBox}"
+            <PasswordBox x:Name="PasswordInput"
                          PlaceholderText="Password, only if the server needs one" PasswordRevealMode="Hidden" MaxLength="127"
                          AutomationProperties.Name="Server password" PasswordChanged="OnPasswordChanged" />
             <TextBlock x:Name="Validation" TextWrapping="Wrap" Foreground="{ThemeResource NegativeBrush}"
@@ -33,7 +32,7 @@
             </Border>
             <StackPanel x:Name="RecentAddresses" Spacing="2" />
             <TextBlock Text="Accepts an address, a name with a port, or a cod2x:// or cod2:// link."
-                       Style="{StaticResource SecondaryText}" FontSize="12" />
+                       Style="{StaticResource CaptionTextBlockStyle}" />
         </StackPanel>
     </ScrollViewer>
 </ContentDialog>

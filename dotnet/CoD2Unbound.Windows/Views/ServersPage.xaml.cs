@@ -43,7 +43,6 @@ public sealed partial class ServersPage : Page
         model = new(session, ServerScope.All);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
-        PageLayout.Children.Remove(ServerToolbar);
         AutomationProperties.SetHeadingLevel(EmptyHeading, AutomationHeadingLevel.Level2);
         ServerList.AddHandler(KeyDownEvent, new KeyEventHandler(OnServerListKeyDown), true);
         ServerList.ItemsSource = rows;
@@ -52,8 +51,6 @@ public sealed partial class ServersPage : Page
         ActualThemeChanged += (_, _) => UpdateContrast();
         Loaded += (_, _) =>
         {
-            PositionToolbar();
-            shell.SetTitleBarContent(ServerToolbar);
             UpdateContrast();
             UpdateRefreshDisplay();
         };
@@ -197,25 +194,14 @@ public sealed partial class ServersPage : Page
 
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args)
     {
-        PositionToolbar();
         DetailArtwork.Height = args.NewSize.Height < 830 ? 106 : 150;
-    }
-
-    private void PositionToolbar()
-    {
-        if (XamlRoot is null)
-            return;
-        var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point());
-        var margin = new Thickness(origin.X + 20, 16, 18, 0);
-        if (!ServerToolbar.Margin.Equals(margin))
-            ServerToolbar.Margin = margin;
     }
 
     private void OnToolbarSizeChanged(object sender, SizeChangedEventArgs args) => UpdateToolbarOverflow(args.NewSize.Width);
 
     private void UpdateToolbarOverflow(double width)
     {
-        // Budgets are in the caption-clear toolbar space. Shrink search before either trailing group leaves.
+        // Budgets are in the page toolbar space. Shrink search before either trailing group leaves.
         const double minimumSearch = 160;
         const double allCommands = 822;
         const double statusAndOverflow = 686;

@@ -2,7 +2,7 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:views="using:CoD2Unbound.Windows.Views"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid x:Name="PageLayout" SizeChanged="OnBrowserSizeChanged" RowDefinitions="76,*">
+    <Grid x:Name="PageLayout" SizeChanged="OnBrowserSizeChanged" RowDefinitions="Auto,*">
         <Viewbox x:Name="ServersContours" Grid.RowSpan="2" Stretch="Fill" IsHitTestVisible="False"
                  AutomationProperties.AccessibilityView="Raw">
             <Canvas Width="1440" Height="900" Opacity="0.035">
@@ -12,16 +12,14 @@
                             M980 520 C1060 470 1180 470 1240 520 S1300 640 1210 680 S1010 640 980 520 Z" />
             </Canvas>
         </Viewbox>
-        <Grid x:Name="ServerToolbar" Margin="20,16,18,0" VerticalAlignment="Top"
+        <Grid x:Name="ServerToolbar" Margin="20,12,20,16" VerticalAlignment="Top"
               ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" SizeChanged="OnToolbarSizeChanged">
-            <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists" Height="44"
-                         Style="{StaticResource SegmentedLarge}" Padding="4"
-                         Background="{ThemeResource PanelBrush}" BorderBrush="{ThemeResource glassStroke}"
+            <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists" VerticalAlignment="Center"
                          SelectionChanged="OnScopeChanged">
-                <SelectorBarItem Text="All" AccessKey="A" Style="{StaticResource SegmentLargeItem}" />
-                <SelectorBarItem Text="Favorites" AccessKey="V" Style="{StaticResource SegmentLargeItem}" />
-                <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" Style="{StaticResource SegmentLargeItem}" />
-                <SelectorBarItem Text="Hosting" AutomationProperties.AutomationId="HostingTab" AccessKey="T" Style="{StaticResource SegmentLargeItem}" />
+                <SelectorBarItem Text="All" AccessKey="A" />
+                <SelectorBarItem Text="Favorites" AccessKey="V" />
+                <SelectorBarItem x:Name="RecentScope" Text="Recent" AccessKey="N" />
+                <SelectorBarItem Text="Hosting" AutomationProperties.AutomationId="HostingTab" AccessKey="T" />
             </SelectorBar>
             <StackPanel x:Name="BrowserTools" Grid.Column="1" Orientation="Horizontal" Spacing="12">
                 <AutoSuggestBox x:Name="SearchBox" Width="280"
@@ -33,19 +31,17 @@
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSearch}" FontSize="16" />
                     </AutoSuggestBox.QueryIcon>
                     <AutoSuggestBox.TextBoxStyle>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchField}">
-                            <Setter Property="Height" Value="44" />
-                            <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
+                        <Style TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}">
                             <Setter Property="MaxLength" Value="256" />
                         </Style>
                     </AutoSuggestBox.TextBoxStyle>
                 </AutoSuggestBox>
-                <Button x:Name="FilterButton" Style="{StaticResource ToolbarPill}" AccessKey="F" AutomationProperties.Name="Filters">
+                <Button x:Name="FilterButton" AccessKey="F" AutomationProperties.Name="Filters">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilter}" FontSize="16" />
                         <TextBlock Text="Filters" VerticalAlignment="Center" />
                         <Border x:Name="FilterBadge" Style="{StaticResource Cod2xTag}" Padding="4,0" Visibility="Collapsed">
-                            <TextBlock x:Name="FilterCount" FontSize="11" VerticalAlignment="Center" />
+                            <TextBlock x:Name="FilterCount" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
                         </Border>
                     </StackPanel>
                     <Button.Flyout>
@@ -55,7 +51,7 @@
                                     <StackPanel>
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
                                             <TextBlock Text="Game version" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                            <SelectorBar x:Name="FilterEdition" Grid.Column="1" Style="{StaticResource InsetFormSelector}" AutomationProperties.Name="Version"
+                                            <SelectorBar x:Name="FilterEdition" Grid.Column="1" AutomationProperties.Name="Version"
                                                          SelectionChanged="OnEditionFilterSelection">
                                                 <SelectorBarItem Text="Any" />
                                                 <SelectorBarItem Text="CoD2x" />
@@ -104,9 +100,9 @@
                 </Button>
             </StackPanel>
             <StackPanel x:Name="BrowserActions" Grid.Column="2" Orientation="Horizontal" Spacing="12">
-                <Border x:Name="RefreshPill" Style="{StaticResource ToolbarSurface}" Padding="16,0,4,0">
+                <Border x:Name="RefreshPill" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock x:Name="RefreshStatus" FontSize="12" Style="{StaticResource SecondaryText}"
+                        <TextBlock x:Name="RefreshStatus" Style="{StaticResource CaptionTextBlockStyle}"
                                    TextWrapping="NoWrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                         <Button x:Name="RefreshButton" Style="{StaticResource IconAction}" AccessKey="R" Click="OnRefresh"
                                 AutomationProperties.AcceleratorKey="F5, Ctrl+R" AutomationProperties.Name="Refresh server list">
@@ -115,14 +111,14 @@
                         </Button>
                     </StackPanel>
                 </Border>
-                <Button x:Name="ConnectButton" Style="{StaticResource ToolbarPill}" AccessKey="C" Click="OnConnect"
+                <Button x:Name="ConnectButton" AccessKey="C" Click="OnConnect"
                         AutomationProperties.Name="Connect to address…" AutomationProperties.AcceleratorKey="Ctrl+L">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="18" />
                         <TextBlock Text="Connect to Address…" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button x:Name="ToolbarOverflow" Style="{StaticResource ToolbarPill}" Width="44" Padding="0"
+                <Button x:Name="ToolbarOverflow"
                         Visibility="Collapsed" AutomationProperties.Name="More toolbar items">
                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="18" />
                     <Button.Flyout>
@@ -137,14 +133,14 @@
                 </Button>
             </StackPanel>
             <StackPanel x:Name="HostingActions" Grid.Column="2" Orientation="Horizontal" Spacing="12" Visibility="Collapsed">
-                <Button x:Name="ExportHost" Style="{StaticResource ToolbarPill}" AccessKey="X"
+                <Button x:Name="ExportHost" AccessKey="X"
                         AutomationProperties.Name="Export for another machine…" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDocument}" FontSize="15" />
                         <TextBlock Text="Export for Another PC…" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolbarPill}" AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" AutomationProperties.AutomationId="HostingNewServer">
+                <Button AccessKey="N" Click="OnNewHostedServer" AutomationProperties.Name="New server" AutomationProperties.AutomationId="HostingNewServer">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentAdd}" FontSize="15" />
                         <TextBlock Text="New Server" VerticalAlignment="Center" />
@@ -204,7 +200,6 @@
                           SizeChanged="OnServerListSizeChanged"
                           AutomationProperties.Name="Servers">
                     <ListView.Resources>
-                        <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
@@ -357,7 +352,7 @@
                                 </StackPanel>
                             </Button>
                             <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite"
-                                    Style="{StaticResource MediumButton}" Padding="0" />
+                                    />
                         </Grid>
                     </Grid>
                 </Grid>
