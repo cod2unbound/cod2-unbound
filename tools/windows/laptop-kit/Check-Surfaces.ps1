@@ -312,8 +312,16 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                     $report = 'Report a Problem' + [char]0x2026
                     Save-KitSurface $settingsWindow 'settings-about' @('Panes') @($report,'Acknowledgements')
                     Invoke-KitControl $settingsWindow 'SettingsReportProblem'
-                    Save-KitSurface $app 'problem-report' @('CloseButton') @('Copy details') -PictureOwner $run.Process.Id
-                    Invoke-KitControl $app 'CloseButton'
+                    $reportWindow = Wait-KitCondition {
+                        foreach ($candidate in $settingsWindow, $app) {
+                            if ((Find-KitControl $candidate 'CloseButton' -AllowOffscreen) -and
+                                (Find-KitControl $candidate 'Copy details' -Name -AllowOffscreen)) {
+                                return $candidate
+                            }
+                        }
+                    } 12 'the Report a Problem sheet'
+                    Save-KitSurface $reportWindow 'problem-report' @('CloseButton') @('Copy details') -PictureOwner $run.Process.Id
+                    Invoke-KitControl $reportWindow 'CloseButton'
                 } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
             }
         }
