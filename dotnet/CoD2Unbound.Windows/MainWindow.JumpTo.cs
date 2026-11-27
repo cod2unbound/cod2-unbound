@@ -1,6 +1,5 @@
 using CoD2Unbound.Core;
 using CoD2Unbound.Windows.Views;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -266,7 +265,7 @@ public sealed partial class MainWindow
             return;
         int generation = jumpGeneration;
         // Let the native button finish dispatching this release before applying queued results.
-        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
             if (jumpOpen && generation == jumpGeneration && jumpPendingSelection is bool preserveSelection)
                 RenderJumpResults(preserveSelection);
