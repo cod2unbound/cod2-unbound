@@ -199,8 +199,6 @@
                 <ListView x:Name="ServerList" Grid.Row="3" SelectionChanged="OnSelectionChanged"
                           SizeChanged="OnServerListSizeChanged"
                           AutomationProperties.Name="Servers">
-                    <ListView.Resources>
-                    </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -351,8 +349,7 @@
                                     <TextBlock x:Name="JoinButtonLabel" Text="Launch" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite"
-                                    />
+                            <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite" />
                         </Grid>
                     </Grid>
                 </Grid>

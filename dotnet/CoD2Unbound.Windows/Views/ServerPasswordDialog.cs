@@ -27,7 +27,7 @@ internal sealed class ServerPasswordDialog : ContentDialog
         DefaultButton = ContentDialogButton.Primary;
         password = new PasswordBox
         {
-            Style = StyleFor("CapsulePasswordBox"), PasswordRevealMode = PasswordRevealMode.Hidden, MaxLength = 127,
+            Style = StyleFor("InlinePasswordBox"), PasswordRevealMode = PasswordRevealMode.Hidden, MaxLength = 127,
             Password = supplied ?? saved ?? "", PlaceholderText = "Password"
         };
         AutomationProperties.SetName(password, $"Password for {serverName}");

@@ -57,7 +57,7 @@ internal sealed class PlayerNameEditor : UserControl
     {
         this.shell = shell;
         this.setup = setup;
-        input.Style = StyleFor("CapsuleTextBox");
+        input.Style = StyleFor("InlineTextBox");
         var layout = new StackPanel { Spacing = 8 };
         Content = layout;
         AutomationProperties.SetName(input, "Name other players see");

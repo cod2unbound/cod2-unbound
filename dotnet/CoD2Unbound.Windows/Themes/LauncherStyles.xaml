@@ -73,7 +73,6 @@
     <Style x:Key="LauncherButton" TargetType="Button">
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style x:Key="ToolbarPill" TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
     <Style x:Key="ToolbarSurface" TargetType="Border">
         <Setter Property="Height" Value="44" />
         <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
@@ -82,25 +81,20 @@
         <Setter Property="BorderThickness" Value="{StaticResource Stroke}" />
     </Style>
     <Style x:Key="MediumButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
-    <Style x:Key="HeroGlassButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
     <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style x:Key="InlineTextBox" TargetType="TextBox">
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style x:Key="CapsuleTextBox" TargetType="TextBox" BasedOn="{StaticResource InlineTextBox}" />
     <Style x:Key="InlinePasswordBox" TargetType="PasswordBox">
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style x:Key="CapsulePasswordBox" TargetType="PasswordBox" BasedOn="{StaticResource InlinePasswordBox}" />
     <Style x:Key="InlineNumberBox" TargetType="NumberBox">
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style x:Key="CapsuleNumberBox" TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}" />
     <Style x:Key="SearchField" TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}" />
     <Style x:Key="SegmentItem" TargetType="SelectorBarItem" />
-    <Style x:Key="CompactSegmentItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
     <Style x:Key="SegmentLargeItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
     <Style x:Key="Segmented" TargetType="SelectorBar">
         <Setter Property="IsTabStop" Value="False" />
@@ -132,7 +126,6 @@
     </Style>
     <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource LauncherButton}" />
     <Style x:Key="LargeChipButton" TargetType="Button" BasedOn="{StaticResource ChipButton}" />
-    <Style x:Key="LargeGlassChipButton" TargetType="Button" BasedOn="{StaticResource LargeChipButton}" />
     <Style x:Key="GroupCard" TargetType="Border">
         <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
         <Setter Property="Background" Value="{ThemeResource panel}" />
@@ -278,17 +271,6 @@
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
     </Style>
-    <Style x:Key="SelectionPill" TargetType="Border">
-        <Setter Property="Width" Value="3" />
-        <Setter Property="Height" Value="16" />
-        <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
-        <Setter Property="Background" Value="{ThemeResource LauncherSelectionPillBrush}" />
-        <Setter Property="HighContrastAdjustment" Value="None" />
-        <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="HorizontalAlignment" Value="Left" />
-        <Setter Property="IsHitTestVisible" Value="False" />
-        <Setter Property="Visibility" Value="Collapsed" />
-    </Style>
     <Style x:Key="SidebarItem" TargetType="ListViewItem">
         <Setter Property="Padding" Value="16,0,12,0" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -329,7 +311,6 @@
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style x:Key="IconAction" TargetType="Button" BasedOn="{StaticResource QuietButton}" />
-    <Style x:Key="FavoriteAction" TargetType="Button" BasedOn="{StaticResource IconAction}" />
     <Style x:Key="EditionTag" TargetType="Border">
         <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -343,9 +324,6 @@
     <Style x:Key="SegmentedLarge" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}" />
     <Style x:Key="AlignedSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
         <Setter Property="HorizontalAlignment" Value="Left" />
-    </Style>
-    <Style x:Key="InsetFormSelector" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
-        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style x:Key="Keycap" TargetType="Button" BasedOn="{StaticResource SmallAction}" />
     <Style x:Key="StudioKeyboardKey" TargetType="Button" BasedOn="{StaticResource Keycap}">
@@ -552,11 +530,6 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         <Setter Property="AutomationProperties.HeadingLevel" Value="Level3" />
     </Style>
-    <Style x:Key="JumpField" TargetType="TextBox">
-        <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="IsSpellCheckEnabled" Value="False" />
-        <Setter Property="IsTextPredictionEnabled" Value="False" />
-    </Style>
     <Style x:Key="JumpRowItem" TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
         <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Padding" Value="0" />
@@ -576,12 +549,6 @@
         <Setter Property="Padding" Value="12,8,12,4" />
         <Setter Property="IsEnabled" Value="False" />
         <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
-    </Style>
-    <Style x:Key="SettingsTabItem" TargetType="SelectorBarItem">
-        <Setter Property="Margin" Value="1,0" />
-    </Style>
-    <Style x:Key="SettingsTabBar" TargetType="SelectorBar" BasedOn="{StaticResource Segmented}">
-        <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">

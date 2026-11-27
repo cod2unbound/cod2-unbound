@@ -35,7 +35,7 @@ public sealed partial class StylePartsWindow : Window
             XamlRoot = PartsRoot.XamlRoot, RequestedTheme = PartsRoot.RequestedTheme,
             Title = "Rename “Main”", PrimaryButtonText = "Rename", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary,
-            Content = new TextBox { Text = "Main", Style = StyleFor("CapsuleTextBox") }
+            Content = new TextBox { Text = "Main", Style = StyleFor("InlineTextBox") }
         }.WithSymbol("SystemEdit", "Each loadout is its own Call of Duty 2 player profile.");
         await dialog.ShowAsync();
     }

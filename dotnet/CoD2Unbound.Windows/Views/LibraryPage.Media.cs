@@ -312,7 +312,7 @@ public sealed partial class LibraryPage
         {
             Text = Path.GetFileNameWithoutExtension(row.Name),
             MaxLength = 251,
-            Style = StyleFor("CapsuleTextBox"),
+            Style = StyleFor("InlineTextBox"),
             FontFamily = (FontFamily)Application.Current.Resources["CourierPrime"]
         };
         AutomationProperties.SetName(name, "Recording name");

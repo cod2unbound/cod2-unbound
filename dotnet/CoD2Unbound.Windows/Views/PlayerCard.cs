@@ -41,7 +41,7 @@ internal sealed class PlayerCard : StackPanel
         AutomationProperties.SetName(loadout, "Loadout for your next game");
         var dogTag = new Border
         {
-            Style = StyleFor("FieldCard"), CornerRadius = new CornerRadius(12),
+            Style = StyleFor("FieldCard"),
             HorizontalAlignment = HorizontalAlignment.Left,
             Child = new StackPanel
             {

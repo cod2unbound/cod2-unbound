@@ -37,8 +37,8 @@
                     <TextBlock Text="Fields and choices" Style="{StaticResource SectionTitle}" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBox Width="136" Text="Morrow" AutomationProperties.Name="Inline name" />
-                        <TextBox Width="160" Text="Morrow" Style="{StaticResource CapsuleTextBox}" AutomationProperties.Name="Player name" />
-                        <PasswordBox Width="178" Password="000000000000000086D3" Style="{StaticResource CapsulePasswordBox}"
+                        <TextBox Width="160" Text="Morrow" Style="{StaticResource InlineTextBox}" AutomationProperties.Name="Player name" />
+                        <PasswordBox Width="178" Password="000000000000000086D3" Style="{StaticResource InlinePasswordBox}"
                                      AutomationProperties.Name="CD key" />
                         <NumberBox Width="120" Value="24" SpinButtonPlacementMode="Compact" AutomationProperties.Name="Slots" />
                     </StackPanel>

@@ -49,7 +49,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         AutomationProperties.SetAutomationId(name, "ShareCreditName");
         AutomationProperties.SetLiveSetting(nameProblem, AutomationLiveSetting.Polite);
         AutomationProperties.SetName(sending, "Sending setup");
-        name.Style = StyleFor("CapsuleTextBox");
+        name.Style = StyleFor("InlineTextBox");
         name.Text = form.Name;
         name.TextChanged += (_, _) =>
         {
