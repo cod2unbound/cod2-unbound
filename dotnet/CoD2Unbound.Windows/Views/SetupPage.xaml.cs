@@ -328,7 +328,9 @@ public sealed partial class SetupPage : Page
         };
         AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
         // RadioButtons handles arrow keys and selection. The content shares the available width.
-        var crates = new RadioButtons { MaxColumns = ModeValues.Length, HorizontalAlignment = HorizontalAlignment.Stretch };
+        bool largeText = new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
+        int columns = largeText ? 1 : ModeValues.Length;
+        var crates = new RadioButtons { MaxColumns = columns, HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(crates, modeLabel);
         for (int index = 0; index < ModeValues.Length; index++)
         {
@@ -354,7 +356,7 @@ public sealed partial class SetupPage : Page
             if (crates.SelectedIndex >= 0)
                 displayMode = ModeValues[crates.SelectedIndex];
         };
-        ShareCells(crates, ModeValues.Length, CrateGap);
+        ShareCells(crates, columns, CrateGap);
         var both = Note("Both can be changed any time: the name on your player card, the display in Settings.");
         both.Margin = new Thickness(6, 0, 0, 0);
         StepContent.Children.Add(GlassPanel(16, 16, editor, new StackPanel { Spacing = 8, Children = { heading, crates } }, both));

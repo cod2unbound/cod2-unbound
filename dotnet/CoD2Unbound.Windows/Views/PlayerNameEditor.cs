@@ -138,23 +138,41 @@ internal sealed class PlayerNameEditor : UserControl
                 Style = StyleFor("SetupDetail"), Margin = new Thickness(6, 0, 0, 0)
             };
             AutomationProperties.SetAccessibilityView(label, AccessibilityView.Raw);
-            preview.TextWrapping = TextWrapping.NoWrap;
-            preview.TextTrimming = TextTrimming.CharacterEllipsis;
+            bool largeText = new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
+            preview.TextWrapping = largeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            preview.TextTrimming = largeText ? TextTrimming.None : TextTrimming.CharacterEllipsis;
             preview.FontSize = 12;
             preview.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
             preview.VerticalAlignment = VerticalAlignment.Center;
             var showsAs = new TextBlock { Text = "Shows as", Style = StyleFor("SetupDetail"), VerticalAlignment = VerticalAlignment.Center };
             AutomationProperties.SetAccessibilityView(showsAs, AccessibilityView.Raw);
-            var line = Columns(12, new(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto);
-            Put(line, 0, input);
-            Put(line, 1, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center,
-                Children = { showsAs, preview }, MaxWidth = 200 });
             toggle.VerticalAlignment = VerticalAlignment.Center;
-            Put(line, 2, toggle);
             problem.Foreground = ThemeBrush("negative", ActualTheme, shell.IsHighContrast);
             problem.Margin = new Thickness(6, 0, 0, 0);
             layout.Children.Add(label);
+            var line = largeText
+                ? Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto)
+                : Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto);
+            Put(line, 0, input);
+            if (largeText)
+                Put(line, 1, toggle);
+            else
+            {
+                Put(line, 1, new StackPanel
+                {
+                    Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center,
+                    Children = { showsAs, preview }, MaxWidth = 200
+                });
+                Put(line, 2, toggle);
+            }
             layout.Children.Add(line);
+            if (largeText)
+            {
+                var namePreview = Columns(4, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+                Put(namePreview, 0, showsAs);
+                Put(namePreview, 1, preview);
+                layout.Children.Add(namePreview);
+            }
             layout.Children.Add(problem);
             layout.Children.Add(palette);
             input.KeyDown += (_, args) =>
