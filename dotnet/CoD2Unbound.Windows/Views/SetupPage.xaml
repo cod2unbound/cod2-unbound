@@ -6,8 +6,6 @@
         <KeyboardAccelerator Key="Enter" Invoked="OnDefaultAction" />
         <KeyboardAccelerator Key="Escape" Invoked="OnCancelAction" />
     </Page.KeyboardAccelerators>
-    <!-- The scene is the shell's backdrop (IShellBackdrop), so it fills the window under the caption buttons,
-         as the Mac's setup fills its window (SetupBackdrop). The page itself starts at the window's top-left. -->
     <Grid x:Name="SetupFrame" SizeChanged="OnFrameSizeChanged">
         <ScrollViewer x:Name="SetupScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                       AutomationProperties.Name="Setup">

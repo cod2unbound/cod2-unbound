@@ -3,7 +3,7 @@
       xmlns:views="using:CoD2Unbound.Windows.Views"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid x:Name="PageLayout" SizeChanged="OnBrowserSizeChanged" RowDefinitions="76,*">
-        <Viewbox x:Name="ServersContours" Stretch="Fill" IsHitTestVisible="False"
+        <Viewbox x:Name="ServersContours" Grid.RowSpan="2" Stretch="Fill" IsHitTestVisible="False"
                  AutomationProperties.AccessibilityView="Raw">
             <Canvas Width="1440" Height="900" Opacity="0.035">
                 <Path Stroke="{ThemeResource accent}" StrokeThickness="1.2"

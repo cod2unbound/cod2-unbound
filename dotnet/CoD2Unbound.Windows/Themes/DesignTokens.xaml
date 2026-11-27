@@ -296,10 +296,6 @@
             <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="#17FFFFFF" />
             <SolidColorBrush x:Key="GridViewItemForegroundPointerOver" Color="#FFECE6D6" />
             <SolidColorBrush x:Key="GridViewItemForegroundPressed" Color="#FFECE6D6" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#0DFFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#17FFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFECE6D6" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FFECE6D6" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPointerOver" Color="#0DFFFFFF" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPressed" Color="#17FFFFFF" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundPointerOver" Color="#FFECE6D6" />
@@ -328,12 +324,6 @@
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPointerOver" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#1AE2BD72" />
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPressed" Color="#FFF3ECDC" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#29FFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFF3ECDC" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#29FFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFF3ECDC" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#29FFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelected" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelectedPointerOver" Color="#29FFFFFF" />
@@ -348,7 +338,6 @@
             <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPressed" Color="#FFF3ECDC" />
             <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="#00000000" />
             <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#00000000" />
-            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#00000000" />
@@ -407,7 +396,6 @@
                 <GradientStop Offset="0" Color="#57C4984C" />
                 <GradientStop Offset="1" Color="#00C4984C" />
             </RadialGradientBrush>
-            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="ground" Color="#FFEFE8D8" />
@@ -704,10 +692,6 @@
             <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="#173C3214" />
             <SolidColorBrush x:Key="GridViewItemForegroundPointerOver" Color="#FF26251D" />
             <SolidColorBrush x:Key="GridViewItemForegroundPressed" Color="#FF26251D" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#0D3C3214" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#173C3214" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FF26251D" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FF26251D" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPointerOver" Color="#0D3C3214" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPressed" Color="#173C3214" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundPointerOver" Color="#FF26251D" />
@@ -736,12 +720,6 @@
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPointerOver" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#1A5C6A33" />
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPressed" Color="#FF1F1E17" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#BFFFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FF1F1E17" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#BFFFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FF1F1E17" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#BFFFFFFF" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelected" Color="#BFFFFFFF" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelectedPointerOver" Color="#BFFFFFFF" />
@@ -756,7 +734,6 @@
             <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPressed" Color="#FF1F1E17" />
             <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="#00000000" />
             <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#00000000" />
-            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#00000000" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#00000000" />
@@ -815,7 +792,6 @@
                 <GradientStop Offset="0" Color="#4746522A" />
                 <GradientStop Offset="1" Color="#0046522A" />
             </RadialGradientBrush>
-            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <SolidColorBrush x:Key="ground" Color="{ThemeResource SystemColorWindowColor}" />
@@ -1093,10 +1069,6 @@
             <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="GridViewItemForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="GridViewItemForegroundPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
@@ -1125,12 +1097,6 @@
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="GridViewItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="{ThemeResource SystemColorHighlightColor}" />
-            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelected" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="SelectorBarItemBackgroundSelectedPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
@@ -1145,7 +1111,6 @@
             <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
-            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
@@ -1201,7 +1166,6 @@
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#00000000" />
             <SolidColorBrush x:Key="SystemControlPageBackgroundMediumAltMediumBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="prominentGlowFill" Color="#00000000" />
-            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#00000000" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
     <CornerRadius x:Key="ProgressTrackRadius">4</CornerRadius>

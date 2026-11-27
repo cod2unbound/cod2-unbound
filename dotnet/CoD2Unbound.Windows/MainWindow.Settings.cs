@@ -1,13 +1,10 @@
 using CoD2Unbound.Windows.Views;
-using Microsoft.UI.Xaml;
 
 namespace CoD2Unbound.Windows;
 
 public sealed partial class MainWindow
 {
     private SettingsWindow? settingsWindow;
-
-    private void OnSettingsEntry(object sender, RoutedEventArgs args) => OpenSettingsWindow(null);
 
     /// Opens the one Settings window, or brings it forward on the given pane (a pane's visible name).
     internal void OpenSettingsWindow(string? pane)

@@ -277,17 +277,17 @@ def generate(source):
             keys("knob", "ButtonText", f"SliderThumbBackground{state}")
             keys("control", "GrayText" if disabled else "Highlight", f"SliderTrackValueFill{state}")
 
-        for control in ("ListViewItem", "GridViewItem", "NavigationViewItem", "SelectorBarItem", "ComboBoxItem", "MenuFlyoutItem", "MenuFlyoutSubItem"):
+        for control in ("ListViewItem", "GridViewItem", "SelectorBarItem", "ComboBoxItem", "MenuFlyoutItem", "MenuFlyoutSubItem"):
             token(f"{control}BackgroundPointerOver", "hover", "Highlight")
             token(f"{control}BackgroundPressed", "press", "Highlight")
             token(f"{control}ForegroundPointerOver", "text", "HighlightText")
             token(f"{control}ForegroundPressed", "text", "HighlightText")
-        for control in ("ListViewItem", "GridViewItem", "NavigationViewItem", "SelectorBarItem", "ComboBoxItem"):
-            selected = "buttonHover" if control in ("SelectorBarItem", "NavigationViewItem") else "selection"
+        for control in ("ListViewItem", "GridViewItem", "SelectorBarItem", "ComboBoxItem"):
+            selected = "buttonHover" if control == "SelectorBarItem" else "selection"
             for state in ("Selected", "SelectedPointerOver", "SelectedPressed"):
                 token(f"{control}Background{state}", selected, "Highlight")
                 token(f"{control}Foreground{state}", "heading", "HighlightText")
-        for key in ("SelectorBarItemPillFill", "ComboBoxItemPillFillBrush", "NavigationViewSelectionIndicatorForeground",
+        for key in ("SelectorBarItemPillFill", "ComboBoxItemPillFillBrush",
                     "ListViewItemSelectionIndicatorBrush", "ListViewItemSelectionIndicatorPointerOverBrush",
                     "ListViewItemSelectionIndicatorPressedBrush"):
             brush(key, TRANSPARENT if palette else system_color("HighlightText"))
@@ -331,7 +331,6 @@ def generate(source):
             ET.SubElement(glow, "GradientStop", Offset="1", Color="#00" + glow_color[-6:])
         else:
             brush("prominentGlowFill", TRANSPARENT)
-        brush("NavigationViewExpandedPaneBackground", TRANSPARENT)
 
     for name, value in RADII.items():
         resource(root, "CornerRadius", name + "Radius").text = str(value)

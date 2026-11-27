@@ -35,7 +35,6 @@ public sealed partial class MainWindow
             setupReturnPage = null;
             Nav.IsPaneVisible = jumpEnabled = true;
             Nav.IsPaneOpen = previous.PaneOpen;
-            OnPaneChanged(Nav, EventArgs.Empty);
             ContentFrame.Content = previous.Page;
             if (destination == LauncherPlace.GameDataSettings)
                 OpenSettingsWindow(SettingsPage.GameDataPane);

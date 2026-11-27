@@ -43,15 +43,13 @@ public sealed partial class MainWindow : Window
         StartupTrace.Mark("window XAML");
         InitializeJumpTo();
         InitializeTitleBarContent();
-        // Only the symbols' placement here: their colours wait for the theme (PaintNavGlyphs).
-        foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
-            if (item.Icon is FontIcon glyph)
-                GlyphAlign.WatchCentered(glyph, () => item.FontSize);
-        ContentFrame.RegisterPropertyChangedCallback(ContentControl.ContentProperty, (_, _) => RefreshBackdrop());
-        // Shell notices sit below the caption strip, clear of the caption buttons, only while one shows.
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
-            notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
-                ShellNotices.Padding = new Thickness(16, Problem.IsOpen || ReportCopied.IsOpen || ReportWarning.IsOpen ? 40 : 0, 16, 0));
+            notice.Margin = new Thickness(16, 0, 16, 0);
+        if (WindowsVersion.IsWindows11OrLater && Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+        {
+            SystemBackdrop = new MicaBackdrop();
+            SolidGround.Visibility = Visibility.Collapsed;
+        }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));
         useCustomTitleBar = AppWindowTitleBar.IsCustomizationSupported();
@@ -59,7 +57,7 @@ public sealed partial class MainWindow : Window
         {
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(WindowBar);
-            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         }
         else
         {
@@ -155,8 +153,6 @@ public sealed partial class MainWindow : Window
         DispatcherQueue.TryEnqueue(() =>
         {
             UpdateShellTheme();
-            PaintNavGlyphs();
-            RefreshFavorites();
             if (initialized)
                 _ = RefreshPlayerAsync();
         });
@@ -191,24 +187,6 @@ public sealed partial class MainWindow : Window
 
         if (useCustomTitleBar)
             ApplyCaptionTheme(AppWindow.TitleBar, theme, contrast);
-    }
-
-    // The Mac keeps its sidebar at every window width (1100 x 700 is the smallest window); only its own
-    // toggle collapses it. The pane is therefore always the expanded Left pane unless the person closes it.
-    private void OnPaneChanged(NavigationView sender, object args)
-    {
-        bool showPane = Nav.IsPaneVisible;
-        SidebarGlass.Visibility = IsVisible(showPane);
-        Nav.Margin = showPane ? new Thickness(10, 0, 0, 0) : new Thickness(0);
-        double paneWidth = Nav.IsPaneOpen ? Nav.OpenPaneLength : Nav.CompactPaneLength;
-        SidebarGlass.Width = paneWidth;
-        // The drag strip starts where the sidebar ends, so the sidebar's own controls stay pressable.
-        WindowBar.Margin = new Thickness(showPane ? 10 + paneWidth : 0, 0, 0, 0);
-        BrandHeader.Visibility = IsVisible(showPane && Nav.IsPaneOpen);
-        PlayerPlate.Visibility = IsVisible(showPane && Nav.IsPaneOpen && !session.SetupActive);
-        SettingsLabel.Visibility = FooterRule.Visibility = IsVisible(Nav.IsPaneOpen);
-        SettingsItem.HorizontalContentAlignment = Nav.IsPaneOpen ? HorizontalAlignment.Left : HorizontalAlignment.Center;
-        RefreshFavorites();
     }
 
     // WinRules: the smallest window is 1100 x 700.
@@ -253,6 +231,8 @@ public sealed partial class MainWindow : Window
             await RunAsync(() => NavigateAsync(LauncherPlace.Library));
         else if (ReferenceEquals(args.InvokedItemContainer, ConfigsItem))
             await RunAsync(() => NavigateAsync(LauncherPlace.Configs));
+        else if (ReferenceEquals(args.InvokedItemContainer, SettingsItem))
+            OpenSettingsWindow(null);
         else if (args.InvokedItemContainer?.Tag is string address)
             await OpenServersAsync(ServerScope.Favorites, address);
     }
@@ -294,8 +274,10 @@ public sealed partial class MainWindow : Window
         }
         Nav.IsPaneVisible = jumpEnabled = !session.SetupActive && place != LauncherPlace.Setup;
         if (Nav.IsPaneVisible)
+        {
             await RefreshPlayerAsync();
-        OnPaneChanged(Nav, EventArgs.Empty);
+            RefreshFavorites();
+        }
         if (place is LauncherPlace.Home or LauncherPlace.Servers or LauncherPlace.Library or LauncherPlace.Configs)
             session.Opened(place switch
             {
@@ -371,44 +353,17 @@ public sealed partial class MainWindow : Window
             servers.RefreshActiveLoadout();
     }
 
-    // The Mac sidebar: every page row's symbol is in the accent (the chosen one a little stronger, as vibrancy
-    // draws it) and the chosen row's label is semibold. In a contrast theme the symbols follow the row's text.
-    private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args) => PaintNavGlyphs();
-
-    private void PaintNavGlyphs()
-    {
-        var sender = Nav;
-        foreach (var item in sender.MenuItems.OfType<NavigationViewItem>())
-            if (item.Icon is FontIcon glyph && item.Tag is null)
-            {
-                bool chosen = ReferenceEquals(item, sender.SelectedItem);
-                item.FontWeight = chosen ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-                GlyphAlign.AlignCentered(item.FontSize, glyph);
-                if (IsHighContrast)
-                    glyph.ClearValue(IconElement.ForegroundProperty);
-                else
-                    glyph.Foreground = ThemeBrush(chosen ? "sidebarGlyphSelected" : "sidebarGlyph", Root.ActualTheme, false);
-            }
-    }
-
-    // NavigationView centres the symbol's box and the label's line in the row; GlyphAlign works out the move
-    // that puts the symbol's ink centre on the label's cap centre from the two fonts' metrics.
     internal void RefreshFavorites()
     {
         while (Nav.MenuItems.Count > 4)
             Nav.MenuItems.RemoveAt(Nav.MenuItems.Count - 1);
-        if (!Nav.IsPaneOpen || session.Library.Favorites.Count == 0)
+        if (session.Library.Favorites.Count == 0)
             return;
-        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites", Style = StyleFor("SidebarSectionHeader") });
+        Nav.MenuItems.Add(new NavigationViewItemHeader { Content = "Favorites" });
         foreach (var favorite in session.Library.Favorites.Select(session.ServerForAddress)
             .OrderBy(row => QuakeColors.Plain(row.Name), StringComparer.CurrentCultureIgnoreCase).Take(12))
         {
-            // The Mac's favourite star: the palette accent, about 21 px of ink (Fluent's star at 26), on the
-            // name's cap centre. Reserve the same icon box as the primary rows so the Viewbox draws it at 26.
-            var icon = Fluent("StarFilled", 26, filled: true);
-            icon.Height = 30.52;
-            if (!IsHighContrast)
-                icon.Foreground = ThemeBrush("sidebarStar", Root.ActualTheme, false);
+            var icon = new SymbolIcon(Symbol.Favorite);
             string plain = QuakeColors.Plain(favorite.Name);
             string shortName = plain.Split('|', 2)[0].Trim();
             var title = new TextBlock { Text = shortName, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -417,16 +372,15 @@ public sealed partial class MainWindow : Window
             if (favorite.MaxPlayers > 0)
                 Put(content, 1, new TextBlock
                 {
-                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("SidebarCount"),
+                    Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("CaptionTextBlockStyle"),
                     VerticalAlignment = VerticalAlignment.Center
                 });
             var item = new NavigationViewItem
             {
                 Content = content, Tag = favorite.Address, Icon = icon,
-                SelectsOnInvoked = false, Style = StyleFor("ShellNavItem")
+                SelectsOnInvoked = false
             };
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(item, plain);
-            GlyphAlign.WatchBeside(icon, title);
             Nav.MenuItems.Add(item);
         }
     }

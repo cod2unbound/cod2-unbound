@@ -15,7 +15,7 @@ namespace CoD2Unbound.Windows.Views;
 
 /// The Mac's Home (HomeView.swift) on Windows: the hero over the last map's art, the next game's loadout and
 /// display chips, anything that needs fixing, and the three cards. Sizes are the Home board's at 1440 × 900.
-public sealed partial class HomePage : Page, IShellBackdrop
+public sealed partial class HomePage : Page
 {
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
@@ -40,7 +40,6 @@ public sealed partial class HomePage : Page, IShellBackdrop
             throw;
         }
         HomeFixture.Trace("constructed");
-        PageRoot.Children.Remove(ArtLayer);
         PageRoot.Children.Remove(UpdatePill);
         loadoutMenu.Opening += OnLoadoutMenuOpening;
         LoadoutChip.Flyout = loadoutMenu;
@@ -97,9 +96,6 @@ public sealed partial class HomePage : Page, IShellBackdrop
     }
 
     // MARK: Layout (HomeView.body)
-
-    /// The art layer the shell shows behind the whole window while Home is the page.
-    UIElement? IShellBackdrop.ShellBackdrop => ArtLayer;
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args) => Arrange();
 
@@ -166,7 +162,6 @@ public sealed partial class HomePage : Page, IShellBackdrop
             HeroArt.Source = new SvgImageSource(new Uri($"ms-appx:///Assets/hero-{tone}.svg"));
         }
         RenderArtScrim();
-        shell.RefreshBackdrop();
     }
 
     /// The scrims that keep the hero's text legible. Over a loading screen they are sized for the dimmest
@@ -240,6 +235,5 @@ public sealed partial class HomePage : Page, IShellBackdrop
         artworkLuminance = ScrimMath.Percentiles(art.Rgba.AsSpan(), art.Width, art.Height, (0, 0, 1, 1), 0.01, 1);
         HeroArt.Source = MapBitmap(art);
         RenderArtScrim();
-        shell.RefreshBackdrop();
     }
 }

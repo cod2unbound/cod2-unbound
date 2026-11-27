@@ -14,7 +14,7 @@ namespace CoD2Unbound.Windows.Views;
 
 /// <summary>Setup, as the Mac's SetupView: the scene behind every step, a heading and one glass card,
 /// and the glass capsule at the bottom with Back, a capsule per shown step and the step's actions.</summary>
-public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
+public sealed partial class SetupPage : Page
 {
     private readonly MainWindow shell;
     private readonly WindowsLauncherSession session;
@@ -46,6 +46,7 @@ public sealed partial class SetupPage : Page, IFullWindowPage, IShellBackdrop
         InitializeComponent();
         Backdrop = new Grid { IsHitTestVisible = false, Children = { SceneArt, SceneEdge, Vignette } };
         AutomationProperties.SetAccessibilityView(Backdrop, AccessibilityView.Raw);
+        SetupFrame.Children.Insert(0, Backdrop);
         Backdrop.SizeChanged += (_, args) => PlaceScene(args.NewSize.Height);
         SetupMark.Shadow = new ThemeShadow();
         SetupMark.Translation = new System.Numerics.Vector3(0, 0, 32);

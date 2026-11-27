@@ -17,7 +17,7 @@ using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
 
-public sealed partial class ServersPage : Page, IShellBackdrop
+public sealed partial class ServersPage : Page
 {
     private readonly MainWindow shell;
     private readonly ServersViewModel model;
@@ -44,7 +44,6 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
         PageLayout.Children.Remove(ServerToolbar);
-        PageLayout.Children.Remove(ServersContours);
         AutomationProperties.SetHeadingLevel(EmptyHeading, AutomationHeadingLevel.Level2);
         ServerList.AddHandler(KeyDownEvent, new KeyEventHandler(OnServerListKeyDown), true);
         ServerList.ItemsSource = rows;
@@ -158,7 +157,7 @@ public sealed partial class ServersPage : Page, IShellBackdrop
         RecentScope.AccessKey = showHosting ? "" : "N";
         BrowserContent.Visibility = BrowserActions.Visibility = BrowserTools.Visibility = IsVisible(!showHosting);
         HostingLayout.Visibility = HostingActions.Visibility = IsVisible(showHosting);
-        shell.RefreshBackdrop();
+        ServersContours.Visibility = IsVisible(!showHosting);
         UpdateToolbarOverflow(ServerToolbar.ActualWidth);
         if (showHosting)
         {
@@ -199,8 +198,6 @@ public sealed partial class ServersPage : Page, IShellBackdrop
     }
 
     internal Task UpdateHostingStateAsync() => hosting?.UpdateRunStateAsync() ?? Task.CompletedTask;
-
-    UIElement? IShellBackdrop.ShellBackdrop => ShowsServerBrowser ? ServersContours : null;
 
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args)
     {

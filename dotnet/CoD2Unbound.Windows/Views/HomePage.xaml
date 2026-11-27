@@ -75,8 +75,7 @@
     <!-- The Mac's Home (HomeView.swift): the last map's art behind the hero, the next game's loadout and
          display, anything that needs fixing, and three cards. Geometry follows the Home board at 1440 × 900. -->
     <Grid x:Name="PageRoot" SizeChanged="OnLayoutChanged">
-        <!-- The art fills the whole window behind the sidebar, as the board draws it: the page hands this layer
-             to the shell's backdrop host (IShellBackdrop) and removes it from its own tree. -->
+        <!-- Keep the artwork in the page so the native pane and caption have their own surfaces. -->
         <Grid x:Name="ArtLayer" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
             <Border x:Name="PanelPalette" Background="{ThemeResource GroundBrush}" />
             <Grid x:Name="ArtCanvas" VerticalAlignment="Top" Height="620">
