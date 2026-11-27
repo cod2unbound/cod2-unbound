@@ -10,6 +10,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <ScrollViewer x:Name="PaneStrip" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                      IsTabStop="False" AutomationProperties.Name="Settings section navigation">
         <SelectorBar x:Name="Panes" HorizontalAlignment="Center" Margin="12,8" SelectionChanged="OnPaneChanged"
                      AutomationProperties.Name="Settings sections">
             <SelectorBarItem Text="General" AccessKey="G" ToolTipService.ToolTip="General">
@@ -34,6 +36,7 @@
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource SystemIcons}" Glyph="{StaticResource SystemInfo}" FontSize="19" /></SelectorBarItem.Icon>
             </SelectorBarItem>
         </SelectorBar>
+        </ScrollViewer>
         <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
         <ScrollViewer x:Name="PaneScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,24" VerticalAlignment="Top">
