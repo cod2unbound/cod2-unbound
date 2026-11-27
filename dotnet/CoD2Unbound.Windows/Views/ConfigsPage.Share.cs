@@ -95,7 +95,7 @@ public sealed partial class ConfigsPage
             "Stop Sharing");
         confirmation.AsAlert(destructive: false);
         confirmation.DefaultButton = ContentDialogButton.Primary;
-        if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+        if (await confirmation.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
         if (noticeBar is not null)
             noticeBar.IsOpen = false;

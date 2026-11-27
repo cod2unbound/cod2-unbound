@@ -46,7 +46,7 @@ public sealed partial class ConfigsPage
             cancellation.Cancel();
         };
 
-        await modal.ShowAsync();
+        await modal.ShowSheetAsync();
         if (pending is not null)
             await pending;
         if (goToHistory)

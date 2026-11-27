@@ -133,6 +133,8 @@ def generate(source):
         # Override documented Fluent colour resources in standard appearance.
         # The system supplies the native controls' contrast theme.
         if palette:
+            # Fluent's standard ContentDialog smoke is 30% black in both appearances.
+            brush("SheetSmokeBrush", "#4D000000")
             for key, color in accent_steps(palette["accent"]):
                 resource(dictionary, "Color", key).text = color
             # The native edit renders its selected text in white and takes the

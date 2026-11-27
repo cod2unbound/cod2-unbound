@@ -219,7 +219,7 @@ public sealed partial class SettingsPage : Page
         var dialog = Dialog("Run setup again?",
             Body("You’ll go through game data and CD key. Your loadouts, demos and screenshots stay, and you can cancel at any step."),
             "Set up again");
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary)
             await shell.OpenSetupAgainAsync(LauncherPlace.GameDataSettings);
     }
 
@@ -852,6 +852,6 @@ public sealed partial class SettingsPage : Page
     {
         var dialog = Dialog(title, Caption(message), primary).AsAlert(destructive: true);
         dialog.DefaultButton = ContentDialogButton.Close;
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        return await dialog.ShowSheetAsync() == ContentDialogResult.Primary;
     }
 }

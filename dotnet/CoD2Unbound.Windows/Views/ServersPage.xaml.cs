@@ -585,7 +585,7 @@ public sealed partial class ServersPage : Page
         {
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary || dialog.Target is not { } target)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary || dialog.Target is not { } target)
             return;
         if (dialog.AddFavorite)
         {

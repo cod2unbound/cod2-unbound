@@ -196,7 +196,7 @@ internal static class PrivacyPresentation
             XamlRoot = shell.DialogRoot, RequestedTheme = shell.DialogTheme, Title = "What is sent", Content = scroll,
             PrimaryButtonText = "Done", DefaultButton = ContentDialogButton.Primary
         }.WithSymbol("FluentEye", "What the launcher records, with an example event in the format the launcher sends.");
-        await dialog.ShowAsync();
+        await dialog.ShowSheetAsync();
     }
 
     internal static Border GroupCard(StackPanel rows) =>

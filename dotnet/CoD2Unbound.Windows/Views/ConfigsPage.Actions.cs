@@ -43,7 +43,7 @@ public sealed partial class ConfigsPage
         TrackGameState(dialog, Validate);
         dialog.Opened += (_, _) => name.Focus(FocusState.Programmatic);
         Validate();
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
         model.Create(name.Text.Trim(), start.SelectedIndex == 1 ? source : null);
         studioTab = 0;

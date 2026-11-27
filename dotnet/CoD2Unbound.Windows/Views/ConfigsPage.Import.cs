@@ -110,7 +110,7 @@ public sealed partial class ConfigsPage
             problem.Style = StyleFor("NegativeText");
             link.Focus(FocusState.Programmatic);
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
 
         var url = new Uri(link.Text.Trim());

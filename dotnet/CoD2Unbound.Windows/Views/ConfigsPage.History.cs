@@ -210,7 +210,7 @@ public sealed partial class ConfigsPage
             "Restore");
         dialog.DefaultButton = ContentDialogButton.Close;
         TrackGameState(dialog, () => dialog.IsPrimaryButtonEnabled = CanEdit);
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary || !CanEdit)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary || !CanEdit)
             return;
         model.RestoreHistory(profile, entry, revision);
         historyRestored = entry.Id;

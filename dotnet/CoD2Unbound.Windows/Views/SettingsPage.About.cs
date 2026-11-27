@@ -138,7 +138,7 @@ public sealed partial class SettingsPage
             dialog.SecondaryButtonText = "Copy all";
         };
         dialog.Content = content;
-        await dialog.ShowAsync();
+        await dialog.ShowSheetAsync();
 
         void ShowLicence(WindowsNotice notice, Button entry)
         {

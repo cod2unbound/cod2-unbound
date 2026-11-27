@@ -332,7 +332,7 @@ public sealed partial class ConfigsPage
                     actionsBox.SelectionChanged += (_, _) => dialog.IsPrimaryButtonEnabled = actionsBox.SelectedIndex >= 0;
                     _ = shell.RunAsync(async () =>
                     {
-                        if (await dialog.ShowAsync() == ContentDialogResult.Primary && actionsBox.SelectedItem is ConfigBindingAction action)
+                        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary && actionsBox.SelectedItem is ConfigBindingAction action)
                         {
                             var current = ForBindingEdit(profile.Profile.Id);
                             var fresh = ConfigBindingDetails.ForWindows(current.Document, model.Catalog, model.Model.Mode);
@@ -474,7 +474,7 @@ public sealed partial class ConfigsPage
         });
         dialog.Closed += (_, _) => capture?.Dispose();
         Update();
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && sizes.SelectedIndex >= 0)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary && sizes.SelectedIndex >= 0)
         {
             keyboardSize = verification.Sizes[sizes.SelectedIndex];
             verifiedShape = verification.Shape;
@@ -536,7 +536,7 @@ public sealed partial class ConfigsPage
         };
         dialog.Closed += (_, _) => { pointer?.Dispose(); keys?.Dispose(); };
         Update();
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && flow.Result is { } result)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary && flow.Result is { } result)
             learnedMice[mouse] = result;
 
         void Update()

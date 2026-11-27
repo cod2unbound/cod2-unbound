@@ -274,7 +274,7 @@ public sealed partial class HostingPage
             try
             {
                 await page.Dialog($"Players on {server.Name}", new StackPanel { Spacing = 8, Children = { count, list } },
-                    close: "Done").WithSymbol("FluentPerson").ShowAsync();
+                    close: "Done").WithSymbol("FluentPerson").ShowSheetAsync();
             }
             finally { updateModal = null; }
         }

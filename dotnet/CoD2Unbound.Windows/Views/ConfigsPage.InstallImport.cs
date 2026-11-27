@@ -51,7 +51,7 @@ public sealed partial class ConfigsPage
                 state.Children.Add(Progress("Looking on this PC's drives…"));
                 dialog.Opened += (_, _) => scan = LoadAsync();
             }
-            var decision = await dialog.ShowAsync();
+            var decision = await dialog.ShowSheetAsync();
             if (scan is not null)
                 await scan;
 

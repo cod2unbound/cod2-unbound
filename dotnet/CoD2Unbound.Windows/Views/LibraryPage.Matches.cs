@@ -74,7 +74,7 @@ public sealed partial class LibraryPage
             }
             var dialog = LibraryRemovalDialog(history.DeleteTitle,
                 "Check-up loses its history and starts again from your next match. This can’t be undone.", "Delete Summaries");
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary || session.ClientIsRunning)
+            if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary || session.ClientIsRunning)
                 return;
             try
             {

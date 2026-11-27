@@ -12,6 +12,27 @@ internal static class SheetPresentation
 {
     internal enum Tone { Accent, Negative, Positive }
 
+    internal static global::Windows.Foundation.IAsyncOperation<ContentDialogResult> ShowSheetAsync(this ContentDialog dialog)
+    {
+        if (!new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast)
+        {
+            var theme = dialog.RequestedTheme;
+            if (theme == ElementTheme.Default && dialog.XamlRoot?.Content is FrameworkElement root)
+                theme = root.ActualTheme;
+            var smoke = ThemeBrush("SheetSmokeBrush", theme, contrast: false);
+            // WinUI hosts the smoke in a separate popup. Its template and its fallback
+            // use these two resources, so scope the override to the sheet.
+            dialog.Resources["ContentDialogSmokeFill"] = smoke;
+            dialog.Resources["SystemControlPageBackgroundMediumAltMediumBrush"] = smoke;
+        }
+        else
+        {
+            dialog.Resources.Remove("ContentDialogSmokeFill");
+            dialog.Resources.Remove("SystemControlPageBackgroundMediumAltMediumBrush");
+        }
+        return dialog.ShowAsync();
+    }
+
     internal static T WithWidth<T>(this T dialog, string widthKey) where T : ContentDialog
     {
         var width = (double)Application.Current.Resources[widthKey];

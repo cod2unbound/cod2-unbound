@@ -37,7 +37,7 @@ public sealed partial class StylePartsWindow : Window
             DefaultButton = ContentDialogButton.Primary,
             Content = new TextBox { Text = "Main", Style = StyleFor("InlineTextBox") }
         }.WithSymbol("SystemEdit", "Each loadout is its own Call of Duty 2 player profile.");
-        await dialog.ShowAsync();
+        await dialog.ShowSheetAsync();
     }
 
     private async void OpenAlert(object sender, RoutedEventArgs args)
@@ -48,7 +48,7 @@ public sealed partial class StylePartsWindow : Window
             Title = "Remove “Desert Fox SD” from Favorites?", Content = Body("It stays in the server list and in Recent."),
             PrimaryButtonText = "Remove", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary
         }.AsAlert();
-        await dialog.ShowAsync();
+        await dialog.ShowSheetAsync();
     }
 }
 #endif

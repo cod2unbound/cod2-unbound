@@ -77,7 +77,7 @@ public sealed partial class HostingPage
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
         await hosting.DeleteAsync(server.Id, WinRT.Interop.WindowNative.GetWindowHandle(shell));
         await RefreshAsync();
@@ -119,7 +119,7 @@ public sealed partial class HostingPage
         var dialog = Dialog($"Export “{server.Name}” for another PC", content, "Export…")
             .WithSymbol("FluentDocument", explanation);
         AutomationProperties.SetAutomationId(dialog, "HostingExportDialog");
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary)
             await WriteExportAsync(server, passwords.IsOn, match.IsOn);
 
         void UpdatePasswordNote()

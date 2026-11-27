@@ -190,7 +190,7 @@ public sealed partial class LibraryPage
             if (!row.CanPlay)
                 content.Children.Add(Body(row.PlaybackHint));
             using var reading = new CancellationTokenSource();
-            var show = dialog.ShowAsync();
+            var show = dialog.ShowSheetAsync();
             var duration = LoadDurationAsync();
             ContentDialogResult choice;
             try { choice = await show; }
@@ -247,7 +247,7 @@ public sealed partial class LibraryPage
         previous.Click += async (_, _) => await ShowAtAsync(index - 1);
         next.Click += async (_, _) => await ShowAtAsync(index + 1);
         await ShowAtAsync(index);
-        try { await dialog.ShowAsync(); }
+        try { await dialog.ShowSheetAsync(); }
         finally { request++; }
 
         async Task ShowAtAsync(int position)
@@ -362,7 +362,7 @@ public sealed partial class LibraryPage
             }
         };
         Validate();
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary)
         {
             Render();
             if (renamed is not null)
@@ -400,7 +400,7 @@ public sealed partial class LibraryPage
     {
         var dialog = LibraryRemovalDialog($"Move “{row.Name}” to the Recycle Bin?",
             "You can put it back with Undo, or from the Recycle Bin until you empty it.", "Move to Recycle Bin");
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
 
         string token;

@@ -103,7 +103,7 @@ public sealed partial class ConfigsPage
             "A change to this loadout was interrupted, and the file changed on disk since. Keeping the disk version saves the interrupted change in the loadout’s recovery folder instead of applying it."),
             "Keep version on disk");
         TrackGameState(dialog, () => dialog.IsPrimaryButtonEnabled = !model.Studio.IsReadOnly);
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
         try
         {

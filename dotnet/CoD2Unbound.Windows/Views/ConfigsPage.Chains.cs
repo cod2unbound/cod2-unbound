@@ -115,7 +115,7 @@ public sealed partial class ConfigsPage
             var existing = ConfigChains.OwnedChains(current);
             if (existing.Any(chain => chain.Id == draft.Id))
             {
-                if (await Dialog("Delete this advanced bind?", Body("The key will stop running this bind."), "Delete bind").ShowAsync()
+                if (await Dialog("Delete this advanced bind?", Body("The key will stop running this bind."), "Delete bind").ShowSheetAsync()
                     != ContentDialogResult.Primary)
                     return;
                 var edit = ConfigChains.Prepare([.. existing.Where(chain => chain.Id != draft.Id)], current);

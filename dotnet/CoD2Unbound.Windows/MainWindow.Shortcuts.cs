@@ -78,12 +78,12 @@ public sealed partial class MainWindow
     internal async Task<ContentDialogResult> ShowShellSheetAsync(ContentDialog sheet)
     {
         if (!busy || ContentFrame.Content is not HomePage)
-            return await sheet.ShowAsync();
+            return await sheet.ShowSheetAsync();
 
         closingHomeSheet = false;
         homeShortcutAfterSheet = null;
         sheet.Closing += OnClosing;
-        try { return await sheet.ShowAsync(); }
+        try { return await sheet.ShowSheetAsync(); }
         finally { sheet.Closing -= OnClosing; }
 
         void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)

@@ -316,7 +316,7 @@ public sealed partial class ServersPage
             PrimaryButtonText = "Fix for This Server Only", CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary, Content = details
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && ReferenceEquals(check, readyCheck) && !session.ClientIsRunning)
+        if (await dialog.ShowSheetAsync() == ContentDialogResult.Primary && ReferenceEquals(check, readyCheck) && !session.ClientIsRunning)
         {
             check.Fix();
             RenderReadyCheck("Undo");

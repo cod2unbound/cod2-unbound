@@ -148,7 +148,7 @@ public sealed partial class ConfigsPage : Page
         TrackGameState(dialog, Validate);
         name.TextChanged += (_, _) => Validate();
         dialog.Opened += (_, _) => { name.Focus(FocusState.Programmatic); name.SelectAll(); };
-        return await dialog.ShowAsync() == ContentDialogResult.Primary ? name.Text.Trim() : null;
+        return await dialog.ShowSheetAsync() == ContentDialogResult.Primary ? name.Text.Trim() : null;
     }
 
     private async Task RefreshStudioAsync()
@@ -384,7 +384,7 @@ public sealed partial class ConfigsPage : Page
         {
             XamlRoot = XamlRoot, RequestedTheme = shell.DialogTheme
         };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (await dialog.ShowSheetAsync() != ContentDialogResult.Primary)
             return;
         removed = (profile.Id, model.Delete(profile.Id));
         await RefreshStudioAsync();

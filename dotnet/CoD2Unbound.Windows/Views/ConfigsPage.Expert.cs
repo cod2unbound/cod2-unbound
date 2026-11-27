@@ -541,7 +541,7 @@ public sealed partial class ConfigsPage
         dialog.CloseButtonText = "Keep Editing";
         dialog.DefaultButton = ContentDialogButton.Close;
         dialog.IsPrimaryButtonEnabled = review.CanApply && CanEdit;
-        var result = await dialog.ShowAsync();
+        var result = await dialog.ShowSheetAsync();
         if (result == ContentDialogResult.None)
             return false;
         if (result == ContentDialogResult.Primary)

@@ -83,6 +83,7 @@
             <SolidColorBrush x:Key="HeroHintBrush" Color="#FFC9C1AD" />
             <SolidColorBrush x:Key="DisplayPreviewTitleBrush" Color="#FFE2BD72" />
             <SolidColorBrush x:Key="DisplayPreviewNoteBrush" Color="#FFA9A28F" />
+            <SolidColorBrush x:Key="SheetSmokeBrush" Color="#4D000000" />
             <Color x:Key="SystemAccentColor">#FFE2BD72</Color>
             <Color x:Key="SystemAccentColorLight1">#FFE3C079</Color>
             <Color x:Key="SystemAccentColorLight2">#FFE5C480</Color>
@@ -191,6 +192,7 @@
             <SolidColorBrush x:Key="HeroHintBrush" Color="#FF4D4A3F" />
             <SolidColorBrush x:Key="DisplayPreviewTitleBrush" Color="#FF6B4A12" />
             <SolidColorBrush x:Key="DisplayPreviewNoteBrush" Color="#FF615E51" />
+            <SolidColorBrush x:Key="SheetSmokeBrush" Color="#4D000000" />
             <Color x:Key="SystemAccentColor">#FF6B4A12</Color>
             <Color x:Key="SystemAccentColorLight1">#FF72531E</Color>
             <Color x:Key="SystemAccentColorLight2">#FF7A5C2A</Color>
