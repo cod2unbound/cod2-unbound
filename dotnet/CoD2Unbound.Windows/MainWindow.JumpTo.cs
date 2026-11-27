@@ -124,8 +124,10 @@ public sealed partial class MainWindow
         }
     }
 
-    private void RenderJumpResults()
+    private void RenderJumpResults(bool preserveSelection = false)
     {
+        int previousIndex = preserveSelection ? JumpIndexOf(JumpList.SelectedItem) : -1;
+        JumpTarget? previous = previousIndex >= 0 ? jumpResults[previousIndex] : null;
         string query = JumpBox.Text;
         jumpResults = [.. JumpResults(query)];
         JumpList.Items.Clear();
@@ -153,7 +155,9 @@ public sealed partial class MainWindow
         JumpEmpty.Text = jumpSettings
             ? "No setting matches. Try a word like “jump”, “turn” or “sound”."
             : $"Nothing matches “{query.Trim()}”. Try a server, map, loadout or setting name.";
-        SelectJumpRow(empty ? -1 : 0);
+        int selected = previous is null ? 0 : Array.FindIndex(jumpResults,
+            target => target.Group == previous.Group && target.Id == previous.Id);
+        SelectJumpRow(empty ? -1 : Math.Max(0, selected));
     }
 
     // The Mac's result list: with nothing typed, the three most recent servers and the first actions; with a

@@ -531,6 +531,9 @@ public sealed partial class MainWindow : Window
         finally
         {
             busy = false;
+            // Jump can reopen as a sheet closes, before the owning command releases busy.
+            if (jumpOpen && !jumpSettings && !closing)
+                RenderJumpResults(preserveSelection: true);
             if (closeRequested)
             {
                 closeRequested = false;
