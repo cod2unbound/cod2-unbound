@@ -87,14 +87,17 @@ public sealed partial class HomePage
         Put(content, 0, art);
         var lines = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         lines.Children.Add(new TextBlock { Text = name, Style = LocalStyle("RecentName"),
-            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap });
         lines.Children.Add(new TextBlock { Text = subtitle, Style = LocalStyle("RecentDetail"),
-            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap });
         Put(content, 1, lines);
         if (played is not null)
         {
             var stamp = new TextBlock { Text = played, Style = StyleFor("MonoCaption"), VerticalAlignment = VerticalAlignment.Center };
-            Put(content, 2, stamp);
+            if (LargeText)
+                lines.Children.Add(stamp);
+            else
+                Put(content, 2, stamp);
         }
 
         string spoken = $"{name}, {subtitle}" + (played is null ? "" : $", played {played.ToLowerInvariant()}");
@@ -113,7 +116,15 @@ public sealed partial class HomePage
         launch.Click += async (_, _) => await LaunchAsync(server.Address);
         recentButtons.Add(launch);
         row.Children.Add(launch);
-        launch.SizeChanged += (_, args) => content.Margin = new Thickness(0, 0, args.NewSize.Width + 12, 0);
+        if (LargeText)
+        {
+            row.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            row.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            row.RowSpacing = 6;
+            Grid.SetRow(launch, 1);
+        }
+        else
+            launch.SizeChanged += (_, args) => content.Margin = new Thickness(0, 0, args.NewSize.Width + 12, 0);
 
         var item = new ListViewItem { Content = row, Tag = server, Style = LocalStyle("RecentItem"), ContextFlyout = RecentMenu(server) };
         AutomationProperties.SetName(item, spoken);

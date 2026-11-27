@@ -210,7 +210,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid Margin="8,0">
+                                <Grid Margin="8,0" RowDefinitions="Auto,Auto">
                                     <TextBlock x:Name="RecentHeading" Text="Jump back in" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="AllRecent" Style="{StaticResource CardLink}" Click="OnRecent"
                                                      AutomationProperties.Name="All recent">
@@ -227,7 +227,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <Grid>
+                                <Grid RowDefinitions="Auto,Auto">
                                     <TextBlock x:Name="MatchHeading" Text="Last match" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="AllMatches" Style="{StaticResource CardLink}" Click="OnAllMatches"
                                                      AutomationProperties.Name="All matches">
@@ -245,7 +245,7 @@
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <Grid>
+                                <Grid RowDefinitions="Auto,Auto">
                                     <TextBlock x:Name="NewsHeading" Text="What’s New" Style="{StaticResource CardHeading}" AutomationProperties.HeadingLevel="Level2" />
                                     <HyperlinkButton x:Name="SeeAllNews" Style="{StaticResource CardLink}" Click="OnShowNews"
                                                      AutomationProperties.Name="See all">

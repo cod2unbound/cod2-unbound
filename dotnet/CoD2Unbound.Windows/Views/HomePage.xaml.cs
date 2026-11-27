@@ -23,6 +23,8 @@ public sealed partial class HomePage : Page
     private (double Low, double High)? artworkLuminance;
     private bool stacked;
     private double cardHeight = 276;
+    private readonly global::Windows.UI.ViewManagement.UISettings textSettings = new();
+    private bool LargeText => textSettings.TextScaleFactor > 1.2;
 
     internal HomePage(MainWindow shell, WindowsLauncherSession session)
     {
@@ -51,8 +53,10 @@ public sealed partial class HomePage : Page
             UpdateTheme();
             HomeFixture.Trace("theme applied");
             Arrange();
+            textSettings.TextScaleFactorChanged += OnTextScaleChanged;
             HomeFixture.Trace("arranged");
         };
+        Unloaded += (_, _) => textSettings.TextScaleFactorChanged -= OnTextScaleChanged;
     }
 
     internal async Task RefreshAsync()
@@ -92,6 +96,15 @@ public sealed partial class HomePage : Page
 
     private void OnLayoutChanged(object sender, SizeChangedEventArgs args) => Arrange();
 
+    private void OnTextScaleChanged(global::Windows.UI.ViewManagement.UISettings sender, object args) =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsLoaded)
+                return;
+            RenderRecent();
+            Arrange();
+        });
+
     private void Arrange()
     {
         HomeFixture.CountArrange();
@@ -113,7 +126,20 @@ public sealed partial class HomePage : Page
         Hero.Margin = new Thickness(0, heroTop, 0, 0);
         HeroTitleFit.MaxWidth = Math.Min(780, inner);
         ContentLayout.Padding = new Thickness(lead, 0, 32, 0);
-        Cards.Height = cardHeight;
+        Cards.Height = LargeText ? double.NaN : cardHeight;
+        Cards.MinHeight = LargeText ? cardHeight : 0;
+        foreach (var link in new[] { AllRecent, AllMatches, SeeAllNews })
+        {
+            Grid.SetRow(link, LargeText ? 1 : 0);
+            link.HorizontalAlignment = LargeText ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        }
+        HeroMeta.Orientation = LargeText ? Orientation.Vertical : Orientation.Horizontal;
+        HeroMeta.Spacing = LargeText ? 4 : 14;
+        foreach (var item in HeroMeta.Children)
+            if (item is TextBlock words)
+                words.TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            else
+                item.Visibility = IsVisible(!LargeText);
         if (narrow != stacked)
         {
             stacked = narrow;
