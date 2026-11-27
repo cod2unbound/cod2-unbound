@@ -280,7 +280,11 @@ public sealed partial class ConfigsPage : Page
         }
         var identity = new StackPanel { Spacing = 4, Margin = new Thickness(4, 0, 0, 0), VerticalAlignment = VerticalAlignment.Bottom,
             Children = { title, Body(subtitle) } };
-        var studioHeaderActions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, VerticalAlignment = VerticalAlignment.Bottom };
+        var studioHeaderActions = new StackPanel
+        {
+            Orientation = LargeText ? Orientation.Vertical : Orientation.Horizontal,
+            Spacing = 12, VerticalAlignment = VerticalAlignment.Bottom
+        };
         studioChangedCount = Caption("");
         studioHeaderActions.Children.Add(studioChangedCount);
         if (profile.Profile.IsActive)
@@ -330,7 +334,7 @@ public sealed partial class ConfigsPage : Page
         studioHeaderActions.Children.Add(bindModes);
         studioHeaderExtra = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center };
         studioHeaderActions.Children.Add(studioHeaderExtra);
-        Detail.Children.Add(CheckPair(identity, studioHeaderActions, 590, rightAuto: true));
+        Detail.Children.Add(CheckPair(identity, studioHeaderActions, LargeText ? 1050 : 590, rightAuto: true));
         var readOnly = CheckNotice(InfoBarSeverity.Informational, "Read-only while playing", ConfigProfileException.ReadOnlyWhilePlaying);
         HideClosedNotice(readOnly);
         readOnly.IsOpen = state.ReadOnly;

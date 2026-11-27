@@ -87,7 +87,7 @@ public sealed partial class ConfigsPage
         Put(searchTools, 0, search);
         Put(searchTools, 1, open);
         var ruleTools = ExpertRuleTools(profile, renderRows);
-        var first = CheckPair(ruleTools, comparisonTools, 528, rightAuto: true);
+        var first = CheckPair(ruleTools, comparisonTools, LargeText ? 850 : 528, rightAuto: true);
         var tools = CheckPair(first, searchTools, 885, rightAuto: true);
         AutomationProperties.SetName(tools, "Expert tools");
         studioBody.Children.Add(tools);

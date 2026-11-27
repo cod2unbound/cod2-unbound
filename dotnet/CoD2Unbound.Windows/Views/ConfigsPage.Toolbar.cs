@@ -12,6 +12,7 @@ public sealed partial class ConfigsPage
     private Button? studioNext;
     private SelectorBar? bindModes;
     private ContentPresenter? studioHeaderExtra;
+    private bool LargeText => new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
 
     private void ShowConfigStudioToolbar(SelectorBar tabs, ConfigProfileRead profile)
     {
@@ -51,7 +52,10 @@ public sealed partial class ConfigsPage
 
         void FitToolbar()
         {
-            bool compact = ConfigToolbar.ActualWidth < 700;
+            bool largeText = LargeText;
+            bool compact = ConfigToolbar.ActualWidth < 700 || largeText;
+            Grid.SetColumnSpan(tabs, largeText ? 2 : 1);
+            Grid.SetRow(actions, largeText ? 1 : 0);
             if (jump.Content is StackPanel content)
                 ((TextBlock)content.Children[1]).Visibility = IsVisible(!compact);
             if (snapshot.Content is StackPanel snapshotLabel)
