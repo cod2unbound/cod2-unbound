@@ -135,7 +135,7 @@ internal sealed class ShareSetupDialog : ContentDialog
 
     internal async Task RunAsync()
     {
-        await ShowAsync();
+        await this.ShowSheetAsync();
         if (inFlight is { } pending)
             await pending;
     }
