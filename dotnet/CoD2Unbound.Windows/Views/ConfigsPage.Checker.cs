@@ -263,7 +263,7 @@ public sealed partial class ConfigsPage
         var target = new StackPanel { Spacing = 14, Children =
         {
             Fluent("Document", 36),
-            new TextBlock { Text = "DROP A CONFIG HERE", Style = StyleFor("EmptyHeading"), FontSize = 30, TextAlignment = TextAlignment.Center },
+            new TextBlock { Text = "DROP A CONFIG HERE", Style = StyleFor("TitleTextBlockStyle"), TextAlignment = TextAlignment.Center },
             Body("Or paste one. It is read on this PC only: nothing is uploaded, and nothing is added to your loadouts unless you ask."),
             actions
         } };

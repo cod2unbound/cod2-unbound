@@ -58,7 +58,7 @@
             <StackPanel views:GlyphAlign.IsEnabled="True" x:Name="Retention" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
                 <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}"
                           FontSize="14" Foreground="{ThemeResource secondary}" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Name="RetentionText" Style="{StaticResource SecondaryText}" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock x:Name="RetentionText" Style="{StaticResource SecondaryCaption}" VerticalAlignment="Center" />
             </StackPanel>
         </Grid>
         <StackPanel Grid.Row="2">
@@ -97,23 +97,22 @@
                                            AutomationProperties.AccessibilityView="Raw" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
-                                    <TextBlock Text="{Binding Title}" AutomationProperties.AutomationId="LibraryMatchTitle" TextTrimming="CharacterEllipsis"
-                                               FontSize="15" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Stamp}" Style="{StaticResource Mono}" FontSize="12"
+                                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{Binding Title}" AutomationProperties.AutomationId="LibraryMatchTitle" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Stamp}" Style="{StaticResource MonoCaption}"
                                                Foreground="{ThemeResource secondary}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right"
                                             VerticalAlignment="Center" AutomationProperties.Name="{Binding PingName}">
-                                    <TextBlock Text="{Binding Ping}" Style="{StaticResource Mono}" FontSize="16" FontWeight="Bold"
+                                    <TextBlock Text="{Binding Ping}" Style="{StaticResource Mono}" FontWeight="Bold"
                                                Foreground="{ThemeResource heading}" VerticalAlignment="Bottom" />
-                                    <TextBlock Text="ms" FontSize="12" Foreground="{ThemeResource tertiary}" VerticalAlignment="Bottom" />
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="ms" Foreground="{ThemeResource tertiary}" VerticalAlignment="Bottom" />
                                 </StackPanel>
                                 <StackPanel views:GlyphAlign.IsEnabled="True" Grid.Column="3" Orientation="Horizontal" Spacing="6"
                                             VerticalAlignment="Center" HorizontalAlignment="Right" Loaded="OnConnectionLoaded"
                                             DataContextChanged="OnConnectionChanged" ActualThemeChanged="OnConnectionThemeChanged">
                                     <FontIcon FontFamily="{StaticResource SystemIcons}" FontSize="15" Glyph="{Binding ConnectionGlyph}"
                                               AutomationProperties.AccessibilityView="Raw" />
-                                    <TextBlock Text="{Binding ConnectionLabel}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding ConnectionLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <Button Grid.Column="4" Content="Check-up" Tag="{Binding}" Click="OnMatchCheckup"
                                         AutomationProperties.Name="{Binding CheckupName}" ToolTipService.ToolTip="Open Check-up for this match"
@@ -154,9 +153,9 @@
                                                AutomationProperties.AccessibilityView="Raw" />
                                     </Border>
                                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="14,10">
-                                        <TextBlock Text="{Binding ScreenshotTitle}" TextTrimming="CharacterEllipsis" FontSize="12"
+                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding ScreenshotTitle}" TextTrimming="CharacterEllipsis"
                                                    FontWeight="SemiBold" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Stamp}" Style="{StaticResource Mono}" FontSize="12"
+                                        <TextBlock Grid.Column="1" Text="{Binding Stamp}" Style="{StaticResource MonoCaption}"
                                                    Foreground="{ThemeResource secondary}" VerticalAlignment="Center" />
                                     </Grid>
                                 </Grid>
@@ -164,7 +163,7 @@
                         </DataTemplate>
                     </GridView.ItemTemplate>
                     <GridView.Footer>
-                        <TextBlock Style="{StaticResource SecondaryText}" FontSize="12" Foreground="{ThemeResource tertiary}"
+                        <TextBlock Style="{StaticResource SecondaryCaption}" Foreground="{ThemeResource tertiary}"
                                    Margin="6,0,18,0" Text="Double-click to open. Press Space to preview. Right-click for more actions." />
                     </GridView.Footer>
                 </GridView>

@@ -487,8 +487,7 @@ public sealed partial class LibraryPage
         };
         var heading = new TextBlock
         {
-            Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading"), TextAlignment = TextAlignment.Center,
-            FontSize = 26, CharacterSpacing = 119
+            Text = title.ToUpperInvariant(), Style = StyleFor("EmptyHeading"), TextAlignment = TextAlignment.Center
         };
         AutomationProperties.SetName(heading, title);
         card.Children.Add(heading);

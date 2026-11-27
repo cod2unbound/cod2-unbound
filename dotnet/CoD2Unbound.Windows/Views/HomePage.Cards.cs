@@ -86,14 +86,14 @@ public sealed partial class HomePage
 
         Put(content, 0, art);
         var lines = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-        lines.Children.Add(new TextBlock { Text = name, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Style = LocalStyle("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+        lines.Children.Add(new TextBlock { Text = name, Style = LocalStyle("RecentName"),
+            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
         lines.Children.Add(new TextBlock { Text = subtitle, Style = LocalStyle("RecentDetail"),
             TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
         Put(content, 1, lines);
         if (played is not null)
         {
-            var stamp = new TextBlock { Text = played, Style = StyleFor("MonoCaption"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+            var stamp = new TextBlock { Text = played, Style = StyleFor("MonoCaption"), VerticalAlignment = VerticalAlignment.Center };
             Put(content, 2, stamp);
         }
 
@@ -203,12 +203,12 @@ public sealed partial class HomePage
         Put(heading, 0, art);
         var title = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         string titleText = $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}";
-        title.Children.Add(new TextBlock { Text = titleText, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Style = LocalStyle("RecentName"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
+        title.Children.Add(new TextBlock { Text = titleText, Style = LocalStyle("RecentName"),
+            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap });
         string stamp = MatchFacts.Duration(match.DurationSeconds).ToUpperInvariant();
         if (MatchFacts.Date(match.EndedAt) is { } date)
             stamp = MatchFacts.Played(date, TimeProvider.System.GetUtcNow(), TimeZoneInfo.Local, includeTime: false) + " · " + stamp;
-        title.Children.Add(new TextBlock { Text = stamp, Style = StyleFor("MonoCaption"), FontSize = 12, TextWrapping = TextWrapping.NoWrap,
+        title.Children.Add(new TextBlock { Text = stamp, Style = StyleFor("MonoCaption"), TextWrapping = TextWrapping.NoWrap,
             TextTrimming = TextTrimming.CharacterEllipsis });
         Put(heading, 1, title);
         AutomationProperties.SetName(heading, $"{titleText}, {stamp}");
@@ -233,7 +233,7 @@ public sealed partial class HomePage
 
         TextBlock Value(string text, string brush) => new()
         {
-            Text = text, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Ink(brush),
+            Text = text, Style = StyleFor("BodyStrongTextBlockStyle"), Foreground = Ink(brush),
             VerticalAlignment = VerticalAlignment.Center
         };
     }

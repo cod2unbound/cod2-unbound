@@ -94,7 +94,7 @@ public sealed partial class HomePage
 
     private TextBlock MetaText(string text = "") => new()
     {
-        Text = text, FontSize = 16, Foreground = Ink("HeroInkBrush"), TextWrapping = TextWrapping.NoWrap,
+        Text = text, Style = StyleFor("BodyTextBlockStyle"), Foreground = Ink("HeroInkBrush"), TextWrapping = TextWrapping.NoWrap,
         VerticalAlignment = VerticalAlignment.Center
     };
 

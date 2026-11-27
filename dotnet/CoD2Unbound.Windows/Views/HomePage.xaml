@@ -4,7 +4,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
         <!-- Home's card rows, from the shared tokens. -->
-        <Style x:Key="RecentName" TargetType="TextBlock">
+        <Style x:Key="RecentName" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
             <Setter Property="Foreground" Value="{ThemeResource BodyBrush}" />
         </Style>
         <Style x:Key="RecentDetail" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
@@ -128,8 +128,7 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" x:Name="LaunchHint" Margin="6,0,0,0" VerticalAlignment="Center"
-                                   FontSize="12" CharacterSpacing="40" TextWrapping="Wrap"
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Grid.Column="1" x:Name="LaunchHint" Margin="6,0,0,0" VerticalAlignment="Center" CharacterSpacing="40" TextWrapping="Wrap"
                                    Foreground="{ThemeResource HeroHintBrush}" />
                     </Grid>
                 </Grid>
@@ -253,7 +252,7 @@
                                     </HyperlinkButton>
                                 </Grid>
                                 <StackPanel Grid.Row="1" x:Name="NewsRows" Spacing="14" Margin="0,14,0,8" />
-                                <TextBlock Grid.Row="2" x:Name="NewsChecked" FontSize="12" MaxLines="2" TextWrapping="Wrap"
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Grid.Row="2" x:Name="NewsChecked" MaxLines="2" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TertiaryBrush}" />
                             </Grid>
                         </Border>
@@ -273,7 +272,7 @@
                 <FontIcon x:Name="UpdateIcon" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}"
                           FontSize="16" Foreground="{ThemeResource HeroAccentBrush}" VerticalAlignment="Center"
                           AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Name="UpdateText" FontSize="13" Foreground="{ThemeResource BodyBrush}" MaxWidth="420"
+                <TextBlock Style="{StaticResource BodyTextBlockStyle}" x:Name="UpdateText" Foreground="{ThemeResource BodyBrush}" MaxWidth="420"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                 <Button x:Name="UpdateNotes" Style="{StaticResource QuietButton}" Content="What’s New"
                         VerticalAlignment="Center" Click="OnUpdateNotes" />

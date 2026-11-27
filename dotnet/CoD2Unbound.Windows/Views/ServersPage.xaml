@@ -191,10 +191,10 @@
                         <ColumnDefinition Width="84" />
                         <ColumnDefinition Width="22" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Map" FontSize="12" VerticalAlignment="Center" Style="{StaticResource SecondaryText}" />
-                    <Button x:Name="SortName" Grid.Column="1" Content="Server" Style="{StaticResource ColumnHeading}" Height="20" MinHeight="20" Tag="Name" Click="OnSort" HorizontalContentAlignment="Left" />
-                    <Button x:Name="SortPlayers" Grid.Column="2" Content="Players" Style="{StaticResource ColumnHeading}" Height="20" MinHeight="20" Tag="Players" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Padding="0" />
-                    <Button x:Name="SortPing" Grid.Column="3" Content="Ping" Style="{StaticResource ColumnHeading}" Height="20" MinHeight="20" Tag="Ping" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Padding="0" />
+                    <TextBlock Text="Map" VerticalAlignment="Center" Style="{StaticResource SecondaryCaption}" />
+                    <Button x:Name="SortName" Grid.Column="1" Content="Server" Style="{StaticResource ColumnHeading}" Tag="Name" Click="OnSort" HorizontalContentAlignment="Left" />
+                    <Button x:Name="SortPlayers" Grid.Column="2" Content="Players" Style="{StaticResource ColumnHeading}" Tag="Players" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Padding="0" />
+                    <Button x:Name="SortPing" Grid.Column="3" Content="Ping" Style="{StaticResource ColumnHeading}" Tag="Ping" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Padding="0" />
                 </Grid>
                 <ListView x:Name="ServerList" Grid.Row="3" SelectionChanged="OnSelectionChanged"
                           SizeChanged="OnServerListSizeChanged"
@@ -230,7 +230,7 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="RowName" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Name="RowName" TextTrimming="CharacterEllipsis" />
                                             <FontIcon Grid.Column="1" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="12"
                                                       Visibility="{Binding Lock}" AutomationProperties.Name="Password required" />
                                         </Grid>
@@ -239,15 +239,15 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock x:Name="RowMapMode" Text="{Binding MapMode}" FontSize="12"
+                                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowMapMode" Text="{Binding MapMode}"
                                                        MaxWidth="176" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" HorizontalAlignment="Left" Orientation="Horizontal" Spacing="4">
                                                 <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
-                                                    <TextBlock x:Name="RowEditionText" Text="{Binding Edition}" FontSize="12"
+                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowEditionText" Text="{Binding Edition}"
                                                                VerticalAlignment="Center" />
                                                 </Border>
                                                 <Border Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="80">
-                                                    <TextBlock Text="{Binding Mod}" FontSize="12" VerticalAlignment="Center"
+                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding Mod}" VerticalAlignment="Center"
                                                                TextTrimming="CharacterEllipsis" />
                                                 </Border>
                                             </StackPanel>
@@ -258,7 +258,7 @@
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <StackPanel x:Name="RowSignal" Orientation="Horizontal" Spacing="2" Height="12"
                                                 AutomationProperties.AccessibilityView="Raw" />
-                                    <TextBlock x:Name="RowPing" Text="{Binding Ping}" VerticalAlignment="Center" FontSize="12" />
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowPing" Text="{Binding Ping}" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <Button x:Name="RowFavorite" Grid.Column="3" Style="{StaticResource IconAction}" Width="22" Height="22" MinWidth="22" MinHeight="22"
                                         Click="OnRowFavorite" VerticalAlignment="Center" Tag="{Binding}" />
@@ -294,8 +294,8 @@
                                     <Image x:Name="DetailArt" Stretch="UniformToFill" />
                                 </Border>
                                 <StackPanel Spacing="6" Margin="6,0">
-                                    <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" FontSize="12" Foreground="{ThemeResource accent}" />
-                                    <TextBlock x:Name="DetailName" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="19" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" Foreground="{ThemeResource accent}" />
+                                    <TextBlock x:Name="DetailName" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" VerticalAlignment="Center"
                                                    MaxWidth="214" Style="{StaticResource AddressText}" />
@@ -309,18 +309,18 @@
                                       ColumnSpacing="8" RowSpacing="8">
                                     <StackPanel Spacing="3">
                                         <TextBlock Text="Version" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="DetailVersion" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Name="DetailVersion" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="3">
                                         <TextBlock Text="Mod" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="DetailMod" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Name="DetailMod" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <StackPanel Grid.Row="1" Spacing="3">
                                         <TextBlock Text="Access" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="DetailAccess" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Name="DetailAccess" />
                                     </StackPanel>
                                 </Grid>
-                                <TextBlock x:Name="DetailFull" Text="This server is full." TextWrapping="Wrap" FontSize="12"
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="DetailFull" Text="This server is full." TextWrapping="Wrap"
                                            Foreground="{ThemeResource AddressBrush}" Visibility="Collapsed" />
                                 <ContentControl x:Name="DetailReady" Margin="6,0" HorizontalContentAlignment="Stretch" IsTabStop="False" />
                                 <Border Height="1" Margin="6,0" Background="{ThemeResource SeparatorBrush}" />
@@ -330,9 +330,9 @@
                                         <ColumnDefinition Width="40" />
                                         <ColumnDefinition Width="40" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="DetailRoster" Style="{StaticResource Eyebrow}" FontSize="12" Foreground="{ThemeResource tertiary}" />
-                                    <TextBlock Grid.Column="1" Text="Score" Style="{StaticResource SecondaryText}" FontSize="12" TextAlignment="Right" />
-                                    <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource SecondaryText}" FontSize="12" TextAlignment="Right" />
+                                    <TextBlock x:Name="DetailRoster" Style="{StaticResource Eyebrow}" Foreground="{ThemeResource tertiary}" />
+                                    <TextBlock Grid.Column="1" Text="Score" Style="{StaticResource SecondaryCaption}" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="2" Text="Ping" Style="{StaticResource SecondaryCaption}" TextAlignment="Right" />
                                 </Grid>
                                 <StackPanel x:Name="Roster" Spacing="2" Margin="6,0" />
                             </StackPanel>

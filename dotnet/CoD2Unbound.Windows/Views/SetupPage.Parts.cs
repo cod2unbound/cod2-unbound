@@ -169,7 +169,7 @@ public sealed partial class SetupPage
             Children =
             {
                 icon,
-                new TextBlock { Text = text, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = brush }
+                new TextBlock { Text = text, Style = StyleFor("CaptionTextBlockStyle"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = brush }
             }
         };
         GlyphAlign.SetIsEnabled(label, true);
@@ -184,7 +184,7 @@ public sealed partial class SetupPage
         var icon = Symbol(symbol, 14);
         icon.Foreground = Token(tone == SetupBannerTone.Error ? "negative" : "secondary");
         icon.VerticalAlignment = VerticalAlignment.Top;
-        var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, LineHeight = 18.2, Foreground = Token("text") };
+        var words = new TextBlock { TextWrapping = TextWrapping.Wrap, Style = StyleFor("BodyTextBlockStyle"), Foreground = Token("text") };
         foreach (var part in Regex.Split(message, @"(\S+\.iwd)"))
         {
             if (part.Length == 0)

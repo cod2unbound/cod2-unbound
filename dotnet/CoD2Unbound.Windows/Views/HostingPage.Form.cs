@@ -372,7 +372,7 @@ public sealed partial class HostingPage
                 Content = new StackPanel { Spacing = 4, Children =
                 {
                     new Border { Style = StyleFor("MediaTile"), Height = 60, Child = art },
-                    new TextBlock { Text = title, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+                    new TextBlock { Text = title, Style = StyleFor("CaptionTextBlockStyle"), TextTrimming = TextTrimming.CharacterEllipsis,
                         Margin = new Thickness(6, 0, 6, 4) }
                 } } };
 

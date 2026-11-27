@@ -113,12 +113,12 @@ public sealed partial class SetupPage
         row.MinHeight = 44;
         var title = new TextBlock
         {
-            Text = label, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Token("text"),
+            Text = label, Style = StyleFor("BodyStrongTextBlockStyle"), Foreground = Token("text"),
             VerticalAlignment = VerticalAlignment.Center
         };
         var description = new TextBlock
         {
-            Text = detail, FontSize = 13, Foreground = Token("secondary"), TextWrapping = TextWrapping.Wrap,
+            Text = detail, Style = StyleFor("BodyTextBlockStyle"), Foreground = Token("secondary"), TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 6, 0, 6)
         };
         Put(row, 0, title);
@@ -207,7 +207,7 @@ public sealed partial class SetupPage
         icon.HorizontalAlignment = HorizontalAlignment.Center;
         var title = new TextBlock
         {
-            FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Token("text"),
+            Style = StyleFor("BodyStrongTextBlockStyle"), Foreground = Token("text"),
             TextAlignment = TextAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap
         };
         var hint = new TextBlock

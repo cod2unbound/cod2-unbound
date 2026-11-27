@@ -23,8 +23,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{x:Bind Shown}" Style="{StaticResource MonoCaption}" TextWrapping="Wrap"
                            LineHeight="18" LineStackingStrategy="BlockLineHeight" />
-                <TextBlock Grid.Column="1" Text="{x:Bind Because}" Style="{StaticResource SecondaryText}"
-                           FontSize="12" />
+                <TextBlock Grid.Column="1" Text="{x:Bind Because}" Style="{StaticResource SecondaryCaption}" />
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="AdvancedBindRow">
@@ -38,7 +37,7 @@
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Summary}" Style="{StaticResource SecondaryText}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Summary}" Style="{StaticResource SecondaryCaption}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </Grid>
         </DataTemplate>
@@ -72,7 +71,7 @@
                     <TextBlock x:Name="LineMark" Grid.Column="1" Text="{Binding Icon}" />
                     <TextBlock x:Name="LineCode" Grid.Column="2" Text="{Binding Text}" Style="{StaticResource MonoCaption}"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Text}" />
-                    <TextBlock x:Name="LineNote" Grid.Column="3" Text="{Binding Note}" Style="{StaticResource SecondaryText}" FontSize="12"
+                    <TextBlock x:Name="LineNote" Grid.Column="3" Text="{Binding Note}" Style="{StaticResource SecondaryCaption}"
                                TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Note}" />
                 </Grid>
             </Border>
@@ -106,7 +105,7 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Text="Configs" Style="{StaticResource PageTitle}" FontSize="22"
+                <TextBlock Text="Configs" Style="{StaticResource PageTitle}"
                            Margin="10,0,10,16" AutomationProperties.HeadingLevel="Level1" />
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="4">
@@ -180,8 +179,7 @@
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Status}" Style="{ThemeResource LoadoutStatusText}"
-                                                       FontSize="11" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Status}" Style="{ThemeResource LoadoutStatusText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <Border Grid.Column="2" Style="{StaticResource StatusGlyphTile}" Visibility="{Binding Checkmark}"
                                                 AutomationProperties.AccessibilityView="Raw">
@@ -214,7 +212,7 @@
                         </Button>
                     </StackPanel>
                 </ScrollViewer>
-                <TextBlock Grid.Row="2" Margin="10,8,10,0" FontSize="11" Style="{StaticResource SecondaryText}"
+                <TextBlock Grid.Row="2" Margin="10,8,10,0" Style="{StaticResource SecondaryCaption}"
                            Text="Each loadout is its own Call of Duty 2 player profile, so the game sees exactly what you set here." />
             </Grid>
         </Border>

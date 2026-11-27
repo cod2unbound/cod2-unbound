@@ -20,7 +20,7 @@ internal static class PagePresentation
         point.X >= 0 && point.X < element.ActualWidth && point.Y >= 0 && point.Y < element.ActualHeight;
 
     internal static TextBlock Caption(string text) =>
-        new() { Text = text, Style = StyleFor("SecondaryText"), FontSize = 12 };
+        new() { Text = text, Style = StyleFor("SecondaryCaption") };
 
     internal static TextBlock Body(string text) => new() { Text = text, Style = StyleFor("SecondaryText") };
 

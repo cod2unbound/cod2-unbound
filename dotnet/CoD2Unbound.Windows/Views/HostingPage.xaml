@@ -37,7 +37,7 @@
                     </ListView.ItemTemplate>
                 </ListView>
                 <TextBlock Grid.Row="2" Text="Closing CoD2 Unbound asks before stopping a running server."
-                           Style="{StaticResource SecondaryText}" FontSize="12" TextWrapping="Wrap" Margin="8,4" />
+                           Style="{StaticResource SecondaryCaption}" TextWrapping="Wrap" Margin="8,4" />
             </Grid>
         </Border>
         <ScrollViewer Grid.Column="1" x:Name="DetailScroll" VerticalScrollBarVisibility="Auto">

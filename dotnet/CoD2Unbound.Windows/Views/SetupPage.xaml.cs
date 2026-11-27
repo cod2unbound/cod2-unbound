@@ -324,8 +324,7 @@ public sealed partial class SetupPage : Page
         const string modeLabel = "How the game fills your screen";
         var heading = new TextBlock
         {
-            Text = modeLabel, FontSize = 13, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Style = StyleFor("SetupDetail"), Margin = new Thickness(6, 0, 0, 0)
+            Text = modeLabel, Style = StyleFor("BodyStrongTextBlockStyle"), Margin = new Thickness(6, 0, 0, 0)
         };
         AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level2);
         // RadioButtons handles arrow keys and selection. The content shares the available width.
