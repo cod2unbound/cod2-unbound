@@ -33,18 +33,12 @@ public sealed partial class LibraryPage : Page
         library = new(files);
         previews = new(map => Task.Run(() => session.ReadMapArtwork(map)));
         InitializeComponent();
-        LibraryLayout.Children.Remove(LibraryToolbar);
         foreach (var banner in new[] { SummariesOff, RecycleNotice, Notice })
         {
             banner.Visibility = Visibility.Collapsed;
             banner.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (_, _) =>
                 banner.Visibility = IsVisible(banner.IsOpen));
         }
-        Loaded += (_, _) =>
-        {
-            PositionToolbar();
-            shell.SetTitleBarContent(LibraryToolbar);
-        };
         Screenshots.ItemsSource = screenshots;
         Files.ItemsSource = filesInView;
         Matches.ItemsSource = matchesInView;
@@ -64,18 +58,6 @@ public sealed partial class LibraryPage : Page
         ? MediaKind.Demo : MediaKind.Screenshot;
 
     public void OpenMatches() => Sections.SelectedItem = MatchesSection;
-
-    private void OnLibrarySizeChanged(object sender, SizeChangedEventArgs args) => PositionToolbar();
-
-    private void PositionToolbar()
-    {
-        if (XamlRoot is null)
-            return;
-        var origin = TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point());
-        var margin = new Thickness(origin.X + 12, 15, 10, 0);
-        if (!LibraryToolbar.Margin.Equals(margin))
-            LibraryToolbar.Margin = margin;
-    }
 
     private void OnSectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
