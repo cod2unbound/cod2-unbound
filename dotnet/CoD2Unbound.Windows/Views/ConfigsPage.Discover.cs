@@ -468,7 +468,8 @@ public sealed partial class ConfigsPage
     {
         var picture = new ContentControl
         {
-            HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch,
+            IsTabStop = false
         };
         var featured = new Grid { Children = { picture } };
         featuredIndex = Math.Clamp(featuredIndex, 0, entries.Length - 1);
