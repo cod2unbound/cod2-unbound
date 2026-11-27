@@ -27,7 +27,6 @@ public sealed partial class ConfigsPage
     private void ShowConfigStudioToolbar(SelectorBar tabs, ConfigProfileRead profile)
     {
         AutomationProperties.SetName(tabs, "Loadout section");
-        tabs.Style = StyleFor("SegmentedLarge");
         tabs.VerticalAlignment = VerticalAlignment.Center;
         var actions = Buttons();
         actions.HorizontalAlignment = HorizontalAlignment.Right;
@@ -35,13 +34,13 @@ public sealed partial class ConfigsPage
 
         var jump = new Button
         {
-            Style = StyleFor("ToolbarPill"), Content = IconLabel("Search", "Jump to Any Setting  Ctrl+K", 18)
+            Content = IconLabel("Search", "Jump to Any Setting  Ctrl+K", 18)
         };
         jump.Click += (_, _) => shell.OpenJumpTo();
         AutomationProperties.SetName(jump, "Jump to Any Setting");
         ToolTipService.SetToolTip(jump, "Jump to any setting (Ctrl+K)");
         actions.Children.Add(jump);
-        var more = new Button { Style = StyleFor("ToolbarPill"), Width = 44, Padding = new Thickness(0), Content = Fluent("More", 20) };
+        var more = new Button { Content = Fluent("More", 20) };
         AutomationProperties.SetName(more, "More Actions for This Loadout");
         ToolTipService.SetToolTip(more, "More actions for this loadout");
         more.Flyout = LoadoutMenu(profile.Profile, includeNew: true);
@@ -49,9 +48,6 @@ public sealed partial class ConfigsPage
 
         var snapshot = historySnapshotButton!;
         var snapshotTarget = historySnapshotTarget!;
-        var compactSegment = StyleFor("CompactSegmentItem");
-        var standardSegment = StyleFor("SegmentItem");
-        var expandedSectionsWidth = (double)Application.Current.Resources["StudioToolbarExpandedSectionsWidth"];
         SizeChangedEventHandler fit = (_, _) => FitToolbar();
         configToolbar.SizeChanged += fit;
         var visibility = snapshotTarget.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => FitToolbar());
@@ -61,28 +57,17 @@ public sealed partial class ConfigsPage
             snapshotTarget.UnregisterPropertyChangedCallback(VisibilityProperty, visibility);
         };
         FitToolbar();
-        Put(configToolbar, 0, new Border { Style = StyleFor("ToolbarSurface"), Child = tabs,
-            HorizontalAlignment = HorizontalAlignment.Left });
+        Put(configToolbar, 0, tabs);
         Put(configToolbar, 1, actions);
 
         void FitToolbar()
         {
             bool compact = configToolbar.ActualWidth < 700;
-            bool compactSections = snapshotTarget.Visibility == Visibility.Visible &&
-                configToolbar.ActualWidth < expandedSectionsWidth;
-            var segmentStyle = compactSections ? compactSegment : standardSegment;
-            foreach (var item in tabs.Items)
-                if (item.Style != segmentStyle)
-                    item.Style = segmentStyle;
             if (jump.Content is StackPanel content)
                 ((TextBlock)content.Children[1]).Visibility = IsVisible(!compact);
-            jump.Width = compact ? 44 : double.NaN;
-            jump.Padding = compact ? new Thickness(0) : new Thickness(16, 0, 16, 0);
             if (snapshot.Content is StackPanel snapshotLabel)
             {
                 ((TextBlock)snapshotLabel.Children[1]).Visibility = IsVisible(!compact);
-                snapshot.Width = compact ? 44 : double.NaN;
-                snapshot.Padding = jump.Padding;
             }
         }
     }

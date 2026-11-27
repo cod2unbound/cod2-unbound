@@ -103,15 +103,13 @@ public sealed partial class ConfigsPage
             chooseCheckerFile?.Focus(FocusState.Programmatic);
             return Task.CompletedTask;
         });
-        another.Style = StyleFor("ToolbarPill");
         another.Content = IconLabel("ChevronLeft", "Check Another", 16);
         AutomationProperties.SetName(another, "Check another");
         another.HorizontalAlignment = HorizontalAlignment.Right;
         ToolTipService.SetToolTip(another, "Close this check.");
         checkerAnother = another;
         configToolbar.Children.Clear();
-        Put(configToolbar, 0, new Border { Style = StyleFor("ToolbarSurface"), Padding = new Thickness(12, 0, 8, 0),
-            HorizontalAlignment = HorizontalAlignment.Left, Child = pickers });
+        Put(configToolbar, 0, pickers);
         Put(configToolbar, 1, another);
         configToolbar.SizeChanged += FitToolbar;
         pickers.Unloaded += (_, _) => configToolbar.SizeChanged -= FitToolbar;
@@ -123,8 +121,6 @@ public sealed partial class ConfigsPage
             label.Visibility = IsVisible(!compact);
             rules.MaxWidth = compact ? 190 : 260;
             ((TextBlock)((StackPanel)another.Content).Children[1]).Visibility = IsVisible(!compact);
-            another.Width = compact ? 44 : double.NaN;
-            another.Padding = compact ? new Thickness(0) : new Thickness(16, 0, 16, 0);
         }
         var readOnly = Caption(ConfigProfileException.ReadOnlyWhilePlaying);
         checkerReadOnly = readOnly;
@@ -420,8 +416,7 @@ public sealed partial class ConfigsPage
             return Task.CompletedTask;
         });
         var count = CheckTone(remaining.ToString(), clean ? ConfigCheckupTone.Positive : ConfigCheckupTone.Information);
-        count.FontFamily = (FontFamily)Application.Current.Resources["StencilExtraBold"];
-        count.FontSize = 52;
+        count.Style = StyleFor("TitleTextBlockStyle");
         var words = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center,
             Children = { CheckStrong(title), Caption(detail) } };
         var result = Columns(14, GridLength.Auto, new GridLength(1, GridUnitType.Star));

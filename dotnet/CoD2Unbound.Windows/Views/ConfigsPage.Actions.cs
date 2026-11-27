@@ -26,8 +26,7 @@ public sealed partial class ConfigsPage
         if (!CanEdit)
             return;
         var source = model.State.Current;
-        var name = new TextBox { Header = "Loadout name", MaxLength = 80, PlaceholderText = "Name, for example Scrim",
-            Style = StyleFor("CapsuleTextBox") };
+        var name = new TextBox { Header = "Loadout name", MaxLength = 80, PlaceholderText = "Name, for example Scrim" };
         var start = new ComboBox { SelectedIndex = -1 };
         AutomationProperties.SetName(start, "Start from");
         start.Items.Add("The game’s defaults");

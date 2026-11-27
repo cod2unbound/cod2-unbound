@@ -35,7 +35,6 @@ public sealed partial class ConfigsPage
         Detail.Children.Clear();
         ResetDetailScroll();
         var title = Heading(saved ? "Saved" : "Player Setups");
-        title.FontSize = 30;
         var subtitle = Caption("");
         subtitle.Visibility = Visibility.Collapsed;
         var identity = new StackPanel { Spacing = 4, Children = { title, subtitle } };
@@ -986,7 +985,7 @@ public sealed partial class ConfigsPage
     {
         var avatar = new Border
         {
-            Width = diameter, Height = diameter, CornerRadius = new CornerRadius(diameter / 2),
+            Width = diameter, Height = diameter,
             Style = StyleFor("SetupAvatar"), VerticalAlignment = VerticalAlignment.Bottom,
             Child = new TextBlock
             {

@@ -100,7 +100,6 @@
     <Style x:Key="CapsuleNumberBox" TargetType="NumberBox" BasedOn="{StaticResource InlineNumberBox}" />
     <Style x:Key="SearchField" TargetType="TextBox" BasedOn="{StaticResource AutoSuggestBoxTextBoxStyle}" />
     <Style x:Key="SegmentItem" TargetType="SelectorBarItem" />
-    <x:Double x:Key="StudioToolbarExpandedSectionsWidth">780</x:Double>
     <Style x:Key="CompactSegmentItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
     <Style x:Key="SegmentLargeItem" TargetType="SelectorBarItem" BasedOn="{StaticResource SegmentItem}" />
     <Style x:Key="Segmented" TargetType="SelectorBar">
@@ -413,6 +412,7 @@
         <Setter Property="Background" Value="{ThemeResource HeroBackplateBrush}" />
     </Style>
     <Style x:Key="SetupAvatar" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
         <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource HeroAccentBrush}" />
         <Setter Property="BorderThickness" Value="1" />

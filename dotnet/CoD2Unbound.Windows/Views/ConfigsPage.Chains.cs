@@ -128,7 +128,6 @@ public sealed partial class ConfigsPage
         var status = Caption("Saved as you go");
         panel.Children.Add(heading);
         name.Header = null;
-        name.Style = StyleFor("CapsuleTextBox");
         name.Width = 190;
         kind.Header = null;
         kind.MaxWidth = 190;

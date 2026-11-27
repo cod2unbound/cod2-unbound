@@ -133,7 +133,7 @@ public sealed partial class ConfigsPage : Page
 
     private async Task<string?> AskNameAsync(string title, string action, string initial, string? except = null, string? message = null)
     {
-        var name = new TextBox { Header = except is null ? "Name" : "Loadout name", Text = initial, MaxLength = 80, Style = StyleFor("CapsuleTextBox") };
+        var name = new TextBox { Header = except is null ? "Name" : "Loadout name", Text = initial, MaxLength = 80 };
         var problem = Caption("");
         var content = new StackPanel { Spacing = 8 };
         content.Children.Add(name);
@@ -271,7 +271,6 @@ public sealed partial class ConfigsPage : Page
         AutomationProperties.SetAutomationId(tabs.Items[0], "StudioSettings");
         ShowConfigStudioToolbar(tabs, profile);
         var title = Heading(profile.Profile.DisplayName);
-        title.FontSize = 30;
         title.TextWrapping = TextWrapping.NoWrap;
         title.TextTrimming = TextTrimming.CharacterEllipsis;
         studioNext = null;
@@ -320,7 +319,6 @@ public sealed partial class ConfigsPage : Page
                 RenderStudioBody();
             });
         }
-        studioModes.Style = StyleFor("SegmentedLarge");
         AutomationProperties.SetName(studioModes, "Detail level");
         studioHeaderActions.Children.Add(studioModes);
         bindModes = Tabs(["List", "Visual"], bindView, index =>
@@ -331,7 +329,6 @@ public sealed partial class ConfigsPage : Page
             bindApproval = null;
             RenderStudioBody();
         });
-        bindModes.Style = StyleFor("SegmentedLarge");
         AutomationProperties.SetName(bindModes, "Show binds as");
         studioHeaderActions.Children.Add(bindModes);
         studioHeaderExtra = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center };
@@ -707,7 +704,7 @@ public sealed partial class ConfigsPage : Page
         else if (spec.Type is "int" or "float")
         {
             var number = new NumberBox { Value = ConfigValues.Number(item.Value ?? "", spec.Type) ?? double.NaN, Width = 86,
-                Style = StyleFor("CapsuleNumberBox"), SmallChange = spec.Step > 0 ? spec.Step : 0.1 };
+                SmallChange = spec.Step > 0 ? spec.Step : 0.1 };
             number.ValueChanged += async (_, args) =>
             {
                 if (!double.IsFinite(args.NewValue))
@@ -754,7 +751,7 @@ public sealed partial class ConfigsPage : Page
         }
         else
         {
-            var text = new TextBox { Text = item.Value ?? "", Width = 160, Style = StyleFor("CapsuleTextBox") };
+            var text = new TextBox { Text = item.Value ?? "", Width = 160 };
             text.LostFocus += async (_, _) => { if (text.Text != (item.Value ?? "")) await Apply(text.Text); };
             control = text;
         }

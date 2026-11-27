@@ -32,7 +32,6 @@ public sealed partial class ConfigsPage
             historySnapshotButton?.Focus(FocusState.Programmatic);
             Announce("Saved a snapshot.");
         });
-        snapshot.Style = StyleFor("ToolbarPill");
         snapshot.Content = IconLabel("History", "Save a Snapshot Now", 18);
         AutomationProperties.SetName(snapshot, "Save a snapshot now");
         AutomationProperties.SetAutomationId(snapshot, "ConfigsSaveSnapshot");
