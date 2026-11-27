@@ -10,33 +10,33 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <SelectorBar x:Name="Panes" Style="{StaticResource SettingsTabBar}" Margin="0,8" SelectionChanged="OnPaneChanged"
+        <SelectorBar x:Name="Panes" HorizontalAlignment="Center" Margin="12,8" SelectionChanged="OnPaneChanged"
                      AutomationProperties.Name="Settings sections">
-            <SelectorBarItem Text="General" AccessKey="G" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="General">
+            <SelectorBarItem Text="General" AccessKey="G" ToolTipService.ToolTip="General">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Display" AutomationProperties.AutomationId="SettingsDisplayPane" AccessKey="D" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Display">
+            <SelectorBarItem Text="Display" AutomationProperties.AutomationId="SettingsDisplayPane" AccessKey="D" ToolTipService.ToolTip="Display">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentDesktop}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Game Data" AutomationProperties.AutomationId="SettingsGameDataPane" AccessKey="F" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Game Data">
+            <SelectorBarItem Text="Game Data" AutomationProperties.AutomationId="SettingsGameDataPane" AccessKey="F" ToolTipService.ToolTip="Game Data">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFolder}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Privacy" AccessKey="I" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Privacy">
+            <SelectorBarItem Text="Privacy" AccessKey="I" ToolTipService.ToolTip="Privacy">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Updates" AutomationProperties.AutomationId="SettingsUpdatesPane" AccessKey="U" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Updates">
+            <SelectorBarItem Text="Updates" AutomationProperties.AutomationId="SettingsUpdatesPane" AccessKey="U" ToolTipService.ToolTip="Updates">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentArrowDownload}" FontSize="20" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="Advanced" AccessKey="A" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="Advanced">
+            <SelectorBarItem Text="Advanced" AccessKey="A" ToolTipService.ToolTip="Advanced">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource SystemIcons}" Glyph="{StaticResource SystemSliders}" FontSize="19" /></SelectorBarItem.Icon>
             </SelectorBarItem>
-            <SelectorBarItem Text="About" AutomationProperties.AutomationId="SettingsAboutPane" AccessKey="B" Style="{StaticResource SettingsTabItem}" ToolTipService.ToolTip="About">
+            <SelectorBarItem Text="About" AutomationProperties.AutomationId="SettingsAboutPane" AccessKey="B" ToolTipService.ToolTip="About">
                 <SelectorBarItem.Icon><FontIcon FontFamily="{StaticResource SystemIcons}" Glyph="{StaticResource SystemInfo}" FontSize="19" /></SelectorBarItem.Icon>
             </SelectorBarItem>
         </SelectorBar>
         <Border Grid.Row="1" Height="1" Background="{ThemeResource separator}" />
         <ScrollViewer x:Name="PaneScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,26" VerticalAlignment="Top">
+            <StackPanel x:Name="PaneBody" Spacing="12" Padding="28,20,28,24" VerticalAlignment="Top">
                 <InfoBar x:Name="Running" IsClosable="False" Severity="Informational"
                          Message="Call of Duty 2 is running. Changes you make here apply the next time it starts." />
                 <InfoBar x:Name="SaveFailure" IsClosable="False" Severity="Error"

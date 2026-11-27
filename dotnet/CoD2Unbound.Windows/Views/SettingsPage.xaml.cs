@@ -487,7 +487,7 @@ public sealed partial class SettingsPage : Page
             Width = 48, Height = 48, VerticalAlignment = VerticalAlignment.Center
         });
         var words = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-        words.Children.Add(new TextBlock { Text = title, Style = StyleFor("CardTitle"), FontSize = 16, TextWrapping = TextWrapping.Wrap });
+        words.Children.Add(new TextBlock { Text = title, Style = StyleFor("CardTitle"), TextWrapping = TextWrapping.Wrap });
         updateMessage = message is null ? null : Body(message);
         if (updateMessage is not null)
             words.Children.Add(updateMessage);

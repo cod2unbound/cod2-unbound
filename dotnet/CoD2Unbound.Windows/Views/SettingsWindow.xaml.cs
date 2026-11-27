@@ -28,7 +28,7 @@ public sealed partial class SettingsWindow : Window
             AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         }
         else
-            CaptionTitle.Visibility = Visibility.Collapsed;
+            SettingsCaption.Visibility = Visibility.Collapsed;
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsMaximizable = false;
