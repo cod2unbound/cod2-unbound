@@ -238,7 +238,7 @@ $Steps = @(
         } -Variant $surface
     }
     Add-KitStep 'launcher-jump-pointer' 'Click Jump to results in dark and light' { Invoke-KitJumpPointer }
-    Add-KitStep 'resolution-original' 'First Original launch at 1280 x 720 without a configuration question' {
+    Add-KitStep 'resolution-original' 'First Original launch at the chosen resolution without a configuration question' {
         Invoke-KitFirstResolution
     }
     Add-KitStep 'servers-refresh-navigation' 'Navigate away and preserve the selected server during a 252-address refresh' {

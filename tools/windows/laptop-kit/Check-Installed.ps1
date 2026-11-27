@@ -255,8 +255,8 @@ function Invoke-KitFirstResolution {
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
-    Set-KitLauncherProfile 'original' 'dx9' 'windowed' '800x600'
-    $chosen = '1280x720'
+    $initialResolution = '800x600'
+    Set-KitLauncherProfile 'original' 'dx9' 'windowed' $initialResolution
     $receipt = Join-Path $Results 'first-resolution.txt'
     $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
     $game = $null
@@ -285,12 +285,22 @@ function Invoke-KitFirstResolution {
                 [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)
             $resolutionItems = [Windows.Automation.AndCondition]::new($owner, $kind)
             $choice = Wait-KitCondition {
-                [Windows.Automation.AutomationElement]::RootElement.FindAll(
-                    [Windows.Automation.TreeScope]::Descendants, $resolutionItems) |
-                    Where-Object { $_.Current.IsEnabled -and
-                        $_.Current.Name -match '^1280\s*[x\u00d7]\s*720\b' } | Select-Object -First 1
-            } 12 '1280 x 720 in the resolution selector'
-            $choice.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+                $options = foreach ($item in [Windows.Automation.AutomationElement]::RootElement.FindAll(
+                        [Windows.Automation.TreeScope]::Descendants, $resolutionItems)) {
+                    $label = [regex]::Match($item.Current.Name, '^(\d+)\s*[x\u00d7]\s*(\d+)\b')
+                    if (-not $item.Current.IsEnabled -or -not $label.Success) { continue }
+                    $width = [int]$label.Groups[1].Value
+                    $height = [int]$label.Groups[2].Value
+                    $mode = "${width}x${height}"
+                    if ($mode -eq $initialResolution) { continue }
+                    [pscustomobject]@{ Element=$item; Mode=$mode; Width=$width; Height=$height
+                        Distance=[Math]::Abs($width - 1280) + [Math]::Abs($height - 720) }
+                }
+                # Prefer 1280 x 720 when present, otherwise use the closest different mode the launcher offers.
+                $options | Sort-Object Distance, Mode | Select-Object -First 1
+            } 12 'an available resolution different from the starting mode'
+            $chosen = $choice.Mode
+            $choice.Element.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
             $settingsPath = Join-Path $LauncherHome 'launcher\launcher-settings.json'
             Wait-KitCondition {
                 (Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json).resolution -eq $chosen
@@ -319,7 +329,7 @@ function Invoke-KitFirstResolution {
         $picture = [Drawing.Image]::FromFile((Join-Path $Results 'kit-first-resolution.jpg'))
         try {
             "First engine picture: $($picture.Width)x$($picture.Height)." | Add-Content -LiteralPath $receipt
-            if ($picture.Width -ne 1280 -or $picture.Height -ne 720) {
+            if ($picture.Width -ne $choice.Width -or $picture.Height -ne $choice.Height) {
                 throw "Original rendered at $($picture.Width)x$($picture.Height) with $chosen requested."
             }
         } finally { $picture.Dispose() }
