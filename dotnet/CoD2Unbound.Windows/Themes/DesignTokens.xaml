@@ -90,7 +90,7 @@
             <Color x:Key="SystemAccentColorDark1">#FFD7B46C</Color>
             <Color x:Key="SystemAccentColorDark2">#FFCBAA67</Color>
             <Color x:Key="SystemAccentColorDark3">#FFC0A161</Color>
-            <SolidColorBrush x:Key="TextOnAccentFillColorSelectedTextBrush" Color="#FF1C170C" />
+            <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#FF8A5A12" />
             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF1C170C" />
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FFECE6D6" />
             <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#FFA9A28F" />

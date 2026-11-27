@@ -135,10 +135,10 @@ def generate(source):
         if palette:
             for key, color in accent_steps(palette["accent"]):
                 resource(dictionary, "Color", key).text = color
-            # Selected text uses the base accent with white ink in both WinUI themes.
-            # The gold on the dark theme needs dark ink.
+            # The native edit renders its selected text in white and takes the
+            # selection fill from this resource. Use a darker gold behind it.
             if name == "Dark":
-                token("TextOnAccentFillColorSelectedTextBrush", "prominentText")
+                brush("TextControlSelectionHighlightColor", light["link"])
             # The stock button's static alias keeps its translucent ink even
             # when the shared brush is overridden. That ink falls below 4.5:1.
             token("AccentButtonForegroundPressed", "prominentText")
