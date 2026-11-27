@@ -8,21 +8,10 @@ namespace CoD2Unbound.Windows.Views;
 
 public sealed partial class ConfigsPage
 {
-    private readonly Grid configToolbar = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
     private TextBlock? studioChangedCount;
     private Button? studioNext;
     private SelectorBar? bindModes;
     private ContentPresenter? studioHeaderExtra;
-
-    private void PositionConfigToolbar()
-    {
-        if (XamlRoot is null)
-            return;
-        double leading = ConfigSurface.TransformToVisual(null).TransformPoint(new global::Windows.Foundation.Point()).X;
-        var margin = new Thickness(leading + ConfigSurface.ColumnDefinitions[0].Width.Value + 24, 16, 18, 0);
-        if (!configToolbar.Margin.Equals(margin))
-            configToolbar.Margin = margin;
-    }
 
     private void ShowConfigStudioToolbar(SelectorBar tabs, ConfigProfileRead profile)
     {
@@ -49,20 +38,20 @@ public sealed partial class ConfigsPage
         var snapshot = historySnapshotButton!;
         var snapshotTarget = historySnapshotTarget!;
         SizeChangedEventHandler fit = (_, _) => FitToolbar();
-        configToolbar.SizeChanged += fit;
+        ConfigToolbar.SizeChanged += fit;
         var visibility = snapshotTarget.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => FitToolbar());
         actions.Unloaded += (_, _) =>
         {
-            configToolbar.SizeChanged -= fit;
+            ConfigToolbar.SizeChanged -= fit;
             snapshotTarget.UnregisterPropertyChangedCallback(VisibilityProperty, visibility);
         };
         FitToolbar();
-        Put(configToolbar, 0, tabs);
-        Put(configToolbar, 1, actions);
+        Put(ConfigToolbar, 0, tabs);
+        Put(ConfigToolbar, 1, actions);
 
         void FitToolbar()
         {
-            bool compact = configToolbar.ActualWidth < 700;
+            bool compact = ConfigToolbar.ActualWidth < 700;
             if (jump.Content is StackPanel content)
                 ((TextBlock)content.Children[1]).Visibility = IsVisible(!compact);
             if (snapshot.Content is StackPanel snapshotLabel)

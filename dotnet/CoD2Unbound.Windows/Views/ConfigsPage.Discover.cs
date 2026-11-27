@@ -415,20 +415,20 @@ public sealed partial class ConfigsPage
 
     private void ShowCatalogueToolbar(AutoSuggestBox search, FrameworkElement? status)
     {
-        configToolbar.Children.Clear();
+        ConfigToolbar.Children.Clear();
         var tools = Buttons(search);
         tools.HorizontalAlignment = HorizontalAlignment.Right;
         if (status is not null)
             tools.Children.Add(status);
         SizeChangedEventHandler resize = (_, _) => Fit();
-        configToolbar.SizeChanged += resize;
-        tools.Unloaded += (_, _) => configToolbar.SizeChanged -= resize;
+        ConfigToolbar.SizeChanged += resize;
+        tools.Unloaded += (_, _) => ConfigToolbar.SizeChanged -= resize;
         Fit();
-        Put(configToolbar, 1, tools);
+        Put(ConfigToolbar, 1, tools);
 
         void Fit()
         {
-            double available = configToolbar.ActualWidth;
+            double available = ConfigToolbar.ActualWidth;
             search.Width = Math.Clamp(available - (status is null ? 0 : 228), 160, 280);
             if (status is Border { Child: StackPanel row } && row.Children[0] is TextBlock count)
                 count.MaxWidth = available < 540 ? 106 : 168;

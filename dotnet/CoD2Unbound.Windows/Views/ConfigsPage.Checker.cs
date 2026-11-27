@@ -108,16 +108,16 @@ public sealed partial class ConfigsPage
         another.HorizontalAlignment = HorizontalAlignment.Right;
         ToolTipService.SetToolTip(another, "Close this check.");
         checkerAnother = another;
-        configToolbar.Children.Clear();
-        Put(configToolbar, 0, pickers);
-        Put(configToolbar, 1, another);
-        configToolbar.SizeChanged += FitToolbar;
-        pickers.Unloaded += (_, _) => configToolbar.SizeChanged -= FitToolbar;
-        FitToolbar(configToolbar, null!);
+        ConfigToolbar.Children.Clear();
+        Put(ConfigToolbar, 0, pickers);
+        Put(ConfigToolbar, 1, another);
+        ConfigToolbar.SizeChanged += FitToolbar;
+        pickers.Unloaded += (_, _) => ConfigToolbar.SizeChanged -= FitToolbar;
+        FitToolbar(ConfigToolbar, null!);
 
         void FitToolbar(object sender, SizeChangedEventArgs args)
         {
-            bool compact = configToolbar.ActualWidth < 665;
+            bool compact = ConfigToolbar.ActualWidth < 665;
             label.Visibility = IsVisible(!compact);
             rules.MaxWidth = compact ? 190 : 260;
             ((TextBlock)((StackPanel)another.Content).Children[1]).Visibility = IsVisible(!compact);

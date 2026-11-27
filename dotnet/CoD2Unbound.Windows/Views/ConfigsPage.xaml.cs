@@ -45,7 +45,6 @@ public sealed partial class ConfigsPage : Page
         model.SettingSaveChanged += OnSettingSaveChanged;
         SizeChanged += (_, args) =>
         {
-            PositionConfigToolbar();
             bool wide = args.NewSize.Width >= 1022; // 20 + 252 + 48 + 200 + 22 + 480
             if (wideGroupRail == wide)
                 return;
@@ -55,8 +54,6 @@ public sealed partial class ConfigsPage : Page
         };
         Loaded += (_, _) =>
         {
-            PositionConfigToolbar();
-            shell.SetTitleBarContent(configToolbar);
             if (Detail.Children.Count == 0 && DiscoverPlaces.SelectedItem is null)
                 DiscoverPlaces.SelectedIndex = 0;
         };
@@ -210,7 +207,7 @@ public sealed partial class ConfigsPage : Page
 
         ExportStatus.Visibility = Visibility.Visible;
         Detail.Children.Clear();
-        configToolbar.Children.Clear();
+        ConfigToolbar.Children.Clear();
         studioBody.Children.Clear();
         studioBody.Visibility = Visibility.Visible;
         refreshSharing = null;
@@ -782,7 +779,7 @@ public sealed partial class ConfigsPage : Page
                 DiscoverPlaces.SelectedItem = null;
                 return;
             }
-            configToolbar.Children.Clear();
+            ConfigToolbar.Children.Clear();
             RecoveryStatus.IsOpen = false;
             ExportStatus.Visibility = Visibility.Collapsed;
             if (place == 2)
