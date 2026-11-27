@@ -251,9 +251,9 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 }
             }
             'jump' {
-                $action = Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts'
+                Open-KitJump $app 'keyboard shortcuts' 'Keyboard Shortcuts' | Out-Null
                 Save-KitSurface $app 'jump-search' @('JumpBox', 'JumpList')
-                $action.Invoke()
+                (Get-KitJumpAction $app 'Keyboard Shortcuts').Invoke()
                 $sheet = Wait-KitCondition { Find-KitControl $app 'KeyboardShortcutsDialog' } 12 'the shortcuts sheet'
                 Save-KitSurface $app 'shortcuts' @('PrimaryButton')
                 Invoke-KitControl $sheet 'PrimaryButton'
@@ -261,7 +261,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             'hosting' {
                 Invoke-KitControl $app 'ServersItem'
                 Invoke-KitControl $app 'HostingTab'
-                Invoke-KitControl $app 'New server' -Name
+                Invoke-KitControl $app 'HostingEmptyNewServer'
                 Set-KitEdit $app 'Server name' 'Kit Export' -Name
                 Invoke-KitControl $app 'Start server' -Name
                 $room = Wait-KitCondition { Find-KitHostedServer 'Kit Export' } 20 'the disposable Hosting room'
@@ -282,7 +282,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 Invoke-KitHostingExport $app (New-Folder (Join-Path $Private 'export'))
             }
             'configs' {
-                Invoke-KitControl $app 'ConfigsItem'
+                [KitDesktop]::Chord(17, 52)
                 Save-KitSurface $app 'config-landing' @('Loadouts', 'AddConfig')
                 $loadout = Wait-KitCondition {
                     Find-KitControl $app 'ConfigsLoadout-Main'

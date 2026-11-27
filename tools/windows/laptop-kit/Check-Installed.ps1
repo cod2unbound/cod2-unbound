@@ -70,6 +70,10 @@ function Open-KitJump([IntPtr]$Window, [string]$Query, [string]$Result) {
     Focus-KitWindow $Window
     [KitDesktop]::Chord(17, 75)
     Set-KitEdit $Window 'JumpBox' $Query
+    Get-KitJumpAction $Window $Result
+}
+
+function Get-KitJumpAction([IntPtr]$Window, [string]$Result) {
     Wait-KitCondition {
         $list = Find-KitControl $Window 'JumpList'
         if ($list) {
