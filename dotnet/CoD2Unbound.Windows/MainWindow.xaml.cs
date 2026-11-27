@@ -388,11 +388,20 @@ public sealed partial class MainWindow : Window
             var content = Columns(8, new GridLength(1, GridUnitType.Star), GridLength.Auto);
             content.Children.Add(title);
             if (favorite.MaxPlayers > 0)
-                Put(content, 1, new TextBlock
+            {
+                var count = new TextBlock
                 {
                     Text = $"{favorite.PlayerCount}/{favorite.MaxPlayers}", Style = StyleFor("CaptionTextBlockStyle"),
                     VerticalAlignment = VerticalAlignment.Center
-                });
+                };
+                if (largeText)
+                {
+                    content.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                    content.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                    Grid.SetRow(count, 1);
+                }
+                Put(content, largeText ? 0 : 1, count);
+            }
             var item = new NavigationViewItem
             {
                 Content = content, Tag = favorite.Address, Icon = icon,

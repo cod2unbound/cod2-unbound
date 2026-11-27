@@ -71,7 +71,7 @@ public sealed partial class MainWindow
         JumpPanel.Width = Math.Min(largeText ? 780 : 640, Math.Max(0, Root.ActualWidth - 32));
         JumpFooter.Orientation = largeText ? Orientation.Vertical : Orientation.Horizontal;
         JumpFooter.Spacing = largeText ? 4 : 12;
-        JumpList.MaxHeight = largeText ? Math.Clamp(Root.ActualHeight - 320, 130, 380) : 380;
+        JumpList.MaxHeight = largeText ? Math.Clamp(Root.ActualHeight - 360, 130, 380) : 380;
         JumpPopup.HorizontalOffset = Math.Max(16, (Root.ActualWidth - JumpPanel.Width) / 2);
         JumpPopup.VerticalOffset = 122;
         JumpPanel.MaxHeight = Math.Max(200, Root.ActualHeight - 138);
