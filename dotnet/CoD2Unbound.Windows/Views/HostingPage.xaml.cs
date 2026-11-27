@@ -228,12 +228,17 @@ public sealed partial class HostingPage : Page
     private static Grid RunningHeader(string name, TextBlock phase, StackPanel actions)
     {
         var title = Heading(name);
+        bool largeText = new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
         title.MaxWidth = 260;
-        title.TextWrapping = TextWrapping.NoWrap;
-        title.TextTrimming = TextTrimming.CharacterEllipsis;
+        title.TextWrapping = largeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        title.TextTrimming = largeText ? TextTrimming.None : TextTrimming.CharacterEllipsis;
         ToolTipService.SetToolTip(title, name);
         phase.VerticalAlignment = VerticalAlignment.Center;
-        var label = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { title, phase } };
+        var label = new StackPanel
+        {
+            Orientation = largeText ? Orientation.Vertical : Orientation.Horizontal,
+            Spacing = 8, Children = { title, phase }
+        };
         label.VerticalAlignment = VerticalAlignment.Center;
 
         var header = Columns(12, new GridLength(1, GridUnitType.Star), GridLength.Auto);
