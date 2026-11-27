@@ -144,7 +144,7 @@ internal sealed class ShareSetupDialog : ContentDialog
     {
         preview = false;
         SheetPresentation.SetSheetTitle(this, "FluentShare", shareTitle, PrivacyPresentation.ShareIntro);
-        Content = main;
+        this.FitSheetBody(main);
         SecondaryButtonStyle = StyleFor("SharePreviewAction");
         CloseButtonText = "Cancel";
         RefreshForm();
@@ -237,7 +237,7 @@ internal sealed class ShareSetupDialog : ContentDialog
         };
         var tabs = Tabs([$"Sent · {prepared.Lines}", $"Left Out · {prepared.LeftOut.Length}"], 0, Fill);
         AutomationProperties.SetName(tabs, "Lines to show");
-        Content = new StackPanel { Spacing = 10, Children = { tabs, sentLines, omitted } };
+        this.FitSheetBody(new StackPanel { Spacing = 10, Children = { tabs, sentLines, omitted } });
         Fill(0);
         tabs.Focus(FocusState.Programmatic);
 
@@ -287,7 +287,7 @@ internal sealed class ShareSetupDialog : ContentDialog
                 "CoD2 Unbound couldn’t save its record. To take this setup back, choose Stop sharing before closing CoD2 Unbound."));
             body.Children.Add(warning);
         }
-        Content = body;
+        this.FitSheetBody(body);
         requestLink.Focus(FocusState.Programmatic);
         Announce("Your setup was sent");
     }

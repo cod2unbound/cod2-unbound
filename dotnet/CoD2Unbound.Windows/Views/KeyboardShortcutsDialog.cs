@@ -26,13 +26,9 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
         var columns = Columns(20, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
         Put(columns, 0, ShortcutColumn(entries.Take(firstColumn)));
         Put(columns, 1, ShortcutColumn(entries.Skip(firstColumn)));
-        Content = new StackPanel
+        Content = new ScrollViewer
         {
-            Spacing = 12,
-            Children =
-            {
-                new ScrollViewer { MaxHeight = 460, Content = columns, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
-            }
+            MaxHeight = 460, Content = columns, VerticalScrollBarVisibility = ScrollBarVisibility.Auto
         };
     }
 

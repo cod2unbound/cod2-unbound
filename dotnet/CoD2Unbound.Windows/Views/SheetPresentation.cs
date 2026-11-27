@@ -14,6 +14,10 @@ internal static class SheetPresentation
 
     internal static global::Windows.Foundation.IAsyncOperation<ContentDialogResult> ShowSheetAsync(this ContentDialog dialog)
     {
+        if (dialog.Content is FrameworkElement body &&
+            dialog is ConnectDialog or KeyboardShortcutsDialog or ProblemReportDialog or ShareSetupDialog)
+            dialog.FitSheetBody(body);
+
         if (!new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast)
         {
             var theme = dialog.RequestedTheme;
@@ -31,6 +35,39 @@ internal static class SheetPresentation
             dialog.Resources.Remove("SystemControlPageBackgroundMediumAltMediumBrush");
         }
         return dialog.ShowAsync();
+    }
+
+    internal static void FitSheetBody(this ContentDialog dialog, FrameworkElement body)
+    {
+        if (body is not ScrollViewer && body.Parent is ScrollViewer previous && ReferenceEquals(previous.Content, body))
+            previous.Content = null;
+
+        if (dialog.XamlRoot is not { } root ||
+            new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor <= 1.2)
+        {
+            dialog.Content = body;
+            return;
+        }
+
+        if (dialog is not KeyboardShortcutsDialog)
+        {
+            double width = Math.Min(720, root.Size.Width - 32);
+            dialog.Resources["ContentDialogMinWidth"] = width;
+            dialog.Resources["ContentDialogMaxWidth"] = width;
+        }
+
+        var scroll = body as ScrollViewer ?? new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+        if (body != scroll)
+        {
+            dialog.Content = null;
+            scroll.Content = body;
+        }
+        scroll.MaxHeight = Math.Clamp(root.Size.Height - 270, 160, 460);
+        dialog.Content = scroll;
     }
 
     internal static T WithWidth<T>(this T dialog, string widthKey) where T : ContentDialog
