@@ -69,6 +69,7 @@ public sealed partial class ServersPage
 
     private void OnFiltersOpening(object sender, object args)
     {
+        FiltersScroll.MaxHeight = Math.Max(220, (XamlRoot?.Size.Height ?? 700) - 190);
         loadingFilters = true;
         try
         {

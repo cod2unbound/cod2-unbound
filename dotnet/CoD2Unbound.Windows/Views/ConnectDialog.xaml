@@ -16,14 +16,13 @@
                 <FontIcon x:Name="Answered" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentCheck}"
                           Style="{StaticResource PositiveIcon}" FontSize="15" Visibility="Collapsed" />
                 <ProgressRing x:Name="Asking" Width="16" Height="16" Visibility="Collapsed" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Name="Answer" Grid.Column="1" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
-                           AutomationProperties.LiveSetting="Polite" />
+                <TextBlock x:Name="Answer" Grid.Column="1" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
             </Grid>
             <PasswordBox x:Name="PasswordInput"
                          PlaceholderText="Password, only if the server needs one" PasswordRevealMode="Hidden" MaxLength="127"
                          AutomationProperties.Name="Server password" PasswordChanged="OnPasswordChanged" />
             <TextBlock x:Name="Validation" TextWrapping="Wrap" Foreground="{ThemeResource NegativeBrush}"
-                       AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
+                       Visibility="Collapsed" />
             <Border Style="{StaticResource GroupCard}">
                 <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
                     <TextBlock Text="Add to Favorites" VerticalAlignment="Center" FontWeight="SemiBold" />

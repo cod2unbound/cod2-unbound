@@ -105,8 +105,11 @@ public sealed partial class ConnectDialog : ContentDialog
         var entry = ServerConnectEntry.Parse(AddressBox.Text, PasswordInput.Password);
         Target = entry.Target;
         RequestedEdition = openedLink?.Edition ?? entry.Edition;
+        string previousProblem = Validation.Text;
         Validation.Text = entry.PasswordProblem ?? "";
         Validation.Visibility = IsVisible(entry.PasswordProblem is not null);
+        if (entry.PasswordProblem is { } problem && problem != previousProblem)
+            Announce(PasswordInput, problem, "ConnectPassword", AutomationNotificationKind.ActionAborted);
         IsPrimaryButtonEnabled = Target is not null;
         return entry;
     }
@@ -180,11 +183,14 @@ public sealed partial class ConnectDialog : ContentDialog
 
     private void ShowAnswer(string text, string color, bool asking = false)
     {
+        bool changed = Answer.Text != text;
         LookupLine.Visibility = IsVisible(text.Length != 0);
         Asking.Visibility = IsVisible(asking);
         Asking.IsActive = asking;
         Answered.Visibility = IsVisible(color == "PositiveBrush" && text.Length > 0);
         Answer.Foreground = ThemeBrush(color, ActualTheme, highContrast);
         Answer.Text = text;
+        if (changed && !asking && text.Length != 0)
+            Announce(AddressBox, text, "ConnectAddress");
     }
 }

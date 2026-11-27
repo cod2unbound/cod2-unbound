@@ -35,6 +35,7 @@ public sealed partial class ServersPage : Page
     private bool ready;
     private bool renderingRows;
     private bool compactRows;
+    private readonly global::Windows.UI.ViewManagement.UISettings textSettings = new();
 
     internal ServersPage(MainWindow shell, WindowsLauncherSession session)
     {
@@ -53,8 +54,15 @@ public sealed partial class ServersPage : Page
         {
             UpdateContrast();
             UpdateRefreshDisplay();
+            textSettings.TextScaleFactorChanged += OnTextScaleChanged;
+            UpdateToolbarOverflow(ServerToolbar.ActualWidth);
+            UpdateServerColumns();
         };
-        Unloaded += (_, _) => CompositionTarget.Rendering -= OnRefreshRendering;
+        Unloaded += (_, _) =>
+        {
+            textSettings.TextScaleFactorChanged -= OnTextScaleChanged;
+            CompositionTarget.Rendering -= OnRefreshRendering;
+        };
         Scopes.SelectedItem = Scopes.Items[(int)ServerScope.All];
         ready = true;
         RenderSort();
@@ -199,18 +207,36 @@ public sealed partial class ServersPage : Page
     private void OnBrowserSizeChanged(object sender, SizeChangedEventArgs args)
     {
         DetailArtwork.Height = args.NewSize.Height < 830 ? 106 : 150;
+        Details.Width = LargeText && args.NewSize.Width < 1020 ? 295 : 352;
     }
 
     private void OnToolbarSizeChanged(object sender, SizeChangedEventArgs args) => UpdateToolbarOverflow(args.NewSize.Width);
+
+    private void OnTextScaleChanged(global::Windows.UI.ViewManagement.UISettings sender, object args) =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            UpdateToolbarOverflow(ServerToolbar.ActualWidth);
+            UpdateServerColumns();
+        });
+
+    private bool LargeText => textSettings.TextScaleFactor > 1.2;
 
     private void UpdateToolbarOverflow(double width)
     {
         // Budgets are in the page toolbar space. Shrink search before either trailing group leaves.
         const double minimumSearch = 160;
-        const double allCommands = 822;
-        const double statusAndOverflow = 686;
-        const double overflowOnly = 522;
-        double badge = FilterBadge.Visibility == Visibility.Visible ? 22 : 0;
+        bool twoRows = LargeText;
+        Grid.SetRow(BrowserTools, twoRows ? 1 : 0);
+        Grid.SetColumn(BrowserTools, twoRows ? 0 : 1);
+        Grid.SetColumnSpan(BrowserTools, twoRows ? 2 : 1);
+        Grid.SetRow(BrowserActions, twoRows ? 1 : 0);
+        Grid.SetRow(HostingActions, twoRows ? 1 : 0);
+        Grid.SetColumnSpan(Scopes, twoRows ? 3 : 1);
+        ServerToolbar.RowSpacing = twoRows ? 8 : 0;
+        double allCommands = twoRows ? 715 : 822;
+        double statusAndOverflow = twoRows ? 465 : 686;
+        double overflowOnly = twoRows ? 205 : 522;
+        double badge = FilterBadge.Visibility == Visibility.Visible ? (twoRows ? 40 : 22) : 0;
         bool hideStatus = width < statusAndOverflow + minimumSearch + badge;
         bool hideConnect = width < allCommands + minimumSearch + badge;
         double otherControls = !hideConnect ? allCommands : !hideStatus ? statusAndOverflow : overflowOnly;
@@ -226,8 +252,8 @@ public sealed partial class ServersPage : Page
 
     private int RowColumnSpacing => compactRows ? 8 : 16;
     private GridLength RowMapWidth => new(compactRows ? 64 : 80);
-    private GridLength RowPlayersWidth => new(compactRows ? 48 : 80);
-    private GridLength RowPingWidth => new(compactRows ? 72 : 84);
+    private GridLength RowPlayersWidth => new(LargeText ? 104 : compactRows ? 48 : 80);
+    private GridLength RowPingWidth => new(LargeText ? 104 : compactRows ? 72 : 84);
 
     private void OnServerListSizeChanged(object sender, SizeChangedEventArgs args)
     {
@@ -236,6 +262,11 @@ public sealed partial class ServersPage : Page
         if (compact == compactRows)
             return;
         compactRows = compact;
+        UpdateServerColumns();
+    }
+
+    private void UpdateServerColumns()
+    {
         ColumnHeaders.ColumnSpacing = RowColumnSpacing;
         ColumnHeaders.ColumnDefinitions[0].Width = RowMapWidth;
         ColumnHeaders.ColumnDefinitions[2].Width = RowPlayersWidth;
@@ -253,8 +284,27 @@ public sealed partial class ServersPage : Page
         identity.ColumnDefinitions[0].Width = RowMapWidth;
         row.ColumnDefinitions[1].Width = RowPlayersWidth;
         row.ColumnDefinitions[2].Width = RowPingWidth;
-        if (row.FindName("RowMod") is Border mod)
+        if (row.FindName("RowMapMode") is TextBlock map && map.Parent is Grid tags &&
+            row.FindName("RowEdition") is Border { Child: TextBlock editionText } edition &&
+            row.FindName("RowMod") is Border mod)
+        {
+            map.TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            map.TextTrimming = LargeText ? TextTrimming.None : TextTrimming.CharacterEllipsis;
+            editionText.TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            Grid.SetColumnSpan(map, LargeText ? 3 : 1);
+            Grid.SetRow(edition, LargeText ? 1 : 0);
+            Grid.SetColumn(edition, LargeText ? 0 : 1);
+            Grid.SetColumnSpan(edition, LargeText ? 2 : 1);
+            Grid.SetRow(mod, LargeText ? 1 : 0);
+            if (LargeText && tags.RowDefinitions.Count == 0)
+            {
+                tags.RowDefinitions.Add(new() { Height = GridLength.Auto });
+                tags.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            }
+            else if (!LargeText)
+                tags.RowDefinitions.Clear();
             mod.MaxWidth = compactRows ? 48 : 80;
+        }
     }
 
     private void ApplyServerRow(Grid row, bool assignMenu = true)
@@ -263,9 +313,12 @@ public sealed partial class ServersPage : Page
             return;
         ApplyServerRowLayout(row);
         var server = entry.Server;
+        name.TextWrapping = LargeText ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        name.TextTrimming = LargeText ? TextTrimming.None : TextTrimming.CharacterEllipsis;
         if (ServerList.ContainerFromItem(entry) is ListViewItem item)
         {
             AutomationProperties.SetName(item, entry.Label);
+            AutomationProperties.SetItemStatus(item, entry.Favorite ? "Favorite" : "");
             if (assignMenu)
                 item.ContextFlyout = BuildRowMenu(entry);
         }
@@ -343,6 +396,7 @@ public sealed partial class ServersPage : Page
             button.Foreground = ThemeBrush(favorite ? "FavoriteBrush" : "CaptionBrush", ActualTheme, false);
         string action = favorite ? "Remove from favorites" : "Add to favorites";
         AutomationProperties.SetName(button, ReferenceEquals(button, FavoriteButton) ? action : $"{action}: {QuakeColors.Plain(server.Name)}");
+        AutomationProperties.SetItemStatus(button, favorite ? "Favorite" : "Not a favorite");
         ToolTipService.SetToolTip(button, action);
     }
 
@@ -372,6 +426,7 @@ public sealed partial class ServersPage : Page
                 Children = { new TextBlock { Text = label }, Fluent(model.Ascending ? "ChevronUp" : "ChevronDown", 12) }
             };
             AutomationProperties.SetName(button, active ? $"{label}, sorted {(model.Ascending ? "ascending" : "descending")}" : $"Sort by {label}");
+            AutomationProperties.SetItemStatus(button, active ? model.Ascending ? "Ascending" : "Descending" : "");
         }
     }
 
@@ -495,6 +550,13 @@ public sealed partial class ServersPage : Page
             refreshing = null;
             shownRefresh = null;
             UpdateRefreshDisplay();
+            if (IsLoaded && ShowsServerBrowser && (cancellation.IsCancellationRequested || completed is { Refreshing: false }))
+            {
+                string result = cancellation.IsCancellationRequested ? "Server refresh stopped"
+                    : mastersDidNotAnswer ? OfflineBanner.Message : "Server refresh complete";
+                Announce(ServerList, $"{result.TrimEnd('.')}. {OverflowCount.Text}.", "ServerRefresh",
+                    AutomationNotificationKind.ActionCompleted);
+            }
         }
     }
 

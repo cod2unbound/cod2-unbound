@@ -13,7 +13,7 @@
             </Canvas>
         </Viewbox>
         <Grid x:Name="ServerToolbar" Margin="20,12,20,16" VerticalAlignment="Top"
-              ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" SizeChanged="OnToolbarSizeChanged">
+              RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" SizeChanged="OnToolbarSizeChanged">
             <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists" VerticalAlignment="Center"
                          SelectionChanged="OnScopeChanged">
                 <SelectorBarItem Text="All" AccessKey="A" />
@@ -46,6 +46,7 @@
                     </StackPanel>
                     <Button.Flyout>
                         <Flyout Opening="OnFiltersOpening" Placement="Bottom" FlyoutPresenterStyle="{StaticResource InsetFormPopover}">
+                            <ScrollViewer x:Name="FiltersScroll" VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="10">
                                 <Border Style="{StaticResource SheetFormGroup}">
                                     <StackPanel>
@@ -60,7 +61,7 @@
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="Game mode" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <TextBlock Text="Game mode" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
                                             <ComboBox x:Name="FilterMode" Grid.Column="1" SelectionChanged="OnFilterSelection"
                                                       AutomationProperties.Name="Game type" />
                                         </Grid>
@@ -72,13 +73,13 @@
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="Hide empty servers" VerticalAlignment="Center" />
+                                        <TextBlock Text="Hide empty servers" VerticalAlignment="Center" TextWrapping="Wrap" />
                                             <ToggleSwitch x:Name="HideEmpty" Grid.Column="1" MinWidth="0" Toggled="OnFilterToggle"
                                                           AutomationProperties.Name="Hide empty servers" />
                                         </Grid>
                                         <Border Style="{StaticResource CardDivider}" Height="1" />
                                         <Grid Style="{StaticResource InsetFormRow}" ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="Hide full servers" VerticalAlignment="Center" />
+                                        <TextBlock Text="Hide full servers" VerticalAlignment="Center" TextWrapping="Wrap" />
                                             <ToggleSwitch x:Name="HideFull" Grid.Column="1" MinWidth="0" Toggled="OnFilterToggle"
                                                           AutomationProperties.Name="Hide full servers" />
                                         </Grid>
@@ -91,10 +92,11 @@
                                     </StackPanel>
                                 </Border>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock x:Name="FilterSummary" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    <TextBlock x:Name="FilterSummary" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
                                     <Button x:Name="ClearFilters" Grid.Column="1" Content="Reset" Click="OnClearFilters" />
                                 </Grid>
                             </StackPanel>
+                            </ScrollViewer>
                         </Flyout>
                     </Button.Flyout>
                 </Button>
