@@ -91,7 +91,7 @@
             <Color x:Key="SystemAccentColorDark2">#FFCBAA67</Color>
             <Color x:Key="SystemAccentColorDark3">#FFC0A161</Color>
             <SolidColorBrush x:Key="TextOnAccentFillColorSelectedTextBrush" Color="#FF1C170C" />
-            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FF1C170C" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF1C170C" />
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FFECE6D6" />
             <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#FFA9A28F" />
             <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#FF8F8877" />
@@ -198,7 +198,7 @@
             <Color x:Key="SystemAccentColorDark1">#FF664611</Color>
             <Color x:Key="SystemAccentColorDark2">#FF604310</Color>
             <Color x:Key="SystemAccentColorDark3">#FF5B3F0F</Color>
-            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FFFFF8E8" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFF8E8" />
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FF26251D" />
             <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#FF615E51" />
             <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#FF6B6757" />

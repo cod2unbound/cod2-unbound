@@ -139,8 +139,9 @@ def generate(source):
             # The gold on the dark theme needs dark ink.
             if name == "Dark":
                 token("TextOnAccentFillColorSelectedTextBrush", "prominentText")
-            # WinUI's translucent pressed ink falls below 4.5:1 on both gold fills.
-            token("TextOnAccentFillColorSecondaryBrush", "prominentText")
+            # The stock button's static alias keeps its translucent ink even
+            # when the shared brush is overridden. That ink falls below 4.5:1.
+            token("AccentButtonForegroundPressed", "prominentText")
             for key, value in {
                 "TextFillColorPrimaryBrush": "text",
                 "TextFillColorSecondaryBrush": "secondary",
