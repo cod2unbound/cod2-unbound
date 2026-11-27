@@ -67,7 +67,7 @@ public sealed partial class HomePage
         static string Spoken(string size) => size.Replace("x", " by ", StringComparison.Ordinal);
     }
 
-    /// One row when everything fits; otherwise loadout, display and What's New first, the rest below.
+    /// One row when everything fits; otherwise give warnings their full width on the second row.
     private void FitChips(double width)
     {
         var first = new List<Button>();
@@ -82,10 +82,11 @@ public sealed partial class HomePage
             chip.Visibility = IsVisible(second.Contains(chip));
         NewsChip.Visibility = IsVisible(stacked);
         var news = stacked ? new[] { NewsChip } : [];
-        double total = first.Concat(second).Concat(news).Sum(Measure) + 10 * Math.Max(0, first.Count + second.Count + news.Length - 1);
+        var chips = first.Concat(second).Concat(news).ToList();
+        double total = chips.Sum(Measure) + ChipRowOne.Spacing * (chips.Count - 1);
         bool one = width <= 0 || total <= width;
-        var top = (one ? first.Concat(second).Concat(news) : first.Concat(news)).ToList();
-        List<Button> below = one ? [] : second;
+        var top = one ? chips : first;
+        List<Button> below = one ? [] : [.. second, .. news];
         // Hidden chips wait at the end of the first row.
         top.AddRange(new[] { LoadoutChip, DisplayChip, ResolutionChip, DataChip, KeyChip, NewsChip }.Where(chip => !top.Contains(chip) && !below.Contains(chip)));
         if (!ChipRowOne.Children.SequenceEqual(top) || !ChipRowTwo.Children.SequenceEqual(below))

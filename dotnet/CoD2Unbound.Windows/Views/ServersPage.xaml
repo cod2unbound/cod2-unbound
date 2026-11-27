@@ -234,23 +234,22 @@
                                             <FontIcon Grid.Column="1" FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLock}" FontSize="12"
                                                       Visibility="{Binding Lock}" AutomationProperties.Name="Password required" />
                                         </Grid>
-                                        <Grid ColumnSpacing="4">
+                                        <Grid ColumnSpacing="4" HorizontalAlignment="Left">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowMapMode" Text="{Binding MapMode}"
                                                        MaxWidth="176" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" HorizontalAlignment="Left" Orientation="Horizontal" Spacing="4">
-                                                <Border x:Name="RowEdition" Style="{StaticResource EditionTag}">
-                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowEditionText" Text="{Binding Edition}"
-                                                               VerticalAlignment="Center" />
-                                                </Border>
-                                                <Border Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="80">
-                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding Mod}" VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                </Border>
-                                            </StackPanel>
+                                            <Border Grid.Column="1" x:Name="RowEdition" Style="{StaticResource EditionTag}">
+                                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Name="RowEditionText" Text="{Binding Edition}"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+                                            <Border Grid.Column="2" x:Name="RowMod" Style="{StaticResource EditionTag}" Visibility="{Binding ModVisibility}" MaxWidth="80">
+                                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding Mod}" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </Border>
                                         </Grid>
                                     </StackPanel>
                                 </Grid>

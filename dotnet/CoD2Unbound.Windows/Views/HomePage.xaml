@@ -177,9 +177,10 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE7BA;" FontSize="15" Margin="0,0,4,0" Foreground="{ThemeResource HeroAccentBrush}"
                                               VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                                    <TextBlock Text="No CD key ·" VerticalAlignment="Center" />
-                                    <TextBlock Text="Fix…" FontWeight="SemiBold" Foreground="{ThemeResource HeroAccentBrush}"
-                                               VerticalAlignment="Center" />
+                                    <TextBlock VerticalAlignment="Center" TextWrapping="NoWrap">
+                                        <Run Text="No CD key ·&#160;" /><Run Text="Fix…" FontWeight="SemiBold"
+                                            Foreground="{ThemeResource HeroAccentBrush}" />
+                                    </TextBlock>
                                 </StackPanel>
                             </Button>
                             <Button x:Name="NewsChip" Click="OnShowNews"

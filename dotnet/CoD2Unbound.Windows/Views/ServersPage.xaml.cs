@@ -249,6 +249,8 @@ public sealed partial class ServersPage : Page
         identity.ColumnDefinitions[0].Width = RowMapWidth;
         row.ColumnDefinitions[1].Width = RowPlayersWidth;
         row.ColumnDefinitions[2].Width = RowPingWidth;
+        if (row.FindName("RowMod") is Border mod)
+            mod.MaxWidth = compactRows ? 48 : 80;
     }
 
     private void ApplyServerRow(Grid row, bool assignMenu = true)
