@@ -163,7 +163,7 @@ public sealed partial class HostingPage : Page
             AutomationProperties.SetName(create, "New server");
             AutomationProperties.SetAutomationId(create, "HostingEmptyNewServer");
             create.Content = IconLabel("Add", "New Server", 16);
-            create.Style = StyleFor("LauncherAccentButton");
+            create.Style = StyleFor("AccentButtonStyle");
             var write = Action("Write a server.cfg…", ExportSelectedAsync, "X");
             write.Style = StyleFor("MediumButton");
             var emptyActions = Buttons(create, write);
@@ -205,7 +205,7 @@ public sealed partial class HostingPage : Page
         }, "M");
         nextMap.IsEnabled = HostingConfig.Password(server.AdminPassword).Length > 0;
         var join = Action("Join", () => JoinAsync(server), "J");
-        join.Style = StyleFor("LauncherAccentButton");
+        join.Style = StyleFor("AccentButtonStyle");
         var stop = Action("Stop Server", () => ToggleAsync(server), "R");
         stop.Style = StyleFor("NegativeButton");
         AutomationProperties.SetName(stop, "Stop server");

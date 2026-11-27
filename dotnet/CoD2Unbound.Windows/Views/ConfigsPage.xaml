@@ -135,7 +135,8 @@
                                                   Width="30" FontSize="18" Foreground="{ThemeResource LinkBrush}" />
                                         <TextBlock Text="Saved" FontWeight="SemiBold" VerticalAlignment="Center" />
                                     </StackPanel>
-                                    <TextBlock x:Name="SavedCount" Grid.Column="1" Style="{StaticResource SidebarCount}" />
+                                    <TextBlock x:Name="SavedCount" Grid.Column="1" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 </Grid>
                             </ListViewItem>
                             <ListViewItem AutomationProperties.Name="Check a config" AutomationProperties.AutomationId="ConfigsCheckConfig" Style="{StaticResource StudioColumnItem}">
@@ -160,7 +161,7 @@
                                             <Style x:Key="LoadoutStatusText" TargetType="TextBlock" BasedOn="{StaticResource SecondaryText}" />
                                         </ResourceDictionary>
                                         <ResourceDictionary x:Key="HighContrast">
-                                            <Style x:Key="LoadoutStatusText" TargetType="TextBlock" BasedOn="{StaticResource TypeSubtitle}" />
+                                            <Style x:Key="LoadoutStatusText" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}" />
                                         </ResourceDictionary>
                                     </ResourceDictionary.ThemeDictionaries>
                                 </ResourceDictionary>

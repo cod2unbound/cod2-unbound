@@ -15,8 +15,8 @@
         <Grid x:Name="ServerToolbar" Margin="20,16,18,0" VerticalAlignment="Top"
               ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" SizeChanged="OnToolbarSizeChanged">
             <SelectorBar x:Name="Scopes" AutomationProperties.Name="Server lists" Height="44"
-                         Style="{StaticResource SegmentedLarge}" Padding="4" CornerRadius="22"
-                         Background="{ThemeResource GlassAcrylicBrush}" BorderBrush="{ThemeResource glassStroke}"
+                         Style="{StaticResource SegmentedLarge}" Padding="4"
+                         Background="{ThemeResource PanelBrush}" BorderBrush="{ThemeResource glassStroke}"
                          SelectionChanged="OnScopeChanged">
                 <SelectorBarItem Text="All" AccessKey="A" Style="{StaticResource SegmentLargeItem}" />
                 <SelectorBarItem Text="Favorites" AccessKey="V" Style="{StaticResource SegmentLargeItem}" />
@@ -35,8 +35,7 @@
                     <AutoSuggestBox.TextBoxStyle>
                         <Style TargetType="TextBox" BasedOn="{StaticResource SearchField}">
                             <Setter Property="Height" Value="44" />
-                            <Setter Property="CornerRadius" Value="22" />
-                            <Setter Property="Background" Value="{ThemeResource GlassAcrylicBrush}" />
+                            <Setter Property="Background" Value="{ThemeResource PanelBrush}" />
                             <Setter Property="MaxLength" Value="256" />
                         </Style>
                     </AutoSuggestBox.TextBoxStyle>
@@ -96,7 +95,7 @@
                                     </StackPanel>
                                 </Border>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock x:Name="FilterSummary" VerticalAlignment="Center" Style="{StaticResource TypeHelp}" />
+                                    <TextBlock x:Name="FilterSummary" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" />
                                     <Button x:Name="ClearFilters" Grid.Column="1" Content="Reset" Click="OnClearFilters" />
                                 </Grid>
                             </StackPanel>
@@ -175,7 +174,7 @@
                                Text="Original 1.3 and CoD2x servers from the public master lists. Nothing is contacted until you refresh." />
                 </StackPanel>
                 <Grid Grid.Row="1" Margin="10,0,0,12" Padding="14,10,11,10" ColumnDefinitions="*,Auto"
-                      ColumnSpacing="12" CornerRadius="{StaticResource BannerRadius}"
+                      ColumnSpacing="12" CornerRadius="{ThemeResource OverlayCornerRadius}"
                       Background="{ThemeResource well}" BorderBrush="{ThemeResource wellStroke}"
                       BorderThickness="{StaticResource Stroke}" x:Name="RefreshBanner" Visibility="Collapsed">
                     <StackPanel VerticalAlignment="Center" Spacing="6">
@@ -209,7 +208,6 @@
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
-                            <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Padding" Value="11,11,21,11" />
                             <Setter Property="Margin" Value="0,0,0,4" />
@@ -283,8 +281,8 @@
                 </StackPanel>
             </Grid>
             <Border x:Name="Details" Grid.Column="1" Width="352" Margin="0,8,0,0" Padding="14"
-                    Style="{StaticResource GroupCard}" CornerRadius="{StaticResource SheetRadius}"
-                    Background="{ThemeResource GlassAcrylicBrush}" AutomationProperties.Name="Server details">
+                    Style="{StaticResource GroupCard}" CornerRadius="{ThemeResource OverlayCornerRadius}"
+                    Background="{ThemeResource PanelBrush}" AutomationProperties.Name="Server details">
                 <Grid>
                     <StackPanel x:Name="NoDetails" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="30"
@@ -299,12 +297,12 @@
                         </Grid.RowDefinitions>
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="12">
-                                <Border x:Name="DetailArtwork" Height="150" CornerRadius="{StaticResource WellRadius}">
+                                <Border x:Name="DetailArtwork" Height="150" CornerRadius="{ThemeResource OverlayCornerRadius}">
                                     <Image x:Name="DetailArt" Stretch="UniformToFill" />
                                 </Border>
                                 <StackPanel Spacing="6" Margin="6,0">
                                     <TextBlock x:Name="DetailMap" Style="{StaticResource Eyebrow}" FontSize="12" Foreground="{ThemeResource accent}" />
-                                    <TextBlock x:Name="DetailName" Style="{StaticResource TypePanel}" FontSize="19" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="DetailName" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="19" TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock x:Name="DetailAddress" IsTextSelectionEnabled="True" VerticalAlignment="Center"
                                                    MaxWidth="214" Style="{StaticResource AddressText}" />
@@ -317,15 +315,15 @@
                                 <Grid Margin="6,0" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
                                       ColumnSpacing="8" RowSpacing="8">
                                     <StackPanel Spacing="3">
-                                        <TextBlock Text="Version" Style="{StaticResource TypeLabel}" />
+                                        <TextBlock Text="Version" Style="{StaticResource CaptionTextBlockStyle}" />
                                         <TextBlock x:Name="DetailVersion" FontWeight="SemiBold" FontSize="13" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="3">
-                                        <TextBlock Text="Mod" Style="{StaticResource TypeLabel}" />
+                                        <TextBlock Text="Mod" Style="{StaticResource CaptionTextBlockStyle}" />
                                         <TextBlock x:Name="DetailMod" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" FontSize="13" />
                                     </StackPanel>
                                     <StackPanel Grid.Row="1" Spacing="3">
-                                        <TextBlock Text="Access" Style="{StaticResource TypeLabel}" />
+                                        <TextBlock Text="Access" Style="{StaticResource CaptionTextBlockStyle}" />
                                         <TextBlock x:Name="DetailAccess" FontWeight="SemiBold" FontSize="13" />
                                     </StackPanel>
                                 </Grid>
@@ -352,16 +350,14 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Button x:Name="JoinButton" AutomationProperties.Name="Launch" HorizontalAlignment="Stretch"
-                                    Style="{StaticResource LauncherAccentButton}" Height="{StaticResource ButtonMediumHeight}"
-                                    CornerRadius="{StaticResource ButtonMediumRadius}" AccessKey="L" Click="OnJoin">
+                                    Style="{StaticResource AccentButtonStyle}" AccessKey="L" Click="OnJoin">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentPlay}" FontSize="16" />
                                     <TextBlock x:Name="JoinButtonLabel" Text="Launch" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                             <Button x:Name="FavoriteButton" Grid.Column="1" AccessKey="E" Click="OnFavorite"
-                                    Style="{StaticResource MediumButton}" Width="{StaticResource CircleHeight}"
-                                    MinWidth="{StaticResource CircleHeight}" Padding="0" />
+                                    Style="{StaticResource MediumButton}" Padding="0" />
                         </Grid>
                     </Grid>
                 </Grid>

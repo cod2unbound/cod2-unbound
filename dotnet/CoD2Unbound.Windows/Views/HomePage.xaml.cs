@@ -87,7 +87,7 @@ public sealed partial class HomePage : Page
     {
         // The notice's fill: the InfoBar's documented severity background resources, set to the glass.
         foreach (string key in new[] { "InfoBarWarningSeverityBackgroundBrush", "InfoBarInformationalSeverityBackgroundBrush" })
-            Toast.Resources[key] = Ink("GlassAcrylicBrush");
+            Toast.Resources[key] = Ink("PanelBrush");
         RenderBackdrop();
         RenderHeroDetail(model.Game);
         RenderRecent();

@@ -6,6 +6,7 @@ internal sealed class SafeRemovalDialog : ContentDialog
 {
     internal SafeRemovalDialog(string title, string message, string action)
     {
+        DefaultStyleKey = typeof(ContentDialog);
         Title = title;
         Content = PagePresentation.Body(message);
         PrimaryButtonText = action;

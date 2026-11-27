@@ -92,7 +92,7 @@
              with Ctrl+K, holding a real TextBox and a real ListView. A click outside closes it, as on the Mac. -->
         <Popup x:Name="JumpPopup" Grid.RowSpan="2" IsLightDismissEnabled="True" LightDismissOverlayMode="Off">
             <Border x:Name="JumpPanel" Width="640"
-                    CornerRadius="{StaticResource SheetRadius}" Background="{ThemeResource GlassAcrylicBrush}"
+                    CornerRadius="{ThemeResource OverlayCornerRadius}" Background="{ThemeResource PanelBrush}"
                     BorderBrush="{ThemeResource glassStroke}" BorderThickness="{StaticResource Stroke}"
                     Translation="0,0,32" AutomationProperties.Name="Jump to" AutomationProperties.LandmarkType="Search">
                 <Border.Shadow><ThemeShadow /></Border.Shadow>
@@ -138,8 +138,7 @@
                             <x:Double x:Key="ListViewItemDisabledThemeOpacity">1</x:Double>
                         </ListView.Resources>
                     </ListView>
-                    <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="20,18" TextWrapping="Wrap" Visibility="Collapsed"
-                               FontSize="{StaticResource SubtitleSize}" Foreground="{ThemeResource secondary}" />
+                    <TextBlock x:Name="JumpEmpty" Grid.Row="2" Margin="20,18" TextWrapping="Wrap" Visibility="Collapsed" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource secondary}" />
                     <Grid Grid.Row="3" Padding="14,0" BorderBrush="{ThemeResource separator}" BorderThickness="0,1,0,0"
                           AutomationProperties.Name="Up and Down to move, Enter to open, Ctrl+Enter to launch on a server">
                         <StackPanel x:Name="JumpFooter" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />

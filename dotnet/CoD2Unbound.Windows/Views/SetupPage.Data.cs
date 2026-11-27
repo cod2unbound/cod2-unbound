@@ -221,7 +221,7 @@ public sealed partial class SetupPage
         choose.Margin = new Thickness(0, 6, 0, 0);
         focusTarget = choose;
         var content = new StackPanel { Spacing = 10, Padding = new Thickness(20, 28, 20, 28), Children = { icon, title, hint, choose } };
-        var fill = new Border { CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"] };
+        var fill = new Border();
         var edge = new Rectangle { RadiusX = 16, RadiusY = 16, IsHitTestVisible = false };
         var zone = new Grid { Children = { fill, edge, content } };
         AutomationProperties.SetName(zone, "Drop zone for your Call of Duty 2 folder");

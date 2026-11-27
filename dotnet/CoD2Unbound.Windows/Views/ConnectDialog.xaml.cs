@@ -23,8 +23,8 @@ public sealed partial class ConnectDialog : ContentDialog
         this.query = query;
         openedLink = link;
         this.highContrast = highContrast;
+        DefaultStyleKey = typeof(ContentDialog);
         InitializeComponent();
-        Style = StyleFor("LauncherSheet");
         this.WithSymbol("SystemLink", "For a server that isn’t in the list, or one a friend sent you.");
         if (link is not null)
         {

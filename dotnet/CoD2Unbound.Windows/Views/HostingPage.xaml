@@ -13,7 +13,7 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Text="Your servers" Style="{StaticResource TypeLabel}" Margin="8,4,8,6" />
+                <TextBlock Text="Your servers" Style="{StaticResource CaptionTextBlockStyle}" Margin="8,4,8,6" />
                 <ListView x:Name="Servers" Grid.Row="1" SelectionChanged="OnServerChanged" ContainerContentChanging="OnServerRowChanged"
                           AutomationProperties.Name="Hosted servers">
                     <ListView.Resources>
@@ -23,7 +23,6 @@
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource LauncherListViewItem}">
                             <Setter Property="Padding" Value="10,9" />
                             <Setter Property="Margin" Value="0,0,0,6" />
-                            <Setter Property="CornerRadius" Value="{StaticResource PlateRadius}" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         </Style>
                     </ListView.ItemContainerStyle>

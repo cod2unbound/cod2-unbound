@@ -102,7 +102,7 @@ public sealed partial class HostingPage
             Put(logTitle, 0, logHeading);
             Put(logTitle, 1, reveal);
             var well = Card(tail);
-            well.CornerRadius = (CornerRadius)Application.Current.Resources["WellRadius"];
+
             var logPanel = new StackPanel { Spacing = 6, Children = { logTitle, well } };
             void ApplyWellTheme()
             {

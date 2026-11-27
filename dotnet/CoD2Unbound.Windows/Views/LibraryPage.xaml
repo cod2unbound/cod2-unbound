@@ -8,17 +8,15 @@
             <Setter Property="Margin" Value="0,0,0,4" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="MinHeight" Value="80" />
-            <Setter Property="CornerRadius" Value="{StaticResource GroupRadius}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
-        <Style x:Key="LibraryColumnLabel" TargetType="TextBlock" BasedOn="{StaticResource TypeLabel}">
+        <Style x:Key="LibraryColumnLabel" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
             <Setter Property="Foreground" Value="{ThemeResource tertiary}" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="LibraryArt" TargetType="Border" BasedOn="{StaticResource MediaTile}">
             <Setter Property="Width" Value="80" />
             <Setter Property="Height" Value="60" />
-            <Setter Property="CornerRadius" Value="{StaticResource SidebarRowRadius}" />
         </Style>
     </Page.Resources>
     <Grid x:Name="LibraryLayout" Padding="14,88,16,24" RowDefinitions="Auto,Auto,*">
@@ -34,7 +32,7 @@
                     <SelectorBarItem x:Name="ScreenshotsSection" AutomationProperties.AutomationId="ScreenshotsSection" Text="Screenshots" AccessKey="T" Style="{StaticResource SegmentLargeItem}" />
                 </SelectorBar>
             </Border>
-            <TextBox x:Name="Search" Grid.Column="1" Width="160" Height="44" CornerRadius="22" HorizontalAlignment="Right"
+            <TextBox x:Name="Search" Grid.Column="1" Width="160" Height="44" HorizontalAlignment="Right"
                      PlaceholderText="Find a file" TextChanged="OnSearch" PreviewKeyDown="OnSearchKeyDown" Visibility="Collapsed"
                      Style="{StaticResource SearchField}" AutomationProperties.Name="Find a file"
                      AutomationProperties.AcceleratorKey="Ctrl+F" AccessKey="F" MaxLength="256" />
@@ -149,7 +147,7 @@
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
                         <DataTemplate>
-                            <Border CornerRadius="{StaticResource CrateRadius}" Background="{ThemeResource panel}"
+                            <Border CornerRadius="{ThemeResource OverlayCornerRadius}" Background="{ThemeResource panel}"
                                     BorderBrush="{ThemeResource panelStroke}" BorderThickness="{StaticResource Stroke}"
                                     AutomationProperties.Name="{Binding ScreenshotName}"
                                     DoubleTapped="OnMediaDoubleTapped" ContextRequested="OnMediaContextRequested">
@@ -189,14 +187,14 @@
                         <ResourceDictionary>
                             <ResourceDictionary.ThemeDictionaries>
                                 <ResourceDictionary x:Key="HighContrast">
-                                    <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                                    <SolidColorBrush x:Key="SelectionTextBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
                                 </ResourceDictionary>
                             </ResourceDictionary.ThemeDictionaries>
                             <Style x:Key="DemoMenuAction" TargetType="Button" BasedOn="{StaticResource IconAction}">
                                 <Setter Property="Foreground" Value="{ThemeResource heading}" />
                             </Style>
                             <Style x:Key="SelectedDemoMenuAction" TargetType="Button" BasedOn="{StaticResource DemoMenuAction}">
-                                <Setter Property="Foreground" Value="{ThemeResource ListViewItemForegroundSelected}" />
+                                <Setter Property="Foreground" Value="{ThemeResource SelectionTextBrush}" />
                             </Style>
                         </ResourceDictionary>
                     </ListView.Resources>
@@ -230,9 +228,6 @@
                                     </Button>
                                     <Button x:Name="DemoMenuButton" Style="{StaticResource DemoMenuAction}" Click="OnFileMenu" Tag="{Binding}"
                                             Loaded="OnDemoMenuLoaded" DataContextChanged="OnDemoMenuContextChanged"
-                                            Width="{StaticResource ButtonRegularHeight}" Height="{StaticResource ButtonRegularHeight}"
-                                            MinWidth="{StaticResource ButtonRegularHeight}" MinHeight="{StaticResource ButtonRegularHeight}"
-                                            CornerRadius="{StaticResource ButtonRegularRadius}"
                                             AutomationProperties.Name="{Binding MenuName}" ToolTipService.ToolTip="More actions">
                                         <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentMore}" FontSize="17"
                                                   HighContrastAdjustment="None" />

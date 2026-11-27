@@ -16,15 +16,15 @@
                         <Button Content="Copy" Style="{StaticResource SmallAction}" />
                         <Button Content="Choose Folder…" />
                         <Button Content="Find a Server" Style="{StaticResource MediumButton}" />
-                        <Button Content="Launch" Style="{StaticResource HeroButton}" />
+                        <Button Content="Launch" Style="{StaticResource AccentButtonStyle}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="Open CoD2 Unbound" Style="{StaticResource LauncherAccentButton}" />
+                        <Button Content="Open CoD2 Unbound" Style="{StaticResource AccentButtonStyle}" />
                         <Button Content="Back" />
                         <Button Content="See What’s Sent…" Style="{StaticResource QuietButton}" />
                         <Button Content="Delete Loadout…" Style="{StaticResource NegativeButton}" />
                         <Button Content="Continue" IsEnabled="False" />
-                        <Button Content="Continue" Style="{StaticResource LauncherAccentButton}" IsEnabled="False" />
+                        <Button Content="Continue" Style="{StaticResource AccentButtonStyle}" IsEnabled="False" />
                         <Button Style="{StaticResource IconAction}" ToolTipService.ToolTip="Refresh"
                                 AutomationProperties.Name="Refresh">
                             <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentRefresh}" FontSize="16" />
@@ -82,10 +82,10 @@
                         <Button Content="Main loadout · 2560 × 1440" Style="{StaticResource LargeChipButton}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Border Style="{StaticResource EditionTag}"><TextBlock Text="Original 1.3" Style="{StaticResource TypeLabel}" /></Border>
-                        <Border Style="{StaticResource Cod2xTag}"><TextBlock Text="zPAM 3" Style="{StaticResource TypeLabel}" Foreground="{ThemeResource accent}" /></Border>
-                        <Border Style="{StaticResource EditionTag}" BorderBrush="{ThemeResource negative}"><TextBlock Text="Breaks zPAM" Style="{StaticResource TypeLabel}" Foreground="{ThemeResource negative}" /></Border>
-                        <Border Style="{StaticResource EditionTag}"><TextBlock Text="Recommended" Style="{StaticResource TypeLabel}" /></Border>
+                        <Border Style="{StaticResource EditionTag}"><TextBlock Text="Original 1.3" Style="{StaticResource CaptionTextBlockStyle}" /></Border>
+                        <Border Style="{StaticResource Cod2xTag}"><TextBlock Text="zPAM 3" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource accent}" /></Border>
+                        <Border Style="{StaticResource EditionTag}" BorderBrush="{ThemeResource negative}"><TextBlock Text="Breaks zPAM" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource negative}" /></Border>
+                        <Border Style="{StaticResource EditionTag}"><TextBlock Text="Recommended" Style="{StaticResource CaptionTextBlockStyle}" /></Border>
                         <TextBlock Text="✓ Verified" Foreground="{ThemeResource positive}" />
                         <TextBlock Text="Some dips" Foreground="{ThemeResource caution}" />
                         <TextBlock Text="Missing" Foreground="{ThemeResource negative}" />
@@ -101,14 +101,14 @@
                                     <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFolder}" FontSize="16" Foreground="{ThemeResource accent}" />
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                    <TextBlock Text="Game data" Style="{StaticResource TypeBody}" />
-                                    <TextBlock Text="Version 1.3 · Installed on this PC" Style="{StaticResource TypeHelp}" Foreground="{ThemeResource tertiary}" />
+                                    <TextBlock Text="Game data" Style="{StaticResource BodyTextBlockStyle}" />
+                                    <TextBlock Text="Version 1.3 · Installed on this PC" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource tertiary}" />
                                 </StackPanel>
                                 <Button Grid.Column="2" Content="Change…" />
                             </Grid>
                             <Border Height="1" Background="{ThemeResource separator}" />
                             <Grid Style="{StaticResource FormRow}" ColumnDefinitions="*,Auto">
-                                <TextBlock Text="Refresh the server list when Servers opens" Style="{StaticResource TypeBody}" VerticalAlignment="Center" />
+                                <TextBlock Text="Refresh the server list when Servers opens" Style="{StaticResource BodyTextBlockStyle}" VerticalAlignment="Center" />
                                 <ToggleSwitch Grid.Column="1" AutomationProperties.Name="Refresh the server list when Servers opens" />
                             </Grid>
                         </StackPanel>
@@ -139,20 +139,20 @@
                                 <ImageBrush.ImageSource><SvgImageSource UriSource="ms-appx:///Assets/hero-dark.svg" /></ImageBrush.ImageSource>
                             </ImageBrush>
                         </Grid.Background>
-                        <Border CornerRadius="{StaticResource GroupRadius}" Padding="20"
-                                Background="{ThemeResource GlassAcrylicBrush}" BorderBrush="{ThemeResource glassStroke}" BorderThickness="1">
+                        <Border CornerRadius="{ThemeResource OverlayCornerRadius}" Padding="20"
+                                Background="{ThemeResource PanelBrush}" BorderBrush="{ThemeResource glassStroke}" BorderThickness="1">
                             <StackPanel Spacing="12">
                                 <TextBlock Text="Panel on the art" Style="{StaticResource CardTitle}" />
                                 <TextBlock Text="This PC’s glass" Style="{StaticResource SecondaryText}" />
                                 <Button Content="Back" />
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="1" CornerRadius="{StaticResource GroupRadius}" Padding="20"
-                                Background="{ThemeResource glassSolid}" BorderBrush="{ThemeResource glassStroke}" BorderThickness="1">
+                        <Border Grid.Column="1" CornerRadius="{ThemeResource OverlayCornerRadius}" Padding="20"
+                                Background="{ThemeResource PanelBrush}" BorderBrush="{ThemeResource glassStroke}" BorderThickness="1">
                             <StackPanel Spacing="12">
                                 <TextBlock Text="Panel on the art" Style="{StaticResource CardTitle}" />
                                 <TextBlock Text="Opaque glass" Style="{StaticResource SecondaryText}" />
-                                <Button Content="Continue" Style="{StaticResource LauncherAccentButton}" />
+                                <Button Content="Continue" Style="{StaticResource AccentButtonStyle}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -160,8 +160,8 @@
 
                 <StackPanel Spacing="10">
                     <TextBlock Text="Sidebar" Style="{StaticResource SectionTitle}" />
-                    <Border CornerRadius="{StaticResource SidebarRadius}" Width="{StaticResource SidebarWidth}"
-                            HorizontalAlignment="Left" Background="{ThemeResource GlassAcrylicBrush}"
+                    <Border CornerRadius="{ThemeResource OverlayCornerRadius}" Width="232"
+                            HorizontalAlignment="Left" Background="{ThemeResource PanelBrush}"
                             BorderBrush="{ThemeResource glassStroke}" BorderThickness="1"
                             Padding="0,10,0,8">
                         <NavigationView x:Name="SampleSidebar" PaneDisplayMode="Left" IsPaneOpen="True"
@@ -174,43 +174,43 @@
                                 </StackPanel>
                             </NavigationView.PaneHeader>
                             <NavigationView.MenuItems>
-                                <NavigationViewItem Content="Home" IsSelected="True" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Home" IsSelected="True">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentHome}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem Content="Servers" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Servers">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentLive}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem Content="Library" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Library">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentFilmstrip}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem Content="Configs" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Configs">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentStack}" FontSize="18" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
                                 <NavigationViewItemHeader Content="Favorites" />
-                                <NavigationViewItem Content="Northern Lights · 18/24" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Northern Lights · 18/24">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentStarFilled}" FontSize="16" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem Content="Desert Fox SD · 12/20" Style="{StaticResource ShellNavItem}">
+                                <NavigationViewItem Content="Desert Fox SD · 12/20">
                                     <NavigationViewItem.Icon><FontIcon FontFamily="{StaticResource FluentFilled}" Glyph="{StaticResource FluentStarFilled}" FontSize="16" /></NavigationViewItem.Icon>
                                 </NavigationViewItem>
                             </NavigationView.MenuItems>
                             <NavigationView.PaneFooter>
                                 <StackPanel>
-                                    <Button Style="{StaticResource SidebarSettingsButton}" AutomationProperties.Name="Sample settings entry">
+                                    <Button AutomationProperties.Name="Sample settings entry">
                                         <StackPanel Orientation="Horizontal" Spacing="12">
                                             <FontIcon FontFamily="{StaticResource FluentRegular}" Glyph="{StaticResource FluentSettings}" FontSize="18" />
                                             <TextBlock Text="Settings" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                     <Border Height="1" Margin="16,6,16,0" Background="{ThemeResource separator}" />
-                                    <Button Style="{StaticResource PlayerPlateButton}" Margin="12,8,12,8"
+                                    <Button Margin="12,8,12,8"
                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                             AutomationProperties.Name="Open your player card">
                                         <StackPanel Orientation="Horizontal" Spacing="10">
                                             <ContentControl Style="{StaticResource MiniDogTag}" />
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Text="Sgt. Morrow" FontWeight="SemiBold" />
-                                                <TextBlock Text="Main loadout" Style="{StaticResource TypeLabel}" Foreground="{ThemeResource secondary}" />
+                                                <TextBlock Text="Main loadout" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource secondary}" />
                                             </StackPanel>
                                         </StackPanel>
                                     </Button>
@@ -250,11 +250,11 @@
                     <TextBlock Text="STENCIL TITLE" Style="{StaticResource EmptyHeading}" />
                     <TextBlock Text="Page title" Style="{StaticResource PageTitle}" />
                     <TextBlock Text="Section title" Style="{StaticResource SectionTitle}" />
-                    <TextBlock Text="Panel title" Style="{StaticResource TypePanel}" />
+                    <TextBlock Text="Panel title" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock Text="Card title" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="Body" Style="{StaticResource TypeBody}" />
+                    <TextBlock Text="Body" Style="{StaticResource BodyTextBlockStyle}" />
                     <TextBlock Text="Subtitle" Style="{StaticResource SecondaryText}" />
-                    <TextBlock Text="Help" Style="{StaticResource TypeHelp}" Foreground="{ThemeResource tertiary}" />
+                    <TextBlock Text="Help" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource tertiary}" />
                     <TextBlock Text="203.0.113.24:28960" Style="{StaticResource AddressText}" />
                 </StackPanel>
             </StackPanel>

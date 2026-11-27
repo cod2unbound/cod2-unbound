@@ -291,7 +291,7 @@ public sealed partial class ConfigsPage
         var thickness = button.BorderThickness;
         button.Content = "Press a key…";
         AutomationProperties.SetName(button, $"{name}. Press a key or mouse button. Esc cancels.");
-        button.BorderBrush = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast);
+        button.BorderBrush = ThemeBrush("AccentBrush", ActualTheme, shell.IsHighContrast);
         button.BorderThickness = new Thickness(2);
         bindNotice.IsOpen = false;
         button.Unloaded += SlotUnloaded;

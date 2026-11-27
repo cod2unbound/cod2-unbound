@@ -174,7 +174,7 @@ public sealed partial class ConfigsPage
         foreach (var change in changes)
             compare.Children.Add(HistoryValues(change.Label, change.Before.Length == 0 ? "—" : change.Before, change.After));
         var restore = Action("Restore This Snapshot", () => RestoreSnapshotAsync(profile, entry, ConfigSnapshotRevision.After));
-        restore.Style = StyleFor("LauncherAccentButton");
+        restore.Style = StyleFor("AccentButtonStyle");
         restore.IsEnabled = CanEdit && !entry.After.Matches(profile.Version);
         var more = new Button { Style = StyleFor("IconAction"), Content = Fluent("More", 16), IsEnabled = CanEdit };
         AutomationProperties.SetName(more, "More actions for this snapshot");

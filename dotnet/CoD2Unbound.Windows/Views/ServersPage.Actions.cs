@@ -45,7 +45,7 @@ public sealed partial class ServersPage
         AutomationProperties.SetName(EmptyHeading, title);
         EmptyMessage.Text = message;
         EmptyAction.Content = action;
-        EmptyAction.Style = StyleFor(title == "No contact yet" ? "LauncherAccentButton" : "MediumButton");
+        EmptyAction.Style = StyleFor(title == "No contact yet" ? "AccentButtonStyle" : "MediumButton");
         EmptyAction.Visibility = IsVisible(action.Length != 0);
     }
 

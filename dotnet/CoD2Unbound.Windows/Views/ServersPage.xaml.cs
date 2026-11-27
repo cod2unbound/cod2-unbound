@@ -186,10 +186,6 @@ public sealed partial class ServersPage : Page
 
     internal void UpdateContrast()
     {
-        // Use the same native pointer states and local brush overrides as Home's recent rows.
-        bool contrast = shell.IsHighContrast;
-        ServerList.Resources["ListViewItemBackgroundPointerOver"] = ThemeBrush("ListViewItemBackgroundPointerOver", ActualTheme, contrast);
-        ServerList.Resources["ListViewItemBackgroundPressed"] = ThemeBrush("ListViewItemBackgroundPressed", ActualTheme, contrast);
         foreach (var row in rows)
             if (ServerList.ContainerFromItem(row) is ListViewItem { ContentTemplateRoot: Grid grid })
                 ApplyServerRow(grid, assignMenu: false);

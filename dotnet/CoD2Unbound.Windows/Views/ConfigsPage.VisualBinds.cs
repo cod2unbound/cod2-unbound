@@ -189,7 +189,7 @@ public sealed partial class ConfigsPage
         {
             foreach (var (tile, key) in keyTiles)
                 if (key == visualKey)
-                    tile.BorderBrush = ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast);
+                    tile.BorderBrush = ThemeBrush("AccentBrush", ActualTheme, shell.IsHighContrast);
                 else
                     tile.ClearValue(Control.BorderBrushProperty);
         }
@@ -310,7 +310,7 @@ public sealed partial class ConfigsPage
                 }));
                 return;
             }
-            var change = new Button { Content = "Change…", Style = StyleFor("LauncherAccentButton"), IsEnabled = !state.ReadOnly };
+            var change = new Button { Content = "Change…", Style = StyleFor("AccentButtonStyle"), IsEnabled = !state.ReadOnly };
             change.Click += (_, _) =>
             {
                 if (binding is not null)
@@ -569,7 +569,7 @@ public sealed partial class ConfigsPage
             if (select is null)
                 return new Border
                 {
-                    Background = mark == position ? ThemeBrush("AccentFillColorDefaultBrush", ActualTheme, shell.IsHighContrast) : null,
+                    Background = mark == position ? ThemeBrush("AccentBrush", ActualTheme, shell.IsHighContrast) : null,
                     Padding = new Thickness(10), CornerRadius = new CornerRadius(4), Child = Body(label)
                 };
             var button = SmallButton(label, () => select(position));

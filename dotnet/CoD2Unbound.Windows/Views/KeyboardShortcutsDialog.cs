@@ -10,8 +10,7 @@ internal sealed class KeyboardShortcutsDialog : ContentDialog
 {
     private KeyboardShortcutsDialog(MainWindow shell)
     {
-        // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
-        Style = StyleFor("LauncherSheet");
+        DefaultStyleKey = typeof(ContentDialog);
         XamlRoot = shell.DialogRoot;
         RequestedTheme = shell.DialogTheme;
         Resources["ContentDialogMaxWidth"] = 720d;

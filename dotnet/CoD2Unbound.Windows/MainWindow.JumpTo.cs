@@ -265,7 +265,7 @@ public sealed partial class MainWindow
         if (IsHighContrast)
         {
             hint.ClearValue(TextBlock.ForegroundProperty);
-            action.Foreground = ThemeBrush(selected ? "ListViewItemForegroundSelected" : "text", Root.ActualTheme, true);
+            action.Foreground = ThemeBrush(selected ? "SelectionTextBrush" : "text", Root.ActualTheme, true);
         }
         else
             hint.Foreground = ThemeBrush(server ? "secondary" : "tertiary", Root.ActualTheme, false);

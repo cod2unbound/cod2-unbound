@@ -508,7 +508,7 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(button, $"Apply {title}");
         button.IsEnabled = CanEdit;
         if (top)
-            button.Style = StyleFor("LauncherAccentButton");
+            button.Style = StyleFor("AccentButtonStyle");
         card.Children.Add(Buttons(later, show, button));
         card.Children.Add(exact);
         return CheckCard(card);

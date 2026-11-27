@@ -134,7 +134,7 @@ public sealed partial class HomePage
         bool running = game.Running, returning = !running && last is not null, first = !running && last is null;
         LaunchButton.Visibility = IsVisible(returning);
         FindServerButton.Visibility = IsVisible(!running);
-        FindServerButton.Style = StyleFor(first ? "HeroButton" : "HeroGlassButton");
+        FindServerButton.Style = StyleFor(first ? "AccentButtonStyle" : "HeroGlassButton");
         OpenGameMenuButton.Visibility = IsVisible(first);
         ReturnGameButton.Visibility = CloseGameButton.Visibility = IsVisible(running);
         LaunchButton.IsEnabled = OpenGameMenuButton.IsEnabled = reason is null || running;

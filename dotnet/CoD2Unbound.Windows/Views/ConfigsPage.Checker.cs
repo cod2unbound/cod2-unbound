@@ -238,8 +238,7 @@ public sealed partial class ConfigsPage
             return file is null ? null : await ReadCheckerFileAsync(file.Path);
         }));
         chooseCheckerFile = pick;
-        pick.Style = StyleFor("LauncherAccentButton");
-        pick.Style = StyleFor("LauncherAccentButton");
+        pick.Style = StyleFor("AccentButtonStyle");
         pick.IsEnabled = !checkerBusy;
         var paste = Action("Paste from Clipboard", () => StartCheckAsync(async () =>
         {
@@ -250,8 +249,6 @@ public sealed partial class ConfigsPage
         var loadouts = new DropDownButton
         {
             Content = "Check a Loadout", IsEnabled = !model.State.Profiles.IsEmpty,
-            MinHeight = (double)Application.Current.Resources["ButtonRegularHeight"],
-            CornerRadius = (CornerRadius)Application.Current.Resources["ButtonRegularRadius"]
         };
         AutomationProperties.SetName(loadouts, "Check a loadout");
         AutomationProperties.SetAutomationId(loadouts, "ConfigsCheckerLoadout");
@@ -444,11 +441,11 @@ public sealed partial class ConfigsPage
                 Announce("Applied the fixes to the copy.");
                 return Task.CompletedTask;
             });
-            fix.Style = StyleFor("LauncherAccentButton");
+            fix.Style = StyleFor("AccentButtonStyle");
             summary.Children.Add(fix);
         }
         if (fixable.IsEmpty)
-            save.Style = StyleFor("LauncherAccentButton");
+            save.Style = StyleFor("AccentButtonStyle");
         var saveAndCopy = Buttons(save, copyButton);
         saveAndCopy.SizeChanged += (_, args) => saveAndCopy.Orientation = args.NewSize.Width < 305
             ? Orientation.Vertical : Orientation.Horizontal;
@@ -590,7 +587,7 @@ public sealed partial class ConfigsPage
         {
             ConfigCheckMark.Broken => "NegativeBrush",
             ConfigCheckMark.Different => "GameYellowBrush",
-            ConfigCheckMark.Note => "InfoBarInformationalSeverityIconBackground",
+            ConfigCheckMark.Note => "AccentBrush",
             _ => "PositiveBrush"
         };
         if (ThemeBrush(key, row.ActualTheme, false) is SolidColorBrush ink)

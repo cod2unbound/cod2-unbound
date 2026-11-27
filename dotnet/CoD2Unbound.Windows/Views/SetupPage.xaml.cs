@@ -340,7 +340,7 @@ public sealed partial class SetupPage : Page
                 content.Children.Add(new Border
                 {
                     Style = StyleFor("SetupBadge"),
-                    Child = new TextBlock { Text = "Recommended", Style = StyleFor("TypeLabel"), Foreground = Token("accent"), VerticalAlignment = VerticalAlignment.Center }
+                    Child = new TextBlock { Text = "Recommended", Style = StyleFor("CaptionTextBlockStyle"), Foreground = Token("accent"), VerticalAlignment = VerticalAlignment.Center }
                 });
             content.Children.Add(new TextBlock { Text = ModeDetails[index], Style = StyleFor("SetupCrateDetail") });
             var crate = new RadioButton { Style = StyleFor("SetupCrate"), Content = content };

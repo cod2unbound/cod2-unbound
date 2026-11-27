@@ -91,7 +91,7 @@ public sealed partial class HomePage
 
         var content = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star), GridLength.Auto);
         var art = previews.Tile(server.Map, 64, 48);
-        art.CornerRadius = new CornerRadius(9); // concentric with the row's 16 at 7 in
+
         Put(content, 0, art);
         var lines = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         lines.Children.Add(new TextBlock { Text = name, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
@@ -207,7 +207,7 @@ public sealed partial class HomePage
 
         var heading = Columns(12, new GridLength(64), new GridLength(1, GridUnitType.Star));
         var art = previews.Tile(match.Map, 64, 48);
-        art.CornerRadius = new CornerRadius(9);
+
         Put(heading, 0, art);
         var title = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         string titleText = $"{MapCatalog.DisplayName(match.Map)} · {GameModes.Long(match.Mode)}";

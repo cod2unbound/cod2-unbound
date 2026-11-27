@@ -45,10 +45,15 @@ public sealed partial class MainWindow : Window
         InitializeTitleBarContent();
         foreach (var notice in new[] { Problem, ReportCopied, ReportWarning })
             notice.Margin = new Thickness(16, 0, 16, 0);
-        if (WindowsVersion.IsWindows11OrLater && Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+        bool windows11 = WindowsVersion.IsWindows11OrLater;
+        if (windows11 && Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
         {
             SystemBackdrop = new MicaBackdrop();
             SolidGround.Visibility = Visibility.Collapsed;
+        }
+        else if (!windows11)
+        {
+            StartupTrace.Mark("Windows 10 solid backdrop selected");
         }
         string assets = Path.Combine(AppContext.BaseDirectory, "Assets");
         AppWindow.SetIcon(Path.Combine(assets, "mark.ico"));

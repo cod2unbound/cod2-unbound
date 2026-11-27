@@ -25,7 +25,7 @@
         <Grid x:Name="SetupBar" MaxWidth="860" Height="{StaticResource SetupBarHeight}" VerticalAlignment="Bottom"
               Margin="24,0,24,22">
             <Border x:Name="SetupBarGlass" Style="{StaticResource SetupBar}" Margin="0" Padding="0" />
-            <Border Style="{StaticResource SetupGlassHighlight}" CornerRadius="{StaticResource SetupBarRadius}" Margin="1" />
+            <Border Style="{StaticResource SetupGlassHighlight}" CornerRadius="{ThemeResource OverlayCornerRadius}" Margin="1" />
             <Grid Margin="11,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -48,7 +48,7 @@
                         <Button x:Name="DeclineReport" Click="OnDeclineReport" Content="Don’t Send" AccessKey="N"
                                 Style="{StaticResource SetupAction}" HorizontalAlignment="Stretch" />
                         <Button x:Name="SetupNext" Content="Continue" Click="OnContinueSetup"
-                                Style="{StaticResource SetupPrimary}" HorizontalAlignment="Stretch"
+                                Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch"
                                 AutomationProperties.AutomationId="SetupNext" />
                     </views:SetupFooterActions>
                 </Grid>

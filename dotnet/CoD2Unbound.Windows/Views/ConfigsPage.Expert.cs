@@ -302,7 +302,7 @@ public sealed partial class ConfigsPage
         if (setting.Note is not null)
             noteActions.Children.Add(Action("Remove note", () => { flyout.Hide(); return SaveMetadata(null, ""); }));
         var save = Action("Save note", () => { flyout.Hide(); return SaveMetadata(null, field.Text); });
-        save.Style = StyleFor("LauncherAccentButton");
+        save.Style = StyleFor("AccentButtonStyle");
         noteActions.Children.Add(save);
         changeLock.IsEnabled = noteButton.IsEnabled = !state.ReadOnly;
         noteButton.Flyout = flyout;
@@ -395,7 +395,7 @@ public sealed partial class ConfigsPage
         bool onDisk = false;
         bool decorating = false;
         bool canApply = false;
-        var apply = new Button { Content = "Apply text edits", Style = StyleFor("LauncherAccentButton") };
+        var apply = new Button { Content = "Apply text edits", Style = StyleFor("AccentButtonStyle") };
         apply.Click += async (_, _) => await shell.RunAsync(ApplyText);
         var saveKey = new KeyboardAccelerator { Key = VirtualKey.S, Modifiers = VirtualKeyModifiers.Control };
         saveKey.Invoked += async (_, args) =>

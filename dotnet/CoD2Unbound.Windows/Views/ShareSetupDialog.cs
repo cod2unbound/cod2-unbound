@@ -35,7 +35,6 @@ internal sealed class ShareSetupDialog : ContentDialog
         Func<CancellationToken, Task<ConfigShareSent?>> publish)
     {
         // A C# subclass does not pick up the implicit ContentDialog style; use the shared sheet.
-        Style = StyleFor("LauncherSheet");
         this.appVersion = appVersion;
         this.form = form;
         this.omittedLine = omittedLine;
@@ -62,10 +61,10 @@ internal sealed class ShareSetupDialog : ContentDialog
         if (form.Prepared is { } prepared)
         {
             var (sent, leftOut) = PrivacyPresentation.ShareFacts(prepared);
-            double size = (double)Application.Current.Resources["BodySize"];
-            Fact(Fluent("Document", size), "What is sent", sent);
-            Fact(Fluent("LockClosed", size), "What is left out", leftOut);
-            Fact(SystemIcon("SystemGlobe", size), "Where it goes", PrivacyPresentation.ShareDestination);
+            const double iconSize = 16;
+            Fact(Fluent("Document", iconSize), "What is sent", sent);
+            Fact(Fluent("LockClosed", iconSize), "What is left out", leftOut);
+            Fact(SystemIcon("SystemGlobe", iconSize), "Where it goes", PrivacyPresentation.ShareDestination);
         }
         fields.Children.Add(name);
         fields.Children.Add(nameProblem);

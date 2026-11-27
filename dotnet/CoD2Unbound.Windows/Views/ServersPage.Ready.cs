@@ -163,7 +163,6 @@ public sealed partial class ServersPage
             Background = ThemeBrush("FieldBrush", ActualTheme, contrast),
             BorderBrush = ThemeBrush(tone ?? "ControlStrokeBrush", ActualTheme, contrast),
             BorderThickness = new Thickness(1),
-            CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"],
             Padding = new Thickness(10, 8, 10, 8),
             Child = panel
         };

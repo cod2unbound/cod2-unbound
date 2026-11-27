@@ -93,7 +93,7 @@ internal static class SheetPresentation
             text.HorizontalAlignment = HorizontalAlignment.Center;
             text.MinWidth = 0;
         }
-        dialog.Style = StyleFor(destructive ? "LauncherDestructiveAlert" : "LauncherAlert");
+
         if (destructive)
             dialog.PrimaryButtonStyle = StyleFor("AlertDestructiveButton");
         return dialog;

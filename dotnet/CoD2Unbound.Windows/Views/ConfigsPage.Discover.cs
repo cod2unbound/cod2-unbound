@@ -514,7 +514,7 @@ public sealed partial class ConfigsPage
         {
             var entry = entries[featuredIndex];
             var view = Action("See this setup", () => ShowSetupAsync(entry, false));
-            view.Style = StyleFor("LauncherAccentButton");
+            view.Style = StyleFor("AccentButtonStyle");
             picture.Content = SetupHero(entry, $"Featured setup · {entry.Era}", view,
                 Bookmark(entry), featured: true, withPips: hasPager);
         }
@@ -696,7 +696,7 @@ public sealed partial class ConfigsPage
 
         double? setupDistance = null;
         var attempt = Action("Try This Setup", () => ReviewSetupAsync(newOnly: true));
-        attempt.Style = StyleFor("MediumAccentButton");
+        attempt.Style = StyleFor("AccentButtonStyle");
         var import = Action("Import…", () => ReviewSetupAsync(newOnly: false));
         import.Style = StyleFor("SubtleAction");
         attempt.IsEnabled = import.IsEnabled = !model.Studio.IsReadOnly;

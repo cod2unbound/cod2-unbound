@@ -160,7 +160,6 @@ public sealed partial class HomePage
         var well = new Border
         {
             Background = Ink("well"), BorderBrush = Ink("wellStroke"), BorderThickness = new Thickness(1),
-            CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"],
             Child = rows
         };
         rows.MaxHeight = 380;

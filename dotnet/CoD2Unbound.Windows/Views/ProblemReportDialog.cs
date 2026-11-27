@@ -18,7 +18,6 @@ internal sealed class ProblemReportDialog : ContentDialog
         DefaultStyleKey = typeof(ContentDialog);
         Title = "Report a problem";
         this.WithSymbol("SystemBug", "Opens a new issue on GitHub in your browser, filled in with the details below. You can edit everything before you post it.");
-        Style = StyleFor("LauncherSheet");
         PrimaryButtonText = "Open GitHub";
         SecondaryButtonText = "Copy Details";
         CloseButtonText = "Cancel";
@@ -35,7 +34,6 @@ internal sealed class ProblemReportDialog : ContentDialog
         var well = new Border
         {
             Style = StyleFor("FieldCard"), Child = detail, Padding = new Thickness(16, 14, 16, 14),
-            CornerRadius = (CornerRadius)Application.Current.Resources["CrateRadius"]
         };
 
         game = new ToggleSwitch { IsEnabled = hasGame, MinWidth = 0 };

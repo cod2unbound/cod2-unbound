@@ -95,7 +95,7 @@ public sealed partial class HostingPage
             start = page.Action("Start Server", () => PersistAsync(startServer: true), "R");
             AutomationProperties.SetName(start, "Start server");
             AutomationProperties.SetAutomationId(start, "HostingStartServer");
-            start.Style = StyleFor("LauncherAccentButton");
+            start.Style = StyleFor("AccentButtonStyle");
             start.Visibility = IsVisible(!editingRunning);
             save = page.Action(isNew ? "Save Server" : "Save Changes", () => PersistAsync(startServer: false), "S");
             AutomationProperties.SetName(save, isNew ? "Save server" : "Save changes");
@@ -104,7 +104,7 @@ public sealed partial class HostingPage
                 var phase = Caption("");
                 page.phaseText = phase;
                 page.UpdatePhaseText(page.State(server));
-                save.Style = StyleFor("LauncherAccentButton");
+                save.Style = StyleFor("AccentButtonStyle");
                 var actions = Buttons(page.Action("Cancel", page.ShowServerAsync, "U"), save);
                 Content.Children.Add(RunningHeader(server.Name, phase, actions));
                 Content.Children.Add(new InfoBar
@@ -246,7 +246,7 @@ public sealed partial class HostingPage
             switch (state)
             {
                 case { Phase: ZpamDownloadPhase.Missing, Release: { } release }:
-                    var get = new Button { Content = $"Get zPAM {release.Version}", Style = StyleFor("LauncherAccentButton") };
+                    var get = new Button { Content = $"Get zPAM {release.Version}", Style = StyleFor("AccentButtonStyle") };
                     get.Click += async (_, _) => await page.shell.ShowProblemAsync(async () =>
                     {
                         await page.hosting.Zpam.GetAsync(line, lifetime.Token);

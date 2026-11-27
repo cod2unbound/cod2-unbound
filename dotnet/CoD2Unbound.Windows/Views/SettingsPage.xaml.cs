@@ -509,7 +509,7 @@ public sealed partial class SettingsPage : Page
             var action = Action(label, () => shell.RunUpdateAsync(install), exclusive: false);
             AutomationProperties.SetAutomationId(action, id);
             action.IsEnabled = enabled && session.CanCheckUpdates;
-            action.Style = StyleFor(primary ? "MediumAccentButton" : "MediumButton");
+            action.Style = StyleFor(primary ? "AccentButtonStyle" : "MediumButton");
             actions.Children.Add(action);
         }
 

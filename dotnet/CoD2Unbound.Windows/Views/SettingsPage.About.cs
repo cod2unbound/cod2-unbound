@@ -87,7 +87,7 @@ public sealed partial class SettingsPage
     private static Border LicenceTag(string licence) => new()
     {
         Style = StyleFor("EditionTag"),
-        Child = new TextBlock { Text = licence, Style = StyleFor("TypeLabel"), VerticalAlignment = VerticalAlignment.Center }
+        Child = new TextBlock { Text = licence, Style = StyleFor("CaptionTextBlockStyle"), VerticalAlignment = VerticalAlignment.Center }
     };
 
     private static Border AboutFact(string label, string value, string footnote) =>

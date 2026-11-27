@@ -6,12 +6,11 @@
          title, the labelled pane bar under it. The system's caption buttons sit at the top right. -->
     <Grid x:Name="SettingsRoot" Background="{ThemeResource GroundBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="{StaticResource CaptionRowHeight}" />
+            <RowDefinition Height="32" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid x:Name="SettingsCaption" Background="Transparent">
-            <TextBlock x:Name="CaptionTitle" Text="Settings" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       FontSize="{StaticResource SubtitleSize}" FontWeight="SemiBold" Foreground="{ThemeResource text}"
+            <TextBlock x:Name="CaptionTitle" Text="Settings" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}" FontWeight="SemiBold" Foreground="{ThemeResource text}"
                        AutomationProperties.AccessibilityView="Raw" />
         </Grid>
         <Frame x:Name="SettingsFrame" Grid.Row="1" IsTabStop="False" />
