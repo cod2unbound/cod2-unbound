@@ -131,6 +131,14 @@ def generate(source):
                 "AccentFillColorDefaultBrush": gold,
                 "AccentFillColorSecondaryBrush": hover,
                 "AccentFillColorTertiaryBrush": pressed,
+                # The stock button resolves its own theme keys, whose defaults
+                # are static aliases to the system accent brushes.
+                "AccentButtonBackground": gold,
+                "AccentButtonBackgroundPointerOver": hover,
+                "AccentButtonBackgroundPressed": pressed,
+                "AccentButtonForeground": "prominentText",
+                "AccentButtonForegroundPointerOver": "prominentText",
+                "AccentButtonForegroundPressed": "prominentText",
                 "AccentTextFillColorPrimaryBrush": "link",
                 "TextOnAccentFillColorPrimaryBrush": "prominentText",
                 "TextFillColorPrimaryBrush": "text",

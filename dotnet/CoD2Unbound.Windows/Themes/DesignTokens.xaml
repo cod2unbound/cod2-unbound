@@ -87,6 +87,12 @@
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFC4984C" />
             <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFE8C478" />
             <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD6AD62" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFC4984C" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFE8C478" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD6AD62" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF1C170C" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF1C170C" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF1C170C" />
             <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFE2BD72" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF1C170C" />
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FFECE6D6" />
@@ -192,6 +198,12 @@
             <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF6B4A12" />
             <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FF8A5A12" />
             <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FF46522A" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FF6B4A12" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF8A5A12" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF46522A" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFF8E8" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFF8E8" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFF8E8" />
             <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FF8A5A12" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFF8E8" />
             <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FF26251D" />
