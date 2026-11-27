@@ -60,9 +60,10 @@
                         <ContentControl Style="{StaticResource MiniDogTag}" AutomationProperties.AccessibilityView="Raw" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock x:Name="PlayerName" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                       Text="Player" TextTrimming="CharacterEllipsis" />
+                                       Text="Player" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                             <TextBlock x:Name="PaneLoadout" Style="{StaticResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Grid>
                     <Button.Flyout>

@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Color = global::Windows.UI.Color;
-using Point = global::Windows.Foundation.Point;
 using Rect = global::Windows.Foundation.Rect;
 using Size = global::Windows.Foundation.Size;
 using static CoD2Unbound.Windows.Views.PagePresentation;
@@ -99,16 +98,13 @@ public sealed partial class HomePage : Page
         double width = PageRoot.ActualWidth, height = PageRoot.ActualHeight;
         if (width <= 0 || height <= 0 || XamlRoot is null)
             return;
-        // The page fills the window to its right and bottom edges beside the sidebar, so its corner in the
-        // window follows from the sizes alone. The Mac lays Home out from the window's corner: the hero 300
-        // from its left edge and 138 from its top.
-        var origin = new Point(Math.Max(0, XamlRoot.Size.Width - width), Math.Max(0, XamlRoot.Size.Height - height));
-        // The Mac measures from the window's top and bottom; the shell's frame may stop short of the bottom edge.
-        double windowHeight = Math.Max(height + origin.Y, XamlRoot?.Size.Height ?? 0);
-        double lead = Math.Max(32, 300 - origin.X);
+        double windowHeight = Math.Max(height, XamlRoot.Size.Height);
+        double pageTop = windowHeight - height;
+        // Keep the expanded inset while letting the content follow the native pane in compact mode.
+        const double lead = 68;
         double inner = Math.Max(0, width - lead - 32);
         bool narrow = inner < 980;
-        double heroTop = Math.Max(16, Math.Min(138, Math.Max(84, windowHeight - 762)) - origin.Y);
+        double heroTop = Math.Max(16, Math.Min(138, Math.Max(84, windowHeight - 762)) - pageTop);
         // Three native buttons need enough room for the last row to keep its full hit target.
         double minimumCardHeight = model.Recent.Length == 3 ? 272 : 262;
         cardHeight = Math.Clamp(windowHeight - 624, minimumCardHeight, 276);
