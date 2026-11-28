@@ -50,6 +50,13 @@ public sealed partial class SettingsPage : Page
         this.session = session;
         model = new(session);
         InitializeComponent();
+        if (textSettings.TextScaleFactor >= 2)
+        {
+            PaneStrip.HorizontalScrollBarVisibility = ScrollBarVisibility.Visible;
+            PaneScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
+            PaneScroll.IsTabStop = true;
+            AutomationProperties.SetName(PaneScroll, "Settings content");
+        }
         PaneBody.SizeChanged += (_, _) => ContentResized?.Invoke();
         PaneStrip.SizeChanged += (_, _) =>
         {

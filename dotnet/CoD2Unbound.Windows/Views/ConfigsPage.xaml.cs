@@ -36,6 +36,14 @@ public sealed partial class ConfigsPage : Page
         this.model = model;
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
+        if (ExtraLargeText)
+        {
+            ((Grid)SidebarFootnote.Parent).Children.Remove(SidebarFootnote);
+            SidebarBody.Children.Add(SidebarFootnote);
+            SidebarScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
+            SidebarScroll.IsTabStop = true;
+            AutomationProperties.SetName(SidebarScroll, "Configs sidebar");
+        }
         foreach (var notice in new[] { Status, ExportStatus, RecoveryStatus })
             SpaceOpenNotice(notice);
         Loadouts.ItemsSource = loadoutRows;

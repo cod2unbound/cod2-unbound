@@ -107,8 +107,8 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="Configs" Style="{StaticResource PageTitle}"
                            Margin="10,0,10,16" AutomationProperties.HeadingLevel="Level1" />
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="4">
+                <ScrollViewer x:Name="SidebarScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="SidebarBody" Spacing="4">
                         <TextBlock Text="Discover" Style="{StaticResource GroupLabelText}" Margin="10,0,10,6" />
                         <ListView x:Name="DiscoverPlaces" AutomationProperties.Name="Discover" TabNavigation="Once"
                                   SelectionChanged="OnDiscoverPlaceChanged">
@@ -204,7 +204,7 @@
                         </Button>
                     </StackPanel>
                 </ScrollViewer>
-                <TextBlock Grid.Row="2" Margin="10,8,10,0" Style="{StaticResource SecondaryCaption}"
+                <TextBlock x:Name="SidebarFootnote" Grid.Row="2" Margin="10,8,10,0" Style="{StaticResource SecondaryCaption}"
                            Text="Each loadout is its own Call of Duty 2 player profile, so the game sees exactly what you set here." />
             </Grid>
         </Border>
