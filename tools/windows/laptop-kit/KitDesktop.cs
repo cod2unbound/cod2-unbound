@@ -7,6 +7,41 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
+public sealed class KitNoticeSample : Form
+{
+    public KitNoticeSample()
+    {
+        var area = Screen.PrimaryScreen.WorkingArea;
+        StartPosition = FormStartPosition.Manual;
+        Bounds = new Rectangle(area.Right - 400, area.Bottom - 170, 400, 170);
+        BackColor = Color.FromArgb(35, 40, 55);
+        FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
+        TopMost = true;
+    }
+
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    public bool SaveEmpty(string path)
+    {
+        var area = Bounds;
+        int color = BackColor.ToArgb();
+        for (int y = area.Top; y < area.Bottom; y += 8)
+            for (int x = area.Left; x < area.Right; x += 8)
+                if (KitDesktop.RootWindowAt(x, y) != Handle) return false;
+        using (var image = new Bitmap(area.Width, area.Height))
+        {
+            using (var drawing = Graphics.FromImage(image))
+                drawing.CopyFromScreen(area.Location, System.Drawing.Point.Empty, area.Size);
+            for (int y = 0; y < image.Height; y++)
+                for (int x = 0; x < image.Width; x++)
+                    if (image.GetPixel(x, y).ToArgb() != color) return false;
+            image.Save(path, ImageFormat.Png);
+            return true;
+        }
+    }
+}
+
 public static class KitDesktop {
     [StructLayout(LayoutKind.Sequential)] public struct Rect {
         public int L,T,R,B;
@@ -291,6 +326,11 @@ public static class KitDesktop {
     public static bool ClickSurface(IntPtr window, int x, int y, bool requireForeground)
     {
         return ClickSurface(window, x, y, requireForeground, null);
+    }
+
+    public static IntPtr RootWindowAt(int x, int y)
+    {
+        return GetAncestor(WindowFromPoint(new Point { X = x, Y = y }), 2);
     }
 
     public static bool ClickSurface(IntPtr window, int x, int y, bool requireForeground, Action whilePressed)

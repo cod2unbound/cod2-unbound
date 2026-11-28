@@ -437,18 +437,6 @@ function Find-KitUpdateToast([string]$Version) {
     } | Select-Object -First 1
 }
 
-function Get-KitToastAction($Node) {
-    $walker = [Windows.Automation.TreeWalker]::ControlViewWalker
-    for ($depth = 0; $Node -and $depth -lt 4; $depth++) {
-        $pattern = $null
-        if (!$Node.Current.IsOffscreen -and
-            $Node.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)) {
-            return $pattern
-        }
-        $Node = $walker.GetParent($Node)
-    }
-}
-
 function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')][string]$State) {
     Stop-KitIfNoGame
     Initialize-KitLauncherDesktop
@@ -470,7 +458,7 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}" -NoticeVersion {3} -NoticeGate "{4}"' -f $server,$setup.FullName,$ready,$version,$presented
     $feed = Start-KitProcess $powershell $arguments $entry.Folder -NoWindow
-    $run = $null
+    $run = $sample = $null
     $receipt = Join-Path $Results 'notice.txt'
     $timing = Join-Path $LauncherHome 'startup-timing.log'
     "State=$State. Loopback offer=$version." | Set-Content -LiteralPath $receipt
@@ -509,6 +497,9 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
 
         [void][KitDesktop]::ShowWindow($window,6)
         Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
+        $sample = [KitNoticeSample]::new()
+        $sample.Show()
+        $sample.Refresh()
         [IO.File]::WriteAllText($presented, 'minimized')
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         $banner = $null
@@ -516,20 +507,37 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         $showResult = 'update notice show version=' + [regex]::Escape($version) + ' id=[1-9][0-9]*$'
         $deadline = (Get-Date).AddSeconds(40)
         do {
-            if (!$banner) { $banner = Find-KitUpdateToast $version }
-            if (!$accepted) {
-                if (Test-Path -LiteralPath $timing) {
-                    $accepted = Select-String -LiteralPath $timing -Pattern $showResult -Quiet
+            if (!$accepted -and (Test-Path -LiteralPath $timing)) {
+                $accepted = Select-String -LiteralPath $timing -Pattern $showResult -Quiet
+                if ($accepted) {
+                    $deadline = (Get-Date).AddSeconds(4)
+                    if ($State -eq 'closed') {
+                        Stop-KitLauncher $run $Results
+                        $run = $null
+                        $deadline = (Get-Date).AddSeconds(4)
+                    }
                 }
-                if ($accepted) { $deadline = (Get-Date).AddSeconds(3) }
             }
+            if ($State -ne 'closed' -or !$run) { $banner = Find-KitUpdateToast $version }
             if ($accepted -and $banner) { break }
+            [Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 200
         } while ((Get-Date) -lt $deadline)
 
+        $picture = Join-Path $Results 'notice-area.png'
+        $area = $null
+        if ($banner) {
+            try { $area = $banner.Current.BoundingRectangle } catch [Windows.Automation.ElementNotAvailableException] { }
+        }
+        if ($area -and !$area.IsEmpty) {
+            Save-KitScreenRegion $area $picture
+        } elseif ($sample.SaveEmpty($picture)) {
+            "Picture=uncovered Test backdrop at $($sample.Bounds)." | Add-Content -LiteralPath $receipt
+        } else {
+            'Picture unavailable. The lower-right test backdrop was obscured.' | Add-Content -LiteralPath $receipt
+        }
         if (!$accepted) {
-            'Submission=not acknowledged. See the support, registration, setting and Show result in startup-timing.log.' |
-                Add-Content -LiteralPath $receipt
+            'Submission=not acknowledged. See startup-timing.log.' | Add-Content -LiteralPath $receipt
             throw 'The Test notice was not acknowledged by Windows.'
         }
         'Submission=accepted.' | Add-Content -LiteralPath $receipt
@@ -537,46 +545,26 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
             $remembered = $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates
             "Remembered=$remembered." | Add-Content -LiteralPath $receipt
         }
-
-        $toast = $null
-        if ($banner) {
-            'Delivery=banner observed.' | Add-Content -LiteralPath $receipt
-            try { $toast = Get-KitToastAction $banner } catch [Windows.Automation.ElementNotAvailableException] { }
-        } else {
-            $key = if ((Get-KitWindowsVersion).Family -eq 'Windows 10') { 65 } else { 78 }
-            [KitDesktop]::Chord(91,$key)
-            try {
-                Start-Sleep -Milliseconds 650
-                $centre = Find-KitUpdateToast $version
-                $history = Select-String -LiteralPath $timing -SimpleMatch "update notice history version=$version present=True" -Quiet
-                $observed = if ($centre -or $history) { 'notification centre only during the sample' } else { 'unconfirmed' }
-                "Delivery=$observed. Check Focus assist and the app notification settings by observation only." |
-                    Add-Content -LiteralPath $receipt
-                $label = if ($key -eq 65) { 'Focus assist' } else { 'Do not disturb' }
-                $quiet = Find-KitControl ([Windows.Automation.AutomationElement]::RootElement) $label -Name
-                if ($quiet) {
-                    $toggle = $null
-                    $state = if ($quiet.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern,[ref]$toggle)) {
-                        $toggle.Current.ToggleState
-                    }
-                    "Quiet setting: $($quiet.Current.Name) $state $($quiet.Current.ItemStatus)" | Add-Content -LiteralPath $receipt
-                }
-            } finally { [KitDesktop]::Tap(27) }
+        $history = Select-String -LiteralPath $timing -SimpleMatch "update notice history version=$version present=True" -Quiet
+        "HistoryPresent=$([bool]$history)." | Add-Content -LiteralPath $receipt
+        if (!$banner) {
+            'Delivery=no banner during the sample.' | Add-Content -LiteralPath $receipt
+            return
         }
-
+        'Delivery=banner observed.' | Add-Content -LiteralPath $receipt
         if ($State -eq 'closed') {
-            Stop-KitLauncher $run $Results
-            $run = $null
-            'Click=attended. Use a disposable offline Windows account with the kit environment. Click this notice after closing Test and confirm Settings opens on Updates.' |
-                Add-Content -LiteralPath $receipt
+            'Click=attended in a disposable offline account with the kit environment.' | Add-Content -LiteralPath $receipt
             return
         }
-        if (!$toast) {
-            'Click=attended. Click the notice with the Test launcher minimized and confirm Settings opens on Updates.' |
-                Add-Content -LiteralPath $receipt
-            return
+        if (!$area -or $area.IsEmpty) { throw 'The Test banner disappeared before pointer input.' }
+        $x = [int]($area.Left + $area.Width / 2)
+        $y = [int]($area.Top + $area.Height / 2)
+        $toastWindow = [KitDesktop]::RootWindowAt($x,$y)
+        $target = [Windows.Automation.AutomationElement]::FromPoint([Windows.Point]::new($x,$y))
+        if (!$banner.Equals($target) -or $toastWindow -eq [IntPtr]::Zero -or
+            ![KitDesktop]::ClickSurface($toastWindow,$x,$y,$false)) {
+            throw 'The Test banner did not receive pointer input.'
         }
-        $toast.Invoke()
         $updates = Wait-KitCondition {
             foreach ($candidate in [KitDesktop]::VisibleProcessWindows($run.Process.Id)) {
                 if ($candidate -eq $window -or $candidate -ne [KitDesktop]::GetForegroundWindow()) { continue }
@@ -587,9 +575,10 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
             }
         } 20 'notification activation to bring Updates forward'
         Save-KitWindow $updates (Join-Path $Results 'updates.png')
-        'Invoked the Windows notification and saw the Updates section selected.' | Add-Content -LiteralPath $receipt
+        'Clicked the Windows notification with pointer input and saw the Updates section selected.' | Add-Content -LiteralPath $receipt
         [KitDesktop]::CloseOwnedWindow($updates)
     } finally {
+        if ($sample) { $sample.Dispose() }
         try {
             if ($run) { Stop-KitLauncher $run $Results }
             Save-Text $timing (Join-Path $Results 'startup-timing.log')
