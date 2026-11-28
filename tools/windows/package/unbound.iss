@@ -9,6 +9,7 @@
   #define Product "CoD2 Unbound Test"
   #define ProductId "CoD2UnboundTest"
   #define LauncherId "CoD2Unbound.Launcher.Fixture"
+  #define ToastActivator "21BB89EE-DB3A-407B-A149-B51C19E4E5E4"
   #define DemoExtension ".cod2-unbound-test-demo"
   #define ConfigExtension ".cod2-unbound-test-config"
   #define OriginalScheme "cod2-test"
@@ -18,6 +19,7 @@
   #define Product "CoD2 Unbound"
   #define ProductId "CoD2Unbound"
   #define LauncherId "CoD2Unbound.Launcher"
+  #define ToastActivator "69ACDCFD-2F69-4474-B721-7E235B7E784F"
   #define DemoExtension ".dm_1"
   #define ConfigExtension ".cfg"
   #define OriginalScheme "cod2"
@@ -97,7 +99,7 @@ Source: "{#Payload}\launcher\*"; DestDir: "{app}\launcher"; Flags: ignoreversion
 
 [Icons]
 #ifdef HasLauncher
-Name: "{group}\{#Product}"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; AppUserModelID: "{#LauncherId}"
+Name: "{group}\{#Product}"; Filename: "{app}\launcher\{#Launcher}"; WorkingDir: "{sys}"; AppUserModelID: "{#LauncherId}"; AppUserModelToastActivatorCLSID: "{#ToastActivator}"
 #else
 Name: "{group}\{#Product} (Original 1.3)"; Filename: "{app}\original\cod2_win32.exe"; WorkingDir: "{sys}"
 Name: "{group}\{#Product} (CoD2x)"; Filename: "{app}\cod2x\cod2_win32.exe"; WorkingDir: "{sys}"
@@ -113,6 +115,10 @@ Type: files; Name: "{group}\{#Product} (CoD2x).lnk"
 Name: "links"; Description: "Handle server and player setup links when no other app handles them"; Flags: unchecked
 
 [Registry]
+; Register() uses the existing per-user activator when its LocalServer32 is present.
+Root: HKCU64; Subkey: "Software\Classes\AppUserModelId\{#LauncherId}"; ValueType: string; ValueName: "CustomActivator"; ValueData: "{{{#ToastActivator}}"; Flags: uninsdeletekey
+Root: HKCU64; Subkey: "Software\Classes\CLSID\{{{#ToastActivator}}"; ValueType: none; Flags: uninsdeletekey
+Root: HKCU64; Subkey: "Software\Classes\CLSID\{{{#ToastActivator}}\LocalServer32"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ----AppNotificationActivated:"
 Root: HKA; Subkey: "Software\Classes\{#ProductId}.Demo"; ValueType: string; ValueData: "Call of Duty 2 demo"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\{#ProductId}.Demo\shell\open\command"; ValueType: string; ValueData: """{app}\launcher\{#Launcher}"" ""%1"""
 Root: HKA; Subkey: "Software\Classes\{#DemoExtension}\OpenWithProgids"; ValueType: string; ValueName: "{#ProductId}.Demo"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty

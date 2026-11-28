@@ -4,11 +4,15 @@ namespace CoD2Unbound.Windows;
 
 internal static class StartupTrace
 {
+#if UPDATE_FIXTURES
+    internal static bool Enabled => Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_UPDATE_VISUAL") == "1";
+#endif
+
     [Conditional("UPDATE_FIXTURES")]
     internal static void Mark(string step)
     {
 #if UPDATE_FIXTURES
-        if (Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_UPDATE_VISUAL") != "1" ||
+        if (!Enabled ||
             Environment.GetEnvironmentVariable("COD2_UNBOUND_TEST_HOME") is not { } home)
             return;
         try

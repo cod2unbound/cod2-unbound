@@ -13,9 +13,16 @@ public sealed partial class MainWindow
         if (version is null || UpdateNotifications is not { } notifications || closing)
             return;
         bool foreground = WinRT.Interop.WindowNative.GetWindowHandle(this) == GetForegroundWindow();
-        if (UpdateNotification.ShouldShow(version, foreground, session.UpdateInstaller.Observe(), notifications.IsEnabled,
-                session.Library.NotifiedUpdates) && notifications.Show(version))
+        bool eligible = UpdateNotification.ShouldShow(version, foreground, session.UpdateInstaller.Observe(),
+            available: true, session.Library.NotifiedUpdates);
+        StartupTrace.Mark($"update notice offer version={version} foreground={foreground} eligible={eligible}");
+        if (eligible && notifications.IsEnabled && notifications.Show(version))
+        {
             await session.RememberUpdateNotificationAsync(version);
+#if UPDATE_FIXTURES
+            await notifications.TraceHistoryAsync(version);
+#endif
+        }
     }
 
     private async Task RemoveInstalledNotificationsAsync()
