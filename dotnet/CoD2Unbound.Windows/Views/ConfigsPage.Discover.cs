@@ -601,14 +601,14 @@ public sealed partial class ConfigsPage
         avatar.VerticalAlignment = VerticalAlignment.Bottom;
         avatar.Margin = new Thickness(12, 0, 0, 0);
         var top = new Grid { Height = 122, Children = { art, avatar } };
-        var mouse = ShelfValue("Mouse speed · per full turn", "", wrap);
+        var mouse = ShelfValue("Mouse speed · per full turn", "");
         mouse.Visibility = Visibility.Collapsed;
         Grid? columns = wrap ? null : Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
         Panel facts = columns is null ? new StackPanel { Spacing = 4 } : columns;
         facts.Children.Add(mouse);
         if (!string.IsNullOrWhiteSpace(entry.Facts?.Resolution))
         {
-            var resolution = ShelfValue("Resolution", entry.Facts.Resolution, wrap);
+            var resolution = ShelfValue("Resolution", entry.Facts.Resolution);
             if (columns is not null)
                 Grid.SetColumn(resolution, 1);
             facts.Children.Add(resolution);
@@ -673,15 +673,13 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private static StackPanel ShelfValue(string label, string value, bool wrap) => new()
+    private static StackPanel ShelfValue(string label, string value) => new()
     {
         Spacing = 2,
         Children = {
             new TextBlock { Text = value, Style = StyleFor("BodyLargeTextBlockStyle"),
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap },
-            new TextBlock { Text = label, Style = StyleFor("SetupFactLabel"),
-                TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap }
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+            new TextBlock { Text = label, Style = StyleFor("SetupFactLabel") }
         }
     };
 
