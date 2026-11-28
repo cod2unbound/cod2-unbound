@@ -119,7 +119,7 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$St
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         try {
             if ($StatusDuringPress) {
-                $fixture = New-RunContext 'jump-refresh-fixture'
+                $fixture = New-RunContext "jump-refresh-fixture-$theme"
                 $port = Join-Path $fixture.Folder 'master-port.txt'
                 $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
                 $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Stage "{1}" -JumpRace' -f
