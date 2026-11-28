@@ -12,10 +12,14 @@ public sealed partial class MainWindow
     {
         if (version is null || UpdateNotifications is not { } notifications || closing)
             return;
-        bool foreground = WinRT.Interop.WindowNative.GetWindowHandle(this) == GetForegroundWindow();
+        nint window = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        bool foregroundMatch = window != 0 && window == GetForegroundWindow();
+        bool minimized = IsIconic(window);
+        bool visible = IsWindowVisible(window);
+        bool foreground = foregroundMatch && !minimized && visible;
         bool eligible = UpdateNotification.ShouldShow(version, foreground, session.UpdateInstaller.Observe(),
             available: true, session.Library.NotifiedUpdates);
-        StartupTrace.Mark($"update notice offer version={version} foreground={foreground} eligible={eligible}");
+        StartupTrace.Mark($"update notice offer version={version} foregroundMatch={foregroundMatch} minimized={minimized} visible={visible} foreground={foreground} eligible={eligible}");
         if (eligible && notifications.IsEnabled && notifications.Show(version))
         {
             await session.RememberUpdateNotificationAsync(version);
@@ -45,4 +49,12 @@ public sealed partial class MainWindow
 
     [DllImport("user32.dll")]
     private static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsIconic(nint window);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(nint window);
 }

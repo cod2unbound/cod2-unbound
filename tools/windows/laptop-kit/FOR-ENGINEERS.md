@@ -238,8 +238,12 @@ Windows appearance, notifications and default apps as they are.
   after starting Test. When Windows names the button, it saves a close-up.
   Otherwise compare the two taskbar pictures and point to the new icon to
   confirm the Test window owns it.
-- `launcher-update-notice-foreground`, `-minimized` and `-closed` use an
-  update offer from a loopback feed. Home shows the offer while foregrounded.
+- `launcher-update-notice-foreground`, `-minimized`, `-minimized-foreground`
+  and `-closed` use an update offer from a loopback feed. Home shows the offer
+  while foregrounded. The regular minimize case sends the system command.
+  The foreground-minimized case checks that the launcher still owns foreground
+  when it decides to send the notice. The closed case waits for Windows to
+  accept the notice before closing Test.
   The background receipts record Windows accepting the notice and whether a
   banner or Notification Centre entry was observed. Check Focus assist and the
   Test sender's notification settings by observation. A notice in Notification

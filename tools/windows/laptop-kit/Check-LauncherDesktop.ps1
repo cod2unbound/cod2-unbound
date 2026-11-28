@@ -437,7 +437,7 @@ function Find-KitUpdateToast([string]$Version) {
     } | Select-Object -First 1
 }
 
-function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')][string]$State) {
+function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized-foreground','closed')][string]$State) {
     Stop-KitIfNoGame
     Initialize-KitLauncherDesktop
     $exe = Get-KitStartTarget
@@ -475,13 +475,15 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         $run = Start-KitDesktopLauncher $exe -Settings $settings
         $window = Get-KitLauncherWindow $run.Process
         Wait-KitHome $window
+        Focus-KitPictureWindow $window $run.Process.Id
+        $offerLine = 'update notice offer version=' + [regex]::Escape($version) + ' '
         if ($State -eq 'foreground') {
-            Focus-KitPictureWindow $window $run.Process.Id
             [IO.File]::WriteAllText($presented, 'foreground')
             try {
                 Wait-KitCondition {
                     if ([KitDesktop]::GetForegroundWindow() -ne $window) { throw 'Foreground changed during the update check.' }
-                    Find-KitControl $window 'Install Update' -Name
+                    (Find-KitControl $window 'Install Update' -Name) -and
+                        (Select-String -LiteralPath $timing -Pattern ($offerLine + 'foregroundMatch=True minimized=False visible=True foreground=True eligible=False$') -Quiet)
                 } 40 'the in-app Install Update action' | Out-Null
             } catch {
                 if ([KitDesktop]::GetForegroundWindow() -eq $window) {
@@ -495,15 +497,27 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
             return
         }
 
-        [void][KitDesktop]::ShowWindow($window,6)
-        Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
         $sample = [KitNoticeSample]::new()
         $sample.Show()
         $sample.Refresh()
-        [IO.File]::WriteAllText($presented, 'minimized')
+        if ($State -eq 'minimized-foreground') {
+            [KitDesktop]::MinimizeAndActivate($window)
+            Wait-KitCondition {
+                [KitDesktop]::IsIconic($window) -and [KitDesktop]::GetForegroundWindow() -eq $window
+            } 5 'the minimized launcher to hold foreground' | Out-Null
+        } else {
+            if (![KitDesktop]::RequestMinimize($window)) { throw 'Windows did not queue the system minimize command.' }
+            Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
+        }
+        $foregroundAtRelease = [KitDesktop]::GetForegroundWindow() -eq $window
+        "Iconic=$([KitDesktop]::IsIconic($window)). Foreground match at feed release=$foregroundAtRelease." |
+            Add-Content -LiteralPath $receipt
+        [IO.File]::WriteAllText($presented, $State)
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         $banner = $null
         $accepted = $false
+        $closedAfterSubmission = $false
+        $historyLine = "update notice history version=$version present=True"
         $showResult = 'update notice show version=' + [regex]::Escape($version) + ' id=[1-9][0-9]*$'
         $deadline = (Get-Date).AddSeconds(40)
         do {
@@ -511,18 +525,20 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
                 $accepted = Select-String -LiteralPath $timing -Pattern $showResult -Quiet
                 if ($accepted) {
                     $deadline = (Get-Date).AddSeconds(4)
-                    if ($State -eq 'closed') {
-                        Stop-KitLauncher $run $Results
-                        $run = $null
-                        $deadline = (Get-Date).AddSeconds(4)
-                    }
                 }
+            }
+            if ($State -eq 'closed' -and $run -and $accepted -and
+                ((Select-String -LiteralPath $timing -SimpleMatch $historyLine -Quiet) -or (Get-Date) -ge $deadline)) {
+                Stop-KitLauncher $run $Results
+                $run = $null
+                $closedAfterSubmission = $true
+                $deadline = (Get-Date).AddSeconds(4)
             }
             if ($State -ne 'closed' -or !$run) { $banner = Find-KitUpdateToast $version }
             if ($accepted -and $banner) { break }
             [Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 200
-        } while ((Get-Date) -lt $deadline)
+        } while ((Get-Date) -lt $deadline -or ($State -eq 'closed' -and $run -and $accepted))
 
         $picture = Join-Path $Results 'notice-area.png'
         $area = $null
@@ -540,12 +556,20 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
             'Submission=not acknowledged. See startup-timing.log.' | Add-Content -LiteralPath $receipt
             throw 'The Test notice was not acknowledged by Windows.'
         }
+        $match = if ($State -eq 'minimized-foreground') { 'True' } else { '(True|False)' }
+        if (!(Select-String -LiteralPath $timing -Pattern ($offerLine + "foregroundMatch=$match minimized=True visible=(True|False) foreground=False eligible=True$") -Quiet)) {
+            throw 'The launcher did not decide on the offer in the required minimized state. See startup-timing.log.'
+        }
+        if ($State -eq 'closed') {
+            if (!$closedAfterSubmission) { throw 'The launcher did not close after the notice was submitted.' }
+            'Closed after Windows acknowledged the notice.' | Add-Content -LiteralPath $receipt
+        }
         'Submission=accepted.' | Add-Content -LiteralPath $receipt
         if (Test-Path -LiteralPath $library) {
             $remembered = $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates
             "Remembered=$remembered." | Add-Content -LiteralPath $receipt
         }
-        $history = Select-String -LiteralPath $timing -SimpleMatch "update notice history version=$version present=True" -Quiet
+        $history = Select-String -LiteralPath $timing -SimpleMatch $historyLine -Quiet
         "HistoryPresent=$([bool]$history)." | Add-Content -LiteralPath $receipt
         if (!$banner) {
             'Delivery=no banner during the sample.' | Add-Content -LiteralPath $receipt

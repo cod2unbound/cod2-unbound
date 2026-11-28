@@ -259,6 +259,9 @@ $Steps = @(
             Invoke-KitUpdateNotice $step.Variant
         } -Variant $state
     }
+    Add-KitStep 'launcher-update-notice-minimized-foreground' 'Check the update notice while the minimized launcher still owns foreground' {
+        Invoke-KitUpdateNotice 'minimized-foreground'
+    }
     Add-KitStep 'resolution-original' 'First Original launch at the chosen resolution without a configuration question' {
         Invoke-KitFirstResolution
     }

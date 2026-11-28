@@ -79,7 +79,7 @@ try {
     foreach ($id in 'launcher-jump-pointer','launcher-jump-pointer-repeat','launcher-sheet-dimming',
         'launcher-tab-names','launcher-bind-chain','launcher-activation-running','launcher-activation-closed',
         'launcher-activation-explorer','launcher-activation-browser','launcher-taskbar-caption',
-        'launcher-update-notice-foreground','launcher-update-notice-minimized','launcher-update-notice-closed',
+        'launcher-update-notice-foreground','launcher-update-notice-minimized','launcher-update-notice-minimized-foreground','launcher-update-notice-closed',
         'harbor-water-original-dx9','harbor-water-original-dx7','harbor-water-cod2x-dx9','harbor-water-cod2x-dx7',
         'resolution-original','carentan-direct-2','carentan-direct-3',
         'carentan-installed-2','carentan-installed-3','collect-dumps') {

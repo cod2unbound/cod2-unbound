@@ -78,6 +78,16 @@ public static class KitDesktop {
     [StructLayout(LayoutKind.Sequential)] struct LastInput { public uint Size; public uint Ticks; }
     [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LastInput input);
 
+    public static bool RequestMinimize(IntPtr window)
+    {
+        return PostMessage(window, 0x0112, new IntPtr(0xF020), IntPtr.Zero); // WM_SYSCOMMAND / SC_MINIMIZE
+    }
+
+    public static void MinimizeAndActivate(IntPtr window)
+    {
+        ShowWindow(window, 2); // SW_SHOWMINIMIZED
+    }
+
     public static bool QuietDesktop(uint milliseconds)
     {
         var input = new LastInput { Size = (uint)Marshal.SizeOf(typeof(LastInput)) };
