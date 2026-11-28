@@ -285,6 +285,11 @@ public static class KitDesktop {
 
     public static bool ClickSurface(IntPtr window, int x, int y, bool requireForeground)
     {
+        return ClickSurface(window, x, y, requireForeground, null);
+    }
+
+    public static bool ClickSurface(IntPtr window, int x, int y, bool requireForeground, Action whilePressed)
+    {
         IntPtr previous = SetThreadDpiAwarenessContext(new IntPtr(-4));
         System.Drawing.Point cursor = Cursor.Position;
         try {
@@ -300,7 +305,10 @@ public static class KitDesktop {
             if (GetAncestor(WindowFromPoint(point), 2) != window || SecurityPrompt() != "" ||
                 (requireForeground && GetForegroundWindow() != window)) return false;
             ClickButton(false);
-            try { Thread.Sleep(85); } finally { ClickButton(true); }
+            try {
+                Thread.Sleep(85);
+                if (whilePressed != null) whilePressed();
+            } finally { ClickButton(true); }
             return true;
         } finally {
             Cursor.Position = cursor;

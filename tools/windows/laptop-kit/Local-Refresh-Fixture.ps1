@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-param([Parameter(Mandatory=$true)][string]$Stage)
+param([Parameter(Mandatory=$true)][string]$Stage, [switch]$JumpRace)
 $ErrorActionPreference='Stop'
 trap { ($_ | Out-String) | Set-Content -LiteralPath (Join-Path $Stage 'master-error.txt'); exit 1 }
 Add-Type -TypeDefinition @'
@@ -12,8 +12,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Diagnostics;
 public static class RefreshMaster {
-    public static void Run(string stage) {
-        const int count = 252;
+    public static void Run(string stage, bool jumpRace) {
+        int count = jumpRace ? 1 : 252;
         var sockets = new List<Socket>();
         var indices = new Dictionary<Socket, int>();
         var marker = new byte[]{255,255,255,255};
@@ -34,6 +34,9 @@ public static class RefreshMaster {
             }
             masterPacket.AddRange(new byte[]{92,69,79,84,0,0,0});
             var listing = masterPacket.ToArray();
+            if (jumpRace) {
+                File.WriteAllText(Path.Combine(stage, "server-address.txt"), sockets[0].LocalEndPoint.ToString());
+            }
             File.WriteAllText(Path.Combine(stage,"master-port.txt"), ((IPEndPoint)sockets[count].LocalEndPoint).Port.ToString());
             while (clock.Elapsed.TotalMinutes < 12 && !File.Exists(Path.Combine(stage,"master-stop.txt"))) {
                 // Winsock's select sets hold up to 64 sockets, so poll each small set.
@@ -72,9 +75,9 @@ public static class RefreshMaster {
             }
         } finally {
             foreach (var socket in sockets) socket.Dispose();
-            File.WriteAllText(Path.Combine(stage,"master-receipt.txt"), "Listed 252 addresses; 6 silent. Master replies " + masterReplies + ", status/info replies " + serverReplies + ".");
+            File.WriteAllText(Path.Combine(stage,"master-receipt.txt"), "Listed " + count + " addresses. Master replies " + masterReplies + ", status/info replies " + serverReplies + ".");
         }
     }
 }
 '@
-[RefreshMaster]::Run($Stage)
+[RefreshMaster]::Run($Stage, $JumpRace.IsPresent)

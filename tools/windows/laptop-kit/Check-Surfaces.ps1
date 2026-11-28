@@ -79,14 +79,14 @@ function Invoke-KitWindows10Startup {
     }
 }
 
-function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
+function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$StatusDuringPress) {
     if ($Rounds -gt 1) {
         $receiptRoot = $Results
         $privateRoot = $Private
         $failures = foreach ($round in 1..$Rounds) {
             $Results = New-Folder (Join-Path $receiptRoot "round-$round")
             $Private = New-Folder (Join-Path $privateRoot "round-$round")
-            try { Invoke-KitJumpPointer }
+            try { Invoke-KitJumpPointer -StatusDuringPress }
             catch { "Round ${round}: $($_.Exception.Message)" }
         }
         if ($failures) { throw ($failures -join ' ') }
@@ -97,13 +97,11 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
     Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
     $exe = Get-KitStartTarget
     $setupHome = $LauncherHome
-    $address = '127.0.0.1:9'
     $cases = @(
         @{ Query='library'; Name='Library'; Witness='DemosSection' }
         @{ Query='configs'; Name='Configs'; Witness='ConfigsCheckConfig' }
         @{ Query='keyboard shortcuts'; Name='Keyboard Shortcuts'; Witness='PrimaryButton'; Close='Done' }
         @{ Query='connect to address'; Name='Connect to Address'; Witness='AddressBox'; Close='Cancel' }
-        @{ Query=$address; Name=$address; Server=$true }
     )
     foreach ($theme in 'dark','light') {
         $LauncherHome = New-KitLauncherTestHome $setupHome (New-Folder (Join-Path $Private $theme))
@@ -111,17 +109,50 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
         $preferences = Join-Path $LauncherHome 'launcher\launcher-settings.json'
         $settings = Get-Content -LiteralPath $preferences -Raw | ConvertFrom-Json
         $settings | Add-Member -NotePropertyName appearance -NotePropertyValue $theme
+        $settings | Add-Member -NotePropertyName refreshServersOnOpen -NotePropertyValue $false -Force
         $settings | ConvertTo-Json | Set-Content -LiteralPath $preferences -Encoding ASCII
-        [IO.File]::WriteAllText((Join-Path $LauncherHome 'launcher\launcher-library.json'),
-            (@{recent=@($address)} | ConvertTo-Json -Compress))
         $pictures = New-Folder (Join-Path $Results $theme)
-        $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
+        $launcherSettings = Get-KitLauncherSettings
+        $address = '127.0.0.1:9'
+        $master = $run = $null
+        $timing = Join-Path $LauncherHome 'startup-timing.log'
+        $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         try {
+            if ($StatusDuringPress) {
+                $fixture = New-RunContext 'jump-refresh-fixture'
+                $port = Join-Path $fixture.Folder 'master-port.txt'
+                $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+                $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Stage "{1}" -JumpRace' -f
+                    (Join-Path $Kit 'Local-Refresh-Fixture.ps1'),$fixture.Folder
+                $master = Start-KitProcess $ps $arguments $fixture.Folder -NoWindow
+                $launcherSettings.COD2_UNBOUND_TEST_MASTER_PORT = Wait-KitCondition {
+                    if ($master.Process.HasExited) { throw 'The Jump to status fixture exited.' }
+                    if (Test-Path -LiteralPath $port) { [IO.File]::ReadAllText($port) }
+                } 15 'the Jump to status fixture'
+                $address = [IO.File]::ReadAllText((Join-Path $fixture.Folder 'server-address.txt'))
+            }
+            [IO.File]::WriteAllText($library, (@{recent=@($address)} | ConvertTo-Json -Compress))
+            $run = Start-KitProcess $exe '' $LauncherHome $launcherSettings
             $app = Get-KitLauncherWindow $run.Process
             Wait-KitHome $app
             [KitDesktop]::SizeSurfaceWindow($app, 1440, 900)
-            foreach ($case in $cases) {
+            foreach ($case in ($cases + @{ Query=$address; Name=$address; Server=$true })) {
                 Focus-KitPictureWindow $app $run.Process.Id
+                $whilePressed = $null
+                if ($case.Server -and $StatusDuringPress) {
+                    Invoke-KitControl $app 'ServersItem'
+                    $refresh = Wait-KitCondition { Find-KitControl $app 'Refresh server list' -Name } 12 'the Servers refresh button'
+                    $refreshAction = $refresh.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
+                    $pressTrace = Join-Path $pictures 'server-press.txt'
+                    $whilePressed = [Action]{
+                        "Pointer down: $([DateTime]::UtcNow.ToString('o'))" | Set-Content -LiteralPath $pressTrace
+                        $refreshAction.Invoke()
+                        Wait-KitCondition {
+                            Select-String -LiteralPath $library -SimpleMatch 'Fixture 000' -Quiet
+                        } 12 'the local server status to reach the library with the pointer held' | Out-Null
+                        "Status arrived before release: $([DateTime]::UtcNow.ToString('o'))" | Add-Content -LiteralPath $pressTrace
+                    }
+                }
                 [KitDesktop]::Chord(17, 75)
                 Set-KitEdit $app 'JumpBox' $case.Query
                 $button = Wait-KitCondition {
@@ -140,7 +171,7 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
                 Save-KitWindow $app (Join-Path $pictures "$file-before.png")
                 $area = $button.Current.BoundingRectangle
                 if ($area.IsEmpty -or -not [KitDesktop]::ClickSurface($app,
-                        [int]($area.Left + $area.Width/2), [int]($area.Top + $area.Height/2), $true)) {
+                        [int]($area.Left + $area.Width/2), [int]($area.Top + $area.Height/2), $true, $whilePressed)) {
                     throw "The $($case.Name) Jump to button could not receive a pointer click."
                 }
                 Wait-KitCondition {
@@ -148,7 +179,8 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
                     if (-not $case.Server) { return Find-KitControl $app $case.Witness }
                     $row = Get-KitSelectedServerRow $app
                     $detail = Find-KitControl $app 'DetailAddress' -AllowOffscreen
-                    if ($row.Name -like "*$address*" -and $detail.Current.Name -like "*$address*") {
+                    $name = if ($StatusDuringPress) { 'Fixture 000' } else { $address }
+                    if ($row.Name -like "*$name*" -and $detail.Current.Name -like "*$address*") {
                         "Selected: $($row.Name). Details: $($detail.Current.Name)." |
                             Set-Content -LiteralPath (Join-Path $pictures 'server-selection.txt') -Encoding UTF8
                         return $true
@@ -166,7 +198,18 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1) {
                     Wait-KitCondition { -not (Find-KitControl $app $case.Witness) } 8 'the Jump to action sheet to close' | Out-Null
                 }
             }
-        } finally { Stop-KitLauncher $run $pictures }
+        } finally {
+            try {
+                if ($run) { Stop-KitLauncher $run $pictures }
+                Save-Text $timing (Join-Path $pictures 'startup-timing.log')
+            } finally {
+                if ($master) {
+                    [IO.File]::WriteAllText((Join-Path $fixture.Folder 'master-stop.txt'), '')
+                    Complete-KitProcess $master $fixture.Evidence 5 | Out-Null
+                    Save-Text (Join-Path $fixture.Folder 'master-receipt.txt') (Join-Path $pictures 'status-fixture.txt')
+                }
+            }
+        }
     }
 }
 
