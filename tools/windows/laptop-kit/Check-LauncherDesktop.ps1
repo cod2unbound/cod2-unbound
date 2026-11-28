@@ -150,6 +150,7 @@ function Invoke-KitTabNames {
             $settingsWindow = Open-KitSettings $window
             try {
                 $selector = Wait-KitCondition { Find-KitControl $settingsWindow 'Panes' } 8 'the Settings sections'
+                Invoke-KitControl $selector 'General' -Name
                 $general = Wait-KitCondition { Find-KitControl $selector 'General' -Name } 8 'General settings'
                 $rows = @(Get-KitTabTrace $settingsWindow "Settings / General ($delay ms)" 5 $general $run.Process.Id $delay)
                 $rows | Export-Csv -LiteralPath $repeats -Append -NoTypeInformation -Encoding UTF8
