@@ -28,6 +28,7 @@ public sealed partial class MainWindow
     private ListViewItem[] jumpRows = [];
     private readonly HashSet<uint> jumpResultPresses = [];
     private bool? jumpPendingSelection;
+    private (JumpTarget Target, bool Launch)? jumpAfterBusy;
 
     private void InitializeJumpTo()
     {
@@ -42,7 +43,10 @@ public sealed partial class MainWindow
         JumpPopup.Closed += (_, _) =>
         {
             if (jumpOpen)
+            {
+                StartupTrace.Mark($"jump popup dismissed presses={jumpResultPresses.Count} busy={busy}");
                 CloseJumpTo(restoreFocus: false);
+            }
         };
         Root.SizeChanged += (_, _) => PlaceJumpTo();
         foreach (var (keys, words) in new[] { (new[] { "↑", "↓" }, "to move"), (["Enter"], "to open"), (["Ctrl+Enter"], "to launch on a server") })
@@ -140,6 +144,7 @@ public sealed partial class MainWindow
         // Keep the pressed button alive until WinUI dispatches release or cancellation.
         if (jumpResultPresses.Count != 0)
         {
+            StartupTrace.Mark("jump results deferred for pointer");
             jumpPendingSelection = preserveSelection;
             return;
         }
@@ -165,6 +170,7 @@ public sealed partial class MainWindow
         }
         if (sameResults)
             return;
+        StartupTrace.Mark("jump results replaced");
 
         int previousIndex = preserveSelection ? JumpIndexOf(JumpList.SelectedItem) : -1;
         JumpTarget? previous = previousIndex >= 0 ? jumpResults[previousIndex] : null;
@@ -267,10 +273,12 @@ public sealed partial class MainWindow
                     icon.ClearValue(FontIcon.ForegroundProperty);
         var action = new Button { Style = StyleFor("JumpResultAction"), Content = line };
         action.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnJumpResultPointerPressed), handledEventsToo: true);
-        PointerEventHandler finished = OnJumpResultPointerFinished;
-        action.AddHandler(UIElement.PointerReleasedEvent, finished, handledEventsToo: true);
-        action.AddHandler(UIElement.PointerCaptureLostEvent, finished, handledEventsToo: true);
-        action.AddHandler(UIElement.PointerCanceledEvent, finished, handledEventsToo: true);
+        action.AddHandler(UIElement.PointerReleasedEvent,
+            new PointerEventHandler((_, args) => FinishJumpResultPress(args, "released")), handledEventsToo: true);
+        action.AddHandler(UIElement.PointerCaptureLostEvent,
+            new PointerEventHandler((_, args) => FinishJumpResultPress(args, "capture-lost")), handledEventsToo: true);
+        action.AddHandler(UIElement.PointerCanceledEvent,
+            new PointerEventHandler((_, args) => FinishJumpResultPress(args, "canceled")), handledEventsToo: true);
         var row = new ListViewItem { Style = StyleFor("JumpRowItem"), Content = action, Tag = (target, hint) };
         // Selection stays on the native row for the search keys and UI Automation. The button invokes.
         string label = target.Detail.Length == 0 ? target.Title : $"{target.Title}, {target.Detail}";
@@ -285,6 +293,7 @@ public sealed partial class MainWindow
         }
         action.Click += async (_, _) =>
         {
+            StartupTrace.Mark($"jump click group={target.Group} open={jumpOpen} busy={busy}");
             if (jumpOpen && JumpIndexOf(row) >= 0)
                 await OpenJumpTargetAsync(target, launch: false);
         };
@@ -297,18 +306,24 @@ public sealed partial class MainWindow
     private void OnJumpResultPointerPressed(object sender, PointerRoutedEventArgs args)
     {
         if (sender is Button action && args.GetCurrentPoint(action).Properties.IsLeftButtonPressed)
+        {
             jumpResultPresses.Add(args.Pointer.PointerId);
+            StartupTrace.Mark($"jump pointer pressed id={args.Pointer.PointerId} busy={busy}");
+        }
     }
 
-    private void OnJumpResultPointerFinished(object sender, PointerRoutedEventArgs args)
+    private void FinishJumpResultPress(PointerRoutedEventArgs args, string reason)
     {
-        if (!jumpResultPresses.Remove(args.Pointer.PointerId) || jumpPendingSelection is null)
+        uint pointer = args.Pointer.PointerId;
+        if (!jumpResultPresses.Contains(pointer))
             return;
         int generation = jumpGeneration;
-        // Let the native button finish dispatching this release before applying queued results.
+        StartupTrace.Mark($"jump pointer {reason} id={pointer} busy={busy}");
+        // Button capture loss can be nested in its release. Keep the row alive through both events and Click.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            if (jumpOpen && generation == jumpGeneration && jumpPendingSelection is bool preserveSelection)
+            if (jumpOpen && generation == jumpGeneration && jumpResultPresses.Remove(pointer) &&
+                jumpPendingSelection is bool preserveSelection)
                 RenderJumpResults(preserveSelection);
         });
     }
@@ -398,6 +413,15 @@ public sealed partial class MainWindow
     private async Task OpenJumpTargetAsync(JumpTarget target, bool launch)
     {
         CloseJumpTo(restoreFocus: true);
+        if (closing)
+            return;
+        if (busy)
+        {
+            StartupTrace.Mark($"jump activation deferred group={target.Group}");
+            jumpAfterBusy = (target, launch);
+            return;
+        }
+        StartupTrace.Mark($"jump activation started group={target.Group}");
         if (target.Group == JumpGroup.Actions && Enum.TryParse<ShellCommand>(target.Id, out var command))
         {
             await RunShellCommandAsync(command);
@@ -430,6 +454,19 @@ public sealed partial class MainWindow
                     break;
             }
         });
+    }
+
+    private void SchedulePendingJump()
+    {
+        if (jumpAfterBusy is not null)
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                if (!busy && !closing && jumpAfterBusy is { } pending)
+                {
+                    jumpAfterBusy = null;
+                    await OpenJumpTargetAsync(pending.Target, pending.Launch);
+                }
+            });
     }
 
     private static string GroupName(JumpGroup group) => group == JumpGroup.Bindings ? "Bind actions" : group.ToString();

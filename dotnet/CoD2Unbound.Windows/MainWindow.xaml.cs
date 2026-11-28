@@ -563,6 +563,7 @@ public sealed partial class MainWindow : Window
             }
             if (!flushedForClose && !windowsSessionEnding)
             {
+                SchedulePendingJump();
                 ScheduleActivation();
                 RefreshTaskbarJumpList();
             }
