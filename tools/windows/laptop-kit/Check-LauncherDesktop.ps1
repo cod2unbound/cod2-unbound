@@ -240,20 +240,30 @@ function Invoke-KitBindChain {
             if (($values -join '|') -ne "$title|weapnext|$second") { throw "The $phase editor showed different bind actions." }
             Save-KitWindow $window (Join-Path $evidence 'bind.png')
             if ($phase -eq 'reopen') {
-                Set-KitBindText $window 'Step 2 text' 'centerview' -KeepFocus
                 $config = Join-Path $LauncherHome 'main\players\kit\config_mp.cfg'
+                Set-KitBindText $window 'Step 2 text' 'weapnext' -KeepFocus
                 Wait-KitCondition {
                     $edit = Find-KitBindEdit $window 'Step 2 text'
                     if (!$edit) { return }
                     $value = $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
                     $focused = $edit.Current.HasKeyboardFocus
-                    $saved = Select-String -LiteralPath $config -Pattern '^bind\s+F6\s+"weapnext\s*;\s*centerview"\s*$' -Quiet
+                    $saved = Select-String -LiteralPath $config -Pattern '^bind\s+F6\s+"weapnext\s*;\s*weapnext"\s*$' -Quiet
                     "Value=$value. FieldFocused=$focused. Saved=$saved." |
                         Set-Content -LiteralPath (Join-Path $evidence 'bind-edit.txt')
-                    $value -eq 'centerview' -and $focused -and $saved
-                } 8 'the edited bind to save while its field still has focus' -OnTimeout {
+                    $value -eq 'weapnext' -and $focused -and $saved
+                } 8 'the named action to save while its field still has focus' -OnTimeout {
                     Save-KitForegroundTimeout 'Bind edit focus and save' $run.Process.Id
                 } | Out-Null
+
+                # Center View is a console command in the catalog. Request its
+                # explicit approval without routing a Tab through the editor.
+                Set-KitBindText $window 'Step 2 text' 'centerview' -KeepFocus
+                Invoke-KitControl $window 'Save bind' -Name -AllowOffscreen
+                Wait-KitCondition {
+                    Select-String -LiteralPath $config -Pattern '^bind\s+F6\s+"weapnext\s*;\s*centerview"\s*$' -Quiet
+                } 8 'the approved Center View command to be saved' | Out-Null
+                'The Center View command was approved and saved without pressing Tab.' |
+                    Add-Content -LiteralPath (Join-Path $evidence 'bind-edit.txt')
             }
         } finally { Stop-KitLauncher $run $evidence -RequireCleanExit }
     }
