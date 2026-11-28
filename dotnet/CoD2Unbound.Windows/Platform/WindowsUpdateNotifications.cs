@@ -122,23 +122,35 @@ internal sealed class WindowsUpdateNotifications : IDisposable
 
     internal async Task RemoveAsync(string version)
     {
-        if (manager is null)
+        if (manager is not { } notifications)
             return;
-        try { await manager.RemoveByTagAsync(UpdateNotification.Tag(version)); }
+        try { await notifications.RemoveByTagAsync(UpdateNotification.Tag(version)); }
         catch (Exception error) when (Unavailable(error)) { RecordFailure("RemoveByTagAsync", error); }
     }
 
     public void Dispose()
     {
-        if (manager is null)
+        if (manager is not { } notifications)
             return;
+        var listener = handler;
+        manager = null;
+        handler = null;
         try
         {
-            if (handler is not null)
-                manager.NotificationInvoked -= handler;
-            manager.Unregister();
+            if (listener is not null)
+                notifications.NotificationInvoked -= listener;
         }
-        catch (Exception error) when (Unavailable(error)) { RecordFailure("Unregister", error); }
+        catch (Exception error) when (Unavailable(error)) { RecordFailure("NotificationInvoked removal", error); }
+        finally
+        {
+            // The SDK requires Unregister before exit even if event removal fails.
+            try
+            {
+                notifications.Unregister();
+                StartupTrace.Mark("update notice unregister=success");
+            }
+            catch (Exception error) when (Unavailable(error)) { RecordFailure("Unregister", error); }
+        }
     }
 
     private static bool Unavailable(Exception error) => error is COMException or UnauthorizedAccessException or
