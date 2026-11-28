@@ -140,10 +140,11 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
     $exe = Get-KitStartTarget
     $profile = $LauncherHome
     $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
-    $config = Join-Path $Kit 'Sample config.cfg'
+    $config = Join-Path $Private 'kit activation.cod2-unbound-test-config'
+    Copy-Item -LiteralPath (Join-Path $Kit 'Sample config.cfg') -Destination $config
     $recording = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
     Stop-KitIfMissing $recording 'The test recording is missing.'
-    $demo = Join-Path $Private 'kit activation recording.dm_1'
+    $demo = Join-Path $Private 'kit activation recording.cod2-unbound-test-demo'
     Copy-Item -LiteralPath $recording -Destination $demo
     $playableName = 'kit_activation_recording'
     $sourceHash = (Get-FileHash -LiteralPath $demo).Hash
@@ -184,6 +185,13 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
             $before = @(Get-TreeHashes (Join-Path $LauncherHome 'main'))
             $before | Set-Content -LiteralPath (Join-Path $directory 'private-files-before.txt')
             $gameSince = Get-Date
+            if ($case.Type -ne 'server') {
+                $suffix = [IO.Path]::GetExtension($case.Source)
+                $registration = Get-Item -LiteralPath "HKCU:\Software\Classes\$suffix\OpenWithProgids"
+                if ($case.Class -notin $registration.GetValueNames()) {
+                    throw "The installed Test file type $suffix does not list its registered handler."
+                }
+            }
             Open-KitAssociation $case.Source $case.Class $exe $settings
             $window = Wait-KitCondition {
                 $front = [KitDesktop]::GetForegroundWindow()

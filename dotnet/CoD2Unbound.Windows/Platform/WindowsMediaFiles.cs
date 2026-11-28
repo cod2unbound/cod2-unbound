@@ -98,11 +98,15 @@ internal sealed partial class WindowsMediaFiles(string homePath) : IMediaFiles
     {
         path = Path.GetFullPath(path);
         string fileName = Path.GetFileName(path);
+        if (!WindowsInstallIdentity.IsDemoFile(fileName))
+            throw new InvalidDataException(MediaName.PlaybackProblem);
         string stem = Path.GetFileNameWithoutExtension(fileName);
         string folder = WindowsFiles.Under(home, MediaLibrary.Folder(MediaKind.Demo));
-        if (MediaName.Playable(stem) && string.Equals(Path.GetDirectoryName(path), folder, StringComparison.OrdinalIgnoreCase))
+        string playbackFile = stem + ".dm_1";
+        if (fileName.Equals(playbackFile, StringComparison.OrdinalIgnoreCase) && MediaName.Playable(stem) &&
+            string.Equals(Path.GetDirectoryName(path), folder, StringComparison.OrdinalIgnoreCase))
             return Existing(MediaKind.Demo, fileName);
-        string name = await new MediaLibrary(this).PrepareDemoAsync(new Uri(path), fileName);
+        string name = await new MediaLibrary(this).PrepareDemoAsync(new Uri(path), playbackFile);
         return Existing(MediaKind.Demo, name + ".dm_1");
     }
 

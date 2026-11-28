@@ -104,7 +104,7 @@ public sealed partial class MainWindow
 
         if (IsRecordingPath(input))
             await OpenRecordingAsync(input);
-        else if (Path.IsPathFullyQualified(input) && Path.GetExtension(input).Equals(".cfg", StringComparison.OrdinalIgnoreCase))
+        else if (Path.IsPathFullyQualified(input) && WindowsInstallIdentity.IsConfigFile(input))
         {
             await NavigateAsync(LauncherPlace.Configs);
             await ((ConfigsPage)ContentFrame.Content).ReviewFileAsync(input);
@@ -114,7 +114,7 @@ public sealed partial class MainWindow
     }
 
     private static bool IsRecordingPath(string input) => Path.IsPathFullyQualified(input) &&
-        Path.GetExtension(input).Equals(".dm_1", StringComparison.OrdinalIgnoreCase);
+        WindowsInstallIdentity.IsDemoFile(input);
 
     private async Task OpenRecordingAsync(string input)
     {

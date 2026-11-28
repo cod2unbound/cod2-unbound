@@ -44,7 +44,7 @@ public sealed partial class ConfigsPage
 
     internal Task ReviewFileAsync(string path)
     {
-        if (!Path.GetExtension(path).Equals(".cfg", StringComparison.OrdinalIgnoreCase))
+        if (!WindowsInstallIdentity.IsConfigFile(path))
             throw new IOException("Choose a .cfg config file.");
         if (ConfigImportLoader.IsCredentialFile(Path.GetFileName(path)))
             throw new IOException("Choose a multiplayer config file.");
