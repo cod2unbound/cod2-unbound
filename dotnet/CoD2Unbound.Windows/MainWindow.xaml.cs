@@ -76,6 +76,9 @@ public sealed partial class MainWindow : Window
         gameWatcher.Tick += OnWatchGame;
         session.ClientStarted += OnClientStarted;
         session.Updates.Changed += OnUpdateChanged;
+#if UPDATE_FIXTURES
+        Activated += (_, args) => StartupTrace.Mark($"main activation state={args.WindowActivationState}");
+#endif
         AppWindow.Closing += OnClosing;
         Closed += (_, _) =>
         {
@@ -333,11 +336,21 @@ public sealed partial class MainWindow : Window
         object? content = ContentFrame.Content;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            if (ReferenceEquals(ContentFrame.Content, content) && content is Page and not SetupPage)
+            if (ReferenceEquals(ContentFrame.Content, content) && content is Page and not SetupPage &&
+                CanRestoreMainFocus("navigation"))
             {
                 FocusPageAction();
             }
         });
+    }
+
+    private bool CanRestoreMainFocus(string reason)
+    {
+        // Navigation can finish after another window has taken keyboard focus.
+        nint window = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        bool restore = window != 0 && window == GetForegroundWindow() && !IsIconic(window) && IsWindowVisible(window);
+        StartupTrace.Mark($"main focus restore reason={reason} allowed={restore} settingsInFront={settingsWindow?.IsInFront == true}");
+        return restore;
     }
 
     private void FocusPageAction()

@@ -223,8 +223,10 @@ Windows appearance, notifications and default apps as they are.
   press, release, dismissal and selection.
 - `launcher-tab-names` saves the focused name, type and ID while tabbing from
   the sidebar Settings item and through each section of the Settings window.
+  It repeats General as launcher navigation finishes, with three Tab cadences.
   If the window loses foreground, the kit records the window and process that
-  took it and retries that page once.
+  took it and retries that page once. The Test startup trace uses the same
+  clock as the foreground-loss receipt.
 - `launcher-bind-chain` saves two ordinary actions, reopens the editor and
   changes the second action, then reopens it again to check the saved edit.
 - `launcher-activation-running` and `launcher-activation-closed` use only the

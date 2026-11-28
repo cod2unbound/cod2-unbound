@@ -20,6 +20,7 @@ public sealed partial class MainWindow
             return;
         if (bringForward)
         {
+            StartupTrace.Mark($"main activation requested reason=external arguments={arguments.Length}");
             if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
                 presenter.Restore();
             Activate();

@@ -64,6 +64,7 @@ public sealed partial class MainWindow
         if (!state.Running && minimizedForGame)
         {
             minimizedForGame = false;
+            StartupTrace.Mark($"main restore reason=game-exit settingsInFront={settingsWindow?.IsInFront == true}");
             WindowsRunningGameJoin.RestoreLauncher(WinRT.Interop.WindowNative.GetWindowHandle(this));
         }
         if (lastGame is { } previous && previous.Running == state.Running && previous.LastExit == state.LastExit &&

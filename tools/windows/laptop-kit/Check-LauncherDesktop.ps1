@@ -63,7 +63,7 @@ function Invoke-KitSheetDimming {
     if ($failures) { throw ($failures -join ' ') }
 }
 
-function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [int]$Owner) {
+function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [int]$Owner, [int]$Delay = 140) {
     foreach ($attempt in 1..2) {
         Focus-KitPictureWindow $Window $Owner
         $Start.SetFocus()
@@ -76,7 +76,7 @@ function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [i
                 $title = if ($front -ne [IntPtr]::Zero) {
                     try { [Windows.Automation.AutomationElement]::FromHandle($front).Current.Name } catch { '' }
                 }
-                Protect-KitText ("$Page attempt $attempt, Tab $index. HWND=$front PID=$pidAtLoss process=$($process.ProcessName) class=$([KitDesktop]::WindowClass($front)) title=$title") |
+                Protect-KitText ("$([DateTimeOffset]::UtcNow.ToString('O')) $Page attempt $attempt, Tab $index. HWND=$front PID=$pidAtLoss process=$($process.ProcessName) class=$([KitDesktop]::WindowClass($front)) title=$title") |
                     Add-Content -LiteralPath (Join-Path $Results 'tab-foreground-loss.txt') -Encoding UTF8
                 break
             }
@@ -85,7 +85,7 @@ function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [i
                 Type=$focus.ControlType.ProgrammaticName; Focused=$focus.HasKeyboardFocus })
             if ($index -lt $Count) {
                 [KitDesktop]::Tap(9)
-                Start-Sleep -Milliseconds 140
+                Start-Sleep -Milliseconds $Delay
             }
         }
         if ($rows.Count -eq ($Count + 1)) { return $rows }
@@ -101,6 +101,7 @@ function Invoke-KitTabNames {
     Set-KitLauncherProfile 'original' 'dx9'
     $run = Start-KitDesktopLauncher $exe
     $receipt = Join-Path $Results 'tab-names.csv'
+    $repeats = Join-Path $Results 'tab-settings-general.csv'
     $unnamed = $false
     try {
         $window = Get-KitLauncherWindow $run.Process
@@ -138,7 +139,27 @@ function Invoke-KitTabNames {
                 if ($rows.Where({ !$_.Name -or !$_.Focused }).Count -or $rows[0].Name -ne $name) { $unnamed = $true }
             }
         } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
-    } finally { Stop-KitLauncher $run $Results }
+        foreach ($delay in 70,140,300) {
+            Wait-KitCondition {
+                $settingsWindow -notin [KitDesktop]::VisibleProcessWindows($run.Process.Id)
+            } 8 'the previous Settings window to close' | Out-Null
+            Focus-KitPictureWindow $window $run.Process.Id
+            # Open Settings as a shell navigation completes, then vary the Tab cadence.
+            $key = if ($delay -eq 140) { 49 } else { 52 }
+            [KitDesktop]::Chord(17,$key)
+            $settingsWindow = Open-KitSettings $window
+            try {
+                $selector = Wait-KitCondition { Find-KitControl $settingsWindow 'Panes' } 8 'the Settings sections'
+                $general = Wait-KitCondition { Find-KitControl $selector 'General' -Name } 8 'General settings'
+                $rows = @(Get-KitTabTrace $settingsWindow "Settings / General ($delay ms)" 5 $general $run.Process.Id $delay)
+                $rows | Export-Csv -LiteralPath $repeats -Append -NoTypeInformation -Encoding UTF8
+                if ($rows.Where({ !$_.Name -or !$_.Focused }).Count -or $rows[0].Name -ne 'General') { $unnamed = $true }
+            } finally { [KitDesktop]::CloseOwnedWindow($settingsWindow) }
+        }
+    } finally {
+        Stop-KitLauncher $run $Results
+        Save-Text (Join-Path $LauncherHome 'startup-timing.log') (Join-Path $Results 'startup-timing.log')
+    }
     if ($unnamed) { throw 'A Tab target was unnamed or the starting control did not receive focus. See tab-names.csv.' }
 }
 

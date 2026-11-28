@@ -19,6 +19,7 @@ public sealed partial class MainWindow
             if (closing || flushedForClose || windowsSessionEnding)
                 return;
             taskbarLibrary = session.Library;
+            StartupTrace.Mark($"taskbar refresh settingsInFront={settingsWindow?.IsInFront == true}");
             WindowsTaskbarJumpList.Publish(taskbarLibrary.Recent.Select(session.ServerForAddress));
         });
     }

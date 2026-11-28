@@ -54,7 +54,11 @@ public sealed partial class SettingsWindow : Window
         close.Invoked += (_, args) => { args.Handled = true; Close(); };
         SettingsRoot.KeyboardAccelerators.Add(close);
         SettingsRoot.KeyboardAcceleratorPlacementMode = Microsoft.UI.Xaml.Input.KeyboardAcceleratorPlacementMode.Hidden;
-        Activated += (_, args) => IsInFront = args.WindowActivationState != WindowActivationState.Deactivated;
+        Activated += (_, args) =>
+        {
+            IsInFront = args.WindowActivationState != WindowActivationState.Deactivated;
+            StartupTrace.Mark($"settings activation state={args.WindowActivationState}");
+        };
         Closed += (_, _) => systemTheme.Changed -= OnSystemThemeChanged;
         Place();
     }

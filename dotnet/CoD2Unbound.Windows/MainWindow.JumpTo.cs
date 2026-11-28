@@ -131,7 +131,7 @@ public sealed partial class MainWindow
         jumpPendingSelection = null;
         var previous = jumpReturnFocus;
         jumpReturnFocus = null;
-        if (restoreFocus)
+        if (restoreFocus && CanRestoreMainFocus("jump-dismissed"))
         {
             if (previous is not { IsLoaded: true } || !previous.Focus(FocusState.Keyboard))
                 FocusPageAction();
