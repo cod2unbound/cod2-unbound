@@ -13,6 +13,7 @@ public sealed partial class ConfigsPage
     private SelectorBar? bindModes;
     private ContentPresenter? studioHeaderExtra;
     private bool LargeText => new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor > 1.2;
+    private bool ExtraLargeText => new global::Windows.UI.ViewManagement.UISettings().TextScaleFactor >= 2;
 
     private void ShowConfigStudioToolbar(SelectorBar tabs, ConfigProfileRead profile)
     {

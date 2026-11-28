@@ -28,11 +28,15 @@ public sealed partial class ConfigsPage
     private void ShowVisualBinds(StackPanel surface, ConfigStudioState state, ConfigProfileRead profile, ConfigBindings binds)
     {
         var keyboard = windowsKeyboard!;
+        bool extraLarge = ExtraLargeText;
         var details = new StackPanel { Spacing = 4 };
         var keyTiles = new Dictionary<Button, EngineKey>();
         var keyboardDrawing = new StackPanel { Style = StyleFor("StudioKeyboardDrawing") };
         var keyboardViewport = new ScrollViewer { Style = StyleFor("StudioKeyboardViewport"), Content = keyboardDrawing };
         keyboardViewport.SizeChanged += (_, args) => ResizeDrawing(args.NewSize.Width);
+        var legends = new List<(Button Tile, ColumnDefinition Column, TextBlock Text)>();
+        if (extraLarge)
+            keyboardDrawing.Loaded += (_, _) => MeasureConnectedLegends();
         var keyboardHeader = Columns(16, GridLength.Auto, new GridLength(1, GridUnitType.Star));
         var settings = new Button { Style = StyleFor("SmallAction") };
         AutomationProperties.SetName(settings, "Keyboard layout and size");
@@ -129,8 +133,8 @@ public sealed partial class ConfigsPage
         void DrawKeys()
         {
             keyTiles.Clear();
+            legends.Clear();
             keyboardDrawing.Children.Clear();
-            double minimumWidth = 0;
             foreach (var layoutRow in PcKeyRows(verifiedShape ?? keyboard.Shape, keyboardSize))
             {
                 var row = new Grid { Style = StyleFor("StudioKeyboardRow") };
@@ -142,6 +146,7 @@ public sealed partial class ConfigsPage
                     if (shape.Scan == 0)
                         continue;
                     var (key, label) = keyboard.Describe(shape.Scan, shape.Caption);
+                    string fullLabel = extraLarge ? FullKeyLegend(label) : label;
                     var actions = KeyActions(key);
                     bool unavailable = key is null or { Reserved: true } || key.Value.Number == 27;
                     var tile = SmallButton(label, () =>
@@ -149,10 +154,16 @@ public sealed partial class ConfigsPage
                         if (key is { } chosen && !unavailable)
                             SelectKey(chosen);
                         else
-                            BindStatus(InfoBarSeverity.Informational, "", $"{label} can’t be used by the game.");
+                            BindStatus(InfoBarSeverity.Informational, "", $"{fullLabel} can’t be used by the game.");
                     });
                     tile.Style = StyleFor("StudioKeyboardKey");
-                    var keyText = new TextBlock { Text = label, Style = StyleFor("StudioKeyboardLegend") };
+                    var keyText = new TextBlock
+                    {
+                        Text = label,
+                        Style = StyleFor("StudioKeyboardLegend")
+                    };
+                    if (extraLarge)
+                        keyText.TextTrimming = TextTrimming.None;
                     var keyFace = new StackPanel { Children = { keyText } };
                     if (unavailable || !actions.IsEmpty)
                         keyFace.Children.Add(new TextBlock
@@ -161,26 +172,56 @@ public sealed partial class ConfigsPage
                             Style = StyleFor("StudioKeyboardDetail")
                         });
                     tile.Content = keyFace;
-                    keyText.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
-                    row.ColumnDefinitions[index].MinWidth = Math.Ceiling(keyText.DesiredSize.Width) +
-                        tile.Padding.Left + tile.Padding.Right + tile.BorderThickness.Left + tile.BorderThickness.Right;
+                    var column = row.ColumnDefinitions[index];
+                    if (extraLarge)
+                        legends.Add((tile, column, keyText));
+                    else
+                        MeasureLegend(tile, column, keyText);
                     if (!actions.IsEmpty && !shell.IsHighContrast)
                         tile.Background = GroupBrush(actions[0].Group);
                     if (key.HasValue && !unavailable)
                         keyTiles[tile] = key.Value;
-                    string accessible = unavailable ? $"{label}, unavailable in game" : actions.IsEmpty
-                        ? $"{label}, unassigned" : $"{label}, {string.Join(" and ", actions.Select(action => action.Title))}";
+                    string accessible = unavailable ? $"{fullLabel}, unavailable in game" : actions.IsEmpty
+                        ? $"{fullLabel}, unassigned" : $"{fullLabel}, {string.Join(" and ", actions.Select(action => action.Title))}";
                     AutomationProperties.SetName(tile, accessible);
                     ToolTipService.SetToolTip(tile, accessible);
                     Put(row, index, tile);
                 }
                 keyboardDrawing.Children.Add(row);
-                minimumWidth = Math.Max(minimumWidth, row.ColumnDefinitions.Sum(column => column.MinWidth) +
-                    row.ColumnSpacing * (layoutRow.Length - 1));
             }
+            if (extraLarge)
+                DispatcherQueue.TryEnqueue(MeasureConnectedLegends);
+            else
+                FitMeasuredDrawing();
+            MarkSelected();
+        }
+
+        void MeasureConnectedLegends()
+        {
+            if (!keyboardDrawing.IsLoaded)
+                return;
+            // Re-measure after WinUI attaches the keys to the root and applies text scaling.
+            foreach (var (tile, column, text) in legends)
+            {
+                text.InvalidateMeasure();
+                MeasureLegend(tile, column, text);
+            }
+            FitMeasuredDrawing();
+        }
+
+        static void MeasureLegend(Button tile, ColumnDefinition column, TextBlock text)
+        {
+            text.Measure(new(double.PositiveInfinity, double.PositiveInfinity));
+            column.MinWidth = Math.Ceiling(text.DesiredSize.Width) + tile.Padding.Left + tile.Padding.Right +
+                tile.BorderThickness.Left + tile.BorderThickness.Right;
+        }
+
+        void FitMeasuredDrawing()
+        {
+            double minimumWidth = keyboardDrawing.Children.OfType<Grid>().Max(row =>
+                row.ColumnDefinitions.Sum(column => column.MinWidth) + row.ColumnSpacing * (row.ColumnDefinitions.Count - 1));
             keyboardDrawing.MinWidth = minimumWidth + keyboardDrawing.Padding.Left + keyboardDrawing.Padding.Right;
             ResizeDrawing(keyboardViewport.ActualWidth);
-            MarkSelected();
         }
 
         void ResizeDrawing(double viewportWidth) => keyboardDrawing.Width = Math.Max(viewportWidth, keyboardDrawing.MinWidth);
@@ -401,6 +442,15 @@ public sealed partial class ConfigsPage
         [KeyboardSize.Full, KeyboardSize.Tkl, KeyboardSize.Percent75, KeyboardSize.Percent65, KeyboardSize.Percent60];
 
     private readonly record struct PcKey(int Scan, string? Caption = null, double Width = 1);
+
+    private static string FullKeyLegend(string legend) => legend switch
+    {
+        "Esc" => "Escape", "Back" => "Backspace", "Caps" => "Caps Lock", "Ctrl" => "Control",
+        "Win" => "Windows", "PrtSc" => "Print Screen", "Scroll" => "Scroll Lock", "Num" => "Num Lock",
+        "Ins" => "Insert", "Del" => "Delete", "PgUp" => "Page Up", "PgDn" => "Page Down",
+        "↑" => "Up Arrow", "↓" => "Down Arrow", "←" => "Left Arrow", "→" => "Right Arrow",
+        _ => legend
+    };
 
     private static IEnumerable<PcKey[]> PcKeyRows(KeyboardShape shape, KeyboardSize size)
     {
