@@ -32,10 +32,13 @@ struct ReplaceKeySheet: View {
                     .font(.system(size: 12, weight: raw.count == 20 ? .semibold : .regular)).foregroundStyle(tone)
                     .fixedSize(horizontal: false, vertical: true).padding(.leading, 8)
                     .accessibilityAddTraits(.isStaticText)
+                // Too long for the action bar's note slot: it gets the sheet's full width, as in Setup.
+                Label(PrivacyContacts.cdKeyNote, systemImage: "lock")
+                    .font(.system(size: 12)).foregroundStyle(palette.secondary)
+                    .fixedSize(horizontal: false, vertical: true).padding(.leading, 8)
+                    .accessibilityAddTraits(.isStaticText)
             }
             .onAppear { focused = true }
-        } note: {
-            Text("Stored only on this Mac.")
         }
     }
     private var stroke: Color {

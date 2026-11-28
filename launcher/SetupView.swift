@@ -271,7 +271,8 @@ struct SetupView: View {
                         Button("Replace…", action: model.replaceKey).glassAction().controlSize(.large)
                     }
                 }
-                note("Continue keeps this key. You never have to type it again to move on.").padding(.leading, 18).padding(.bottom, 8)
+                note("Continue keeps this key. You never have to type it again to move on.").padding(.horizontal, 18)
+                note(PrivacyContacts.cdKeyNote, symbol: "lock").padding(.horizontal, 18).padding(.bottom, 8)
             }
         } else {
             let check = model.keyCheck
@@ -304,7 +305,7 @@ struct SetupView: View {
                 case .blank:
                     note("Spaces and dashes are fine. Find it on the manual, the disc sleeve, or in Steam under Manage › CD keys.").padding(.leading, 8)
                 }
-                note("Stored only on this Mac, in the game’s own preferences. Sent only to game servers when you join, as the original game does.", symbol: "lock")
+                note(PrivacyContacts.cdKeyNote, symbol: "lock")
                     .padding(.horizontal, 8)
             }
         }

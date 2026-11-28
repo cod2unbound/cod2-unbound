@@ -470,6 +470,7 @@ struct ReportDetails: Equatable, Sendable {
 enum PrivacyContacts {
     static let noticeTitle = "Read the full privacy notice"
     static let noticeURL = URL(string: "https://cod2unbound.com/privacy")!
+    static let cdKeyNote = "Stored only on this Mac. For online key checks, the game can send your CD key, its hash and your anonymous-play setting to Activision. CoD2x also sends the key hash to servers you join."
     static let lines: [(who: String, when: String)] = [
         ("Master servers", "The launcher asks Activision’s and the CoD2x project’s for server addresses when the list refreshes. In the game’s own browser, Original 1.3 asks Activision’s and CoD2x asks both."),
         ("Activision’s key server", "When the game checks your key for online play, as the original game does: your CD key, a hash of it and your anonymous-play setting."),

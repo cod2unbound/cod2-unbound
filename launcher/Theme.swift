@@ -53,6 +53,9 @@ struct Palette {
         chipText: hex(0x33312a), chipIcon: hex(0x55523f), glassStroke: .white.opacity(0.75), glassFill: hex(0xfcf8ee).opacity(0.56),
         track: hex(0x504628).opacity(0.16), dark: false)
 
+    /// Neutral text for the section header on the system sidebar material.
+    var sidebarCaption: Color { dark ? .white.opacity(0.465) : .black.opacity(0.555) }
+
     /// The game's own name colours (^1 to ^6 in a server or player name), with values that stay
     /// readable on each ground (the design's --game-* tokens). ^0 is the game's black, lifted so it shows.
     func quake(_ code: Int) -> Color {
