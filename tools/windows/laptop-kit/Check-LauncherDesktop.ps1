@@ -211,7 +211,9 @@ function Invoke-KitBindChain {
                 Invoke-KitControl $window 'New Bind' -Name
                 Wait-KitCondition {
                     [Windows.Automation.AutomationElement]::FocusedElement.Current.Name -like '*Press a key or mouse button*'
-                } 8 'the key capture prompt' | Out-Null
+                } 8 'the key capture prompt' -OnTimeout {
+                    Save-KitForegroundTimeout 'Bind key capture' $run.Process.Id
+                } | Out-Null
                 [KitDesktop]::Tap(117)
                 Set-KitBindText $window 'Name' $title
                 Set-KitBindText $window 'Step 1 text' 'weapnext'
@@ -352,7 +354,9 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
                     if ($demos) {
                         $demos.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
                     }
-                } 15 'Library Demos in the foreground after playback' | Out-Null
+                } 15 'Library Demos in the foreground after playback' -OnTimeout {
+                    Save-KitForegroundTimeout 'Return to Library after playback' $process.Id
+                } | Out-Null
                 Save-KitWindow $window (Join-Path $directory 'library.png')
                 continue
             }
@@ -550,7 +554,9 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
             [KitDesktop]::MinimizeAndActivate($window)
             Wait-KitCondition {
                 [KitDesktop]::IsIconic($window) -and [KitDesktop]::GetForegroundWindow() -eq $window
-            } 5 'the minimized launcher to hold foreground' | Out-Null
+            } 5 'the minimized launcher to hold foreground' -OnTimeout {
+                Save-KitForegroundTimeout 'Minimized launcher foreground check' $run.Process.Id
+            } | Out-Null
         } else {
             if (![KitDesktop]::RequestMinimize($window)) { throw 'Windows did not queue the system minimize command.' }
             Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
@@ -632,7 +638,9 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
                 if ($pane -and $pane.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$selection) -and
                     $selection.Current.IsSelected) { $candidate }
             }
-        } 20 'notification activation to bring Updates forward'
+        } 20 'notification activation to bring Updates forward' -OnTimeout {
+            Save-KitForegroundTimeout 'Notification activation' $run.Process.Id
+        }
         Save-KitWindow $updates (Join-Path $Results 'updates.png')
         'Clicked the Windows notification with pointer input and saw the Updates section selected.' | Add-Content -LiteralPath $receipt
         [KitDesktop]::CloseOwnedWindow($updates)
