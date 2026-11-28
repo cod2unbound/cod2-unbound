@@ -241,12 +241,17 @@ $Steps = @(
     Add-KitStep 'launcher-jump-pointer-repeat' 'Repeat the Jump to pointer sweep five times' { Invoke-KitJumpPointer -Rounds 5 }
     Add-KitStep 'launcher-sheet-dimming' 'Sample sheet dimming in Light, Dark and Match System' { Invoke-KitSheetDimming }
     Add-KitStep 'launcher-tab-names' 'Record Tab stops from Settings into each page and through Settings sections' { Invoke-KitTabNames }
+    Add-KitStep 'launcher-bind-chain' 'Create, reopen and edit a multi-step bind' { Invoke-KitBindChain }
     foreach ($opening in 'running','closed') {
         Add-KitStep "launcher-activation-$opening" "Open a config, recording and server link with the launcher $opening" {
             param($step)
             Invoke-KitDesktopActivation $step.Variant
         } -Variant $opening
     }
+    Add-KitStep 'launcher-activation-explorer' 'Open a Test config with File Explorer (attended)' {} `
+        'Follow the disposable-account instructions in FOR-ENGINEERS.md. Record what happened, or type skip'
+    Add-KitStep 'launcher-activation-browser' 'Open a Test server link from a local browser page (attended)' {} `
+        'Follow the disposable-account instructions in FOR-ENGINEERS.md. Record what happened, or type skip'
     Add-KitStep 'launcher-taskbar-caption' 'Capture the launcher taskbar button and window caption' { Invoke-KitTaskbarCaption }
     foreach ($state in 'foreground','minimized','closed') {
         Add-KitStep "launcher-update-notice-$state" "Check the local update notice with the launcher $state" {
@@ -262,6 +267,12 @@ $Steps = @(
     }
     foreach ($edition in 'original','cod2x') {
         $name = Get-EditionName $edition
+        foreach ($renderer in 'dx9','dx7') {
+            Add-KitStep "harbor-water-$edition-$renderer" "$name Harbor water before and after restart in $(Get-GraphicsMode $renderer)" {
+                param($step)
+                Invoke-KitHarborWater $step.Edition $step.Renderer
+            } -Edition $edition -Renderer $renderer
+        }
         foreach ($renderer in 'dx9','dx7') {
             Add-KitStep "direct-$edition-$renderer" "$name direct, $(Get-GraphicsMode $renderer), four maps and restart" {
                 param($step)

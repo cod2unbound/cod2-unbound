@@ -163,6 +163,76 @@ function Enter-KitPlay([IntPtr]$Window) {
     }
 }
 
+function Set-KitHarborView([IntPtr]$Window, [string]$Log, [string]$Phase) {
+    $start = @(Get-Content -LiteralPath $Log).Count
+    foreach ($attempt in 1..3) {
+        Enter-KitPlay $Window
+        Focus-KitWindow $Window
+        $recent = @(Get-Content -LiteralPath $Log | Select-Object -Skip $start)
+        if ($attempt -eq 1 -or ($attempt -eq 3 -and -not ($recent -match 'noclip on'))) {
+            [KitDesktop]::SendGameConsole($Window, 'noclip')
+        }
+        [KitDesktop]::SendGameConsole($Window, 'setviewpos -11736 -7472 253 90; cg_draw2D 0; cg_drawGun 0')
+        Start-Sleep -Milliseconds 700
+        [KitDesktop]::SendGameConsole($Window, 'viewpos')
+        Start-Sleep -Milliseconds 350
+        $view = Get-Content -LiteralPath $Log | Select-Object -Skip $start |
+            Where-Object { $_ -match '\(-11736 -7472 253\)\s*:\s*90\s*$' } | Select-Object -Last 1
+        if ($view) {
+            "$Phase $view after entering play" | Add-Content -LiteralPath (Join-Path $Results 'water-view.txt')
+            return
+        }
+    }
+    throw "The game did not reach the Harbor water viewpoint $Phase. No picture was taken for this phase."
+}
+
+function Invoke-KitHarborWater([string]$Edition, [string]$Renderer) {
+    Stop-KitIfNoGame
+    Wait-KitCooling
+    Initialize-KitDesktop
+    $gameHome = Join-Path $Private 'game'
+    New-TestProfile $gameHome
+    $arguments = (Get-EngineArgs $gameHome $GamePath) +
+        " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set r_fullscreen 0 +set r_mode 640x480" +
+        ' +set net_noudp 1 +set com_introPlayed 1 +set com_maxfps 30 +set logfile 2 +set snd_volume 0 +set g_gametype dm +devmap mp_harbor'
+    $log = Join-Path $gameHome 'main\console_mp.log'
+    $run = Start-KitProcess (Get-Binary $Edition -Root $InstallRoot) $arguments $Private @{COD2_CRASH_NOPOPUP='1'}
+    try {
+        $window = Get-KitGameWindow $run.Process
+        Wait-KitCondition {
+            (Test-Path -LiteralPath $log) -and
+                (Select-String -LiteralPath $log -SimpleMatch "Using Direct3D $($Renderer.Substring(2)) code path" -Quiet) -and
+                (Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:' -Quiet)
+        } 45 'Harbor and the selected renderer' | Out-Null
+        Set-KitHarborView $window $log 'before restart'
+        foreach ($name in 'water-1','water-2','water-3','water-after-restart') {
+            if ($name -eq 'water-after-restart') {
+                $loads = @(Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:').Count
+                Focus-KitWindow $window
+                [KitDesktop]::SendGameConsole($window,'noclip; map_restart')
+                Wait-KitCondition {
+                    if ($run.Process.HasExited) { throw 'The game stopped during the Harbor restart.' }
+                    @(Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:').Count -gt $loads
+                } 45 'Harbor to restart' | Out-Null
+                Set-KitHarborView $window $log 'after restart'
+            } elseif ($name -ne 'water-1') { Start-Sleep -Seconds 3 }
+            $shot = Join-Path $gameHome "main\screenshots\$name.tga"
+            Focus-KitWindow $window
+            [KitDesktop]::SendGameConsole($window,"screenshot $name")
+            Wait-KitCondition {
+                (Test-Path -LiteralPath $shot) -and (Get-Item -LiteralPath $shot).Length -ge 921618
+            } 10 "the $name picture" | Out-Null
+            Copy-Item -LiteralPath $shot -Destination $Results
+        }
+        $samples = @((Get-FileHash -LiteralPath (Get-ChildItem -Path $Results -Filter 'water-[1-3].tga').FullName).Hash | Select-Object -Unique)
+        if ($samples.Count -lt 2) { throw 'The three Harbor water pictures were identical.' }
+    } finally {
+        if (!$run.Process.HasExited) { [void]$run.Process.CloseMainWindow() }
+        Complete-KitProcess $run $Results 8 | Out-Null
+        Save-GameEvidence $gameHome $Results
+    }
+}
+
 function Enable-KitGameConsole([IntPtr]$Window, [string]$GameHome, [string]$Evidence) {
     $console = Join-Path $GameHome 'main\console_mp.log'
     if (Test-Path -LiteralPath $console) {

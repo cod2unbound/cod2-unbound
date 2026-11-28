@@ -63,17 +63,34 @@ function Invoke-KitSheetDimming {
     if ($failures) { throw ($failures -join ' ') }
 }
 
-function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count) {
-    foreach ($index in 0..$Count) {
-        if ([KitDesktop]::GetForegroundWindow() -ne $Window) { throw "The $Page window lost focus during the Tab walk." }
-        $focus = [Windows.Automation.AutomationElement]::FocusedElement.Current
-        [pscustomobject]@{ Page=$Page; Tab=$index; Name=$focus.Name; Id=$focus.AutomationId
-            Type=$focus.ControlType.ProgrammaticName; Focused=$focus.HasKeyboardFocus }
-        if ($index -lt $Count) {
-            [KitDesktop]::Tap(9)
-            Start-Sleep -Milliseconds 140
+function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [int]$Owner) {
+    foreach ($attempt in 1..2) {
+        Focus-KitPictureWindow $Window $Owner
+        $Start.SetFocus()
+        $rows = [Collections.Generic.List[object]]::new()
+        foreach ($index in 0..$Count) {
+            $front = [KitDesktop]::GetForegroundWindow()
+            if ($front -ne $Window) {
+                $pidAtLoss = [KitDesktop]::WindowPid($front)
+                $process = Get-Process -Id $pidAtLoss -ErrorAction SilentlyContinue
+                $title = if ($front -ne [IntPtr]::Zero) {
+                    try { [Windows.Automation.AutomationElement]::FromHandle($front).Current.Name } catch { '' }
+                }
+                Protect-KitText ("$Page attempt $attempt, Tab $index. HWND=$front PID=$pidAtLoss process=$($process.ProcessName) class=$([KitDesktop]::WindowClass($front)) title=$title") |
+                    Add-Content -LiteralPath (Join-Path $Results 'tab-foreground-loss.txt') -Encoding UTF8
+                break
+            }
+            $focus = [Windows.Automation.AutomationElement]::FocusedElement.Current
+            $rows.Add([pscustomobject]@{ Page=$Page; Tab=$index; Name=$focus.Name; Id=$focus.AutomationId
+                Type=$focus.ControlType.ProgrammaticName; Focused=$focus.HasKeyboardFocus })
+            if ($index -lt $Count) {
+                [KitDesktop]::Tap(9)
+                Start-Sleep -Milliseconds 140
+            }
         }
+        if ($rows.Count -eq ($Count + 1)) { return $rows }
     }
+    throw "The $Page window lost foreground in both Tab walks. See tab-foreground-loss.txt."
 }
 
 function Invoke-KitTabNames {
@@ -106,8 +123,7 @@ function Invoke-KitTabNames {
             }
             Wait-KitCondition { Find-KitControl $window $page.Witness -AllowOffscreen } 12 $page.Name | Out-Null
             $start = Wait-KitCondition { Find-KitControl $window 'SettingsItem' } 8 'the Settings sidebar item'
-            $start.SetFocus()
-            $rows = @(Get-KitTabTrace $window $page.Name 12)
+            $rows = @(Get-KitTabTrace $window $page.Name 12 $start $run.Process.Id)
             $rows | Export-Csv -LiteralPath $receipt -Append -NoTypeInformation -Encoding UTF8
             if ($rows.Where({ !$_.Name -or !$_.Focused }).Count -or $rows[0].Id -ne 'SettingsItem') { $unnamed = $true }
         }
@@ -117,9 +133,7 @@ function Invoke-KitTabNames {
             foreach ($name in 'General','Display','Game Data','Privacy','Updates','Advanced','About') {
                 Invoke-KitControl $selector $name -Name
                 $item = Find-KitControl $selector $name -Name
-                Focus-KitPictureWindow $settingsWindow $run.Process.Id
-                $item.SetFocus()
-                $rows = @(Get-KitTabTrace $settingsWindow "Settings / $name" 10)
+                $rows = @(Get-KitTabTrace $settingsWindow "Settings / $name" 10 $item $run.Process.Id)
                 $rows | Export-Csv -LiteralPath $receipt -Append -NoTypeInformation -Encoding UTF8
                 if ($rows.Where({ !$_.Name -or !$_.Focused }).Count -or $rows[0].Name -ne $name) { $unnamed = $true }
             }
@@ -134,6 +148,74 @@ function Find-KitActivatedLauncher([string]$Exe, [DateTime]$Since, [int]$Session
     } | Sort-Object StartTime | Select-Object -First 1
 }
 
+function Set-KitBindText([IntPtr]$Window, [string]$Field, [string]$Text) {
+    $edit = Wait-KitCondition { Find-KitControl $Window $Field -Name -AllowOffscreen } 8 $Field
+    $edit.SetFocus()
+    $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
+    [KitDesktop]::Tap(9)
+    Start-Sleep -Milliseconds 350
+    if (Find-KitControl $Window 'Save bind' -Name -AllowOffscreen) {
+        Invoke-KitControl $Window 'Save bind' -Name -AllowOffscreen
+        'Answered the editor confirmation with Save bind.' |
+            Add-Content -LiteralPath (Join-Path $Results 'bind-confirmation.txt')
+    }
+}
+
+function Invoke-KitBindChain {
+    Stop-KitIfNoGame
+    Initialize-KitLauncherDesktop
+    $exe = Get-KitStartTarget
+    $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
+    Set-KitLauncherProfile 'original' 'dx9'
+    $title = 'Kit multi-step bind'
+    foreach ($phase in 'create','reopen','reopen-edited') {
+        $evidence = New-Folder (Join-Path $Results $phase)
+        $run = Start-KitDesktopLauncher $exe 'dark'
+        try {
+            $window = Get-KitLauncherWindow $run.Process
+            Wait-KitHome $window
+            [KitDesktop]::SizeSurfaceWindow($window,1440,900)
+            Focus-KitPictureWindow $window $run.Process.Id
+            Invoke-KitControl $window 'ConfigsItem'
+            Invoke-KitControl $window 'ConfigsLoadout-kit'
+            Invoke-KitControl $window 'ConfigsBinds'
+            $modes = Wait-KitCondition { Find-KitControl $window 'Show binds as' -Name } 8 'bind view choices'
+            Invoke-KitControl $modes 'List' -Name
+            if ($phase -eq 'create') {
+                Invoke-KitControl $window 'New Bind' -Name
+                Wait-KitCondition {
+                    [Windows.Automation.AutomationElement]::FocusedElement.Current.Name -like '*Press a key or mouse button*'
+                } 8 'the key capture prompt' | Out-Null
+                [KitDesktop]::Tap(117)
+                Set-KitBindText $window 'Name' $title
+                Set-KitBindText $window 'Step 1 text' 'weapnext'
+                Invoke-KitControl $window 'Add step' -Name -AllowOffscreen
+                Set-KitBindText $window 'Step 2 text' 'weapprev'
+            } else {
+                $list = Wait-KitCondition {
+                    Get-KitControls $window 'Advanced binds' -Name | Where-Object {
+                        $_.Current.ControlType -eq [Windows.Automation.ControlType]::List
+                    } | Select-Object -First 1
+                } 8 'the saved advanced binds'
+                $row = Wait-KitCondition {
+                    $list.FindAll([Windows.Automation.TreeScope]::Children,[Windows.Automation.Condition]::TrueCondition) |
+                        Where-Object { $_.Current.Name -like "*$title*" } | Select-Object -First 1
+                } 8 'the saved multi-step bind'
+                $row.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+            }
+            $values = @(foreach ($field in 'Name','Step 1 text','Step 2 text') {
+                $edit = Wait-KitCondition { Find-KitControl $window $field -Name -AllowOffscreen } 8 $field
+                $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+            })
+            $values | Set-Content -LiteralPath (Join-Path $evidence 'bind.txt')
+            $second = if ($phase -eq 'reopen-edited') { 'centerview' } else { 'weapprev' }
+            if (($values -join '|') -ne "$title|weapnext|$second") { throw "The $phase editor showed different bind actions." }
+            Save-KitWindow $window (Join-Path $evidence 'bind.png')
+            if ($phase -eq 'reopen') { Set-KitBindText $window 'Step 2 text' 'centerview' }
+        } finally { Stop-KitLauncher $run $evidence }
+    }
+}
+
 function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$Opening) {
     Stop-KitIfNoGame
     Initialize-KitLauncherDesktop
@@ -146,6 +228,10 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
     Stop-KitIfMissing $recording 'The test recording is missing.'
     $demo = Join-Path $Private 'kit activation recording.cod2-unbound-test-demo'
     Copy-Item -LiteralPath $recording -Destination $demo
+    if ($Opening -eq 'running') {
+        '<!doctype html><title>Test launcher activation</title><a href="cod2-test://127.0.0.1:9">Open the Test Connect sheet</a>' |
+            Set-Content -LiteralPath (Join-Path $Private 'Test launcher activation.html') -Encoding ASCII
+    }
     $playableName = 'kit_activation_recording'
     $sourceHash = (Get-FileHash -LiteralPath $demo).Hash
     $failures = foreach ($case in @(
@@ -279,12 +365,32 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
     if ($failures) { throw ($failures -join ' ') }
 }
 
+function Save-KitScreenRegion([Windows.Rect]$Bounds, [string]$Path) {
+    $bitmap = [Drawing.Bitmap]::new([int]$Bounds.Width,[int]$Bounds.Height)
+    $drawing = [Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $drawing.CopyFromScreen([int]$Bounds.X,[int]$Bounds.Y,0,0,$bitmap.Size)
+        $bitmap.Save($Path,[Drawing.Imaging.ImageFormat]::Png)
+    } finally { $drawing.Dispose(); $bitmap.Dispose() }
+}
+
+function Get-KitTaskbar {
+    $desktop = [Windows.Automation.AutomationElement]::RootElement
+    $condition = [Windows.Automation.PropertyCondition]::new(
+        [Windows.Automation.AutomationElement]::ClassNameProperty,'Shell_TrayWnd')
+    $desktop.FindFirst([Windows.Automation.TreeScope]::Children,$condition)
+}
+
 function Invoke-KitTaskbarCaption {
     Stop-KitIfNoGame
     Initialize-KitLauncherDesktop
     $exe = Get-KitStartTarget
     $LauncherHome = New-KitLauncherTestHome $LauncherHome $Private
     Set-KitLauncherProfile 'original' 'dx9'
+    $taskbar = Get-KitTaskbar
+    if ($taskbar -and !$taskbar.Current.BoundingRectangle.IsEmpty) {
+        Save-KitScreenRegion $taskbar.Current.BoundingRectangle (Join-Path $Results 'taskbar-before.png')
+    }
     $run = Start-KitDesktopLauncher $exe
     try {
         $window = Get-KitLauncherWindow $run.Process
@@ -294,30 +400,26 @@ function Invoke-KitTaskbarCaption {
         if (!$caption) { throw 'Windows returned an empty window caption.' }
         $caption | Set-Content -LiteralPath (Join-Path $Results 'caption.txt')
         Save-KitWindow $window (Join-Path $Results 'caption-window.png')
-        $desktop = [Windows.Automation.AutomationElement]::RootElement
-        $condition = [Windows.Automation.PropertyCondition]::new(
-            [Windows.Automation.AutomationElement]::ClassNameProperty,'Shell_TrayWnd')
-        $taskbar = $desktop.FindFirst([Windows.Automation.TreeScope]::Children,$condition)
+        $taskbar = Get-KitTaskbar
+        if (!$taskbar -or $taskbar.Current.BoundingRectangle.IsEmpty) {
+            throw [NotSupportedException]::new('Show the Windows taskbar to check the Test icon in person.')
+        }
+        $bar = $taskbar.Current.BoundingRectangle
+        Save-KitScreenRegion $bar (Join-Path $Results 'taskbar-launcher-open.png')
         $buttons = [Windows.Automation.PropertyCondition]::new(
             [Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
         $matches = if ($taskbar) { @($taskbar.FindAll([Windows.Automation.TreeScope]::Descendants,$buttons) | Where-Object {
-            !$_.Current.IsOffscreen -and $_.Current.Name -like "$caption*"
+            !$_.Current.IsOffscreen -and $_.Current.Name -like "*$caption*"
         }) }
         if (@($matches).Count -ne 1) {
-            'A unique visible taskbar button could not be captured. Inspect the Test icon in person.' |
+            'The taskbar is pictured before and after the Test launcher opened. Compare the pictures to identify the new icon. Confirm it belongs to this window by pointing at it.' |
                 Set-Content -LiteralPath (Join-Path $Results 'taskbar.txt')
             throw [NotSupportedException]::new('The Test taskbar icon needs an attended check.')
         }
-        $bar = $taskbar.Current.BoundingRectangle
         $bounds = [Windows.Rect]::Intersect(@($matches)[0].Current.BoundingRectangle, $bar)
         if ($bounds.IsEmpty) { throw [NotSupportedException]::new('The Test taskbar icon is outside the visible taskbar.') }
         "$(@($matches)[0].Current.Name), bounds=$bounds" | Set-Content -LiteralPath (Join-Path $Results 'taskbar.txt')
-        $bitmap = [Drawing.Bitmap]::new([int]$bounds.Width,[int]$bounds.Height)
-        $drawing = [Drawing.Graphics]::FromImage($bitmap)
-        try {
-            $drawing.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size)
-            $bitmap.Save((Join-Path $Results 'taskbar-button.png'),[Drawing.Imaging.ImageFormat]::Png)
-        } finally { $drawing.Dispose(); $bitmap.Dispose() }
+        Save-KitScreenRegion $bounds (Join-Path $Results 'taskbar-button.png')
     } finally { Stop-KitLauncher $run $Results }
 }
 
@@ -326,15 +428,20 @@ function Find-KitUpdateToast([string]$Version) {
     $name = [Windows.Automation.PropertyCondition]::new(
         [Windows.Automation.AutomationElement]::NameProperty, $title)
     $desktop = [Windows.Automation.AutomationElement]::RootElement
-    $node = $desktop.FindFirst([Windows.Automation.TreeScope]::Descendants,$name)
+    $desktop.FindAll([Windows.Automation.TreeScope]::Descendants,$name) | Where-Object {
+        !$_.Current.IsOffscreen -and !$_.Current.BoundingRectangle.IsEmpty
+    } | Select-Object -First 1
+}
+
+function Get-KitToastAction($Node) {
     $walker = [Windows.Automation.TreeWalker]::ControlViewWalker
-    for ($depth = 0; $node -and $depth -lt 4; $depth++) {
+    for ($depth = 0; $Node -and $depth -lt 4; $depth++) {
         $pattern = $null
-        if (!$node.Current.IsOffscreen -and
-            $node.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)) {
+        if (!$Node.Current.IsOffscreen -and
+            $Node.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)) {
             return $pattern
         }
-        $node = $walker.GetParent($node)
+        $Node = $walker.GetParent($Node)
     }
 }
 
@@ -361,6 +468,7 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
     $feed = Start-KitProcess $powershell $arguments $entry.Folder -NoWindow
     $run = $null
     $receipt = Join-Path $Results 'notice.txt'
+    $timing = Join-Path $LauncherHome 'startup-timing.log'
     "State=$State. Loopback offer=$version." | Set-Content -LiteralPath $receipt
     try {
         $port = Wait-KitCondition {
@@ -399,39 +507,57 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         Wait-KitCondition { [KitDesktop]::IsIconic($window) } 5 'the launcher to minimize' | Out-Null
         [IO.File]::WriteAllText($presented, 'minimized')
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
-        try {
-            Wait-KitCondition {
+        $banner = $null
+        $accepted = $false
+        $deadline = (Get-Date).AddSeconds(40)
+        do {
+            if (!$banner) { $banner = Find-KitUpdateToast $version }
+            if (!$accepted) {
                 if (Test-Path -LiteralPath $library) {
-                    try { $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates }
-                    catch { $false }
+                    try { $accepted = $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates }
+                    catch { $accepted = $false }
                 }
-            } 40 'Windows accepting the local update notification' | Out-Null
-        } catch {
-            'Windows did not acknowledge the notification during the sample. Leave Windows settings as they are.' |
+                if ($accepted) { $deadline = (Get-Date).AddSeconds(3) }
+            }
+            if ($accepted -and $banner) { break }
+            Start-Sleep -Milliseconds 200
+        } while ((Get-Date) -lt $deadline)
+
+        if (!$accepted) {
+            'Submission=not acknowledged. See the support, registration, setting and Show result in startup-timing.log.' |
                 Add-Content -LiteralPath $receipt
-            throw [NotSupportedException]::new('Check the Test update notification in person. No Windows notification acknowledgement was recorded.')
+            throw 'The Test notice was not acknowledged by Windows.'
         }
-        'The launcher recorded that Windows accepted the notification.' | Add-Content -LiteralPath $receipt
+        'Submission=accepted.' | Add-Content -LiteralPath $receipt
+
+        $toast = $null
+        if ($banner) {
+            'Delivery=banner observed.' | Add-Content -LiteralPath $receipt
+            try { $toast = Get-KitToastAction $banner } catch [Windows.Automation.ElementNotAvailableException] { }
+        } else {
+            $key = if ((Get-KitWindowsVersion).Family -eq 'Windows 10') { 65 } else { 78 }
+            [KitDesktop]::Chord(91,$key)
+            try {
+                Start-Sleep -Milliseconds 650
+                $centre = Find-KitUpdateToast $version
+                $history = Select-String -LiteralPath $timing -SimpleMatch "update notice history version=$version present=True" -Quiet
+                $observed = if ($centre -or $history) { 'notification centre only during the sample' } else { 'unconfirmed' }
+                "Delivery=$observed. Check Focus assist and the app notification settings by observation only." |
+                    Add-Content -LiteralPath $receipt
+            } finally { [KitDesktop]::Tap(27) }
+        }
+
         if ($State -eq 'closed') {
             Stop-KitLauncher $run $Results
             $run = $null
-            'Click the Test notice after closing the launcher in a disposable offline Windows account. Confirm Settings opens on Updates. The notification service opens a cold process without the private test environment.' |
+            'Click=attended. Use a disposable offline Windows account with the kit environment. Click this notice after closing Test and confirm Settings opens on Updates.' |
                 Add-Content -LiteralPath $receipt
-            throw [NotSupportedException]::new('Cold notification activation needs an attended check in a disposable account.')
-        }
-
-        $toast = Find-KitUpdateToast $version
-        if (!$toast) {
-            $key = if ((Get-KitWindowsVersion).Family -eq 'Windows 10') { 65 } else { 78 }
-            [KitDesktop]::Chord(91,$key)
-            Start-Sleep -Milliseconds 550
-            $toast = Find-KitUpdateToast $version
-            if (!$toast) { [KitDesktop]::Tap(27) }
+            return
         }
         if (!$toast) {
-            'Windows accepted the notification, but its clickable item was unavailable to UI Automation. Click the notice with the launcher minimized and confirm Settings opens on Updates.' |
+            'Click=attended. Click the notice with the Test launcher minimized and confirm Settings opens on Updates.' |
                 Add-Content -LiteralPath $receipt
-            throw [NotSupportedException]::new('The Test notification click needs an attended check.')
+            return
         }
         $toast.Invoke()
         $updates = Wait-KitCondition {
@@ -447,8 +573,12 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         'Invoked the Windows notification and saw the Updates section selected.' | Add-Content -LiteralPath $receipt
         [KitDesktop]::CloseOwnedWindow($updates)
     } finally {
-        if ($run) { Stop-KitLauncher $run $Results }
-        if (!$feed.Process.HasExited) { $feed.Process.Kill() }
-        Complete-KitProcess $feed $entry.Evidence 8 | Out-Null
+        try {
+            if ($run) { Stop-KitLauncher $run $Results }
+            Save-Text $timing (Join-Path $Results 'startup-timing.log')
+        } finally {
+            if (!$feed.Process.HasExited) { $feed.Process.Kill() }
+            Complete-KitProcess $feed $entry.Evidence 8 | Out-Null
+        }
     }
 }

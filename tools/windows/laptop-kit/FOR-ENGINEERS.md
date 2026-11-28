@@ -217,21 +217,53 @@ Windows appearance, notifications and default apps as they are.
 - `launcher-sheet-dimming` saves paired pictures and two pixel samples for
   each of Light, Dark and Match System.
 - `launcher-jump-pointer` runs the original pointer sweep.
-  `launcher-jump-pointer-repeat` repeats it five times with separate receipts.
+  `launcher-jump-pointer-repeat` repeats it five times in both appearances.
+  It holds each recent-server button down while a loopback server status is
+  received. The pointer and launcher traces show the order of the status,
+  press, release, dismissal and selection.
 - `launcher-tab-names` saves the focused name, type and ID while tabbing from
   the sidebar Settings item and through each section of the Settings window.
+  If the window loses foreground, the kit records the window and process that
+  took it and retries that page once.
+- `launcher-bind-chain` saves two ordinary actions, reopens the editor and
+  changes the second action, then reopens it again to check the saved edit.
 - `launcher-activation-running` and `launcher-activation-closed` use only the
-  registered Test associations. Their receipts record foreground and monitor.
+  registered Test extensions and associations. Their receipts record foreground and monitor.
   A config opens its import review and a server link fills Connect. The steps
   dismiss these sheets and verify that no private files changed or game started.
   A recording plays immediately. The steps check its copy in the private demos
   folder and the playable name passed to the game, close the game, and capture
   Library in the foreground.
-- `launcher-taskbar-caption` captures the caption and the Test taskbar button
-  when Windows exposes a unique visible button.
+- `launcher-taskbar-caption` captures the caption and the taskbar before and
+  after starting Test. When Windows names the button, it saves a close-up.
+  Otherwise compare the two taskbar pictures and point to the new icon to
+  confirm the Test window owns it.
 - `launcher-update-notice-foreground`, `-minimized` and `-closed` use an
   update offer from a loopback feed. Home shows the offer while foregrounded.
-  A background offer can create a Windows notification. The receipt marks
-  an attended click when Windows exposes no clickable item. A cold click
-  requires a disposable offline Windows account because the notification
-  service starts the launcher without the kit's private environment.
+  The background receipts record Windows accepting the notice and whether a
+  banner or Notification Centre entry was observed. Check Focus assist and the
+  Test sender's notification settings by observation. A notice in Notification
+  Centre passes submission and leaves the click attended. Cold activation is
+  always attended and uses the disposable account below.
+- The four `harbor-water-*` steps save three water views and a matching view
+  after restart. Review motion, lighting and surface detail in the pictures.
+  The kit checks the in-game camera position before saving either view.
+
+### Attended Explorer, browser and cold notification checks
+
+Use a disposable standard Windows account with no personal launcher install
+or stored game key. Disconnect its network, install Test for that account,
+and run the kit there. Keep personal Windows accounts out of these three
+checks. The Windows shell can start a new process with its own environment.
+
+1. Run `launcher-activation-running`. In its private run folder, right-click
+   `kit activation.cod2-unbound-test-config`. Choose **Open with** and select
+   **CoD2 Unbound Test**. Choose the one-time option and leave the default
+   association alone. Confirm the Test window comes forward and shows the
+   config review. Choose **Cancel**.
+2. In the same private run folder, open `Test launcher activation.html` in
+   the browser and click **Open the Test Connect sheet**. If the browser asks,
+   allow the one-time handoff to **CoD2 Unbound Test**. Confirm the Test window
+   comes forward and Connect contains `127.0.0.1:9`. Choose **Cancel**.
+3. Run `launcher-update-notice-closed`. After Test closes, select the matching
+   version in Notification Centre. Confirm Test opens Settings on **Updates**.
