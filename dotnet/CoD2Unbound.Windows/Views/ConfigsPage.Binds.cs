@@ -82,7 +82,7 @@ public sealed partial class ConfigsPage
         find.TextChanged += (_, _) => { bindQuery = find.Text; BuildRows(); };
         BuildRows();
 
-        var editor = chainDraft is null || jumpBinding is not null ? null : ChainEditor(state, profile);
+        var editor = chainDraft is null || jumpBinding is not null ? null : ChainEditor(state, profile, binds);
         workspace.Children.Add(list);
         if (editor is not null)
         {

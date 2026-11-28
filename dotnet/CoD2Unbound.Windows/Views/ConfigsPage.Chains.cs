@@ -90,7 +90,7 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private FrameworkElement ChainEditor(ConfigStudioState state, ConfigProfileRead profile)
+    private FrameworkElement ChainEditor(ConfigStudioState state, ConfigProfileRead profile, ConfigBindings bindings)
     {
         var draft = chainDraft!;
         string id = profile.Profile.Id;
@@ -308,7 +308,11 @@ public sealed partial class ConfigsPage
                     }
                 };
                 steps.Children.Add(settings);
-                AddRows(draft.Values, (value, index) => TextField($"Value {index + 1}", value, text => draft.Values[index] = text), "");
+                AddRows(draft.Values, (value, index) => TextField($"Value {index + 1}", value, text =>
+                {
+                    draft.Values[index] = text;
+                    return false;
+                }), "");
             }
             else
             {
@@ -326,19 +330,24 @@ public sealed partial class ConfigsPage
                             Validate(save: true);
                         }
                     };
-                    return new StackPanel { Spacing = 4, Children =
+                    var text = TextField($"Step {index + 1} text", step.Text, value =>
                     {
-                        choose, TextField($"Step {index + 1} text", step.Text, text => values[index] = values[index] with { Text = text })
-                    }};
+                        values[index] = values[index] with { Text = value };
+                        string command = value.Trim();
+                        // A complete game action can commit without moving focus.
+                        return values[index].Kind == ChainStepKind.Action &&
+                            bindings.Actions.Any(action => action.Name.Equals(command, StringComparison.OrdinalIgnoreCase));
+                    });
+                    return new StackPanel { Spacing = 4, Children = { choose, text } };
                 }, new ChainEditorStep(ChainStepKind.Action, ""));
             }
         }
 
-        FrameworkElement TextField(string title, string value, Action<string> edit)
+        FrameworkElement TextField(string title, string value, Func<string, bool> edit)
         {
             var field = new TextBox { Text = value, IsReadOnly = state.ReadOnly, HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(field, title);
-            field.TextChanged += (_, _) => { if (field.IsLoaded) { edit(field.Text); Validate(save: false); } };
+            field.TextChanged += (_, _) => { if (field.IsLoaded) Validate(save: edit(field.Text)); };
             field.LostFocus += (_, _) => { if (pending is null) Validate(save: true); };
             return field;
         }
