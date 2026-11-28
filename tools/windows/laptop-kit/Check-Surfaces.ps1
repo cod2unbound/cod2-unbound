@@ -1,5 +1,7 @@
 function Focus-KitPictureWindow([IntPtr]$Window, [uint32]$Owner) {
-    Wait-KitCondition { [KitDesktop]::TryFocusPictureWindow($Window, $Owner) } 12 'the owned launcher picture window to take focus' | Out-Null
+    Wait-KitCondition { [KitDesktop]::TryFocusPictureWindow($Window, $Owner) } 12 'the owned launcher picture window to take focus' -OnTimeout {
+        Save-KitForegroundTimeout 'Launcher picture focus' $Owner
+    } | Out-Null
 }
 
 function Save-KitSurface([IntPtr]$Window, [string]$Name, [string[]]$Controls, [string[]]$Names = @(), [uint32]$PictureOwner = 0) {
@@ -285,6 +287,7 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
     }
     $run = Start-KitProcess $exe '' $LauncherHome (Get-KitLauncherSettings)
     $hostedProcess = $null
+    $hostingFinished = $false
     try {
         $app = Get-KitLauncherWindow $run.Process
         Wait-KitHome $app
@@ -344,6 +347,13 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
                 }
                 if (-not $hostedProcess) { throw 'The Hosting picture check could not verify its own server process.' }
                 Invoke-KitHostingExport $app (New-Folder (Join-Path $Private 'export'))
+                Invoke-KitControl $app 'Stop server' -Name
+                Wait-KitCondition {
+                    $hostedProcess.HasExited -and !(Find-KitControl $app 'Stop server' -Name)
+                } 20 'the Hosting room to stop and its dashboard to close' | Out-Null
+                $hostingFinished = $true
+                'Stopped the room from Hosting before closing the launcher.' |
+                    Set-Content -LiteralPath (Join-Path $Results 'hosting-close.txt')
             }
             'configs' {
                 [KitDesktop]::Chord(17, 52)
@@ -392,24 +402,26 @@ function Invoke-KitSurfaceRun([string]$Page, [string]$Variant) {
             }
         }
     } finally {
-        if ($Page -eq 'hosting') {
-            if ($hostedProcess) {
-                try {
-                    # This step checks the export and folder controls. The
-                    # separate Hosting match step proves graceful shutdown.
-                    if (-not $hostedProcess.HasExited) {
-                        $hostedProcess.Kill()
-                        if (-not $hostedProcess.WaitForExit(5000)) { throw 'The owned picture fixture server did not exit.' }
-                    }
-                } finally { $hostedProcess.Dispose() }
+        try {
+            if ($Page -eq 'hosting') {
+                if ($hostedProcess) {
+                    try {
+                        # Fallback for failures before the normal Hosting stop.
+                        if (-not $hostedProcess.HasExited) {
+                            $hostedProcess.Kill()
+                            if (-not $hostedProcess.WaitForExit(5000)) { throw 'The owned picture fixture server did not exit.' }
+                        }
+                    } finally { $hostedProcess.Dispose() }
+                }
+                $logs = Join-Path $LauncherHome 'hosting\servers'
+                foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue) {
+                    Save-KitEngineAudit (Read-KitText $file.FullName) $Results
+                    Save-Text $file.FullName (Join-Path $Results $file.Name)
+                }
             }
-            $logs = Join-Path $LauncherHome 'hosting\servers'
-            foreach ($file in Get-ChildItem -LiteralPath $logs -Recurse -File -Filter 'engine-*.log' -ErrorAction SilentlyContinue) {
-                Save-KitEngineAudit (Read-KitText $file.FullName) $Results
-                Save-Text $file.FullName (Join-Path $Results $file.Name)
-            }
+        } finally {
+            Stop-KitLauncher $run $Results -RequireCleanExit:$hostingFinished
         }
-        Stop-KitLauncher $run $Results
     }
 }
 
@@ -448,7 +460,23 @@ function Wait-KitHostingExport([IntPtr]$App, [string]$Route, [int]$Seconds = 12)
         if ($picker) { return @{ Kind='picker'; Root=$picker } }
         $dialog = Find-KitHostingExportDialog $App
         if ($dialog) { return @{ Kind='dialog'; Root=$dialog } }
-    } $Seconds "the Hosting export surface opened by $Route"
+    } $Seconds "the Hosting export surface opened by $Route" -OnTimeout {
+        Save-KitForegroundTimeout "Hosting $Route export" ([KitDesktop]::WindowPid($App))
+        $front = [KitDesktop]::GetForegroundWindow()
+        $owned = $front -ne [IntPtr]::Zero -and [KitDesktop]::IsOwnedWindow($front, $App)
+        $pickerTitleMatches = $acceptFound = $cancelFound = $false
+        if ($owned) {
+            try {
+                $root = [Windows.Automation.AutomationElement]::FromHandle($front)
+                $pickerTitleMatches = $root.Current.Name -eq 'Choose where to write the server files'
+                $acceptFound = [bool](Find-KitControl $root '1')
+                $cancelFound = [bool](Find-KitControl $root '2')
+            } catch [Windows.Automation.ElementNotAvailableException] { }
+            catch [Runtime.InteropServices.COMException] { }
+        }
+        "route=$Route timeout ownedForeground=$owned pickerTitleMatches=$pickerTitleMatches acceptFound=$acceptFound cancelFound=$cancelFound" |
+            Add-Content -LiteralPath (Join-Path $Results 'hosting-export-peers.txt') -Encoding UTF8
+    }
     Save-KitHostingExportPeers $surface.Root $Route $surface.Kind
     $surface
 }
@@ -526,7 +554,9 @@ function Invoke-KitHostingExport([IntPtr]$App, [string]$Destination) {
             if ([Windows.Automation.AutomationElement]::FocusedElement.Current.AutomationId -eq 'HostingRowExport') { return $true }
             [KitDesktop]::Tap(40)
         }
-    } 12 'keyboard focus on the Hosting row export action' | Out-Null
+    } 12 'keyboard focus on the Hosting row export action' -OnTimeout {
+        Save-KitForegroundTimeout 'Hosting row Export focus' ([KitDesktop]::WindowPid($App))
+    } | Out-Null
     [KitDesktop]::Tap(13)
 
     $surface = Wait-KitHostingExport $App 'row'

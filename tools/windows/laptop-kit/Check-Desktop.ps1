@@ -98,8 +98,30 @@ function Invoke-KitFirewallWarmup {
     }
 }
 
+function Get-KitForegroundOwner([IntPtr]$Window, [uint32]$LauncherId = 0) {
+    $owner = [KitDesktop]::WindowPid($Window)
+    if (!$owner) { return 'no foreground window' }
+    if ($owner -eq $LauncherId) { return 'our launcher' }
+    if ($owner -eq $PID) { return 'the kit' }
+    $process = Get-Process -Id $owner -ErrorAction SilentlyContinue
+    if ($process -and $process.ProcessName -in 'explorer','ShellExperienceHost','ShellHost','StartMenuExperienceHost',
+            'SearchHost','SearchApp','TextInputHost','ApplicationFrameHost','PickerHost') { return 'the Windows shell' }
+    return 'another program'
+}
+
+function Save-KitForegroundTimeout([string]$Reason, [uint32]$LauncherId = 0) {
+    $foreground = Get-KitForegroundOwner ([KitDesktop]::GetForegroundWindow()) $LauncherId
+    "$([DateTimeOffset]::UtcNow.ToString('O')) $Reason. Foreground: $foreground." |
+        Add-Content -LiteralPath (Join-Path $Results 'focus-timeouts.txt') -Encoding UTF8
+}
+
 function Focus-KitWindow([IntPtr]$Window) {
-    Wait-KitCondition { [KitDesktop]::TryFocus($Window) } 8 'the test window to take focus' | Out-Null
+    Wait-KitCondition { [KitDesktop]::TryFocus($Window) } 8 'the test window to take focus' -OnTimeout {
+        $owner = [KitDesktop]::WindowPid($Window)
+        $process = Get-Process -Id $owner -ErrorAction SilentlyContinue
+        $launcherId = if ($process -and $process.ProcessName -eq 'CoD2Unbound.Windows') { $owner } else { 0 }
+        Save-KitForegroundTimeout 'Test window focus' $launcherId
+    } | Out-Null
 }
 
 function Send-KitCommand([IntPtr]$Window, [string]$Command) {

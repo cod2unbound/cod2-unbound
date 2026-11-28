@@ -71,12 +71,9 @@ function Get-KitTabTrace([IntPtr]$Window, [string]$Page, [int]$Count, $Start, [i
         foreach ($index in 0..$Count) {
             $front = [KitDesktop]::GetForegroundWindow()
             if ($front -ne $Window) {
-                $pidAtLoss = [KitDesktop]::WindowPid($front)
-                $process = Get-Process -Id $pidAtLoss -ErrorAction SilentlyContinue
-                $title = if ($front -ne [IntPtr]::Zero) {
-                    try { [Windows.Automation.AutomationElement]::FromHandle($front).Current.Name } catch { '' }
-                }
-                Protect-KitText ("$([DateTimeOffset]::UtcNow.ToString('O')) $Page attempt $attempt, Tab $index. HWND=$front PID=$pidAtLoss process=$($process.ProcessName) class=$([KitDesktop]::WindowClass($front)) title=$title") |
+                $ownerAtLoss = Get-KitForegroundOwner $front $Owner
+                $ownedHandles = if ($ownerAtLoss -eq 'our launcher') { " Expected HWND=$Window, actual HWND=$front." }
+                "$([DateTimeOffset]::UtcNow.ToString('O')) $Page attempt $attempt, Tab $index. Foreground: $ownerAtLoss.$ownedHandles" |
                     Add-Content -LiteralPath (Join-Path $Results 'tab-foreground-loss.txt') -Encoding UTF8
                 break
             }
@@ -176,10 +173,11 @@ function Find-KitBindEdit([IntPtr]$Window, [string]$Field) {
     } | Select-Object -First 1
 }
 
-function Set-KitBindText([IntPtr]$Window, [string]$Field, [string]$Text) {
+function Set-KitBindText([IntPtr]$Window, [string]$Field, [string]$Text, [switch]$KeepFocus) {
     $edit = Wait-KitCondition { Find-KitBindEdit $Window $Field } 8 $Field
     $edit.SetFocus()
     $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
+    if ($KeepFocus) { return }
     [KitDesktop]::Tap(9)
     Start-Sleep -Milliseconds 350
     if (Find-KitControl $Window 'Save bind' -Name -AllowOffscreen) {
@@ -239,8 +237,23 @@ function Invoke-KitBindChain {
             $second = if ($phase -eq 'reopen-edited') { 'centerview' } else { 'weapprev' }
             if (($values -join '|') -ne "$title|weapnext|$second") { throw "The $phase editor showed different bind actions." }
             Save-KitWindow $window (Join-Path $evidence 'bind.png')
-            if ($phase -eq 'reopen') { Set-KitBindText $window 'Step 2 text' 'centerview' }
-        } finally { Stop-KitLauncher $run $evidence }
+            if ($phase -eq 'reopen') {
+                Set-KitBindText $window 'Step 2 text' 'centerview' -KeepFocus
+                $config = Join-Path $LauncherHome 'main\players\kit\config_mp.cfg'
+                Wait-KitCondition {
+                    $edit = Find-KitBindEdit $window 'Step 2 text'
+                    if (!$edit) { return }
+                    $value = $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+                    $focused = $edit.Current.HasKeyboardFocus
+                    $saved = Select-String -LiteralPath $config -Pattern '^bind\s+F6\s+"weapnext\s*;\s*centerview"\s*$' -Quiet
+                    "Value=$value. FieldFocused=$focused. Saved=$saved." |
+                        Set-Content -LiteralPath (Join-Path $evidence 'bind-edit.txt')
+                    $value -eq 'centerview' -and $focused -and $saved
+                } 8 'the edited bind to save while its field still has focus' -OnTimeout {
+                    Save-KitForegroundTimeout 'Bind edit focus and save' $run.Process.Id
+                } | Out-Null
+            }
+        } finally { Stop-KitLauncher $run $evidence -RequireCleanExit }
     }
 }
 
@@ -312,7 +325,10 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
                 if (!$front -or ($expectedWindow -ne [IntPtr]::Zero -and $front -ne $expectedWindow)) { return }
                 $owner = Get-Process -Id ([KitDesktop]::WindowPid($front)) -ErrorAction SilentlyContinue
                 if ($owner.Path -ieq $exe -and $owner.SessionId -eq $session -and $owner.StartTime -ge $started) { $front }
-            } 25 'the Test launcher to come to the front after the association opened'
+            } 25 'the Test launcher to come to the front after the association opened' -OnTimeout {
+                $active = if ($process) { $process } else { Find-KitActivatedLauncher $exe $started $session }
+                Save-KitForegroundTimeout 'Registered activation focus' $active.Id
+            }
             if (!$process) { $process = Get-Process -Id ([KitDesktop]::WindowPid($window)) }
             $monitor = [Windows.Forms.Screen]::FromHandle($window).DeviceName
             "Foreground window=$window process=$($process.Id) monitor=$monitor expected=$expectedMonitor" |
@@ -377,14 +393,18 @@ function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$O
             } finally {
                 if ($run) { Stop-KitLauncher $run $directory }
                 else {
-                    if (!$process) { $process = Find-KitActivatedLauncher $exe $started $session }
-                    if ($process -and !$process.HasExited) {
-                        [void]$process.CloseMainWindow()
-                        if (!$process.WaitForExit(12000)) {
-                            $process.Kill()
-                            [void]$process.WaitForExit(8000)
-                            throw 'The association-opened Test launcher did not close and was stopped.'
+                    try {
+                        if (!$process) { $process = Find-KitActivatedLauncher $exe $started $session }
+                        if ($process -and !$process.HasExited) {
+                            [void]$process.CloseMainWindow()
+                            if (!$process.WaitForExit(12000)) {
+                                $process.Kill()
+                                [void]$process.WaitForExit(8000)
+                                throw 'The association-opened Test launcher did not close and was stopped.'
+                            }
                         }
+                    } finally {
+                        Save-Text (Join-Path $LauncherHome 'startup-timing.log') (Join-Path $directory 'startup-timing.log')
                     }
                 }
             }
@@ -449,14 +469,21 @@ function Invoke-KitTaskbarCaption {
     } finally { Stop-KitLauncher $run $Results }
 }
 
-function Find-KitUpdateToast([string]$Version) {
-    $title = "CoD2 Unbound $Version is ready"
-    $name = [Windows.Automation.PropertyCondition]::new(
-        [Windows.Automation.AutomationElement]::NameProperty, $title)
-    $desktop = [Windows.Automation.AutomationElement]::RootElement
-    $desktop.FindAll([Windows.Automation.TreeScope]::Descendants,$name) | Where-Object {
-        !$_.Current.IsOffscreen -and !$_.Current.BoundingRectangle.IsEmpty
-    } | Select-Object -First 1
+function Find-KitUpdateToast($TitleCondition, [ref]$SawBannerWindow) {
+    foreach ($handle in [KitDesktop]::NotificationBannerCandidates()) {
+        try {
+            $root = [Windows.Automation.AutomationElement]::FromHandle($handle)
+            $window = $root.Current
+            if ($window.AutomationId -notlike '*ToastView*' -or $window.IsOffscreen -or
+                $window.BoundingRectangle.IsEmpty) { continue }
+            $SawBannerWindow.Value = $true
+            $title = $root.FindFirst([Windows.Automation.TreeScope]::Descendants, $TitleCondition)
+            if ($title -and !$title.Current.IsOffscreen -and !$title.Current.BoundingRectangle.IsEmpty) {
+                return @{ Window = $handle; Title = $title }
+            }
+        } catch [Windows.Automation.ElementNotAvailableException] { }
+        catch [Runtime.InteropServices.COMException] { }
+    }
 }
 
 function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized-foreground','closed')][string]$State) {
@@ -480,7 +507,7 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Setup "{1}" -Ready "{2}" -NoticeVersion {3} -NoticeGate "{4}"' -f $server,$setup.FullName,$ready,$version,$presented
     $feed = Start-KitProcess $powershell $arguments $entry.Folder -NoWindow
-    $run = $sample = $null
+    $run = $null
     $receipt = Join-Path $Results 'notice.txt'
     $timing = Join-Path $LauncherHome 'startup-timing.log'
     "State=$State. Loopback offer=$version." | Set-Content -LiteralPath $receipt
@@ -519,9 +546,6 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
             return
         }
 
-        $sample = [KitNoticeSample]::new()
-        $sample.Show()
-        $sample.Refresh()
         if ($State -eq 'minimized-foreground') {
             [KitDesktop]::MinimizeAndActivate($window)
             Wait-KitCondition {
@@ -537,6 +561,9 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
         [IO.File]::WriteAllText($presented, $State)
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         $banner = $null
+        $sawBannerWindow = $false
+        $titleCondition = [Windows.Automation.PropertyCondition]::new(
+            [Windows.Automation.AutomationElement]::NameProperty, "CoD2 Unbound $version is ready")
         $accepted = $false
         $closedAfterSubmission = $false
         $historyLine = "update notice history version=$version present=True"
@@ -556,24 +583,13 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
                 $closedAfterSubmission = $true
                 $deadline = (Get-Date).AddSeconds(4)
             }
-            if ($State -ne 'closed' -or !$run) { $banner = Find-KitUpdateToast $version }
-            if ($accepted -and $banner) { break }
+            if (!$banner) { $banner = Find-KitUpdateToast $titleCondition ([ref]$sawBannerWindow) }
+            if ($accepted -and $banner -and ($State -ne 'closed' -or !$run)) { break }
             [Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 200
+            Start-Sleep -Milliseconds 100
         } while ((Get-Date) -lt $deadline -or ($State -eq 'closed' -and $run -and $accepted))
 
-        $picture = Join-Path $Results 'notice-area.png'
-        $area = $null
-        if ($banner) {
-            try { $area = $banner.Current.BoundingRectangle } catch [Windows.Automation.ElementNotAvailableException] { }
-        }
-        if ($area -and !$area.IsEmpty) {
-            Save-KitScreenRegion $area $picture
-        } elseif ($sample.SaveEmpty($picture)) {
-            "Picture=uncovered Test backdrop at $($sample.Bounds)." | Add-Content -LiteralPath $receipt
-        } else {
-            'Picture unavailable. The lower-right test backdrop was obscured.' | Add-Content -LiteralPath $receipt
-        }
+        "BannerWindowVisible=$sawBannerWindow. TestBannerIdentified=$([bool]$banner)." | Add-Content -LiteralPath $receipt
         if (!$accepted) {
             'Submission=not acknowledged. See startup-timing.log.' | Add-Content -LiteralPath $receipt
             throw 'The Test notice was not acknowledged by Windows.'
@@ -593,21 +609,18 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
         }
         $history = Select-String -LiteralPath $timing -SimpleMatch $historyLine -Quiet
         "HistoryPresent=$([bool]$history)." | Add-Content -LiteralPath $receipt
-        if (!$banner) {
-            'Delivery=no banner during the sample.' | Add-Content -LiteralPath $receipt
-            return
-        }
-        'Delivery=banner observed.' | Add-Content -LiteralPath $receipt
+        if (!$banner) { return }
         if ($State -eq 'closed') {
             'Click=attended in a disposable offline account with the kit environment.' | Add-Content -LiteralPath $receipt
             return
         }
-        if (!$area -or $area.IsEmpty) { throw 'The Test banner disappeared before pointer input.' }
+        $area = $banner.Title.Current.BoundingRectangle
+        if ($area.IsEmpty) { throw 'The Test banner disappeared before pointer input.' }
         $x = [int]($area.Left + $area.Width / 2)
         $y = [int]($area.Top + $area.Height / 2)
         $toastWindow = [KitDesktop]::RootWindowAt($x,$y)
         $target = [Windows.Automation.AutomationElement]::FromPoint([Windows.Point]::new($x,$y))
-        if (!$banner.Equals($target) -or $toastWindow -eq [IntPtr]::Zero -or
+        if (!$banner.Title.Equals($target) -or $toastWindow -ne $banner.Window -or
             ![KitDesktop]::ClickSurface($toastWindow,$x,$y,$false)) {
             throw 'The Test banner did not receive pointer input.'
         }
@@ -624,7 +637,6 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','minimized
         'Clicked the Windows notification with pointer input and saw the Updates section selected.' | Add-Content -LiteralPath $receipt
         [KitDesktop]::CloseOwnedWindow($updates)
     } finally {
-        if ($sample) { $sample.Dispose() }
         try {
             if ($run) { Stop-KitLauncher $run $Results }
             Save-Text $timing (Join-Path $Results 'startup-timing.log')

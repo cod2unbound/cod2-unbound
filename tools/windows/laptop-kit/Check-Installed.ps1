@@ -178,14 +178,17 @@ function New-KitLauncherTestHome([string]$Source, [string]$PrivateRun) {
     $testHome
 }
 
-function Stop-KitLauncher($Run, [string]$Evidence) {
+function Stop-KitLauncher($Run, [string]$Evidence, [switch]$RequireCleanExit) {
     if (-not $Run.Process.HasExited) { [void]$Run.Process.CloseMainWindow() }
-    Complete-KitProcess $Run $Evidence 12 | Out-Null
+    $exit = Complete-KitProcess $Run $Evidence 12
     $logRoot = Join-Path $LauncherHome 'launcher\logs'
     if (Test-Path -LiteralPath $logRoot) {
         foreach ($file in Get-ChildItem -LiteralPath $logRoot -File -Filter '*.log') {
             Save-Text $file.FullName (Join-Path $Evidence $file.Name)
         }
+    }
+    if ($RequireCleanExit -and ($exit.TimedOut -or $exit.ExitCode -ne 0)) {
+        throw 'The launcher did not close cleanly. See exit.json, stderr.txt and startup-timing.log.'
     }
 }
 

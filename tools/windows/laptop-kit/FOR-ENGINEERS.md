@@ -246,11 +246,12 @@ Windows appearance, notifications and default apps as they are.
   The foreground-minimized case checks that the launcher still owns foreground
   when it decides to send the notice. The closed case waits for Windows to
   accept the notice before closing Test.
-  The background receipts record Windows accepting the notice and whether a
-  banner or Notification Centre entry was observed. Check Focus assist and the
-  Test sender's notification settings by observation. A notice in Notification
-  Centre passes submission and leaves the click attended. Cold activation is
-  always attended and uses the disposable account below.
+  Background receipts record submission and history separately from whether
+  a banner window was visible and whether it contained the Test notice.
+  The check examines the Windows shell's banner window for the Test title.
+  Check Focus assist or Do not disturb and the Test sender's banner setting
+  by observation. A notice in Notification Centre passes submission.
+  Cold activation is attended and uses the disposable account below.
 - The four `harbor-water-*` steps save three water views and a matching view
   after restart. Review motion, lighting and surface detail in the pictures.
   The kit checks the in-game camera position before saving either view. It

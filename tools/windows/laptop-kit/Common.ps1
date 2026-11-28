@@ -239,33 +239,40 @@ function Start-KitProcess {
         if ($null -eq $values[$name]) { $info.EnvironmentVariables.Remove($name) }
         else { $info.EnvironmentVariables[$name] = $values[$name] }
     }
+    $launcherTrace = if ((Split-Path $Exe -Leaf) -ieq 'CoD2Unbound.Windows.exe' -and $values.COD2_UNBOUND_TEST_HOME) {
+        Join-Path $values.COD2_UNBOUND_TEST_HOME 'startup-timing.log'
+    }
     $process = [Diagnostics.Process]::Start($info)
     [pscustomobject]@{ Process = $process; Folder = $Folder; Engine = (Split-Path $Exe -Leaf) -match '^cod2_win32(?:_ded)?\.exe$'
-        Output = $process.StandardOutput.ReadToEndAsync(); Errors = $process.StandardError.ReadToEndAsync() }
+        LauncherTrace = $launcherTrace; Output = $process.StandardOutput.ReadToEndAsync(); Errors = $process.StandardError.ReadToEndAsync() }
 }
 
 function Complete-KitProcess($Run, [string]$Evidence, [int]$Seconds = 120) {
-    $timedOut = -not $Run.Process.WaitForExit(1000 * $Seconds)
-    if ($timedOut) {
-        if (-not $Run.Process.HasExited) { $Run.Process.Kill() }
-        if (-not $Run.Process.WaitForExit(5000)) { throw 'The kit process did not exit.' }
+    try {
+        $timedOut = -not $Run.Process.WaitForExit(1000 * $Seconds)
+        if ($timedOut) {
+            if (-not $Run.Process.HasExited) { $Run.Process.Kill() }
+            if (-not $Run.Process.WaitForExit(5000)) { throw 'The kit process did not exit.' }
+        }
+        $stdout = Join-Path $Run.Folder 'stdout.txt'
+        $stderr = Join-Path $Run.Folder 'stderr.txt'
+        foreach ($stream in @(@{ Task=$Run.Output; Path=$stdout }, @{ Task=$Run.Errors; Path=$stderr })) {
+            $content = if ($stream.Task.Wait(3000)) { $stream.Task.GetAwaiter().GetResult() }
+                else { 'An inherited output stream remained open after the process exited.' }
+            [IO.File]::WriteAllText($stream.Path, $content)
+            if ($Run.Engine) { Save-KitEngineAudit $content $Evidence }
+        }
+        foreach ($file in @($stdout, $stderr)) {
+            Save-Text $file (Join-Path $Evidence ([IO.Path]::GetFileName($file)))
+        }
+        $result = [pscustomobject]@{ ExitCode = $Run.Process.ExitCode; TimedOut = $timedOut; Stdout = $stdout }
+        $result | Select-Object ExitCode, TimedOut | ConvertTo-Json |
+            Set-Content -LiteralPath (Join-Path $Evidence 'exit.json') -Encoding UTF8
+        $Run.Process.Dispose()
+        return $result
+    } finally {
+        if ($Run.LauncherTrace) { Save-Text $Run.LauncherTrace (Join-Path $Evidence 'startup-timing.log') }
     }
-    $stdout = Join-Path $Run.Folder 'stdout.txt'
-    $stderr = Join-Path $Run.Folder 'stderr.txt'
-    foreach ($stream in @(@{ Task=$Run.Output; Path=$stdout }, @{ Task=$Run.Errors; Path=$stderr })) {
-        $content = if ($stream.Task.Wait(3000)) { $stream.Task.GetAwaiter().GetResult() }
-            else { 'An inherited output stream remained open after the process exited.' }
-        [IO.File]::WriteAllText($stream.Path, $content)
-        if ($Run.Engine) { Save-KitEngineAudit $content $Evidence }
-    }
-    foreach ($file in @($stdout, $stderr)) {
-        Save-Text $file (Join-Path $Evidence ([IO.Path]::GetFileName($file)))
-    }
-    $result = [pscustomobject]@{ ExitCode = $Run.Process.ExitCode; TimedOut = $timedOut; Stdout = $stdout }
-    $result | Select-Object ExitCode, TimedOut | ConvertTo-Json |
-        Set-Content -LiteralPath (Join-Path $Evidence 'exit.json') -Encoding UTF8
-    $Run.Process.Dispose()
-    return $result
 }
 
 function New-RunContext([string]$Name) {
