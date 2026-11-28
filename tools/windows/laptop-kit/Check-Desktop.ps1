@@ -164,24 +164,24 @@ function Enter-KitPlay([IntPtr]$Window) {
 }
 
 function Set-KitHarborView([IntPtr]$Window, [string]$Log, [string]$Phase) {
-    $start = @(Get-Content -LiteralPath $Log).Count
+    Start-Sleep -Milliseconds 1500
+    $toggleNoclip = $true
     foreach ($attempt in 1..3) {
+        $start = @(Get-Content -LiteralPath $Log).Count
         Enter-KitPlay $Window
         Focus-KitWindow $Window
-        $recent = @(Get-Content -LiteralPath $Log | Select-Object -Skip $start)
-        if ($attempt -eq 1 -or ($attempt -eq 3 -and -not ($recent -match 'noclip on'))) {
-            [KitDesktop]::SendGameConsole($Window, 'noclip')
-        }
-        [KitDesktop]::SendGameConsole($Window, 'setviewpos -11736 -7472 253 90; cg_draw2D 0; cg_drawGun 0')
+        $camera = 'setviewpos -11736 -7472 253 90; cg_draw2D 0; cg_drawGun 0'
+        # The native console has one edit box. Submit the toggle and move together.
+        if ($toggleNoclip) { $camera = 'noclip; ' + $camera }
+        [KitDesktop]::SendGameConsole($Window, $camera)
         Start-Sleep -Milliseconds 700
         [KitDesktop]::SendGameConsole($Window, 'viewpos')
         Start-Sleep -Milliseconds 350
         $view = Get-Content -LiteralPath $Log | Select-Object -Skip $start |
-            Where-Object { $_ -match '\(-11736 -7472 253\)\s*:\s*90\s*$' } | Select-Object -Last 1
-        if ($view) {
-            "$Phase $view after entering play" | Add-Content -LiteralPath (Join-Path $Results 'water-view.txt')
-            return
-        }
+            Where-Object { $_ -match '^\(-?\d+ -?\d+ -?\d+\)\s*:\s*-?\d+\s*$' } | Select-Object -Last 1
+        "$Phase attempt $attempt view=$view" | Add-Content -LiteralPath (Join-Path $Results 'water-view.txt')
+        if ($view -match '^\(-11736 -7472 253\)\s*:\s*90\s*$') { return }
+        $toggleNoclip = $view -match '^\(-11736 -7472 (-?\d+)\)' -and [int]$Matches[1] -lt 253
     }
     throw "The game did not reach the Harbor water viewpoint $Phase. No picture was taken for this phase."
 }
