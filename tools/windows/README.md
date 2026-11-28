@@ -102,10 +102,22 @@ random values for file checksums and changes the later bullet spread.
 
 For the protocol 118 loopback comparison, run `tools/windows/check-snapshot-wire.sh`
 with the game path, retail path, successful Toujane retail capture directory,
-and a new output directory. The headless receiver uses the engine's client
-parser. Each side saves length-prefixed UDP datagrams and decoded records. The
-comparison reports decoded field, message order, and packet size differences,
-along with snapshot times received by only one side.
+and a new output directory. For an extra replay, pass a name from
+`fixtures/retail-extra/cases.tsv` in place of the Toujane capture directory.
+The wire check builds a fresh retail recorder and starts each server on private
+loopback. It lets the test clients spawn, then connects one spectator using
+the engine's client parser. The server-side test clients have no UDP receiver.
+
+Both servers use a fixed 5 ms clock increment in an offline `devmap`, so
+wall-clock stalls cannot combine multiple simulation ticks before a snapshot
+send. The spectator waits for the first server message before asking for
+gamestate, then sends its acknowledgement and command on receipt of each
+snapshot. The check starts after the handshake and the first acknowledged
+post-handshake snapshot. It requires every snapshot time and a matching
+delta base on both sides. It checks the decoded player (including `commandTime`),
+entity, HUD and client state, initial config strings, reliable commands,
+message order and packet sizes. The receipt prints startup snapshot times
+outside the fixed comparison window and the UDP payload byte counts.
 
 ## Direct3D 9
 

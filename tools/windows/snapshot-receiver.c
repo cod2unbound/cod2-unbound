@@ -2,6 +2,8 @@
 #include "common_types.h"
 #include "PC/qcommon/qcommon_funcs.h"
 #include <errno.h>
+#include <inttypes.h>
+#include <stddef.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
@@ -141,31 +143,28 @@ static void send_command(void)
     CL_WritePacket();
 }
 
-static void print_vector(const float *vec)
+/* The decoder zero-initializes these records and stores their fields in
+ * 32-bit words. Preserve their exact bits, including quantized floats. */
+static void print_words(const void *data, size_t size)
 {
-    printf(" %a %a %a", (double)vec[0], (double)vec[1], (double)vec[2]);
-}
-
-static void print_trajectory(const trajectory_t *trajectory)
-{
-    printf(" %d %d %d", trajectory->trType, trajectory->trTime, trajectory->trDuration);
-    print_vector(trajectory->trBase);
-    print_vector(trajectory->trDelta);
+    const byte *bytes = data;
+    for (size_t offset = 0; offset < size; offset += sizeof(uint32_t)) {
+        uint32_t bits;
+        memcpy(&bits, bytes + offset, sizeof bits);
+        printf(" %08" PRIx32, bits);
+    }
+    putchar('\n');
 }
 
 static void print_hud(const hudelem_t *elements, int count, int first)
 {
+    const hudelem_t empty = {0};
     for (int i = 0; i < count; ++i) {
         const hudelem_t *hud = &elements[i];
-        if (!hud->type)
+        if (!memcmp(hud, &empty, sizeof *hud))
             continue;
-        /* The network HUD layout consists entirely of decoded 32-bit fields. */
-        uint32_t fields[sizeof(*hud) / sizeof(uint32_t)];
-        memcpy(fields, hud, sizeof fields);
         printf("hud %d", first + i);
-        for (size_t j = 0; j < sizeof fields / sizeof fields[0]; ++j)
-            printf(" %08x", fields[j]);
-        putchar('\n');
+        print_words(hud, sizeof *hud);
     }
 }
 
@@ -173,25 +172,20 @@ static void print_snapshot(int datagram_size)
 {
     const clSnapshot_t *snap = &active.snap;
     const playerState_t *ps = &snap->ps;
-    printf("snapshot %d size %d seq %d delta %d flags %d player %d %d %d",
-           snap->serverTime, datagram_size, snap->messageNum, snap->deltaNum, snap->snapFlags,
-           ps->pm_type, ps->weapon, ps->eventSequence);
-    print_vector(ps->origin);
-    print_vector(ps->velocity);
-    print_vector(ps->viewangles);
-    printf(" %d %d %d %d", ps->pm_flags, ps->pm_time, ps->weaponstate, ps->stats[0]);
-    for (int i = 0; i < 4; ++i)
-        printf(" %d %d", ps->events[i], ps->eventParms[i]);
-    putchar('\n');
+    const size_t after_command_time = offsetof(playerState_t, pm_type);
+    printf("snapshot %d size %d seq %d delta %d flags %d player",
+           snap->serverTime, datagram_size, snap->messageNum, snap->deltaNum, snap->snapFlags);
+    print_words((const byte *)ps + after_command_time, offsetof(playerState_t, hud) - after_command_time);
+    printf("commandTime %d\n", ps->commandTime);
     for (int i = 0; i < snap->numEntities; ++i) {
         const entityState_t *ent = &active.parseEntities[(snap->parseEntitiesNum + i) & 2047];
-        printf("entity %d %d %d", ent->number, ent->eType, ent->eFlags);
-        print_trajectory(&ent->pos);
-        print_trajectory(&ent->apos);
-        printf(" %d %d", ent->eventParm, ent->eventSequence);
-        for (int j = 0; j < 4; ++j)
-            printf(" %d %d", ent->events[j], ent->eventParms[j]);
-        putchar('\n');
+        printf("entity %d", ent->number);
+        print_words((const byte *)ent + sizeof ent->number, sizeof *ent - sizeof ent->number);
+    }
+    for (int i = 0; i < snap->numClients; ++i) {
+        const clientState_t *client = &active.parseClients[(snap->parseClientsNum + i) & 2047];
+        printf("clientstate %d", client->clientIndex);
+        print_words((const byte *)client + sizeof client->clientIndex, sizeof *client - sizeof client->clientIndex);
     }
     const int current_count = sizeof ps->hud.current / sizeof ps->hud.current[0];
     const int archival_count = sizeof ps->hud.archival / sizeof ps->hud.archival[0];
@@ -201,11 +195,13 @@ static void print_snapshot(int datagram_size)
 
 int main(int argc, char **argv)
 {
-    int port, seconds;
+    int port, seconds, last_snapshot = 0;
     char extra;
-    if (argc != 4 || sscanf(argv[1], "%d%c", &port, &extra) != 1 || port < 1024 || port > 65535 ||
-        sscanf(argv[2], "%d%c", &seconds, &extra) != 1 || seconds < 1 || seconds > 120) {
-        fprintf(stderr, "Usage: %s <loopback-port> <seconds> <new-datagrams-file>\n", argv[0]);
+    if ((argc != 4 && argc != 5) ||
+        sscanf(argv[1], "%d%c", &port, &extra) != 1 || port < 1024 || port > 65535 ||
+        sscanf(argv[2], "%d%c", &seconds, &extra) != 1 || seconds < 1 || seconds > 120 ||
+        (argc == 5 && (sscanf(argv[4], "%d%c", &last_snapshot, &extra) != 1 || last_snapshot < 1))) {
+        fprintf(stderr, "Usage: %s <loopback-port> <seconds> <new-datagrams-file> [last-server-time]\n", argv[0]);
         return 2;
     }
     const struct sockaddr_in address = {.sin_family = AF_INET, .sin_port = htons(port),
@@ -235,7 +231,7 @@ int main(int argc, char **argv)
                 send_oob(request);
             } else if (conn.state >= CA_PRIMED) {
                 send_command();
-            } else {
+            } else if (conn.serverMessageSequence > 0) {
                 CL_WritePacket();
             }
         }
@@ -280,24 +276,30 @@ int main(int argc, char **argv)
         printf("message %d %d\n", conn.serverMessageSequence, message.cursize);
         CL_ParseServerMessage(&message);
         if (initial && conn.state == CA_PRIMED) {
+            printf("client %d\n", conn.clientNum);
             for (int i = 0; i < (int)(sizeof active.gameState.stringOffsets / sizeof active.gameState.stringOffsets[0]); ++i)
                 if (active.gameState.stringOffsets[i])
                     printf("config %d %s\n", i, active.gameState.stringData + active.gameState.stringOffsets[i]);
         }
-        if (!initial) {
-            for (int i = previous_command + 1; i <= conn.serverCommandSequence; ++i)
-                printf("command %d %s\n", i, conn.serverCommands[i & 127]);
-        }
+        for (int i = previous_command + 1; i <= conn.serverCommandSequence; ++i)
+            printf("command %d %s\n", i, conn.serverCommands[i & 127]);
         if (active.newSnapshots) {
             ++snapshots;
             print_snapshot((int)size);
+            if (last_snapshot && active.snap.serverTime >= last_snapshot)
+                break;
         }
         if (conn.state >= CA_PRIMED) {
             send_command();
             last_request = cls.realtime;
+        } else {
+            /* Let the server complete its first frame after connect before
+             * asking for the gamestate and the queued welcome commands. */
+            CL_WritePacket();
+            last_request = cls.realtime;
         }
     }
-    if (fclose(datagrams) || !snapshots)
+    if (fclose(datagrams) || !snapshots || (last_snapshot && active.snap.serverTime != last_snapshot))
         Com_Error(0, "No complete snapshots recorded or capture close failed");
     printf("received snapshots %d\n", snapshots);
     return 0;

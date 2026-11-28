@@ -1,11 +1,12 @@
-"""Wait for both bots to spawn before a third client can affect their spawn RNG."""
+"""Wait for the replay's bots to spawn before connecting a spectator."""
 from pathlib import Path
 from struct import Struct
 import sys
 import time
 
 header = Struct('<4i')
-START_TICK = 140
+mode = sys.argv[1]
+start_tick = int(sys.argv[2]) if len(sys.argv) > 2 else 140
 
 
 def current_tick(mode):
@@ -17,7 +18,7 @@ def current_tick(mode):
             if len(row) != header.size:
                 return 0
             frame, _, entities, players = header.unpack(row)
-            if frame >= START_TICK:
+            if frame >= start_tick:
                 return frame
             stream.seek(244 * entities + 308 * players, 1)
     return 0
@@ -26,11 +27,11 @@ def current_tick(mode):
 deadline = time.monotonic() + 60
 while time.monotonic() < deadline:
     try:
-        tick = current_tick(sys.argv[1])
+        tick = current_tick(mode)
     except FileNotFoundError:
         tick = 0
-    if tick >= START_TICK:
+    if tick >= start_tick:
         print(f'Connecting after replay tick {tick}', flush=True)
         sys.exit(0)
-    time.sleep(.10)
-sys.exit(f'Did not reach tick {START_TICK}')
+    time.sleep(.01 if len(sys.argv) > 2 else .10)
+sys.exit(f'Did not reach tick {start_tick}')
