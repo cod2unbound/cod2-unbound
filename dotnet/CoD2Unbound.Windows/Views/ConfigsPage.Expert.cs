@@ -228,6 +228,7 @@ public sealed partial class ConfigsPage
 
     private FrameworkElement ExpertSetting(ConfigProfileRead profile, ConfigSettingSpec spec)
     {
+        bool largeText = LargeText;
         var state = model.State;
         var current = state.Current ?? profile;
         var setting = ConfigStudioModel.State(spec, current.Document, current.Metadata);
@@ -256,7 +257,6 @@ public sealed partial class ConfigsPage
             details.Children.Add(text);
         }
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         if (comparison is { } source)
         {
             var other = ConfigStudioModel.Compare(spec, setting, source.Loadout, source.Player);
@@ -306,6 +306,28 @@ public sealed partial class ConfigsPage
         noteActions.Children.Add(save);
         changeLock.IsEnabled = noteButton.IsEnabled = !state.ReadOnly;
         noteButton.Flyout = flyout;
+        if (largeText)
+        {
+            // Keep the editor and its commands below the setting name, key and description.
+            foreach (var line in details.Children.OfType<TextBlock>())
+                line.TextWrapping = TextWrapping.Wrap;
+            var editor = content.Children.Count > 1 ? (FrameworkElement)content.Children[1] : null;
+            var editors = new StackPanel { Spacing = 6 };
+            if (editor is not null)
+            {
+                content.Children.Remove(editor);
+                content.ColumnDefinitions.RemoveAt(1);
+                editors.Children.Add(editor);
+            }
+            content.RowSpacing = 6;
+            content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            editors.Children.Add(Buttons(reset, changeLock, noteButton));
+            Grid.SetRow(editors, 1);
+            content.Children.Add(editors);
+            return card;
+        }
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(Buttons(reset, changeLock, noteButton));
         if (content.Children.Count > 1 && content.Children[1] is FrameworkElement control)
         {
