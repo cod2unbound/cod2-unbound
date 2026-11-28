@@ -180,8 +180,12 @@ function Set-KitHarborView([IntPtr]$Window, [string]$Log, [string]$Phase) {
         $view = Get-Content -LiteralPath $Log | Select-Object -Skip $start |
             Where-Object { $_ -match '^\(-?\d+ -?\d+ -?\d+\)\s*:\s*-?\d+\s*$' } | Select-Object -Last 1
         "$Phase attempt $attempt view=$view" | Add-Content -LiteralPath (Join-Path $Results 'water-view.txt')
-        if ($view -match '^\(-11736 -7472 253\)\s*:\s*90\s*$') { return }
-        $toggleNoclip = $view -match '^\(-11736 -7472 (-?\d+)\)' -and [int]$Matches[1] -lt 253
+        $toggleNoclip = $false
+        if ($view -match '^\(-11736 -7472 (-?\d+)\)\s*:\s*90\s*$') {
+            $height = [int]$Matches[1]
+            if ($height -ge 251 -and $height -le 255) { return }
+            $toggleNoclip = $height -lt 251
+        }
     }
     throw "The game did not reach the Harbor water viewpoint $Phase. No picture was taken for this phase."
 }
@@ -224,7 +228,8 @@ function Invoke-KitHarborWater([string]$Edition, [string]$Renderer) {
             } 10 "the $name picture" | Out-Null
             Copy-Item -LiteralPath $shot -Destination $Results
         }
-        $samples = @((Get-FileHash -LiteralPath (Get-ChildItem -Path $Results -Filter 'water-[1-3].tga').FullName).Hash | Select-Object -Unique)
+        $samplePaths = 1..3 | ForEach-Object { Join-Path $Results "water-$_.tga" }
+        $samples = @((Get-FileHash -LiteralPath $samplePaths).Hash | Select-Object -Unique)
         if ($samples.Count -lt 2) { throw 'The three Harbor water pictures were identical.' }
     } finally {
         if (!$run.Process.HasExited) { [void]$run.Process.CloseMainWindow() }
