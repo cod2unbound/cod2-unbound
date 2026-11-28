@@ -103,7 +103,7 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$St
         @{ Query='keyboard shortcuts'; Name='Keyboard Shortcuts'; Witness='PrimaryButton'; Close='Done' }
         @{ Query='connect to address'; Name='Connect to Address'; Witness='AddressBox'; Close='Cancel' }
     )
-    foreach ($theme in 'dark','light') {
+    $appearanceFailures = foreach ($theme in 'dark','light') {
         $LauncherHome = New-KitLauncherTestHome $setupHome (New-Folder (Join-Path $Private $theme))
         Set-KitLauncherProfile 'original' 'dx9'
         $preferences = Join-Path $LauncherHome 'launcher\launcher-settings.json'
@@ -142,15 +142,21 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$St
                 if ($case.Server -and $StatusDuringPress) {
                     Invoke-KitControl $app 'ServersItem'
                     $refresh = Wait-KitCondition { Find-KitControl $app 'Refresh server list' -Name } 12 'the Servers refresh button'
-                    $refreshAction = $refresh.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
+                    $refresh.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+                    Wait-KitCondition { Find-KitControl $app 'RefreshMessage' } 6 'the refresh to start' | Out-Null
                     $pressTrace = Join-Path $pictures 'server-press.txt'
+                    $sendStatus = Join-Path $fixture.Folder 'send-status.txt'
                     $whilePressed = [Action]{
                         "Pointer down: $([DateTime]::UtcNow.ToString('o'))" | Set-Content -LiteralPath $pressTrace
-                        $refreshAction.Invoke()
+                        [IO.File]::WriteAllText($sendStatus, '')
                         Wait-KitCondition {
                             Select-String -LiteralPath $library -SimpleMatch 'Fixture 000' -Quiet
                         } 12 'the local server status to reach the library with the pointer held' | Out-Null
                         "Status arrived before release: $([DateTime]::UtcNow.ToString('o'))" | Add-Content -LiteralPath $pressTrace
+                        $deferred = @(Select-String -LiteralPath $timing -SimpleMatch 'jump results deferred for pointer').Count
+                        Wait-KitCondition {
+                            @(Select-String -LiteralPath $timing -SimpleMatch 'jump results deferred for pointer').Count -gt $deferred
+                        } 5 'the status refresh to defer replacing the pressed Jump to result' | Out-Null
                     }
                 }
                 [KitDesktop]::Chord(17, 75)
@@ -198,6 +204,8 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$St
                     Wait-KitCondition { -not (Find-KitControl $app $case.Witness) } 8 'the Jump to action sheet to close' | Out-Null
                 }
             }
+        } catch {
+            "$theme appearance. $($_.Exception.Message)"
         } finally {
             try {
                 if ($run) { Stop-KitLauncher $run $pictures }
@@ -211,6 +219,7 @@ function Invoke-KitJumpPointer([ValidateRange(1,5)][int]$Rounds = 1, [switch]$St
             }
         }
     }
+    if ($appearanceFailures) { throw ($appearanceFailures -join ' ') }
 }
 
 function Invoke-KitSurface([string]$Page) {

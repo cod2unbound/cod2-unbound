@@ -16,6 +16,8 @@ public static class RefreshMaster {
         int count = jumpRace ? 1 : 252;
         var sockets = new List<Socket>();
         var indices = new Dictionary<Socket, int>();
+        var pending = new List<Tuple<Socket, EndPoint, byte[]>>();
+        string release = Path.Combine(stage, "send-status.txt");
         var marker = new byte[]{255,255,255,255};
         var buffer = new byte[8192];
         var clock = Stopwatch.StartNew();
@@ -39,6 +41,14 @@ public static class RefreshMaster {
             }
             File.WriteAllText(Path.Combine(stage,"master-port.txt"), ((IPEndPoint)sockets[count].LocalEndPoint).Port.ToString());
             while (clock.Elapsed.TotalMinutes < 12 && !File.Exists(Path.Combine(stage,"master-stop.txt"))) {
+                bool send = !jumpRace || File.Exists(release);
+                if (send && pending.Count > 0) {
+                    foreach (var packet in pending) {
+                        packet.Item1.SendTo(packet.Item3, packet.Item2);
+                        serverReplies++;
+                    }
+                    pending.Clear();
+                }
                 // Winsock's select sets hold up to 64 sockets, so poll each small set.
                 for (int batch = 0; batch < sockets.Count; batch += 60) {
                     var ready = sockets.Skip(batch).Take(60).ToList();
@@ -68,8 +78,12 @@ public static class RefreshMaster {
                             challenge, index, index % 2 == 0 ? "1.3" : "1.4.6.8");
                         string roster = status ? "12 30 \"Fixture Player\"\n" : "";
                         var reply = marker.Concat(Encoding.ASCII.GetBytes(header + "\n" + fields + "\n" + roster)).ToArray();
-                        socket.SendTo(reply, peer);
-                        serverReplies++;
+                        if (send) {
+                            socket.SendTo(reply, peer);
+                            serverReplies++;
+                        } else {
+                            pending.Add(Tuple.Create(socket, peer, reply));
+                        }
                     }
                 }
             }
