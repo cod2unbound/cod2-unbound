@@ -255,6 +255,10 @@ Use a disposable standard Windows account with no personal launcher install
 or stored game key. Disconnect its network, install Test for that account,
 and run the kit there. Keep personal Windows accounts out of these three
 checks. The Windows shell can start a new process with its own environment.
+Before running these steps, open Test from that account's Start menu and
+complete its setup with the kit's game-data folder and sample key. Close Test
+from Home. Leave the game stopped and cancel any file review or join opened
+by these checks.
 
 1. Run `launcher-activation-running`. In its private run folder, right-click
    `kit activation.cod2-unbound-test-config`. Choose **Open with** and select
