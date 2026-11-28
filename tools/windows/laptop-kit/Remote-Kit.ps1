@@ -103,7 +103,7 @@ if ($Operation -eq 'archive') {
     if (Test-Path -LiteralPath $pending) { Remove-Item -LiteralPath $pending }
     [AppContext]::SetSwitch('Switch.System.IO.Compression.ZipFile.UseBackslash', $false)
     [IO.Compression.ZipFile]::CreateFromDirectory($folder, $pending, [IO.Compression.CompressionLevel]::Fastest, $true)
-    if (Test-Path -LiteralPath $zip) { [IO.File]::Replace($pending, $zip, $null) }
+    if (Test-Path -LiteralPath $zip) { [IO.File]::Replace($pending, $zip, [NullString]::Value) }
     else { [IO.File]::Move($pending, $zip) }
     Get-Content -LiteralPath $receipt -Raw
     return
