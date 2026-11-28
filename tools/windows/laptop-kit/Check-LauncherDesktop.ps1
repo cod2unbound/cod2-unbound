@@ -344,7 +344,8 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
     $setup = (Get-KitUpdateTrust).Setup
     $entry = New-RunContext 'notice-feed'
     $ready = Join-Path $entry.Folder 'port'
-    $version = '0.5.' + (Get-Random -Minimum 10000 -Maximum 100000)
+    # Windows release assets accept only an unsigned 16-bit build number.
+    $version = '0.5.' + (Get-Random -Minimum 10000 -Maximum ([uint16]::MaxValue + 1))
     $presented = Join-Path $entry.Folder "presentation-ready-$version"
     $server = Join-Path $Kit 'Local-Update-Feed.ps1'
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
