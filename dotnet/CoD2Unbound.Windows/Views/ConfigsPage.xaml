@@ -99,7 +99,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Border BorderBrush="{ThemeResource SeparatorBrush}" BorderThickness="0,0,1,0">
-            <Grid Padding="12,26,12,20" RowSpacing="4">
+            <Grid x:Name="SidebarLayout" Padding="12,26,12,20" RowSpacing="4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -204,8 +204,6 @@
                         </Button>
                     </StackPanel>
                 </ScrollViewer>
-                <TextBlock x:Name="SidebarFootnote" Grid.Row="2" Margin="10,8,10,0" Style="{StaticResource SecondaryCaption}"
-                           Text="Each loadout is its own Call of Duty 2 player profile, so the game sees exactly what you set here." />
             </Grid>
         </Border>
         <Grid Grid.Column="1" RowDefinitions="Auto,*">

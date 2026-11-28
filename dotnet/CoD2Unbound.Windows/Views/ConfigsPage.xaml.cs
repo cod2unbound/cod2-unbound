@@ -36,13 +36,23 @@ public sealed partial class ConfigsPage : Page
         this.model = model;
         setupArt = new(model.ReadMapArtAsync);
         InitializeComponent();
+        var footnote = new TextBlock
+        {
+            Margin = new Thickness(10, 8, 10, 0),
+            Style = StyleFor("SecondaryCaption"),
+            Text = "Each loadout is its own Call of Duty 2 player profile, so the game sees exactly what you set here."
+        };
         if (ExtraLargeText)
         {
-            ((Grid)SidebarFootnote.Parent).Children.Remove(SidebarFootnote);
-            SidebarBody.Children.Add(SidebarFootnote);
+            SidebarBody.Children.Add(footnote);
             SidebarScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
             SidebarScroll.IsTabStop = true;
             AutomationProperties.SetName(SidebarScroll, "Configs sidebar");
+        }
+        else
+        {
+            Grid.SetRow(footnote, 2);
+            SidebarLayout.Children.Add(footnote);
         }
         foreach (var notice in new[] { Status, ExportStatus, RecoveryStatus })
             SpaceOpenNotice(notice);
