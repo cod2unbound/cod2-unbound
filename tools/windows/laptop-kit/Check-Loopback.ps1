@@ -95,7 +95,6 @@ function Invoke-KitOpenDemo([string]$Edition) {
         Wait-KitHome $app
         $since = Get-Date
         Open-KitAssociation $demo $FixtureDemo $exe $settings
-        Invoke-KitControl $app 'Play Recording' -Name
         $game = Get-KitOwnedGame $Edition $since $launcher.Process.SessionId
         $command = (Get-CimInstance Win32_Process -Filter "ProcessId=$($game.Id)").CommandLine
         if ($command -notmatch ('(?:^|\s)"?\+demo"?\s+"?' + [regex]::Escape($playableName) + '"?(?=\s|$)')) {
