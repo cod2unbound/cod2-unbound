@@ -37,4 +37,11 @@ public sealed partial class MainWindow
         OpenSettingsWindow(pane);
         return Task.CompletedTask;
     }
+
+    internal Task OpenConfigsFromSettingsAsync()
+    {
+        StartupTrace.Mark("main activation requested reason=settings-configs");
+        BringMainWindowForward();
+        return NavigateAsync(LauncherPlace.Configs);
+    }
 }

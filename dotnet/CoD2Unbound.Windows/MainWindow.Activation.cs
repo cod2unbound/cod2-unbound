@@ -21,16 +21,21 @@ public sealed partial class MainWindow
         if (bringForward)
         {
             StartupTrace.Mark($"main activation requested reason=external arguments={arguments.Length}");
-            if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
-                presenter.Restore();
-            Activate();
-            _ = SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
+            BringMainWindowForward();
         }
         foreach (string argument in arguments)
             if (!argument.StartsWith(WindowsUpdateNotifications.ActivationPrefix, StringComparison.Ordinal) ||
                 (activeNotification != argument && !activations.Contains(argument)))
                 activations.Enqueue(argument);
         ScheduleActivation();
+    }
+
+    private void BringMainWindowForward()
+    {
+        if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+            presenter.Restore();
+        Activate();
+        _ = SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
     }
 
     private void ScheduleActivation()

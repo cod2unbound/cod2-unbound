@@ -105,7 +105,7 @@ public sealed partial class SettingsPage
             IsOpen = true, IsClosable = false, Severity = InfoBarSeverity.Informational,
             Visibility = Visibility.Collapsed,
             Message = "Your loadouts keep their own resolution and picture settings.",
-            ActionButton = Action("Open Configs", () => shell.NavigateAsync(LauncherPlace.Configs))
+            ActionButton = Action("Open Configs", shell.OpenConfigsFromSettingsAsync)
         };
         container.Children.Add(loadoutNote);
         displaySaved = Caption("Saved. Applies the next time the game starts.");

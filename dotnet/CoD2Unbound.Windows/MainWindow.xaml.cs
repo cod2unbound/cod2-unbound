@@ -259,7 +259,7 @@ public sealed partial class MainWindow : Window
 
     internal async Task OpenResolutionAsync()
     {
-        await NavigateAsync(LauncherPlace.Configs);
+        await OpenConfigsFromSettingsAsync();
         if (ContentFrame.Content is ConfigsPage configs)
             configs.OpenResolution();
     }
