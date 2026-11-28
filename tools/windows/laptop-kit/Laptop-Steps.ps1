@@ -244,7 +244,7 @@ $Steps = @(
     foreach ($opening in 'running','closed') {
         Add-KitStep "launcher-activation-$opening" "Open a config, recording and server link with the launcher $opening" {
             param($step)
-            Invoke-KitSafeActivation $step.Variant
+            Invoke-KitDesktopActivation $step.Variant
         } -Variant $opening
     }
     Add-KitStep 'launcher-taskbar-caption' 'Capture the launcher taskbar button and window caption' { Invoke-KitTaskbarCaption }

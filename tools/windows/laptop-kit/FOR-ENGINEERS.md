@@ -221,8 +221,12 @@ Windows appearance, notifications and default apps as they are.
 - `launcher-tab-names` saves the focused name, type and ID while tabbing from
   the sidebar Settings item and through each section of the Settings window.
 - `launcher-activation-running` and `launcher-activation-closed` use only the
-  registered Test associations. Their receipts record foreground, monitor and
-  the review prompt for each input. Cancel closes the review.
+  registered Test associations. Their receipts record foreground and monitor.
+  A config opens its import review and a server link fills Connect. The steps
+  dismiss these sheets and verify that no private files changed or game started.
+  A recording plays immediately. The steps check its copy in the private demos
+  folder and the playable name passed to the game, close the game, and capture
+  Library in the foreground.
 - `launcher-taskbar-caption` captures the caption and the Test taskbar button
   when Windows exposes a unique visible button.
 - `launcher-update-notice-foreground`, `-minimized` and `-closed` use an

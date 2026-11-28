@@ -134,25 +134,29 @@ function Find-KitActivatedLauncher([string]$Exe, [DateTime]$Since, [int]$Session
     } | Sort-Object StartTime | Select-Object -First 1
 }
 
-function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Opening) {
+function Invoke-KitDesktopActivation([ValidateSet('running','closed')][string]$Opening) {
     Stop-KitIfNoGame
     Initialize-KitLauncherDesktop
     $exe = Get-KitStartTarget
     $profile = $LauncherHome
     $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
     $config = Join-Path $Kit 'Sample config.cfg'
-    $demo = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
-    Stop-KitIfMissing $demo 'The test recording is missing.'
+    $recording = Join-Path $Kit 'frame-references\original\smoke-mp_toujane.dm_1'
+    Stop-KitIfMissing $recording 'The test recording is missing.'
+    $demo = Join-Path $Private 'kit activation recording.dm_1'
+    Copy-Item -LiteralPath $recording -Destination $demo
+    $playableName = 'kit_activation_recording'
+    $sourceHash = (Get-FileHash -LiteralPath $demo).Hash
     $failures = foreach ($case in @(
         @{ Type='config'; Source=$config; Class='CoD2UnboundTest.Config'; Sheet='Review this config'; Witness='Cancel' },
-        @{ Type='demo'; Source=$demo; Class=$FixtureDemo; Sheet='Play recording?'; Witness='Play Recording' },
+        @{ Type='demo'; Source=$demo; Class=$FixtureDemo },
         @{ Type='server'; Source='cod2-test://127.0.0.1:9'; Class='cod2-test'; Sheet='Connect to an address'; Witness='Server address' }
     )) {
         $directory = New-Folder (Join-Path $Results $case.Type)
         $LauncherHome = New-KitLauncherTestHome $profile (New-Folder (Join-Path $Private $case.Type))
         Set-KitLauncherProfile 'original' 'dx9'
         $settings = Get-KitLauncherSettings
-        $run = $process = $sheet = $null
+        $run = $process = $sheet = $game = $gameSince = $null
         $window = $expectedWindow = [IntPtr]::Zero
         $expectedMonitor = $null
         $started = Get-Date
@@ -179,6 +183,7 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             }
             $before = @(Get-TreeHashes (Join-Path $LauncherHome 'main'))
             $before | Set-Content -LiteralPath (Join-Path $directory 'private-files-before.txt')
+            $gameSince = Get-Date
             Open-KitAssociation $case.Source $case.Class $exe $settings
             $window = Wait-KitCondition {
                 $front = [KitDesktop]::GetForegroundWindow()
@@ -191,6 +196,28 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             "Foreground window=$window process=$($process.Id) monitor=$monitor expected=$expectedMonitor" |
                 Set-Content -LiteralPath (Join-Path $directory 'foreground.txt')
             if ($expectedMonitor -and $monitor -ne $expectedMonitor) { throw 'The existing window moved to another screen.' }
+            if ($case.Type -eq 'demo') {
+                $game = Get-KitOwnedGame 'original' $gameSince $session
+                $command = (Get-CimInstance Win32_Process -Filter "ProcessId=$($game.Id)").CommandLine
+                if ($command -notmatch ('(?:^|\s)"?\+demo"?\s+"?' + [regex]::Escape($playableName) + '"?(?=\s|$)')) {
+                    throw 'The game did not start with the expected playable demo name.'
+                }
+                $staged = Join-Path $LauncherHome "main\demos\$playableName.dm_1"
+                $stagedHash = (Get-FileHash -LiteralPath $staged).Hash
+                if ($stagedHash -ne $sourceHash) { throw 'The private demo copy does not match the source.' }
+                "Started process $($game.Id) with +demo $playableName. Source and private copy SHA-256: $stagedHash" |
+                    Set-Content -LiteralPath (Join-Path $directory 'playback.txt')
+                Stop-KitOwnedGame $game ([IntPtr]::Zero)
+                Wait-KitCondition {
+                    if ([KitDesktop]::GetForegroundWindow() -ne $window) { return }
+                    $demos = Find-KitControl $window 'DemosSection'
+                    if ($demos) {
+                        $demos.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
+                    }
+                } 15 'Library Demos in the foreground after playback' | Out-Null
+                Save-KitWindow $window (Join-Path $directory 'library.png')
+                continue
+            }
             $sheet = Wait-KitCondition { Find-KitControl $window $case.Sheet -Name } 14 $case.Sheet
             Wait-KitCondition { Find-KitControl $window $case.Witness -Name } 10 $case.Witness | Out-Null
             if ($case.Type -eq 'server') {
@@ -215,6 +242,12 @@ function Invoke-KitSafeActivation([ValidateSet('running','closed')][string]$Open
             "$($case.Type). $($_.Exception.Message)"
         } finally {
             try {
+                if ($case.Type -eq 'demo' -and $gameSince) {
+                    if (!$game) {
+                        try { $game = Get-KitOwnedGame 'original' $gameSince $session -Seconds 2 } catch { }
+                    }
+                    Stop-KitOwnedGame $game ([IntPtr]::Zero)
+                }
                 if ($sheet -and (Find-KitControl $window $case.Sheet -Name)) {
                     $dismiss = if (Find-KitControl $window 'Cancel' -Name) { 'Cancel' } else { 'Close' }
                     Invoke-KitControl $window $dismiss -Name
