@@ -167,7 +167,14 @@ public sealed partial class ConfigsPage
         AutomationProperties.SetName(rules, "Rules to check against");
         var status = Caption("");
         status.VerticalAlignment = VerticalAlignment.Center;
-        var controls = Buttons(label, rules, status);
+        bool extraLarge = ExtraLargeText;
+        var controls = extraLarge
+            ? new StackPanel
+            {
+                Spacing = 4,
+                Children = { RulePickerRow(), status }
+            }
+            : Buttons(label, rules, status);
         controls.Loaded += async (_, _) =>
         {
             try
@@ -204,11 +211,14 @@ public sealed partial class ConfigsPage
 
                 void Update()
                 {
-                    rules.Content = checkupRules.IsEmpty ? "No rules" :
+                    string names = checkupRules.IsEmpty ? "No rules" :
                         string.Join(" + ", policies.Where(policy => checkupRules.Contains(policy.Id)).Select(policy => policy.Title));
+                    rules.Content = extraLarge ? new TextBlock { Text = names, TextWrapping = TextWrapping.Wrap } : names;
                     int count = model.Model.Specs.Count(spec => RuleFor(profile, spec)?.Status == ConfigRuleStatus.Violation);
                     status.Text = checkupRules.IsEmpty ? "" : count == 0 ? "Follows these rules" :
                         count == 1 ? "1 setting breaks them" : $"{count} settings break them";
+                    if (extraLarge)
+                        status.Visibility = IsVisible(!checkupRules.IsEmpty);
                     ColorCheckTone(status, count == 0 ? ConfigCheckupTone.Positive : ConfigCheckupTone.Negative);
                     renderRows();
                 }
@@ -220,6 +230,14 @@ public sealed partial class ConfigsPage
             }
         };
         return controls;
+
+        Grid RulePickerRow()
+        {
+            var row = Columns(8, GridLength.Auto, new GridLength(1, GridUnitType.Star));
+            Put(row, 0, label);
+            Put(row, 1, rules);
+            return row;
+        }
     }
 
     private ConfigRuleEvaluation? RuleFor(ConfigProfileRead profile, ConfigSettingSpec spec) =>

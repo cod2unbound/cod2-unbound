@@ -448,7 +448,9 @@ public sealed partial class ConfigsPage : Page
 
         if (!wideGroupRail)
         {
-            var groupTools = Buttons(groupChoice);
+            var groupTools = expert && ExtraLargeText
+                ? new StackPanel { Spacing = 8, Children = { groupChoice } }
+                : Buttons(groupChoice);
             if (expert)
             {
                 smallFilters = Tabs(["Selected group", "Changed", "Locked"], (int)expertFilter, index =>
