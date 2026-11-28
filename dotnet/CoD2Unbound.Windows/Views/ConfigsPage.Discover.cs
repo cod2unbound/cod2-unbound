@@ -592,6 +592,7 @@ public sealed partial class ConfigsPage
 
     private Button SetupCard(ConfigDirectoryEntry entry, bool inSaved, string? figureLine = null)
     {
+        bool wrap = ExtraLargeText;
         var art = Artwork(entry, new CornerRadius(4, 4, 0, 0));
         art.Height = 104;
         art.VerticalAlignment = VerticalAlignment.Top;
@@ -600,22 +601,29 @@ public sealed partial class ConfigsPage
         avatar.VerticalAlignment = VerticalAlignment.Bottom;
         avatar.Margin = new Thickness(12, 0, 0, 0);
         var top = new Grid { Height = 122, Children = { art, avatar } };
-        var mouse = ShelfValue("Mouse speed · per full turn", "");
+        var mouse = ShelfValue("Mouse speed · per full turn", "", wrap);
         mouse.Visibility = Visibility.Collapsed;
-        var facts = Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
-        Put(facts, 0, mouse);
+        Grid? columns = wrap ? null : Columns(8, new GridLength(1, GridUnitType.Star), new GridLength(1, GridUnitType.Star));
+        Panel facts = columns is null ? new StackPanel { Spacing = 4 } : columns;
+        facts.Children.Add(mouse);
         if (!string.IsNullOrWhiteSpace(entry.Facts?.Resolution))
-            Put(facts, 1, ShelfValue("Resolution", entry.Facts.Resolution));
+        {
+            var resolution = ShelfValue("Resolution", entry.Facts.Resolution, wrap);
+            if (columns is not null)
+                Grid.SetColumn(resolution, 1);
+            facts.Children.Add(resolution);
+        }
         var info = new StackPanel
         {
             Padding = new Thickness(12, 4, 12, 12), Spacing = 4,
             Children = {
-                OneLine(entry.Player, "BodyStrongTextBlockStyle"), OneLine(Identity(entry)), OneLine(entry.Feel, "SecondaryText"), facts
+                CardText(entry.Player, wrap, "BodyStrongTextBlockStyle"), CardText(Identity(entry), wrap),
+                CardText(entry.Feel, wrap, "SecondaryText"), facts
             }
         };
         if (figureLine is not null)
         {
-            var figure = OneLine(figureLine, "SetupFactLabel");
+            var figure = CardText(figureLine, wrap, "SetupFactLabel");
             Typography.SetNumeralAlignment(figure, FontNumeralAlignment.Tabular);
             info.Children.Add(figure);
         }
@@ -665,13 +673,15 @@ public sealed partial class ConfigsPage
         }
     }
 
-    private static StackPanel ShelfValue(string label, string value) => new()
+    private static StackPanel ShelfValue(string label, string value, bool wrap) => new()
     {
         Spacing = 2,
         Children = {
             new TextBlock { Text = value, Style = StyleFor("BodyLargeTextBlockStyle"),
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-            new TextBlock { Text = label, Style = StyleFor("SetupFactLabel") }
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap },
+            new TextBlock { Text = label, Style = StyleFor("SetupFactLabel"),
+                TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap }
         }
     };
 
@@ -1059,11 +1069,11 @@ public sealed partial class ConfigsPage
         change.Locked ? $"Yours stays {change.Before ?? "as it is"}. This setup uses {change.After}."
             : change.Before is null ? $"This setup uses {change.After}." : $"Yours: {change.Before} · This setup: {change.After}";
 
-    private static TextBlock OneLine(string value, string? style = null)
+    private static TextBlock CardText(string value, bool wrap, string? style = null)
     {
         var text = style is null ? Caption(value) : new TextBlock { Text = value, Style = StyleFor(style) };
-        text.TextTrimming = TextTrimming.CharacterEllipsis;
-        text.TextWrapping = TextWrapping.NoWrap;
+        text.TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis;
+        text.TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         return text;
     }
 
