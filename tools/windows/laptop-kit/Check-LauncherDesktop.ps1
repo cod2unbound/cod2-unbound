@@ -407,7 +407,7 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         if ($State -eq 'closed') {
             Stop-KitLauncher $run $Results
             $run = $null
-            'Click the Test notice after closing the launcher in a disposable offline Windows account. Confirm Settings opens on Updates. The notification service does not pass this run’s private environment into a cold process.' |
+            'Click the Test notice after closing the launcher in a disposable offline Windows account. Confirm Settings opens on Updates. The notification service opens a cold process without the private test environment.' |
                 Add-Content -LiteralPath $receipt
             throw [NotSupportedException]::new('Cold notification activation needs an attended check in a disposable account.')
         }
