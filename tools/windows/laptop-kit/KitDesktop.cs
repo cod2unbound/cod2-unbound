@@ -63,6 +63,11 @@ public static class KitDesktop {
         return pid;
     }
 
+    public static IntPtr PrimaryTaskbar()
+    {
+        return FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Shell_TrayWnd", null);
+    }
+
     public static IntPtr[] VisibleProcessWindows(uint pid)
     {
         var windows = new List<IntPtr>();

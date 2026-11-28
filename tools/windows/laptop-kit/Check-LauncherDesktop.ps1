@@ -375,10 +375,8 @@ function Save-KitScreenRegion([Windows.Rect]$Bounds, [string]$Path) {
 }
 
 function Get-KitTaskbar {
-    $desktop = [Windows.Automation.AutomationElement]::RootElement
-    $condition = [Windows.Automation.PropertyCondition]::new(
-        [Windows.Automation.AutomationElement]::ClassNameProperty,'Shell_TrayWnd')
-    $desktop.FindFirst([Windows.Automation.TreeScope]::Children,$condition)
+    $handle = [KitDesktop]::PrimaryTaskbar()
+    if ($handle -ne [IntPtr]::Zero) { [Windows.Automation.AutomationElement]::FromHandle($handle) }
 }
 
 function Invoke-KitTaskbarCaption {
@@ -509,13 +507,13 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
         $library = Join-Path $LauncherHome 'launcher\launcher-library.json'
         $banner = $null
         $accepted = $false
+        $showResult = 'update notice show version=' + [regex]::Escape($version) + ' id=[1-9][0-9]*$'
         $deadline = (Get-Date).AddSeconds(40)
         do {
             if (!$banner) { $banner = Find-KitUpdateToast $version }
             if (!$accepted) {
-                if (Test-Path -LiteralPath $library) {
-                    try { $accepted = $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates }
-                    catch { $accepted = $false }
+                if (Test-Path -LiteralPath $timing) {
+                    $accepted = Select-String -LiteralPath $timing -Pattern $showResult -Quiet
                 }
                 if ($accepted) { $deadline = (Get-Date).AddSeconds(3) }
             }
@@ -529,6 +527,10 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
             throw 'The Test notice was not acknowledged by Windows.'
         }
         'Submission=accepted.' | Add-Content -LiteralPath $receipt
+        if (Test-Path -LiteralPath $library) {
+            $remembered = $version -in (Get-Content -LiteralPath $library -Raw | ConvertFrom-Json).notifiedUpdates
+            "Remembered=$remembered." | Add-Content -LiteralPath $receipt
+        }
 
         $toast = $null
         if ($banner) {
@@ -544,6 +546,15 @@ function Invoke-KitUpdateNotice([ValidateSet('foreground','minimized','closed')]
                 $observed = if ($centre -or $history) { 'notification centre only during the sample' } else { 'unconfirmed' }
                 "Delivery=$observed. Check Focus assist and the app notification settings by observation only." |
                     Add-Content -LiteralPath $receipt
+                $label = if ($key -eq 65) { 'Focus assist' } else { 'Do not disturb' }
+                $quiet = Find-KitControl ([Windows.Automation.AutomationElement]::RootElement) $label -Name
+                if ($quiet) {
+                    $toggle = $null
+                    $state = if ($quiet.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern,[ref]$toggle)) {
+                        $toggle.Current.ToggleState
+                    }
+                    "Quiet setting: $($quiet.Current.Name) $state $($quiet.Current.ItemStatus)" | Add-Content -LiteralPath $receipt
+                }
             } finally { [KitDesktop]::Tap(27) }
         }
 
