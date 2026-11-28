@@ -35,6 +35,7 @@
             <SolidColorBrush x:Key="glassStroke" Color="#1CFFFFFF" />
             <SolidColorBrush x:Key="glassFill" Color="#751A1C16" />
             <SolidColorBrush x:Key="track" Color="#29FFFFFF" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#77FFFFFF" />
             <SolidColorBrush x:Key="button" Color="#1AFFFFFF" />
             <SolidColorBrush x:Key="buttonHover" Color="#29FFFFFF" />
             <SolidColorBrush x:Key="buttonStroke" Color="#29FFFFFF" />
@@ -144,6 +145,7 @@
             <SolidColorBrush x:Key="glassStroke" Color="#BFFFFFFF" />
             <SolidColorBrush x:Key="glassFill" Color="#8FFCF8EE" />
             <SolidColorBrush x:Key="track" Color="#29504628" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="#8E000000" />
             <SolidColorBrush x:Key="button" Color="#8CFFFFFF" />
             <SolidColorBrush x:Key="buttonHover" Color="#BFFFFFFF" />
             <SolidColorBrush x:Key="buttonStroke" Color="#24504628" />
@@ -252,6 +254,7 @@
             <SolidColorBrush x:Key="glassStroke" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="glassFill" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="track" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="sidebarCaption" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="button" Color="{ThemeResource SystemColorButtonFaceColor}" />
             <SolidColorBrush x:Key="buttonHover" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="buttonStroke" Color="{ThemeResource SystemColorWindowTextColor}" />
