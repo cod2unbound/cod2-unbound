@@ -1,6 +1,10 @@
 #include "release.iss"
 
 #define Launcher "CoD2Unbound.Windows.exe"
+#define PublicLauncherId "CoD2Unbound.Launcher"
+#define TestLauncherId "CoD2Unbound.Launcher.Fixture"
+#define PublicToastActivator "69ACDCFD-2F69-4474-B721-7E235B7E784F"
+#define TestToastActivator "21BB89EE-DB3A-407B-A149-B51C19E4E5E4"
 #if FileExists(Payload + "\launcher\" + Launcher)
   #define HasLauncher
 #endif
@@ -8,8 +12,9 @@
 #ifdef FixtureIdentity
   #define Product "CoD2 Unbound Test"
   #define ProductId "CoD2UnboundTest"
-  #define LauncherId "CoD2Unbound.Launcher.Fixture"
-  #define ToastActivator "21BB89EE-DB3A-407B-A149-B51C19E4E5E4"
+  #define LauncherId TestLauncherId
+  #define OtherLauncherId PublicLauncherId
+  #define ToastActivator TestToastActivator
   #define DemoExtension ".cod2-unbound-test-demo"
   #define ConfigExtension ".cod2-unbound-test-config"
   #define OriginalScheme "cod2-test"
@@ -18,8 +23,9 @@
 #else
   #define Product "CoD2 Unbound"
   #define ProductId "CoD2Unbound"
-  #define LauncherId "CoD2Unbound.Launcher"
-  #define ToastActivator "69ACDCFD-2F69-4474-B721-7E235B7E784F"
+  #define LauncherId PublicLauncherId
+  #define OtherLauncherId TestLauncherId
+  #define ToastActivator PublicToastActivator
   #define DemoExtension ".dm_1"
   #define ConfigExtension ".cfg"
   #define OriginalScheme "cod2"
@@ -675,12 +681,62 @@ begin
     (not RegKeyExists(HKCU64, Key) and not RegKeyExists(HKLM64, Key));
 end;
 
+function LegacyToastActivator(): String;
+var
+  Activator: String;
+  I: Integer;
+begin
+  Result := '';
+  if not RegQueryStringValue(HKCU64, 'Software\Classes\AppUserModelId\{#LauncherId}',
+    'CustomActivator', Activator) then Exit;
+  if Length(Activator) <> 38 then Exit;
+  if (Activator[1] <> '{') or (Activator[38] <> '}') then Exit;
+  for I := 2 to 37 do begin
+    if (I = 10) or (I = 15) or (I = 20) or (I = 25) then begin
+      if Activator[I] <> '-' then Exit;
+    end else if Pos(Activator[I], '0123456789ABCDEFabcdef') = 0 then Exit;
+  end;
+  if (CompareText(Activator, '{' + '{#PublicToastActivator}' + '}') <> 0) and
+    (CompareText(Activator, '{' + '{#TestToastActivator}' + '}') <> 0) then
+    Result := Activator;
+end;
+
+procedure DeleteLegacyToastClass(const Activator: String);
+var
+  ClassKey, ServerKey, OtherActivator, Exe, ServerExe, Command, QuotedExe: String;
+begin
+  if Activator = '' then Exit;
+  if RegQueryStringValue(HKCU64, 'Software\Classes\AppUserModelId\{#OtherLauncherId}',
+    'CustomActivator', OtherActivator) and (CompareText(OtherActivator, Activator) = 0) then Exit;
+  ClassKey := 'Software\Classes\CLSID\' + Activator;
+  ServerKey := ClassKey + '\LocalServer32';
+  if RegValueExists(HKCU64, ClassKey, 'LocalService') or
+    not RegQueryStringValue(HKCU64, ServerKey, '', Command) then Exit;
+
+  Exe := ExpandConstant('{app}\launcher\{#Launcher}');
+  if RegValueExists(HKCU64, ServerKey, 'ServerExecutable') and
+    (not RegQueryStringValue(HKCU64, ServerKey, 'ServerExecutable', ServerExe) or
+      (CompareText(ServerExe, Exe) <> 0)) then Exit;
+  { The App SDK writes a quoted full path followed by its activation argument. }
+  Command := Trim(Command);
+  QuotedExe := '"' + Exe + '"';
+  if (CompareText(Command, QuotedExe) <> 0) and
+    (CompareText(Copy(Command, 1, Length(QuotedExe) + 1), QuotedExe + ' ') <> 0) and
+    (CompareText(Copy(Command, 1, Length(QuotedExe) + 1), QuotedExe + #9) <> 0) then Exit;
+  if RegDeleteKeyIncludingSubkeys(HKCU64, ClassKey) then
+    Log('Removed the previous launcher notification class.')
+  else
+    Log('Could not remove the previous launcher notification class.');
+end;
+
 var
   AllowCod2x, AllowCod2, AllowSetupLinks: Boolean;
+  PreviousToastActivator: String;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then begin
+    PreviousToastActivator := LegacyToastActivator();
     AllowCod2x := CanClaimLink('{#Cod2xScheme}');
     AllowCod2 := CanClaimLink('{#OriginalScheme}');
     AllowSetupLinks := CanClaimLink('{#SetupScheme}');
@@ -697,6 +753,8 @@ begin
     end else
       RaiseException('Setup could not finish the update. The previous copy will be restored.');
   end;
+  if CurStep = ssPostInstall then
+    DeleteLegacyToastClass(PreviousToastActivator);
 end;
 
 function CanRegisterLink(const Scheme: String): Boolean;
@@ -726,6 +784,7 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then begin
+    DeleteLegacyToastClass(LegacyToastActivator());
     DeleteLink('{#Cod2xScheme}');
     DeleteLink('{#OriginalScheme}');
     DeleteLink('{#SetupScheme}');
