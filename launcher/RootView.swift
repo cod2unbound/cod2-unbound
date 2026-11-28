@@ -110,6 +110,7 @@ private extension View {
 struct Sidebar: View {
     @ObservedObject var model: LauncherModel
     @Environment(\.palette) private var palette
+    @Environment(\.colorSchemeContrast) private var contrast
     var body: some View {
         List(selection: Binding(get: { model.page }, set: { page in
             guard let page else { return }
@@ -126,7 +127,10 @@ struct Sidebar: View {
             if !favorites.isEmpty {
                 Section {
                     ForEach(favorites) { server in FavoriteRow(model: model, server: server) }
-                } header: { Text("Favorites") }
+                } header: {
+                    Text("Favorites")
+                        .foregroundStyle(contrast == .increased ? Color.primary : palette.sidebarCaption)
+                }
             }
         }
         .listStyle(.sidebar)
