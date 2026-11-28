@@ -148,8 +148,14 @@ function Find-KitActivatedLauncher([string]$Exe, [DateTime]$Since, [int]$Session
     } | Sort-Object StartTime | Select-Object -First 1
 }
 
+function Find-KitBindEdit([IntPtr]$Window, [string]$Field) {
+    Get-KitControls $Window $Field -Name -AllowOffscreen | Where-Object {
+        $_.Current.ControlType -eq [Windows.Automation.ControlType]::Edit
+    } | Select-Object -First 1
+}
+
 function Set-KitBindText([IntPtr]$Window, [string]$Field, [string]$Text) {
-    $edit = Wait-KitCondition { Find-KitControl $Window $Field -Name -AllowOffscreen } 8 $Field
+    $edit = Wait-KitCondition { Find-KitBindEdit $Window $Field } 8 $Field
     $edit.SetFocus()
     $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
     [KitDesktop]::Tap(9)
@@ -204,7 +210,7 @@ function Invoke-KitBindChain {
                 $row.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
             }
             $values = @(foreach ($field in 'Name','Step 1 text','Step 2 text') {
-                $edit = Wait-KitCondition { Find-KitControl $window $field -Name -AllowOffscreen } 8 $field
+                $edit = Wait-KitCondition { Find-KitBindEdit $window $field } 8 $field
                 $edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
             })
             $values | Set-Content -LiteralPath (Join-Path $evidence 'bind.txt')
