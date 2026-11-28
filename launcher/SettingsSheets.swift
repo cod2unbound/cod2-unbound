@@ -35,7 +35,7 @@ struct ReplaceKeySheet: View {
             }
             .onAppear { focused = true }
         } note: {
-            Text("Stored only on this Mac.")
+            Text(PrivacyContacts.cdKeyNote)
         }
     }
     private var stroke: Color {

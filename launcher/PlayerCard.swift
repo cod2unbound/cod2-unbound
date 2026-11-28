@@ -97,7 +97,8 @@ struct PlayerCardPopover: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("CD key").font(.system(size: 14)).foregroundStyle(palette.text)
-                Text(model.keyVerified ? "Stored only on this Mac." : "Needed to join most servers.").font(.system(size: 12)).foregroundStyle(palette.tertiary)
+                Text(model.keyVerified ? PrivacyContacts.cdKeyNote : "Needed to join most servers.")
+                    .font(.system(size: 12)).foregroundStyle(palette.tertiary).fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isStaticText)
             Spacer(minLength: 8)
