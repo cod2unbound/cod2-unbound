@@ -1,4 +1,5 @@
 using CoD2Unbound.Core;
+using Microsoft.UI.Xaml;
 using static CoD2Unbound.Windows.Views.PagePresentation;
 
 namespace CoD2Unbound.Windows.Views;
@@ -27,8 +28,16 @@ public sealed partial class SettingsPage
             Panes.SelectedItem = pane;
     }
 
-    internal void StepPane(int offset) =>
-        Panes.SelectedItem = Panes.Items[(Panes.Items.IndexOf(Panes.SelectedItem) + offset + Panes.Items.Count) % Panes.Items.Count];
+    internal void StepPane(int offset)
+    {
+        var pane = Panes.Items[(Panes.Items.IndexOf(Panes.SelectedItem) + offset + Panes.Items.Count) % Panes.Items.Count];
+        Panes.SelectedItem = pane;
+        if (textSettings.TextScaleFactor >= 2)
+        {
+            pane.Focus(FocusState.Keyboard);
+            pane.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
+        }
+    }
 
     internal Task ReportProblemFromShellAsync() =>
         shell.ShowProblemReportAsync();
