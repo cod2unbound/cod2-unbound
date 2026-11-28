@@ -253,7 +253,9 @@ Windows appearance, notifications and default apps as they are.
   always attended and uses the disposable account below.
 - The four `harbor-water-*` steps save three water views and a matching view
   after restart. Review motion, lighting and surface detail in the pictures.
-  The kit checks the in-game camera position before saving either view.
+  The kit checks the in-game camera position before saving either view. It
+  also records the shared anti-aliasing and effects settings before the first
+  capture, so the editions' first-run defaults do not affect the comparison.
 
 ### Attended Explorer, browser and cold notification checks
 

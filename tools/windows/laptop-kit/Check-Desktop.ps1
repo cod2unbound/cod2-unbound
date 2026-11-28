@@ -196,8 +196,11 @@ function Invoke-KitHarborWater([string]$Edition, [string]$Renderer) {
     Initialize-KitDesktop
     $gameHome = Join-Path $Private 'game'
     New-TestProfile $gameHome
+    # The editions apply different first-run defaults for these effects.
+    $graphics = [ordered]@{ r_aaSamples=1; sc_enable=0; r_zFeather=0; r_glow=0; r_distortion=0 }
+    $graphicsArgs = ($graphics.Keys | ForEach-Object { " +set $_ $($graphics[$_])" }) -join ''
     $arguments = (Get-EngineArgs $gameHome $GamePath) +
-        " +set r_rendererPreference $Renderer +set r_aaSamples 1 +set r_fullscreen 0 +set r_mode 640x480" +
+        " +set r_rendererPreference $Renderer +set r_fullscreen 0 +set r_mode 640x480" + $graphicsArgs +
         ' +set net_noudp 1 +set com_introPlayed 1 +set com_maxfps 30 +set logfile 2 +set snd_volume 0 +set g_gametype dm +devmap mp_harbor'
     $log = Join-Path $gameHome 'main\console_mp.log'
     $run = Start-KitProcess (Get-Binary $Edition -Root $InstallRoot) $arguments $Private @{COD2_CRASH_NOPOPUP='1'}
@@ -209,6 +212,19 @@ function Invoke-KitHarborWater([string]$Edition, [string]$Renderer) {
                 (Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:' -Quiet)
         } 45 'Harbor and the selected renderer' | Out-Null
         Set-KitHarborView $window $log 'before restart'
+        $start = @(Get-Content -LiteralPath $log).Count
+        Focus-KitWindow $window
+        [KitDesktop]::SendGameConsole($window, ($graphics.Keys -join '; '))
+        $witness = Wait-KitCondition {
+            $values = @(Get-Content -LiteralPath $log | Select-Object -Skip $start | Where-Object { $_ -match '^"\w+" is:' })
+            if ($values.Count -eq $graphics.Count) { $values }
+        } 8 'the Harbor graphics settings'
+        $witness | Set-Content -LiteralPath (Join-Path $Results 'harbor-graphics.txt')
+        foreach ($name in $graphics.Keys) {
+            if (!($witness -match ('^"' + $name + '" is: "' + $graphics[$name] + '(?:\^7)?"'))) {
+                throw "The game did not apply the shared Harbor value for $name."
+            }
+        }
         foreach ($name in 'water-1','water-2','water-3','water-after-restart') {
             if ($name -eq 'water-after-restart') {
                 $loads = @(Select-String -LiteralPath $log -SimpleMatch 'CL_InitCGame:').Count
