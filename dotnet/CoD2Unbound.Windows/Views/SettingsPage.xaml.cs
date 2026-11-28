@@ -38,7 +38,10 @@ public sealed partial class SettingsPage : Page
     internal event Action<string>? PaneChanged;
     internal string PaneTitle => (Panes.SelectedItem ?? Panes.Items[0]).Text;
     internal event Action? ContentResized;
-    internal double HeaderHeight => PaneStrip.ActualHeight + 1;
+    private readonly global::Windows.UI.ViewManagement.UISettings textSettings = new();
+    private bool EnlargedText => textSettings.TextScaleFactor > 1;
+    internal double HeaderHeight =>
+        (EnlargedText ? PaneStrip.ActualHeight : Panes.ActualHeight + Panes.Margin.Top + Panes.Margin.Bottom) + 1;
     internal double PaneContentHeight => PaneBody.ActualHeight;
 
     internal SettingsPage(MainWindow shell, WindowsLauncherSession session, string? openPane = null)
@@ -48,7 +51,11 @@ public sealed partial class SettingsPage : Page
         model = new(session);
         InitializeComponent();
         PaneBody.SizeChanged += (_, _) => ContentResized?.Invoke();
-        PaneStrip.SizeChanged += (_, _) => ContentResized?.Invoke();
+        PaneStrip.SizeChanged += (_, _) =>
+        {
+            if (EnlargedText)
+                ContentResized?.Invoke();
+        };
         ActualThemeChanged += (_, _) => UpdateProgressTheme();
         model.RefreshData();
         RefreshDisplayRunning(session.ClientIsRunning);
