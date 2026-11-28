@@ -976,23 +976,39 @@ public sealed partial class ConfigsPage
     private Border SetupHero(ConfigDirectoryEntry entry, string eyebrow, Button primary, Button bookmark,
         bool featured = false, bool withPips = false)
     {
+        bool wrap = featured && ExtraLargeText;
         var art = Artwork(entry, new CornerRadius(4));
         var body = new Grid { MinHeight = 240, Children = { art, new Border { Style = StyleFor("SetupHeroScrim") } } };
         var name = new TextBlock { Text = entry.Player, Style = StyleFor("SetupArtName") };
+        var description = new TextBlock { Text = entry.Feel, Style = StyleFor("SetupArtDescription") };
+        if (wrap)
+        {
+            name.MaxLines = description.MaxLines = 0;
+            name.TextTrimming = description.TextTrimming = TextTrimming.None;
+        }
         AutomationProperties.SetHeadingLevel(name, AutomationHeadingLevel.Level2);
         var text = new StackPanel { Spacing = 5, Children = {
-            new TextBlock { Text = eyebrow.ToUpperInvariant(), Style = StyleFor("Eyebrow") }, name,
-            new TextBlock { Text = entry.Feel, Style = StyleFor("SetupArtDescription") }
+            new TextBlock { Text = eyebrow.ToUpperInvariant(), Style = StyleFor("Eyebrow") }, name, description
         } };
         var actions = Buttons(primary, bookmark);
         actions.VerticalAlignment = VerticalAlignment.Bottom;
-        var footer = Columns(12, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto);
+        var textColumn = new GridLength(1, GridUnitType.Star);
+        var footer = wrap ? Columns(12, GridLength.Auto, textColumn) : Columns(12, GridLength.Auto, textColumn, GridLength.Auto);
         footer.VerticalAlignment = VerticalAlignment.Bottom;
         footer.Margin = new Thickness(16, 54, 16, withPips ? 42 : 16);
         Put(footer, 0, Avatar(entry, 72));
         Put(footer, 1, new Border { Style = StyleFor("SetupArtBackplate"),
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Child = text });
-        Put(footer, 2, actions);
+        if (wrap)
+        {
+            footer.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            footer.RowDefinitions.Add(new() { Height = GridLength.Auto });
+            footer.RowSpacing = 12;
+            Grid.SetRow(actions, 1);
+            Grid.SetColumnSpan(actions, 2);
+            actions.HorizontalAlignment = HorizontalAlignment.Right;
+        }
+        Put(footer, wrap ? 0 : 2, actions);
         body.Children.Add(footer);
         if (featured)
             body.SizeChanged += (_, args) => body.MinHeight = args.NewSize.Width >= 850 ? 300 : 240;
