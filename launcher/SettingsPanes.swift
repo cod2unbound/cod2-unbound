@@ -377,7 +377,7 @@ private struct KeyRow: View {
     @ObservedObject var model: LauncherModel
     var body: some View {
         let ending = model.gameData.keyEnding
-        FormRow("CD key", detail: ending.map { SettingsText.maskedKey(lastFour: $0) + " · " + PrivacyContacts.cdKeyNote } ?? "No key stored. The game needs one to join servers.",
+        FormRow("CD key", detail: ending.map { SettingsText.maskedKey(lastFour: $0) + " · Stored only on this Mac" } ?? "No key stored. The game needs one to join servers.",
                 symbol: "key") {
             StatusLabel(ending == nil ? .wontWork : .ready, ending == nil ? "Missing" : "Verified")
             Button(ending == nil ? "Add Key…" : "Replace…", action: model.presentReplaceKey).glassAction().controlSize(.large)

@@ -394,7 +394,7 @@ struct SetupView: View {
                     row("folder", "Game data", "\(model.dataPathDisplay) · Version 1.3") { StatusLabel(.ready, "Found") }
                     divider()
                     if model.keyVerified {
-                        row("key", "CD key", PrivacyContacts.cdKeyNote) { StatusLabel(.ready, "Verified") }
+                        row("key", "CD key", "Stored only on this Mac") { StatusLabel(.ready, "Verified") }
                     } else {
                         row("key", "CD key", "Not entered. Most servers need it; add it from your player card.") { StatusLabel(.needsChange, "Skipped") }
                     }
